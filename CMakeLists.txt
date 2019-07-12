@@ -15,4 +15,5 @@ target_include_directories(tlp INTERFACE src)
 target_link_libraries(tlp INTERFACE pthread)
 
 enable_testing()
+add_subdirectory(apps/jacobi)
 add_subdirectory(apps/vadd)
