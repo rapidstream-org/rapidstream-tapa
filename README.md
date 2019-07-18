@@ -8,10 +8,11 @@
 
 ## Application Synopsis
 
-| App      | Properties | Details               | # Streams | # Tasks | # Steps |
-| -------- | ---------- | --------------------- | --------- | ------- | ------- |
-| `jacobi` | static     | 5-point stencil       | 23        | 17      | 1       |
-| `vadd`   | static     | naïve vector addition | 3         | 4       | 1       |
+| App      | Properties      | Details               | # Streams | # Tasks | # Steps |
+| -------- | --------------- | --------------------- | --------- | ------- | ------- |
+| `cannon` | static,feedback | Cannon's algorithm    | 8         | 7       | 3       |
+| `jacobi` | static          | 5-point stencil       | 23        | 17      | 1       |
+| `vadd`   | static          | naïve vector addition | 3         | 4       | 1       |
 
 ## Getting Started
 
