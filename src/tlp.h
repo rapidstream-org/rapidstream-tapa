@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <signal.h>
+#include <string.h>
 #include <time.h>
 
 #include <glog/logging.h>
@@ -18,10 +19,10 @@
 namespace tlp {
 
 thread_local uint64_t last_signal_timestamp = 0;
-
+const uint64_t kSignalThreshold = 500000000;
 inline uint64_t get_time_ns() {
   timespec tp;
-  clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tp);
+  clock_gettime(CLOCK_MONOTONIC, &tp);
   return static_cast<uint64_t>(tp.tv_sec) * 1000000000 + tp.tv_nsec;
 }
 
@@ -234,7 +235,7 @@ class stream : public stream<T, 0> {
   void yield(const std::string& func) const {
     if (last_signal_timestamp != 0) {
       // print stalling message if within 500 ms of signal
-      if (get_time_ns() - last_signal_timestamp < 500000) {
+      if (get_time_ns() - last_signal_timestamp < kSignalThreshold) {
         LOG(INFO) << "stalling for: " << (name.empty() ? "" : name + ".")
                   << func << "()";
       }
@@ -254,7 +255,7 @@ struct task {
 
   task() : main_thread_id{std::this_thread::get_id()} {
     signal_handler_func = [this](int signal) { signal_handler(signal); };
-    signal(SIGUSR1, signal_handler_wrapper);
+    signal(SIGINT, signal_handler_wrapper);
   }
   task(task&&) = default;
   task(const task&) = delete;
@@ -265,7 +266,15 @@ struct task {
 
   void signal_handler(int signal) {
     if (std::this_thread::get_id() == main_thread_id) {
-      LOG(INFO) << "caught signal " << signal;
+      LOG(INFO) << "caught signal " << strsignal(signal);
+      uint64_t signal_timestamp = get_time_ns();
+      if (last_signal_timestamp != 0 &&
+          signal_timestamp - last_signal_timestamp < kSignalThreshold) {
+        LOG(INFO) << "caught signal " << strsignal(signal) << " twice in "
+                  << kSignalThreshold / 1000000 << " ms; exit";
+        exit(EXIT_FAILURE);
+      }
+      last_signal_timestamp = signal_timestamp;
       for (auto& t : threads[current_step]) {
         pthread_kill(t.native_handle(), signal);
       }
