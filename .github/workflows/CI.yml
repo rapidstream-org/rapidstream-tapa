@@ -1,0 +1,21 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: apt-install
+      run: sudo apt install python-pip libgoogle-glog-dev -y
+    - name: pip-install
+      run: sudo -H python -m pip install cmake
+    - name: cmake-configure
+      run: cmake -S . -B build
+    - name: cmake-build
+      run: cmake --build build --target all
+    - name: cmake-test
+      run: cmake --build build --target test
