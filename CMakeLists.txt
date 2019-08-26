@@ -12,7 +12,7 @@ add_library(tlp INTERFACE)
 target_sources(tlp INTERFACE src/tlp.h)
 target_compile_features(tlp INTERFACE cxx_std_11)
 target_include_directories(tlp INTERFACE src)
-target_link_libraries(tlp INTERFACE pthread)
+target_link_libraries(tlp INTERFACE glog pthread)
 
 enable_testing()
 add_subdirectory(apps/cannon)

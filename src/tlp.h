@@ -10,7 +10,20 @@
 #include <unordered_map>
 #include <vector>
 
+#include <signal.h>
+#include <time.h>
+
+#include <glog/logging.h>
+
 namespace tlp {
+
+thread_local uint64_t last_signal_timestamp = 0;
+
+inline uint64_t get_time_ns() {
+  timespec tp;
+  clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tp);
+  return static_cast<uint64_t>(tp.tv_sec) * 1000000000 + tp.tv_nsec;
+}
 
 template <typename T>
 struct elem_t {
@@ -98,7 +111,7 @@ class stream : public stream<T, 0> {
   // whether stream has ended
   bool eos() const override {
     while (empty()) {
-      yield();
+      yield("eos");
     }
     return access(tail).eos;
   }
@@ -116,7 +129,7 @@ class stream : public stream<T, 0> {
   T peek() const override {
     T val;
     while (!try_peek(val)) {
-      yield();
+      yield("peek");
     }
     return val;
   }
@@ -144,7 +157,7 @@ class stream : public stream<T, 0> {
   T read() override {
     T val;
     while (!try_read(val)) {
-      yield();
+      yield("read");
     }
     return val;
   }
@@ -183,7 +196,7 @@ class stream : public stream<T, 0> {
   // blocking write
   void write(const T& val) override {
     while (!try_write(val)) {
-      yield();
+      yield("write");
     }
   }
   // non-blocking close
@@ -198,7 +211,7 @@ class stream : public stream<T, 0> {
   // blocking close
   void close() override {
     while (!try_close()) {
-      yield();
+      yield("close");
     }
   }
 
@@ -218,14 +231,31 @@ class stream : public stream<T, 0> {
     return buffer[idx % buffer.size()];
   }
 
-  void yield() const { std::this_thread::yield(); }
+  void yield(const std::string& func) const {
+    if (last_signal_timestamp != 0) {
+      // print stalling message if within 500 ms of signal
+      if (get_time_ns() - last_signal_timestamp < 500000) {
+        LOG(INFO) << "stalling for: " << (name.empty() ? "" : name + ".")
+                  << func << "()";
+      }
+      last_signal_timestamp = 0;
+    }
+    std::this_thread::yield();
+  }
 };
+
+std::function<void(int)> signal_handler_func;
+void signal_handler_wrapper(int signal) { signal_handler_func(signal); }
 
 struct task {
   int current_step{0};
-  std::unordered_map<int, std::vector<std::future<void>>> threads{};
+  std::unordered_map<int, std::vector<std::thread>> threads{};
+  std::thread::id main_thread_id;
 
-  task() = default;
+  task() : main_thread_id{std::this_thread::get_id()} {
+    signal_handler_func = [this](int signal) { signal_handler(signal); };
+    signal(SIGUSR1, signal_handler_wrapper);
+  }
   task(task&&) = default;
   task(const task&) = delete;
   ~task() { wait_for(current_step); }
@@ -233,9 +263,20 @@ struct task {
   task& operator=(task&&) = default;
   task& operator=(const task&) = delete;
 
+  void signal_handler(int signal) {
+    if (std::this_thread::get_id() == main_thread_id) {
+      LOG(INFO) << "caught signal " << signal;
+      for (auto& t : threads[current_step]) {
+        pthread_kill(t.native_handle(), signal);
+      }
+    } else {
+      last_signal_timestamp = get_time_ns();
+    }
+  }
+
   void wait_for(int step) {
     for (auto& t : threads[step]) {
-      t.get();
+      t.join();
     }
   }
 
@@ -245,8 +286,7 @@ struct task {
     for (; current_step < step; ++current_step) {
       wait_for(current_step);
     }
-    threads[step].push_back(
-        std::async(std::launch::async, f, std::ref(args)...));
+    threads[step].push_back(std::thread(f, std::ref(args)...));
     return *this;
   }
 };
