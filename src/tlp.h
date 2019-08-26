@@ -106,9 +106,7 @@ class stream : public stream<T, 0> {
   bool try_peek(T& val) const override {
     if (!empty()) {
       auto& elem = access(tail);
-      if (elem.eos) {
-        throw std::runtime_error("stream '" + name + "' peeked beyond end");
-      }
+      VLOG(2) << "stream '" << name << "' peeked beyond end";
       val = elem.val;
       return true;
     }
@@ -136,9 +134,7 @@ class stream : public stream<T, 0> {
     if (!empty()) {
       auto elem = access(tail);
       ++tail;
-      if (elem.eos) {
-        throw std::runtime_error("stream '" + name + "' read beyond end");
-      }
+      VLOG(2) << "stream '" << name << "' read beyond end";
       val = elem.val;
       return true;
     }
