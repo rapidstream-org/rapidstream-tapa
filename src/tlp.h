@@ -11,7 +11,6 @@
 #include <vector>
 
 #include <signal.h>
-#include <string.h>
 #include <time.h>
 
 #include <glog/logging.h>
@@ -269,11 +268,11 @@ struct task {
       uint64_t signal_timestamp = get_time_ns();
       if (last_signal_timestamp != 0 &&
           signal_timestamp - last_signal_timestamp < kSignalThreshold) {
-        LOG(INFO) << "caught signal " << strsignal(signal) << " twice in "
-                  << kSignalThreshold / 1000000 << " ms; exit";
+        LOG(INFO) << "caught SIGINT twice in " << kSignalThreshold / 1000000
+                  << " ms; exit";
         exit(EXIT_FAILURE);
       }
-      LOG(INFO) << "caught signal " << strsignal(signal);
+      LOG(INFO) << "caught SIGINT";
       last_signal_timestamp = signal_timestamp;
       for (auto& t : threads[current_step]) {
         if (t.joinable()) {
