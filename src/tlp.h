@@ -276,7 +276,9 @@ struct task {
       }
       last_signal_timestamp = signal_timestamp;
       for (auto& t : threads[current_step]) {
-        pthread_kill(t.native_handle(), signal);
+        if (t.joinable()) {
+          pthread_kill(t.native_handle(), signal);
+        }
       }
     } else {
       last_signal_timestamp = get_time_ns();
