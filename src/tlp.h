@@ -266,7 +266,6 @@ struct task {
 
   void signal_handler(int signal) {
     if (std::this_thread::get_id() == main_thread_id) {
-      LOG(INFO) << "caught signal " << strsignal(signal);
       uint64_t signal_timestamp = get_time_ns();
       if (last_signal_timestamp != 0 &&
           signal_timestamp - last_signal_timestamp < kSignalThreshold) {
@@ -274,6 +273,7 @@ struct task {
                   << kSignalThreshold / 1000000 << " ms; exit";
         exit(EXIT_FAILURE);
       }
+      LOG(INFO) << "caught signal " << strsignal(signal);
       last_signal_timestamp = signal_timestamp;
       for (auto& t : threads[current_step]) {
         if (t.joinable()) {
