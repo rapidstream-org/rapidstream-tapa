@@ -16,5 +16,6 @@ target_link_libraries(tlp INTERFACE glog pthread)
 
 enable_testing()
 add_subdirectory(apps/cannon)
+add_subdirectory(apps/graph)
 add_subdirectory(apps/jacobi)
 add_subdirectory(apps/vadd)
