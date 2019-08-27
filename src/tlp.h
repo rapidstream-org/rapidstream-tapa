@@ -65,6 +65,10 @@ class stream<T, 0> {
   virtual T read(bool&) = 0;
   // non-blocking destructive read with default value
   virtual T read(bool*, const T&) = 0;
+  // non-blocking open
+  virtual bool try_open() = 0;
+  // blocking open
+  virtual void open() = 0;
 
   // producer const operations
 
@@ -119,7 +123,9 @@ class stream : public stream<T, 0> {
   bool try_peek(T& val) const override {
     if (!empty()) {
       auto& elem = access(tail);
-      VLOG(2) << "stream '" << name << "' peeked beyond end";
+      if (elem.eos) {
+        throw std::runtime_error("stream '" + name + "' peeked when closed");
+      }
       val = elem.val;
       return true;
     }
@@ -147,7 +153,9 @@ class stream : public stream<T, 0> {
     if (!empty()) {
       auto elem = access(tail);
       ++tail;
-      VLOG(2) << "stream '" << name << "' read beyond end";
+      if (elem.eos) {
+        throw std::runtime_error("stream '" + name + "' read when closed");
+      }
       val = elem.val;
       return true;
     }
@@ -175,6 +183,27 @@ class stream : public stream<T, 0> {
       *succeeded_ret = succeeded;
     }
     return succeeded ? val : default_val;
+  }
+
+  // non-blocking destructive open
+  bool try_open() override {
+    if (!empty()) {
+      auto elem = access(tail);
+      ++tail;
+      if (!elem.eos) {
+        throw std::runtime_error("stream '" + name +
+                                 "' opened when not closed");
+      }
+      return true;
+    }
+    return false;
+  }
+  // blocking destructive open
+  void open() override {
+    T val;
+    while (!try_open()) {
+      yield("open");
+    }
   }
 
   // producer const operations
