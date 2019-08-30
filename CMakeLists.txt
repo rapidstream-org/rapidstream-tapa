@@ -14,6 +14,9 @@ target_compile_features(tlp INTERFACE cxx_std_11)
 target_include_directories(tlp INTERFACE src)
 target_link_libraries(tlp INTERFACE glog pthread)
 
+add_subdirectory(backend)
+
+include(cmake/TLPConfig.cmake)
 enable_testing()
 add_subdirectory(apps/cannon)
 add_subdirectory(apps/graph)
