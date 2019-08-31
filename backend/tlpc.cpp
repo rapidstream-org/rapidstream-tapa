@@ -72,7 +72,8 @@ class TlpAction : public ASTFrontendAction {
     os.flush();
     // Instead of #include <tlp.h>, #include <hls_stream.h>.
     const regex pattern{R"(#include\s*(<\s*tlp\.h\s*>|"\s*tlp\.h\s*"))"};
-    *output = regex_replace(*output, pattern, "#include <hls_stream.h>");
+    *output = regex_replace(*output, pattern,
+                            "#include <cstdint>\n\n#include <hls_stream.h>");
   }
 
  private:
