@@ -57,7 +57,7 @@ inline T read_fifo(data_t<T>& value, bool valid, bool* valid_ptr,
 template <typename T>
 inline T read_fifo(hls::stream<data_t<T>>& fifo, data_t<T>& value,
                     bool& valid) {
-  T val{value.val};
+  T val = value.val;
   if (valid) {
     valid = fifo.read_nb(value);
   }
@@ -439,10 +439,9 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
     }
     case StreamOpEnum::kWrite: {
       rewritten_text =
-          "tlp::write_fifo(" + stream.name + ", static_cast<" + stream.type +
-          ">(" +
+          "tlp::write_fifo(" + stream.name + ", " + stream.type + "{" +
           rewriter_.getRewrittenText(call_expr->getArg(0)->getSourceRange()) +
-          "))";
+          "})";
       break;
     }
     case StreamOpEnum::kClose: {
