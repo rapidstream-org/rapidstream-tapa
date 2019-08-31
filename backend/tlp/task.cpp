@@ -113,7 +113,7 @@ vector<const CXXMemberCallExpr*> GetTlpInvokes(const Stmt* stmt) {
 
 // Apply tlp s2s transformations on a function.
 bool TlpVisitor::VisitFunctionDecl(FunctionDecl* func) {
-  if (func->hasBody()) {
+  if (func->hasBody() && func->isGlobal()) {
     const auto loc = func->getBeginLoc();
     if (context_.getSourceManager().isWrittenInMainFile(loc)) {
       // Insert utility functions before the first function.
