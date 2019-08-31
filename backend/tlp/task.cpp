@@ -2,18 +2,22 @@
 
 #include <regex>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "clang/AST/AST.h"
 
+using std::make_shared;
 using std::pair;
 using std::regex;
 using std::regex_match;
 using std::regex_replace;
+using std::shared_ptr;
 using std::smatch;
 using std::string;
 using std::to_string;
+using std::unordered_map;
 using std::vector;
 
 using clang::ClassTemplateSpecializationDecl;
@@ -300,12 +304,14 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   }
   rewriter_.InsertTextAfterToken(func_body->getBeginLoc(), read_states);
 
-  // Rewrite stream operations.
+  // Rewrite stream operations via DFS.
+  unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table;
   for (const auto& stream : streams) {
     for (auto call_expr : stream.call_exprs) {
-      RewriteStream(call_expr, stream);
+      stream_table[call_expr] = &stream;
     }
   }
+  RewriteStreams(func_body, stream_table);
 
   // Find the main loop.
   // TODO: change to find all innermost loops.
@@ -403,6 +409,31 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     rewriter_.InsertText(loop_stmt->getEndLoc(), state_transition,
                          /* InsertAfter= */ true,
                          /* indentNewLines= */ true);
+  }
+}
+
+void TlpVisitor::RewriteStreams(
+    const Stmt* stmt,
+    unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table,
+    shared_ptr<unordered_map<const Stmt*, bool>> visited) {
+  if (visited == nullptr) {
+    visited = make_shared<decltype(visited)::element_type>();
+  }
+  if ((*visited)[stmt]) {
+    return;
+  }
+  (*visited)[stmt] = true;
+
+  for (auto child : stmt->children()) {
+    if (child != nullptr) {
+      RewriteStreams(child, stream_table);
+    }
+  }
+  if (const auto call_expr = dyn_cast<CXXMemberCallExpr>(stmt)) {
+    auto stream = stream_table.find(call_expr);
+    if (stream != stream_table.end()) {
+      RewriteStream(stream->first, *stream->second);
+    }
   }
 }
 

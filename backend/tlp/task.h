@@ -1,6 +1,8 @@
 #ifndef TLP_TASK_H_
 #define TLP_TASK_H_
 
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "clang/AST/AST.h"
@@ -35,6 +37,12 @@ class TlpVisitor : public clang::RecursiveASTVisitor<TlpVisitor> {
 
   void ProcessLowerLevelTask(const clang::FunctionDecl* func);
 
+  void RewriteStreams(
+      const clang::Stmt* stmt,
+      std::unordered_map<const clang::CXXMemberCallExpr*, const StreamInfo*>
+          stream_table,
+      std::shared_ptr<std::unordered_map<const clang::Stmt*, bool>> visited =
+          nullptr);
   void RewriteStream(const clang::CXXMemberCallExpr* call_expr,
                      const StreamInfo& stream);
 };
