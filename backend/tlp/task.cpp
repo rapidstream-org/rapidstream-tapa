@@ -16,6 +16,7 @@ using std::string;
 using std::to_string;
 using std::vector;
 
+using clang::ClassTemplateSpecializationDecl;
 using clang::CXXMemberCallExpr;
 using clang::DeclGroupRef;
 using clang::DeclRefExpr;
@@ -188,29 +189,20 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   for (const auto child : func_body->children()) {
     if (const auto decl_stmt = dyn_cast<DeclStmt>(child)) {
       if (const auto var_decl = dyn_cast<VarDecl>(*decl_stmt->decl_begin())) {
-        const string var_decl_str =
-            rewriter_.getRewrittenText(var_decl->getSourceRange());
-        const regex kDeclPattern{
-            R"D(tlp::stream<(\w+),\s*(\d+)>\s*(\w+)\s*(?:(?:\(|\{)(?:"(\w*)")?(?:\)|\}))\s*)D"};
-        smatch match;
-        if (regex_match(var_decl_str, match, kDeclPattern)) {
-          const string elem_type{match[1]};
-          const string fifo_depth{match[2]};
-          const string var_name{match[3]};
-          string var_id;
-          if (match.size() > 4) {
-            var_id = match[4];
+        const auto qual_type = var_decl->getType().getCanonicalType();
+        if (const auto decl = dyn_cast<ClassTemplateSpecializationDecl>(
+                qual_type.getTypePtr()->getAsRecordDecl())) {
+          if (decl->getQualifiedNameAsString() == "tlp::stream") {
+            const auto args = decl->getTemplateArgs().asArray();
+            const string elem_type{args[0].getAsType().getAsString()};
+            const string fifo_depth{args[1].getAsIntegral().toString(10)};
+            const string var_name{var_decl->getNameAsString()};
+            rewriter_.ReplaceText(
+                var_decl->getSourceRange(),
+                "hls::stream<tlp::data_t<" + elem_type + ">> " + var_name);
+            InsertHlsPragma(child->getEndLoc(), "stream",
+                            {{"variable", var_name}, {"depth", fifo_depth}});
           }
-          string new_decl{"hls::stream<tlp::data_t<"};
-          new_decl += elem_type;
-          new_decl += ">> ";
-          new_decl += var_name;
-          if (!var_id.empty()) {
-            new_decl += "(\"" + var_id + "\")";
-          }
-          rewriter_.ReplaceText(var_decl->getSourceRange(), new_decl);
-          InsertHlsPragma(child->getEndLoc(), "stream",
-                          {{"variable", var_name}, {"depth", fifo_depth}});
         }
       }
     }
