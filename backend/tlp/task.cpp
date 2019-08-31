@@ -33,10 +33,13 @@ using clang::ForStmt;
 using clang::FunctionDecl;
 using clang::LValueReferenceType;
 using clang::MemberExpr;
+using clang::QualType;
+using clang::RecordType;
 using clang::RecursiveASTVisitor;
 using clang::SourceLocation;
 using clang::Stmt;
 using clang::TemplateSpecializationType;
+using clang::Type;
 using clang::VarDecl;
 using clang::WhileStmt;
 
@@ -116,6 +119,22 @@ vector<const CXXMemberCallExpr*> GetTlpInvokes(const Stmt* stmt) {
   return invokes;
 }
 
+const ClassTemplateSpecializationDecl* GetTlpStreamDecl(const Type* type) {
+  if (const auto decl =
+          dyn_cast<ClassTemplateSpecializationDecl>(type->getAsRecordDecl())) {
+    if (decl->getQualifiedNameAsString() == "tlp::stream") {
+      return decl;
+    }
+  }
+  return nullptr;
+}
+
+const ClassTemplateSpecializationDecl* GetTlpStreamDecl(
+    const QualType& qual_type) {
+  return GetTlpStreamDecl(
+      qual_type.getUnqualifiedType().getCanonicalType().getTypePtr());
+}
+
 // Apply tlp s2s transformations on a function.
 bool TlpVisitor::VisitFunctionDecl(FunctionDecl* func) {
   if (func->hasBody() && func->isGlobal()) {
@@ -193,20 +212,16 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   for (const auto child : func_body->children()) {
     if (const auto decl_stmt = dyn_cast<DeclStmt>(child)) {
       if (const auto var_decl = dyn_cast<VarDecl>(*decl_stmt->decl_begin())) {
-        const auto qual_type = var_decl->getType().getCanonicalType();
-        if (const auto decl = dyn_cast<ClassTemplateSpecializationDecl>(
-                qual_type.getTypePtr()->getAsRecordDecl())) {
-          if (decl->getQualifiedNameAsString() == "tlp::stream") {
-            const auto args = decl->getTemplateArgs().asArray();
-            const string elem_type{args[0].getAsType().getAsString()};
-            const string fifo_depth{args[1].getAsIntegral().toString(10)};
-            const string var_name{var_decl->getNameAsString()};
-            rewriter_.ReplaceText(
-                var_decl->getSourceRange(),
-                "hls::stream<tlp::data_t<" + elem_type + ">> " + var_name);
-            InsertHlsPragma(child->getEndLoc(), "stream",
-                            {{"variable", var_name}, {"depth", fifo_depth}});
-          }
+        if (auto decl = GetTlpStreamDecl(var_decl->getType())) {
+          const auto args = decl->getTemplateArgs().asArray();
+          const string elem_type{args[0].getAsType().getAsString()};
+          const string fifo_depth{args[1].getAsIntegral().toString(10)};
+          const string var_name{var_decl->getNameAsString()};
+          rewriter_.ReplaceText(
+              var_decl->getSourceRange(),
+              "hls::stream<tlp::data_t<" + elem_type + ">> " + var_name);
+          InsertHlsPragma(child->getEndLoc(), "stream",
+                          {{"variable", var_name}, {"depth", fifo_depth}});
         }
       }
     }
@@ -265,19 +280,16 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Find interface streams.
   vector<StreamInfo> streams;
   for (const auto param : func->parameters()) {
-    // Discover tlp::stream via regex matching.
-    const string param_type = param->getType().getAsString();
-    const regex kTlpStreamPattern{R"(tlp\s*::\s*stream\s*<(.*)>\s*&)"};
-    const string replaced_param_type = regex_replace(
-        param_type, kTlpStreamPattern, "hls::stream<tlp::data_t<$1>>&");
-    if (replaced_param_type != param_type) {
-      const string elem_type =
-          regex_replace(param_type, kTlpStreamPattern, "$1");
-      streams.emplace_back(param->getNameAsString(), elem_type);
-      // Regex matched.
-      rewriter_.ReplaceText(
-          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          replaced_param_type);
+    if (auto ref = dyn_cast<LValueReferenceType>(
+            param->getType().getCanonicalType().getTypePtr())) {
+      if (auto decl = GetTlpStreamDecl(ref->getPointeeType())) {
+        const auto args = decl->getTemplateArgs().asArray();
+        const string elem_type{args[0].getAsType().getAsString()};
+        streams.emplace_back(param->getNameAsString(), elem_type);
+        rewriter_.ReplaceText(
+            param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+            "hls::stream<tlp::data_t<" + elem_type + ">>&");
+      }
     }
   }
 
