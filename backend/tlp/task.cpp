@@ -135,6 +135,70 @@ const ClassTemplateSpecializationDecl* GetTlpStreamDecl(
       qual_type.getUnqualifiedType().getCanonicalType().getTypePtr());
 }
 
+// Test if a loop contains FIFO operations but not sub-loops.
+class RecursiveInnermostLoopsVisitor
+    : public RecursiveASTVisitor<RecursiveInnermostLoopsVisitor> {
+ public:
+  // If has a sub-loop, stop recursion.
+  bool VisitDoStmt(DoStmt* stmt) {
+    return stmt == self_ ? true : !(has_loop_ = true);
+  }
+  bool VisitForStmt(ForStmt* stmt) {
+    return stmt == self_ ? true : !(has_loop_ = true);
+  }
+  bool VisitWhileStmt(WhileStmt* stmt) {
+    return stmt == self_ ? true : !(has_loop_ = true);
+  }
+
+  bool VisitCXXMemberCallExpr(CXXMemberCallExpr* expr) {
+    if (GetTlpStreamDecl(expr->getImplicitObjectArgument()->getType())) {
+      has_fifo_ = true;
+    }
+    return true;
+  }
+
+  bool IsInnermostLoop(const Stmt* stmt) {
+    switch (stmt->getStmtClass()) {
+      case Stmt::DoStmtClass:
+      case Stmt::ForStmtClass:
+      case Stmt::WhileStmtClass: {
+        self_ = stmt;
+        has_loop_ = false;
+        has_fifo_ = false;
+        TraverseStmt(const_cast<Stmt*>(stmt));
+        if (!has_loop_ && has_fifo_) {
+          return true;
+        }
+      }
+      default: {}
+    }
+    return false;
+  }
+
+ private:
+  const Stmt* self_{nullptr};
+  bool has_loop_{false};
+  bool has_fifo_{false};
+};
+
+// Return all loops that do not contain other loops but do contain FIFO
+// operations.
+void GetInnermostLoops(const Stmt* stmt, vector<const Stmt*>& loops) {
+  for (auto child : stmt->children()) {
+    if (child != nullptr) {
+      GetInnermostLoops(child, loops);
+    }
+  }
+  if (RecursiveInnermostLoopsVisitor().IsInnermostLoop(stmt)) {
+    loops.push_back(stmt);
+  }
+}
+vector<const Stmt*> GetInnermostLoops(const Stmt* stmt) {
+  vector<const Stmt*> loops;
+  GetInnermostLoops(stmt, loops);
+  return loops;
+}
+
 // Apply tlp s2s transformations on a function.
 bool TlpVisitor::VisitFunctionDecl(FunctionDecl* func) {
   if (func->hasBody() && func->isGlobal()) {
@@ -325,102 +389,74 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   }
   RewriteStreams(func_body, stream_table);
 
-  // Find the main loop.
-  // TODO: change to find all innermost loops.
-  const Stmt* first_stmt{nullptr};
-  const Stmt* loop_stmt{nullptr};
-  for (auto stmt : func_body->children()) {
-    if (first_stmt == nullptr) {
-      first_stmt = stmt;
+  // Find loops that contain FIFOs operations but do not contain sub-loops;
+  for (auto loop_stmt : GetInnermostLoops(func_body)) {
+    // Move increment statement to the end of loop body for ForStmt.
+    if (const auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {
+      const string inc =
+          rewriter_.getRewrittenText(for_stmt->getInc()->getSourceRange());
+      rewriter_.RemoveText(for_stmt->getInc()->getSourceRange());
+      rewriter_.InsertText(for_stmt->getBody()->getEndLoc(), inc + ";\n");
     }
-    switch (stmt->getStmtClass()) {
-      case Stmt::DoStmtClass:
-      case Stmt::ForStmtClass:
-      case Stmt::WhileStmtClass: {
-        if (loop_stmt == nullptr) {
-          loop_stmt = stmt;
-        } else {
-          llvm::errs() << "more than 1 loop found\n";
-        }
-        break;
-      }
-      default: {}
+
+    // Find loop body.
+    const Stmt* loop_body{nullptr};
+    if (auto do_stmt = dyn_cast<DoStmt>(loop_stmt)) {
+      loop_body = *do_stmt->getBody()->child_begin();
+    } else if (auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {
+      loop_body = *for_stmt->getBody()->child_begin();
+    } else if (auto while_stmt = dyn_cast<WhileStmt>(loop_stmt)) {
+      loop_body = *while_stmt->getBody()->child_begin();
+    } else if (loop_stmt != nullptr) {
+      llvm::errs() << "unexpected loop stmt: ";
+      loop_stmt->dumpColor();
+      exit(EXIT_FAILURE);
+    } else {
+      llvm::errs() << "null loop stmt: ";
+      exit(EXIT_FAILURE);
     }
-  }
 
-  if (first_stmt == nullptr) {
-    llvm::errs() << "no stmt found\n";
-    return;
-  }
-  if (loop_stmt == nullptr) {
-    llvm::errs() << "no loop found\n";
-    return;
-  }
-
-  // Move increment statement to the end of loop body for ForStmt.
-  if (const auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {
-    const string inc =
-        rewriter_.getRewrittenText(for_stmt->getInc()->getSourceRange());
-    rewriter_.RemoveText(for_stmt->getInc()->getSourceRange());
-    rewriter_.InsertText(for_stmt->getBody()->getEndLoc(), inc + ";\n");
-  }
-
-  // Find loop body.
-  const Stmt* loop_body{nullptr};
-  if (auto do_stmt = dyn_cast<DoStmt>(loop_stmt)) {
-    loop_body = *do_stmt->getBody()->child_begin();
-  } else if (auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {
-    loop_body = *for_stmt->getBody()->child_begin();
-  } else if (auto while_stmt = dyn_cast<WhileStmt>(loop_stmt)) {
-    loop_body = *while_stmt->getBody()->child_begin();
-  } else if (loop_stmt != nullptr) {
-    llvm::errs() << "unexpected loop stmt: ";
-    loop_stmt->dumpColor();
-    exit(EXIT_FAILURE);
-  } else {
-    llvm::errs() << "null loop stmt: ";
-    exit(EXIT_FAILURE);
-  }
-
-  string loop_preamble;
-  for (const auto& stream : streams) {
-    if (stream.is_consumer && stream.is_blocking) {
-      if (!loop_preamble.empty()) {
-        loop_preamble += " && ";
-      }
-      loop_preamble += stream.ValidVar();
-    }
-  }
-  // Insert proceed only if there are blocking-read fifos.
-  if (!loop_preamble.empty()) {
-    loop_preamble =
-        "bool " + (StreamInfo::ProceedVar() + ("{" + loop_preamble)) + "};\n\n";
-    rewriter_.InsertText(loop_body->getBeginLoc(), loop_preamble,
-                         /* InsertAfter= */ true,
-                         /* indentNewLines= */ true);
-    rewriter_.InsertText(loop_body->getBeginLoc(),
-                         string{"if ("} + StreamInfo::ProceedVar() + ") {\n",
-                         /* InsertAfter= */ true,
-                         /* indentNewLines= */ true);
-    rewriter_.InsertText(loop_stmt->getEndLoc(), "} else {\n",
-                         /* InsertAfter= */ true,
-                         /* indentNewLines= */ true);
-
-    // If cannot proceed, still need to do state transition.
-    string state_transition{};
+    string loop_preamble;
     for (const auto& stream : streams) {
-      if (!stream.is_consumer) {
-        continue;
+      if (stream.is_consumer && stream.is_blocking) {
+        if (!loop_preamble.empty()) {
+          loop_preamble += " && ";
+        }
+        loop_preamble += stream.ValidVar();
       }
-      state_transition += "if (!" + stream.ValidVar() + ") {\n";
-      state_transition += stream.ValidVar() + " = " + stream.name +
-                          ".read_nb(" + stream.ValueVar() + ");\n";
-      state_transition += "}\n";
     }
-    state_transition += "}  // if (" + StreamInfo::ProceedVar() + ")\n";
-    rewriter_.InsertText(loop_stmt->getEndLoc(), state_transition,
-                         /* InsertAfter= */ true,
-                         /* indentNewLines= */ true);
+    // Insert proceed only if there are blocking-read fifos.
+    if (!loop_preamble.empty()) {
+      loop_preamble = "bool " +
+                      (StreamInfo::ProceedVar() + ("{" + loop_preamble)) +
+                      "};\n\n";
+      rewriter_.InsertText(loop_body->getBeginLoc(), loop_preamble,
+                           /* InsertAfter= */ true,
+                           /* indentNewLines= */ true);
+      rewriter_.InsertText(loop_body->getBeginLoc(),
+                           string{"if ("} + StreamInfo::ProceedVar() + ") {\n",
+                           /* InsertAfter= */ true,
+                           /* indentNewLines= */ true);
+      rewriter_.InsertText(loop_stmt->getEndLoc(), "} else {\n",
+                           /* InsertAfter= */ true,
+                           /* indentNewLines= */ true);
+
+      // If cannot proceed, still need to do state transition.
+      string state_transition{};
+      for (const auto& stream : streams) {
+        if (!stream.is_consumer) {
+          continue;
+        }
+        state_transition += "if (!" + stream.ValidVar() + ") {\n";
+        state_transition += stream.ValidVar() + " = " + stream.name +
+                            ".read_nb(" + stream.ValueVar() + ");\n";
+        state_transition += "}\n";
+      }
+      state_transition += "}  // if (" + StreamInfo::ProceedVar() + ")\n";
+      rewriter_.InsertText(loop_stmt->getEndLoc(), state_transition,
+                           /* InsertAfter= */ true,
+                           /* indentNewLines= */ true);
+    }
   }
 }
 
