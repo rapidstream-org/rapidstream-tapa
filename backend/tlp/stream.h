@@ -40,7 +40,13 @@ enum StreamOpEnum : uint64_t {
 // Information about a particular stream used in a task.
 struct StreamInfo {
   StreamInfo(const std::string& name, const std::string& type)
-      : name{name}, type{type} {}
+      : name{name}, type{type} {
+    if (this->type.substr(0, 7) == "struct ") {
+      this->type.erase(0, 7);
+    } else if (this->type.substr(0, 6) == "class ") {
+      this->type.erase(0, 6);
+    }
+  }
   // Name of the stream in the task.
   std::string name;
   // Type of the stream.
