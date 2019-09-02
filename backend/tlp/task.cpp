@@ -490,8 +490,6 @@ void TlpVisitor::RewriteStreams(
 // code.
 void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
                                const StreamInfo& stream) {
-  assert(stream.name == call_expr->getRecordDecl()->getNameAsString());
-
   string rewritten_text{};
   switch (GetStreamOp(call_expr)) {
     case StreamOpEnum::kTestEos: {
