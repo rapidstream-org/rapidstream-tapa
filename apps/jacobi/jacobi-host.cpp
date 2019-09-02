@@ -13,8 +13,8 @@ using std::chrono::high_resolution_clock;
 void Jacobi(float* bank_0_t0, float* bank_0_t1, uint64_t coalesced_data_num);
 
 int main(int argc, char* argv[]) {
-  const uint64_t width = 2000;
-  const uint64_t height = argc > 1 ? atoll(argv[1]) : 32;
+  const uint64_t width = 100;
+  const uint64_t height = argc > 1 ? atoll(argv[1]) : 100;
   vector<float> t1_vec(height * width);
   vector<float> t0_vec(
       height * width +

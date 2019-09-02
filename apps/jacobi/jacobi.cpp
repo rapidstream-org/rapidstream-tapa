@@ -10,6 +10,7 @@ struct coalesce_t {
 void Array2Stream(const float* array, uint64_t n,
                   tlp::stream<coalesce_t<float, 2>>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
+#pragma HLS pipeline II = 2
     stream.write({array[i * 2], array[i * 2 + 1]});
   }
   stream.close();
@@ -17,6 +18,7 @@ void Array2Stream(const float* array, uint64_t n,
 
 void Stream2Array(tlp::stream<coalesce_t<float, 2>>& stream, float* array) {
   for (uint64_t i = 0; !stream.eos(); ++i) {
+#pragma HLS pipeline II = 2
     auto packed = stream.read();
     array[i * 2] = packed[0];
     array[i * 2 + 1] = packed[1];
@@ -55,18 +57,19 @@ void Module2Func(
     /*output*/ tlp::stream<float>& fifo_st_0,
     /*output*/ tlp::stream<float>& fifo_st_1,
     /* input*/ tlp::stream<float>& fifo_ld_0) {
-  float fifo_ref_0_delayed_1000_buf[1000] = {};
-  int fifo_ref_0_delayed_1000_ptr = 0;
+  float fifo_ref_0_delayed_50_buf[50];
+  int fifo_ref_0_delayed_50_ptr = 0;
 module_2_epoch:
   while (!fifo_ld_0.eos()) {
+#pragma HLS dependence variable = fifo_ref_1_delayed_50_buf inter false
     auto fifo_ref_0 = fifo_ld_0.read();
-    float fifo_ref_0_delayed_1000 =
-        fifo_ref_0_delayed_1000_buf[fifo_ref_0_delayed_1000_ptr];
-    fifo_st_0.write(fifo_ref_0_delayed_1000);
-    fifo_st_1.write(fifo_ref_0_delayed_1000);
-    fifo_ref_0_delayed_1000_buf[fifo_ref_0_delayed_1000_ptr] = fifo_ref_0;
-    fifo_ref_0_delayed_1000_ptr =
-        fifo_ref_0_delayed_1000_ptr < 999 ? fifo_ref_0_delayed_1000_ptr + 1 : 0;
+    float fifo_ref_0_delayed_50 =
+        fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr];
+    fifo_st_0.write(fifo_ref_0_delayed_50);
+    fifo_st_1.write(fifo_ref_0_delayed_50);
+    fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr] = fifo_ref_0;
+    fifo_ref_0_delayed_50_ptr =
+        fifo_ref_0_delayed_50_ptr < 49 ? fifo_ref_0_delayed_50_ptr + 1 : 0;
   }
   fifo_st_0.close();
   fifo_st_1.close();
@@ -88,10 +91,11 @@ module_3_epoch:
 void Module4Func(
     /*output*/ tlp::stream<float>& fifo_st_0,
     /* input*/ tlp::stream<float>& fifo_ld_0) {
-  float fifo_ref_0_delayed_1_buf[1] = {};
+  float fifo_ref_0_delayed_1_buf[1];
   int fifo_ref_0_delayed_1_ptr = 0;
 module_4_epoch:
   while (!fifo_ld_0.eos()) {
+#pragma HLS dependence variable = fifo_ref_0_delayed_1_buf inter false
     auto fifo_ref_0 = fifo_ld_0.read();
     const float fifo_ref_0_delayed_1 =
         fifo_ref_0_delayed_1_buf[fifo_ref_0_delayed_1_ptr];
@@ -106,17 +110,18 @@ module_4_epoch:
 void Module5Func(
     /*output*/ tlp::stream<float>& fifo_st_0,
     /* input*/ tlp::stream<float>& fifo_ld_0) {
-  float fifo_ref_0_delayed_1000_buf[1000] = {};
-  int fifo_ref_0_delayed_1000_ptr = 0;
+  float fifo_ref_0_delayed_50_buf[50];
+  int fifo_ref_0_delayed_50_ptr = 0;
 module_5_epoch:
   while (!fifo_ld_0.eos()) {
+#pragma HLS dependence variable = fifo_ref_0_delayed_50_buf inter false
     auto fifo_ref_0 = fifo_ld_0.read();
-    const float fifo_ref_0_delayed_1000 =
-        fifo_ref_0_delayed_1000_buf[fifo_ref_0_delayed_1000_ptr];
-    fifo_st_0.write(fifo_ref_0_delayed_1000);
-    fifo_ref_0_delayed_1000_buf[fifo_ref_0_delayed_1000_ptr] = fifo_ref_0;
-    fifo_ref_0_delayed_1000_ptr =
-        fifo_ref_0_delayed_1000_ptr < 999 ? fifo_ref_0_delayed_1000_ptr + 1 : 0;
+    const float fifo_ref_0_delayed_50 =
+        fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr];
+    fifo_st_0.write(fifo_ref_0_delayed_50);
+    fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr] = fifo_ref_0;
+    fifo_ref_0_delayed_50_ptr =
+        fifo_ref_0_delayed_50_ptr < 49 ? fifo_ref_0_delayed_50_ptr + 1 : 0;
   }
   fifo_st_0.close();
 }
@@ -139,18 +144,19 @@ module_6_epoch:
 void Module7Func(
     /*output*/ tlp::stream<float>& fifo_st_0,
     /* input*/ tlp::stream<float>& fifo_ld_0) {
-  float fifo_ref_0_delayed_999_buf[999] = {};
-  int fifo_ref_0_delayed_999_ptr = 0;
+  float fifo_ref_0_delayed_49_buf[49];
+  int fifo_ref_0_delayed_49_ptr = 0;
 module_7_epoch:
   while (!fifo_ld_0.eos()) {
+#pragma HLS dependence variable = fifo_ref_0_delayed_49_buf inter false
     auto fifo_ref_0 = fifo_ld_0.read();
 
-    const float fifo_ref_0_delayed_999 =
-        fifo_ref_0_delayed_999_buf[fifo_ref_0_delayed_999_ptr];
-    fifo_st_0.write(fifo_ref_0_delayed_999);
-    fifo_ref_0_delayed_999_buf[fifo_ref_0_delayed_999_ptr] = fifo_ref_0;
-    fifo_ref_0_delayed_999_ptr =
-        fifo_ref_0_delayed_999_ptr < 998 ? fifo_ref_0_delayed_999_ptr + 1 : 0;
+    const float fifo_ref_0_delayed_49 =
+        fifo_ref_0_delayed_49_buf[fifo_ref_0_delayed_49_ptr];
+    fifo_st_0.write(fifo_ref_0_delayed_49);
+    fifo_ref_0_delayed_49_buf[fifo_ref_0_delayed_49_ptr] = fifo_ref_0;
+    fifo_ref_0_delayed_49_ptr =
+        fifo_ref_0_delayed_49_ptr < 48 ? fifo_ref_0_delayed_49_ptr + 1 : 0;
   }
   fifo_st_0.close();
 }
