@@ -56,6 +56,7 @@ struct data_t {
 template <typename T>
 inline T read_fifo(data_t<T>& value, bool valid, bool* valid_ptr,
                     const T& def) {
+#pragma HLS inline
   if (valid_ptr) {
     *valid_ptr = valid;
   }
@@ -65,6 +66,7 @@ inline T read_fifo(data_t<T>& value, bool valid, bool* valid_ptr,
 template <typename T>
 inline T read_fifo(hls::stream<data_t<T>>& fifo, data_t<T>& value,
                     bool& valid) {
+#pragma HLS inline
   T val = value.val;
   if (valid) {
     valid = fifo.read_nb(value);
@@ -74,11 +76,13 @@ inline T read_fifo(hls::stream<data_t<T>>& fifo, data_t<T>& value,
 
 template <typename T>
 inline void write_fifo(hls::stream<data_t<T>>& fifo, const T& value) {
+#pragma HLS inline
   fifo.write({false, value});
 }
 
 template <typename T>
 inline void close_fifo(hls::stream<data_t<T>>& fifo) {
+#pragma HLS inline
   fifo.write({true, {}});
 }
 
