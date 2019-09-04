@@ -1,5 +1,6 @@
 #include "task.h"
 
+#include <algorithm>
 #include <regex>
 #include <string>
 #include <unordered_map>
@@ -8,6 +9,7 @@
 
 #include "clang/AST/AST.h"
 
+using std::binary_search;
 using std::make_shared;
 using std::pair;
 using std::regex;
@@ -15,6 +17,7 @@ using std::regex_match;
 using std::regex_replace;
 using std::shared_ptr;
 using std::smatch;
+using std::sort;
 using std::string;
 using std::to_string;
 using std::unordered_map;
@@ -125,6 +128,29 @@ vector<const CXXMemberCallExpr*> GetTlpInvokes(const Stmt* stmt) {
   vector<const CXXMemberCallExpr*> invokes;
   GetTlpInvokes(stmt, invokes);
   return invokes;
+}
+
+// Given a Stmt, find all tlp::stream operations via DFS and update stream_ops.
+void GetTlpStreamOps(const Stmt* stmt,
+                     vector<const CXXMemberCallExpr*>& stream_ops) {
+  if (stmt == nullptr) {
+    return;
+  }
+  for (auto child : stmt->children()) {
+    GetTlpStreamOps(child, stream_ops);
+  }
+  if (const auto stream = dyn_cast<CXXMemberCallExpr>(stmt)) {
+    if (stream->getRecordDecl()->getQualifiedNameAsString() == "tlp::stream") {
+      stream_ops.push_back(stream);
+    }
+  }
+}
+
+// Given a Stmt, return all tlp::stream opreations via DFS.
+vector<const CXXMemberCallExpr*> GetTlpStreamOps(const Stmt* stmt) {
+  vector<const CXXMemberCallExpr*> stream_ops;
+  GetTlpStreamOps(stmt, stream_ops);
+  return stream_ops;
 }
 
 const ClassTemplateSpecializationDecl* GetTlpStreamDecl(const Type* type) {
@@ -403,6 +429,17 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
 
   // Find loops that contain FIFOs operations but do not contain sub-loops;
   for (auto loop_stmt : GetInnermostLoops(func_body)) {
+    auto stream_ops = GetTlpStreamOps(loop_stmt);
+    sort(stream_ops.begin(), stream_ops.end());
+    auto is_accessed = [&stream_ops](const StreamInfo& stream) -> bool {
+      for (auto expr : stream.call_exprs) {
+        if (binary_search(stream_ops.begin(), stream_ops.end(), expr)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     // Move increment statement to the end of loop body for ForStmt.
     if (const auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {
       const string inc =
@@ -430,7 +467,7 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
 
     string loop_preamble;
     for (const auto& stream : streams) {
-      if (stream.is_consumer && stream.is_blocking) {
+      if (is_accessed(stream) && stream.is_consumer && stream.is_blocking) {
         if (!loop_preamble.empty()) {
           loop_preamble += " && ";
         }
@@ -456,13 +493,12 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       // If cannot proceed, still need to do state transition.
       string state_transition{};
       for (const auto& stream : streams) {
-        if (!stream.is_consumer) {
-          continue;
+        if (is_accessed(stream) && stream.is_consumer) {
+          state_transition += "if (!" + stream.ValidVar() + ") {\n";
+          state_transition += stream.ValidVar() + " = " + stream.name +
+                              ".read_nb(" + stream.ValueVar() + ");\n";
+          state_transition += "}\n";
         }
-        state_transition += "if (!" + stream.ValidVar() + ") {\n";
-        state_transition += stream.ValidVar() + " = " + stream.name +
-                            ".read_nb(" + stream.ValueVar() + ");\n";
-        state_transition += "}\n";
       }
       state_transition += "}  // if (" + StreamInfo::ProceedVar() + ")\n";
       rewriter_.InsertText(loop_stmt->getEndLoc(), state_transition,
