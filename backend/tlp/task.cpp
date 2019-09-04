@@ -124,10 +124,13 @@ vector<const CXXMemberCallExpr*> GetTlpInvokes(const Stmt* stmt) {
 }
 
 const ClassTemplateSpecializationDecl* GetTlpStreamDecl(const Type* type) {
-  if (const auto decl =
-          dyn_cast<ClassTemplateSpecializationDecl>(type->getAsRecordDecl())) {
-    if (decl->getQualifiedNameAsString() == "tlp::stream") {
-      return decl;
+  if (type != nullptr) {
+    if (const auto record = type->getAsRecordDecl()) {
+      if (const auto decl = dyn_cast<ClassTemplateSpecializationDecl>(record)) {
+        if (decl->getQualifiedNameAsString() == "tlp::stream") {
+          return decl;
+        }
+      }
     }
   }
   return nullptr;
