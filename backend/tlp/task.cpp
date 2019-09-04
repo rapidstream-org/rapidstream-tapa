@@ -57,6 +57,7 @@ template <typename T>
 inline T read_fifo(data_t<T>& value, bool valid, bool* valid_ptr,
                     const T& def) {
 #pragma HLS inline
+#pragma HLS latency min = 1 max = 1
   if (valid_ptr) {
     *valid_ptr = valid;
   }
@@ -67,6 +68,7 @@ template <typename T>
 inline T read_fifo(hls::stream<data_t<T>>& fifo, data_t<T>& value,
                     bool& valid) {
 #pragma HLS inline
+#pragma HLS latency min = 1 max = 1
   T val = value.val;
   if (valid) {
     valid = fifo.read_nb(value);
@@ -77,12 +79,14 @@ inline T read_fifo(hls::stream<data_t<T>>& fifo, data_t<T>& value,
 template <typename T>
 inline void write_fifo(hls::stream<data_t<T>>& fifo, const T& value) {
 #pragma HLS inline
+#pragma HLS latency min = 1 max = 1
   fifo.write({false, value});
 }
 
 template <typename T>
 inline void close_fifo(hls::stream<data_t<T>>& fifo) {
 #pragma HLS inline
+#pragma HLS latency min = 1 max = 1
   fifo.write({true, {}});
 }
 
