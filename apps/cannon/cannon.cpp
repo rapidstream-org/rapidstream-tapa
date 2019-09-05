@@ -6,112 +6,142 @@
 // p x p PEs
 const int p = 2;
 
-// handles kN x kN matrices maximum
-const int kN = 1024;
+// Handles kN x kN matrices maximum.
+const int kN = 64;  // Use fixed value for efficient hardware generation.
 
-// scatter n*n matrix into p*p blocks, each block
-void Scatter(const float* matrix_ptr, uint64_t n, float* block_00,
-             float* block_01, float* block_10, float* block_11) {
-  auto matrix = reinterpret_cast<const float(*)[p][n / p][n / p]>(matrix_ptr);
-  std::memcpy(block_00, matrix[0][0], n / p * n / p * sizeof(float));
-  std::memcpy(block_01, matrix[0][1], n / p * n / p * sizeof(float));
-  std::memcpy(block_10, matrix[1][0], n / p * n / p * sizeof(float));
-  std::memcpy(block_11, matrix[1][1], n / p * n / p * sizeof(float));
+// Scatter n*n matrix into p*p blocks, each block.
+void Scatter(const float* matrix_ptr, uint64_t n, tlp::stream<float>& block_00,
+             tlp::stream<float>& block_01, tlp::stream<float>& block_10,
+             tlp::stream<float>& block_11) {
+  const uint64_t num_elems = (kN / p) * (kN / p);
+  for (uint64_t i = 0; i < num_elems; ++i) {
+    block_00.write(*matrix_ptr);
+    ++matrix_ptr;
+  }
+  for (uint64_t i = 0; i < num_elems; ++i) {
+    block_01.write(*matrix_ptr);
+    ++matrix_ptr;
+  }
+  for (uint64_t i = 0; i < num_elems; ++i) {
+    block_10.write(*matrix_ptr);
+    ++matrix_ptr;
+  }
+  for (uint64_t i = 0; i < num_elems; ++i) {
+    block_11.write(*matrix_ptr);
+    ++matrix_ptr;
+  }
 }
 
-void Gather(float* matrix_ptr, uint64_t n, const float* block_00,
-            const float* block_01, const float* block_10,
-            const float* block_11) {
-  auto matrix = reinterpret_cast<float(*)[p][n / p][n / p]>(matrix_ptr);
-  std::memcpy(matrix[0][0], block_00, n / p * n / p * sizeof(float));
-  std::memcpy(matrix[0][1], block_01, n / p * n / p * sizeof(float));
-  std::memcpy(matrix[1][0], block_10, n / p * n / p * sizeof(float));
-  std::memcpy(matrix[1][1], block_11, n / p * n / p * sizeof(float));
+void Gather(float* matrix_ptr, uint64_t n, tlp::stream<float>& block_00,
+            tlp::stream<float>& block_01, tlp::stream<float>& block_10,
+            tlp::stream<float>& block_11) {
+  const uint64_t num_elems = (kN / p) * (kN / p);
+  for (uint64_t i = 0; i < num_elems; ++i) {
+#pragma HLS loop_tripcount min = num_elems max = num_elems
+    *matrix_ptr = block_00.read();
+    ++matrix_ptr;
+  }
+  for (uint64_t i = 0; i < num_elems; ++i) {
+#pragma HLS loop_tripcount min = num_elems max = num_elems
+    *matrix_ptr = block_01.read();
+    ++matrix_ptr;
+  }
+  for (uint64_t i = 0; i < num_elems; ++i) {
+#pragma HLS loop_tripcount min = num_elems max = num_elems
+    *matrix_ptr = block_10.read();
+    ++matrix_ptr;
+  }
+  for (uint64_t i = 0; i < num_elems; ++i) {
+#pragma HLS loop_tripcount min = num_elems max = num_elems
+    *matrix_ptr = block_11.read();
+    ++matrix_ptr;
+  }
 }
 
-// each PE processes n/p * n/p block of matrix
+// Each PE processes n/p * n/p block of matrix.
 template <int i, int j>
-void ProcElem(float* a_ptr, float* b_ptr, float* c_ptr, uint64_t n,
+void ProcElem(tlp::stream<float>& a_fifo, tlp::stream<float>& b_fifo,
+              tlp::stream<float>& c_fifo, uint64_t n,
               tlp::stream<float>& i_prev, tlp::stream<float>& i_next,
               tlp::stream<float>& j_prev, tlp::stream<float>& j_next) {
-  auto a = reinterpret_cast<float(*)[n / p]>(a_ptr);
-  auto b = reinterpret_cast<float(*)[n / p]>(b_ptr);
-  auto c = reinterpret_cast<float(*)[n / p]>(c_ptr);
+  const uint64_t num_elems = (kN / p) * (kN / p);
+  static float a[kN / p * kN / p];
+  static float b[kN / p * kN / p];
+  static float c[kN / p * kN / p];
 
-  for (uint64_t ii = 0; ii < n / p; ++ii) {
-    for (uint64_t jj = 0; jj < n / p; ++jj) {
-      c[ii][jj] = 0.f;
-    }
+  // Initialize local a, b, and c.
+  for (uint64_t ii = 0; ii < num_elems; ++ii) {
+#pragma HLS loop_tripcount min = num_elems max = num_elems
+    a[ii] = a_fifo.read();
+    b[ii] = b_fifo.read();
+    c[ii] = 0.f;
   }
 
   for (int l = 0; l < p; ++l) {
-    for (uint64_t ii = 0; ii < n / p; ++ii) {
-      for (uint64_t jj = 0; jj < n / p; ++jj) {
-        for (uint64_t kk = 0; kk < n / p; ++kk) {
-          c[ii][jj] += a[ii][kk] * b[kk][jj];
+    for (uint64_t ii = 0; ii < kN / p; ++ii) {
+      for (uint64_t kk = 0; kk < kN / p; ++kk) {
+        for (uint64_t jj = 0; jj < kN / p; ++jj) {
+          c[ii * (kN / p) + jj] +=
+              a[ii * (kN / p) + kk] * b[kk * (kN / p) + jj];
         }
       }
     }
 
-    for (uint64_t ii = 0; ii < n / p; ++ii) {
-      for (uint64_t jj = 0; jj < n / p; ++jj) {
-        if (i % 2 == 0) {
-          i_prev.write(b[ii][jj]);
-          b[ii][jj] = i_next.read();
-        } else {
-          auto tmp = i_next.read();
-          i_prev.write(b[ii][jj]);
-          b[ii][jj] = tmp;
-        }
-        if (j % 2 == 0) {
-          j_prev.write(a[ii][jj]);
-          a[ii][jj] = j_next.read();
-        } else {
-          auto tmp = j_next.read();
-          j_prev.write(a[ii][jj]);
-          a[ii][jj] = tmp;
-        }
+    i_prev.write(b[0]);
+    j_prev.write(a[0]);
+    for (uint64_t ii = 0; ii < num_elems; ++ii) {
+#pragma HLS loop_tripcount min = num_elems max = num_elems
+      if (ii < num_elems - 1) {
+        i_prev.write(b[ii + 1]);
       }
+      b[ii] = i_next.read();
+      if (ii < num_elems - 1) {
+        j_prev.write(a[ii + 1]);
+      }
+      a[ii] = j_next.read();
     }
+  }
+
+  for (uint64_t ii = 0; ii < num_elems; ++ii) {
+    c_fifo.write(c[ii]);
   }
 }
 
 void Cannon(const float* a_vec, const float* b_vec, float* c_vec, uint64_t n) {
-  assert(n % p == 0);
+  assert(kN % p == 0);
   assert(n <= kN);
 
-  static float a_00[kN / p * kN / p];
-  static float a_01[kN / p * kN / p];
-  static float a_10[kN / p * kN / p];
-  static float a_11[kN / p * kN / p];
-  static float b_00[kN / p * kN / p];
-  static float b_01[kN / p * kN / p];
-  static float b_10[kN / p * kN / p];
-  static float b_11[kN / p * kN / p];
-  static float c_00[kN / p * kN / p];
-  static float c_01[kN / p * kN / p];
-  static float c_10[kN / p * kN / p];
-  static float c_11[kN / p * kN / p];
-
-  tlp::stream<float, 2> fifo_00_01("PE1->PE01");
-  tlp::stream<float, 2> fifo_01_00("PE1->PE00");
-  tlp::stream<float, 2> fifo_10_11("PE1->PE11");
-  tlp::stream<float, 2> fifo_11_10("PE1->PE10");
-  tlp::stream<float, 2> fifo_00_10("PE1->PE10");
-  tlp::stream<float, 2> fifo_10_00("PE1->PE00");
-  tlp::stream<float, 2> fifo_01_11("PE1->PE11");
-  tlp::stream<float, 2> fifo_11_01("PE1->PE01");
+  tlp::stream<float, 1> a_00("a->PE00");
+  tlp::stream<float, 1> a_01("a->PE01");
+  tlp::stream<float, 1> a_10("a->PE10");
+  tlp::stream<float, 1> a_11("a->PE11");
+  tlp::stream<float, 1> b_00("b->PE00");
+  tlp::stream<float, 1> b_01("b->PE01");
+  tlp::stream<float, 1> b_10("b->PE10");
+  tlp::stream<float, 1> b_11("b->PE11");
+  tlp::stream<float, 1> c_00("c->PE00");
+  tlp::stream<float, 1> c_01("c->PE01");
+  tlp::stream<float, 1> c_10("c->PE10");
+  tlp::stream<float, 1> c_11("c->PE11");
+  tlp::stream<float, 2> fifo_00_01("PE00->PE01");
+  tlp::stream<float, 2> fifo_01_00("PE01->PE00");
+  tlp::stream<float, 2> fifo_10_11("PE10->PE11");
+  tlp::stream<float, 2> fifo_11_10("PE11->PE10");
+  tlp::stream<float, 2> fifo_00_10("PE00->PE10");
+  tlp::stream<float, 2> fifo_10_00("PE10->PE00");
+  tlp::stream<float, 2> fifo_01_11("PE01->PE11");
+  tlp::stream<float, 2> fifo_11_01("PE11->PE01");
 
   tlp::task()
-      .invoke<0>(Scatter, a_vec, n, a_00, a_01, a_10, a_11)
-      .invoke<0>(Scatter, b_vec, n, b_00, b_01, b_10, b_11)
-      .invoke<1>(ProcElem<0, 0>, a_00, b_00, c_00, n, fifo_00_10, fifo_10_00,
+      .invoke<0>(Scatter, a_vec, kN, a_00, a_01, a_10, a_11)
+      .invoke<0>(Scatter, b_vec, kN, b_00, b_01, b_10, b_11)
+      .invoke<0>(ProcElem<0, 0>, a_00, b_00, c_00, kN, fifo_00_10, fifo_10_00,
                  fifo_00_01, fifo_01_00)
-      .invoke<1>(ProcElem<0, 1>, a_01, b_01, c_01, n, fifo_01_11, fifo_11_01,
+      .invoke<0>(ProcElem<0, 1>, a_01, b_01, c_01, kN, fifo_01_11, fifo_11_01,
                  fifo_01_00, fifo_00_01)
-      .invoke<1>(ProcElem<1, 0>, a_10, b_10, c_10, n, fifo_10_00, fifo_00_10,
+      .invoke<0>(ProcElem<1, 0>, a_10, b_10, c_10, kN, fifo_10_00, fifo_00_10,
                  fifo_10_11, fifo_11_10)
-      .invoke<1>(ProcElem<1, 1>, a_11, b_11, c_11, n, fifo_11_01, fifo_01_11,
+      .invoke<0>(ProcElem<1, 1>, a_11, b_11, c_11, kN, fifo_11_01, fifo_01_11,
                  fifo_11_10, fifo_10_11)
-      .invoke<2>(Gather, c_vec, n, c_00, c_01, c_10, c_11);
+      .invoke<0>(Gather, c_vec, kN, c_00, c_01, c_10, c_11);
 }

@@ -5,6 +5,7 @@
 #include <limits>
 #include <vector>
 
+using std::abs;
 using std::clog;
 using std::endl;
 using std::vector;
@@ -14,7 +15,7 @@ using std::chrono::high_resolution_clock;
 void Cannon(const float* a, const float* b, float* c, uint64_t n);
 
 int main(int argc, char* argv[]) {
-  const uint64_t n = argc > 1 ? atoll(argv[1]) : 256;
+  const uint64_t n = 64;  // Hardcoded for efficient hardware generation.
   vector<float> a_vec(n * n);
   vector<float> b_vec(n * n);
   vector<float> c_vec(n * n);
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
         expected += a[i][k] * b[k][j];
       }
       auto actual = c[i][j];
-      if (fabs((actual - expected) / expected) > 1e-4) {
+      if (abs(actual - expected) > 1e-4 * abs(expected)) {
         if (num_errors < threshold) {
           clog << "expected: " << expected << ", actual: " << actual << endl;
         } else if (num_errors == threshold) {
