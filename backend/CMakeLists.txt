@@ -30,15 +30,25 @@ if(NOT llvm_POPULATED)
   add_llvm()
 endif()
 
-add_executable(tlpc)
-target_sources(tlpc
-               PRIVATE
-               tlpc.cpp
-               tlp/stream.cpp
-               tlp/task.cpp
+add_library(stream)
+target_sources(stream
+               PUBLIC
                tlp/stream.h
-               tlp/task.h)
+               PRIVATE
+               tlp/stream.cpp)
+target_include_directories(stream
+                           PUBLIC ${CLANG_INCLUDE_DIRS} ${LLVM_INCLUDE_DIRS})
+target_link_libraries(stream PUBLIC clangTooling)
+
+add_library(task)
+target_sources(task
+               PUBLIC
+               tlp/task.h
+               PRIVATE
+               tlp/task.cpp)
+target_link_libraries(task PUBLIC stream)
+
+add_executable(tlpc)
+target_sources(tlpc PRIVATE tlpc.cpp)
 target_compile_options(tlpc PRIVATE -fno-rtti)
-target_include_directories(tlpc
-                           PRIVATE ${CLANG_INCLUDE_DIRS} ${LLVM_INCLUDE_DIRS})
-target_link_libraries(tlpc PRIVATE clangTooling)
+target_link_libraries(tlpc PRIVATE task)
