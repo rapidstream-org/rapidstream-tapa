@@ -17,12 +17,14 @@ enum StreamOpEnum : uint64_t {
   kIsDefaulted = 1 << 3,
   kIsProducer = 1 << 4,  // Must be performed on the producer side.
   kIsConsumer = 1 << 5,  // Must be performed on the consumer side.
+  kNeedPeeking = 1 << 6,
+  kNeedEos = 1 << 7,
 
   kTestEmpty = 1ULL << 32 | kIsConsumer,
-  kTestEos = 2ULL << 32 | kIsConsumer,
-  kTryPeek = 3ULL << 32 | kIsConsumer,
-  kBlockingPeek = 4ULL << 32 | kIsBlocking | kIsConsumer,
-  kNonBlockingPeek = 5ULL << 32 | kIsNonBlocking | kIsConsumer,
+  kTestEos = 2ULL << 32 | kIsConsumer | kNeedPeeking | kNeedEos,
+  kTryPeek = 3ULL << 32 | kIsConsumer | kNeedPeeking,
+  kBlockingPeek = 4ULL << 32 | kIsBlocking | kIsConsumer | kNeedPeeking,
+  kNonBlockingPeek = 5ULL << 32 | kIsNonBlocking | kIsConsumer | kNeedPeeking,
   kTryRead = 6ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
   kBlockingRead = 7ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
   kNonBlockingRead = 8ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
@@ -59,6 +61,8 @@ struct StreamInfo {
   bool is_consumer{false};
   bool is_blocking{false};
   bool is_non_blocking{false};
+  bool need_peeking{false};
+  bool need_eos{false};
 
   std::string ValueVar() const { return "tlp_" + name + "_value"; }
   std::string ValidVar() const { return "tlp_" + name + "_valid"; }

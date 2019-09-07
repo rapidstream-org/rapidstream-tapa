@@ -410,7 +410,7 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Insert _x_value and _x_valid variables for read streams.
   string read_states;
   for (const auto& stream : streams) {
-    if (stream.is_consumer) {
+    if (stream.is_consumer && stream.need_peeking) {
       read_states += "tlp::data_t<" + stream.type + "> " + stream.ValueVar() +
                      "{false, {}};\n";
       read_states += "bool " + stream.ValidVar() + "{false};\n\n";
@@ -471,7 +471,11 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
         if (!loop_preamble.empty()) {
           loop_preamble += " && ";
         }
-        loop_preamble += stream.ValidVar();
+        if (stream.need_peeking) {
+          loop_preamble += stream.ValidVar();
+        } else {
+          loop_preamble += "!" + stream.name + ".empty()";
+        }
       }
     }
     // Insert proceed only if there are blocking-read fifos.
@@ -493,7 +497,7 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       // If cannot proceed, still need to do state transition.
       string state_transition{};
       for (const auto& stream : streams) {
-        if (is_accessed(stream) && stream.is_consumer) {
+        if (is_accessed(stream) && stream.is_consumer && stream.need_peeking) {
           state_transition += "if (!" + stream.ValidVar() + ") {\n";
           state_transition += stream.ValidVar() + " = " + stream.name +
                               ".read_nb(" + stream.ValueVar() + ");\n";
@@ -550,8 +554,12 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
       break;
     }
     case StreamOpEnum::kBlockingRead: {
-      rewritten_text = "tlp::read_fifo(" + stream.name + ", " +
-                       stream.ValueVar() + ", " + stream.ValidVar() + ")";
+      if (stream.need_peeking) {
+        rewritten_text = "tlp::read_fifo(" + stream.name + ", " +
+                         stream.ValueVar() + ", " + stream.ValidVar() + ")";
+      } else {
+        rewritten_text = stream.name + ".read().val";
+      }
       break;
     }
     case StreamOpEnum::kWrite: {

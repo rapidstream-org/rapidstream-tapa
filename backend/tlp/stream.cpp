@@ -165,6 +165,16 @@ void GetStreamInfo(Stmt* root, vector<StreamInfo>& streams,
               stream.is_non_blocking = true;
             }
           }
+          if (op & StreamOpEnum::kNeedPeeking) {
+            if (!stream.need_peeking) {
+              stream.need_peeking = true;
+            }
+          }
+          if (op & StreamOpEnum::kNeedEos) {
+            if (!stream.need_eos) {
+              stream.need_eos = true;
+            }
+          }
 
           stream.ops.push_back(op);
           stream.call_exprs.push_back(call_expr);
