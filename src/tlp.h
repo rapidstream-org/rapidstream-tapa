@@ -31,17 +31,17 @@ struct elem_t {
   T val;
 };
 
-template <typename T, uint64_t N = 0>
-class stream;
-
-template <typename T>
-class stream<T, 0> {
+class stream_base {
  public:
   // debug helpers
 
   virtual const char* get_name() const = 0;
   virtual uint64_t get_depth() const = 0;
+};
 
+template <typename T>
+class istream : virtual public stream_base {
+ public:
   // consumer const operations
 
   // whether stream is empty
@@ -69,7 +69,11 @@ class stream<T, 0> {
   virtual bool try_open() = 0;
   // blocking open
   virtual void open() = 0;
+};
 
+template <typename T>
+class ostream : virtual public stream_base {
+ public:
   // producer const operations
 
   // whether stream is full
@@ -87,8 +91,8 @@ class stream<T, 0> {
   virtual void close() = 0;
 };
 
-template <typename T, uint64_t N>
-class stream : public stream<T, 0> {
+template <typename T, uint64_t N = 1>
+class stream : public istream<T>, public ostream<T> {
  public:
   // constructor
   stream(const std::string& name = "") : name{name}, tail{0}, head{0} {}
@@ -101,8 +105,9 @@ class stream : public stream<T, 0> {
   // default move assignment operator
   stream& operator=(stream&&) = default;
 
-  // public attributes
-
+  // must call APIs from tlp::istream or tlp::ostream; calling from tlp::stream
+  // directly is not allowed
+ private:
   const std::string name;
   constexpr static uint64_t depth{N};
   const char* get_name() const override { return name.c_str(); }
@@ -244,7 +249,6 @@ class stream : public stream<T, 0> {
     }
   }
 
- private:
   // producer writes to head and consumer reads from tail
   // okay to keep incrementing because it'll take > 100 yr to overflow uint64_t
 
