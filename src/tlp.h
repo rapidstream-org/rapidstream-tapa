@@ -17,8 +17,8 @@
 
 namespace tlp {
 
-static thread_local uint64_t last_signal_timestamp = 0;
-static const uint64_t kSignalThreshold = 500000000;
+extern thread_local uint64_t last_signal_timestamp;
+constexpr uint64_t kSignalThreshold = 500000000;
 inline uint64_t get_time_ns() {
   timespec tp;
   clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -304,18 +304,12 @@ class mmap {
   T* ptr_;
 };
 
-static std::function<void(int)> signal_handler_func;
-inline void signal_handler_wrapper(int signal) { signal_handler_func(signal); }
-
 struct task {
   int current_step{0};
   std::unordered_map<int, std::vector<std::thread>> threads{};
   std::thread::id main_thread_id;
 
-  task() : main_thread_id{std::this_thread::get_id()} {
-    signal_handler_func = [this](int signal) { signal_handler(signal); };
-    signal(SIGINT, signal_handler_wrapper);
-  }
+  task();
   task(task&&) = default;
   task(const task&) = delete;
   ~task() { wait_for(current_step); }
@@ -323,26 +317,7 @@ struct task {
   task& operator=(task&&) = default;
   task& operator=(const task&) = delete;
 
-  void signal_handler(int signal) {
-    if (std::this_thread::get_id() == main_thread_id) {
-      uint64_t signal_timestamp = get_time_ns();
-      if (last_signal_timestamp != 0 &&
-          signal_timestamp - last_signal_timestamp < kSignalThreshold) {
-        LOG(INFO) << "caught SIGINT twice in " << kSignalThreshold / 1000000
-                  << " ms; exit";
-        exit(EXIT_FAILURE);
-      }
-      LOG(INFO) << "caught SIGINT";
-      last_signal_timestamp = signal_timestamp;
-      for (auto& t : threads[current_step]) {
-        if (t.joinable()) {
-          pthread_kill(t.native_handle(), signal);
-        }
-      }
-    } else {
-      last_signal_timestamp = get_time_ns();
-    }
-  }
+  void signal_handler(int signal);
 
   void wait_for(int step) {
     for (auto& t : threads[step]) {

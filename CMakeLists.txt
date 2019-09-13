@@ -8,11 +8,15 @@ endif()
 
 project(tlp)
 
-add_library(tlp INTERFACE)
-target_sources(tlp INTERFACE src/tlp.h)
-target_compile_features(tlp INTERFACE cxx_std_11)
-target_include_directories(tlp INTERFACE src)
-target_link_libraries(tlp INTERFACE glog pthread)
+add_library(tlp)
+target_sources(tlp
+               PUBLIC
+               src/tlp.h
+               PRIVATE
+               src/tlp.cpp)
+target_compile_features(tlp PUBLIC cxx_std_11)
+target_include_directories(tlp PUBLIC src)
+target_link_libraries(tlp INTERFACE glog PUBLIC pthread)
 
 add_subdirectory(backend)
 
