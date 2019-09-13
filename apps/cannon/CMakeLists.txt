@@ -27,7 +27,7 @@ if(FRT_FOUND)
                  PRIVATE
                  cannon-host.cpp
                  cannon-frt.cpp)
-  target_link_libraries(cannon-frt PRIVATE frt::frt)
+  target_link_libraries(cannon-frt PRIVATE tlp frt::frt)
 
   add_custom_target(
     cannon-cosim

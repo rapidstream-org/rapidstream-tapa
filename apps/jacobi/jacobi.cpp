@@ -7,7 +7,7 @@ struct coalesce_t {
   const T& operator[](uint64_t idx) const { return data[idx]; }
 };
 
-void Array2Stream(const float* array, uint64_t n,
+void Array2Stream(tlp::mmap<const float> array, uint64_t n,
                   tlp::ostream<coalesce_t<float, 2>>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
 #pragma HLS pipeline II = 2
@@ -16,7 +16,8 @@ void Array2Stream(const float* array, uint64_t n,
   stream.close();
 }
 
-void Stream2Array(tlp::istream<coalesce_t<float, 2>>& stream, float* array) {
+void Stream2Array(tlp::istream<coalesce_t<float, 2>>& stream,
+                  tlp::mmap<float> array) {
   for (uint64_t i = 0; !stream.eos(); ++i) {
 #pragma HLS pipeline II = 2
     auto packed = stream.read();
@@ -158,7 +159,8 @@ module_8_epoch:
   dram_t0_bank_0_fifo.close();
 }
 
-void Jacobi(float* bank_0_t0, float* bank_0_t1, uint64_t coalesced_data_num) {
+void Jacobi(tlp::mmap<float> bank_0_t0, tlp::mmap<const float> bank_0_t1,
+            uint64_t coalesced_data_num) {
   tlp::stream<coalesce_t<float, 2>, 32> bank_0_t1_buf("bank_0_t1_buf");
   tlp::stream<coalesce_t<float, 2>, 32> bank_0_t0_buf("bank_0_t0_buf");
   tlp::stream<float, 2> from_super_source_to_t1_offset_0(

@@ -10,9 +10,9 @@ const int p = 2;
 const int kN = 64;  // Use fixed value for efficient hardware generation.
 
 // Scatter n*n matrix into p*p blocks, each block.
-void Scatter(const float* matrix_ptr, uint64_t n, tlp::ostream<float>& block_00,
-             tlp::ostream<float>& block_01, tlp::ostream<float>& block_10,
-             tlp::ostream<float>& block_11) {
+void Scatter(tlp::mmap<const float> matrix_ptr, uint64_t n,
+             tlp::ostream<float>& block_00, tlp::ostream<float>& block_01,
+             tlp::ostream<float>& block_10, tlp::ostream<float>& block_11) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   for (uint64_t i = 0; i < kNumElems; ++i) {
     block_00.write(*matrix_ptr);
@@ -32,9 +32,9 @@ void Scatter(const float* matrix_ptr, uint64_t n, tlp::ostream<float>& block_00,
   }
 }
 
-void Gather(float* matrix_ptr, uint64_t n, tlp::istream<float>& block_00,
-            tlp::istream<float>& block_01, tlp::istream<float>& block_10,
-            tlp::istream<float>& block_11) {
+void Gather(tlp::mmap<float> matrix_ptr, uint64_t n,
+            tlp::istream<float>& block_00, tlp::istream<float>& block_01,
+            tlp::istream<float>& block_10, tlp::istream<float>& block_11) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   for (uint64_t i = 0; i < kNumElems; ++i) {
 #pragma HLS loop_tripcount min = kNumElems max = kNumElems
@@ -111,7 +111,8 @@ void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
   }
 }
 
-void Cannon(const float* a_vec, const float* b_vec, float* c_vec, uint64_t n) {
+void Cannon(tlp::mmap<const float> a_vec, tlp::mmap<const float> b_vec,
+            tlp::mmap<float> c_vec, uint64_t n) {
   assert(kN % p == 0);
   assert(n <= kN);
 

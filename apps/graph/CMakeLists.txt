@@ -4,7 +4,7 @@ target_sources(graph
                nxgraph.hpp
                graph-host.cpp
                graph.cpp)
-target_link_libraries(graph PRIVATE tlp)
+target_link_libraries(graph PUBLIC tlp)
 file(
   DOWNLOAD "https://snap.stanford.edu/data/facebook_combined.txt.gz"
   ${CMAKE_CURRENT_BINARY_DIR}/facebook.txt.gz

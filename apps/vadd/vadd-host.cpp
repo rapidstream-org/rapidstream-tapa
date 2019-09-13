@@ -2,14 +2,16 @@
 #include <iostream>
 #include <vector>
 
+#include <tlp.h>
+
 using std::clog;
 using std::endl;
 using std::vector;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
-void VecAdd(const float* a_array, const float* b_array, float* c_array,
-            uint64_t n);
+void VecAdd(tlp::mmap<const float> a_array, tlp::mmap<const float> b_array,
+            tlp::mmap<float> c_array, uint64_t n);
 
 int main(int argc, char* argv[]) {
   const uint64_t n = argc > 1 ? atoll(argv[1]) : 1024 * 1024;

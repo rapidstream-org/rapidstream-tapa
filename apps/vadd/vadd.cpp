@@ -10,21 +10,22 @@ void Add(tlp::istream<float>& a, tlp::istream<float>& b,
   c.close();
 }
 
-void Array2Stream(const float* array, uint64_t n, tlp::ostream<float>& stream) {
+void Array2Stream(tlp::mmap<const float> array, uint64_t n,
+                  tlp::ostream<float>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
     stream.write(array[i]);
   }
   stream.close();
 }
 
-void Stream2Array(tlp::istream<float>& stream, float* array) {
+void Stream2Array(tlp::istream<float>& stream, tlp::mmap<float> array) {
   for (uint64_t i = 0; !stream.eos(); ++i) {
     array[i] = stream.read();
   }
 }
 
-void VecAdd(const float* a_array, const float* b_array, float* c_array,
-            uint64_t n) {
+void VecAdd(tlp::mmap<const float> a_array, tlp::mmap<const float> b_array,
+            tlp::mmap<float> c_array, uint64_t n) {
   tlp::stream<float, 8> a_stream("a");
   tlp::stream<float, 8> b_stream("b");
   tlp::stream<float, 8> c_stream("c");

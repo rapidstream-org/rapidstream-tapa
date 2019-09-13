@@ -28,7 +28,7 @@ if(FRT_FOUND)
                  PRIVATE
                  vadd-host.cpp
                  vadd-frt.cpp)
-  target_link_libraries(vadd-frt PRIVATE frt::frt)
+  target_link_libraries(vadd-frt PRIVATE tlp frt::frt)
 
   add_custom_target(
     vadd-csim

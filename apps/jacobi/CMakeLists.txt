@@ -28,7 +28,7 @@ if(FRT_FOUND)
                  PRIVATE
                  jacobi-host.cpp
                  jacobi-frt.cpp)
-  target_link_libraries(jacobi-frt PRIVATE frt::frt)
+  target_link_libraries(jacobi-frt PRIVATE tlp frt::frt)
 
   add_custom_target(
     jacobi-csim

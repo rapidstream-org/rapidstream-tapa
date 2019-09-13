@@ -110,7 +110,8 @@ ostream& operator<<(ostream& os, const UpdateReq& obj) {
 const int kMaxNumPartitions = 1024;
 const int kMaxPartitionSize = 1024 * 1024;
 
-void Control(Pid num_partitions, const Vid* num_vertices, const Eid* num_edges,
+void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
+             tlp::mmap<const Eid> num_edges,
              tlp::ostream<UpdateConfig>& update_config_q,
              tlp::ostream<TaskReq>& req_q, tlp::istream<TaskResp>& resp_q) {
   // Keeps track of all partitions.
@@ -211,7 +212,8 @@ void UpdateHandler(Pid num_partitions,
                    tlp::istream<UpdateConfig>& update_config_q,
                    tlp::istream<UpdateReq>& update_req_q,
                    tlp::istream<Update>& update_in_q,
-                   tlp::ostream<Update>& update_out_q, Update* updates) {
+                   tlp::ostream<Update>& update_out_q,
+                   tlp::mmap<Update> updates) {
   // Base vid of all vertices; used to determine dst partition id.
   Vid base_vid = 0;
   // Used to determine dst partition id.
@@ -280,8 +282,8 @@ void UpdateHandler(Pid num_partitions,
 void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
               tlp::ostream<UpdateReq>& update_req_q,
               tlp::istream<Update>& update_in_q,
-              tlp::ostream<Update>& update_out_q, VertexAttr* vertices,
-              const Edge* edges) {
+              tlp::ostream<Update>& update_out_q,
+              tlp::mmap<VertexAttr> vertices, tlp::mmap<const Edge> edges) {
   VertexAttr vertices_local[kMaxPartitionSize];
   while (!req_q.eos()) {
     const TaskReq req = req_q.read();
@@ -323,8 +325,9 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
   update_req_q.close();
 }
 
-void Graph(Pid num_partitions, const Vid* num_vertices, const Eid* num_edges,
-           VertexAttr* vertices, const Edge* edges, Update* updates) {
+void Graph(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
+           tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
+           tlp::mmap<const Edge> edges, tlp::mmap<Update> updates) {
   tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
   tlp::stream<TaskResp, 1> task_resp("task_resp");
   tlp::stream<Update, 1> update_pe2handler("update_pe2handler");

@@ -5,6 +5,8 @@
 #include <limits>
 #include <vector>
 
+#include <tlp.h>
+
 using std::abs;
 using std::clog;
 using std::endl;
@@ -12,7 +14,8 @@ using std::vector;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
-void Cannon(const float* a, const float* b, float* c, uint64_t n);
+void Cannon(tlp::mmap<const float> a, tlp::mmap<const float> b,
+            tlp::mmap<float> c, uint64_t n);
 
 int main(int argc, char* argv[]) {
   const uint64_t n = 64;  // Hardcoded for efficient hardware generation.

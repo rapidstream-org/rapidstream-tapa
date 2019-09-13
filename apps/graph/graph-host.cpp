@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include <glog/logging.h>
+#include <tlp.h>
 
 #include "nxgraph.hpp"
 
@@ -34,8 +34,9 @@ struct Update {
   float delta;
 };
 
-void Graph(Pid num_partitions, const Vid* num_vertices, const Eid* num_edges,
-           VertexAttr* vertices, const Edge* edges, Update* updates);
+void Graph(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
+           tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
+           tlp::mmap<const Edge> edges, tlp::mmap<Update> updates);
 
 void Graph(Vid base_vid, vector<VertexAttr>& vertices,
            const vector<Edge>& edges) {
@@ -114,6 +115,14 @@ int main(int argc, char* argv[]) {
       }
       ++num_errors;
     }
+  }
+  if (num_errors == 0) {
+    clog << "PASS!" << endl;
+  } else {
+    if (num_errors > threshold) {
+      clog << " (+" << (num_errors - threshold) << " more errors)" << endl;
+    }
+    clog << "FAIL!" << endl;
   }
 
   return 0;
