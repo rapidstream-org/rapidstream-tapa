@@ -30,15 +30,31 @@ if(NOT llvm_POPULATED)
   add_llvm()
 endif()
 
+add_library(type)
+target_sources(type
+               PUBLIC
+               tlp/type.h
+               PRIVATE
+               tlp/type.cpp)
+target_include_directories(type
+                           PUBLIC ${CLANG_INCLUDE_DIRS} ${LLVM_INCLUDE_DIRS})
+target_link_libraries(type PUBLIC clangTooling)
+
 add_library(stream)
 target_sources(stream
                PUBLIC
                tlp/stream.h
                PRIVATE
                tlp/stream.cpp)
-target_include_directories(stream
-                           PUBLIC ${CLANG_INCLUDE_DIRS} ${LLVM_INCLUDE_DIRS})
-target_link_libraries(stream PUBLIC clangTooling)
+target_link_libraries(stream PUBLIC type)
+
+add_library(mmap)
+target_sources(mmap
+               PUBLIC
+               tlp/mmap.h
+               PRIVATE
+               tlp/mmap.cpp)
+target_link_libraries(mmap PUBLIC type)
 
 add_library(task)
 target_sources(task
@@ -46,7 +62,7 @@ target_sources(task
                tlp/task.h
                PRIVATE
                tlp/task.cpp)
-target_link_libraries(task PUBLIC stream)
+target_link_libraries(task PUBLIC stream mmap)
 
 add_executable(tlpc)
 target_sources(tlpc PRIVATE tlpc.cpp)

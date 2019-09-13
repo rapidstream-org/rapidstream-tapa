@@ -76,13 +76,13 @@ void GetStreamInfo(clang::Stmt* root, std::vector<StreamInfo>& streams,
                        visited = nullptr);
 
 inline bool IsInputStream(const clang::NamedDecl* decl) {
-  return decl->getQualifiedNameAsString() == "tlp::istream";
+  return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::istream";
 }
 inline bool IsOutputStream(const clang::NamedDecl* decl) {
-  return decl->getQualifiedNameAsString() == "tlp::ostream";
+  return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::ostream";
 }
 inline bool IsStreamInstance(const clang::NamedDecl* decl) {
-  return decl->getQualifiedNameAsString() == "tlp::stream";
+  return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::stream";
 }
 inline bool IsStreamInterface(const clang::NamedDecl* decl) {
   return IsInputStream(decl) || IsOutputStream(decl);

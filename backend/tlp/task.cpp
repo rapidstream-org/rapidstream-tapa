@@ -9,6 +9,9 @@
 
 #include "clang/AST/AST.h"
 
+#include "mmap.h"
+#include "stream.h"
+
 using std::binary_search;
 using std::make_shared;
 using std::pair;
@@ -276,27 +279,19 @@ bool TlpVisitor::InsertHlsPragma(const SourceLocation& loc,
 void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                        const FunctionDecl* func) {
   const auto func_body = func->getBody();
-  // for arrays and scalars only name and type are meanful
-  vector<StreamInfo> arrays;
-  vector<StreamInfo> scalars;
-  // for streams is_consumer and is_producer might be meanful as well
   // TODO: implement qdma streams
   vector<StreamInfo> streams;
   for (const auto param : func->parameters()) {
-    // Discover tlp::stream via regex matching.
-    const string param_type = param->getType().getAsString();
     const string param_name = param->getNameAsString();
-    const regex kPatternToRemove{R"(( \*|const ))"};
-    const string elem_type = regex_replace(param_type, kPatternToRemove, "");
-    if (*param_type.rbegin() == '*') {
-      arrays.emplace_back(param_name, elem_type);
+    if (IsMmap(param->getType())) {
+      rewriter_.ReplaceText(
+          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+          GetMmapElemType(param) + "*");
       InsertHlsPragma(func_body->getBeginLoc(), "interface",
                       {{"m_axi", ""},
                        {"port", param_name},
                        {"offset", "slave"},
                        {"bundle", "gmem_" + param_name}});
-    } else {
-      scalars.emplace_back(param_name, elem_type);
     }
   }
   for (const auto param : func->parameters()) {
@@ -393,6 +388,11 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
             param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
             "hls::stream<tlp::data_t<" + elem_type + ">>&");
       }
+    } else if (IsMmap(param->getType())) {
+      auto elem_type = GetMmapElemType(param);
+      rewriter_.ReplaceText(
+          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+          elem_type + "*");
     }
   }
 
