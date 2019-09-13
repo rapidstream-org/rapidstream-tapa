@@ -17,8 +17,8 @@
 
 namespace tlp {
 
-thread_local uint64_t last_signal_timestamp = 0;
-const uint64_t kSignalThreshold = 500000000;
+static thread_local uint64_t last_signal_timestamp = 0;
+static const uint64_t kSignalThreshold = 500000000;
 inline uint64_t get_time_ns() {
   timespec tp;
   clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -277,8 +277,8 @@ class stream : public istream<T>, public ostream<T> {
   }
 };
 
-std::function<void(int)> signal_handler_func;
-void signal_handler_wrapper(int signal) { signal_handler_func(signal); }
+static std::function<void(int)> signal_handler_func;
+inline void signal_handler_wrapper(int signal) { signal_handler_func(signal); }
 
 struct task {
   int current_step{0};
