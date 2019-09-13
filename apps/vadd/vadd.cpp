@@ -2,21 +2,22 @@
 
 #include <tlp.h>
 
-void Add(tlp::stream<float>& a, tlp::stream<float>& b, tlp::stream<float>& c) {
+void Add(tlp::istream<float>& a, tlp::istream<float>& b,
+         tlp::ostream<float>& c) {
   while (!a.eos() && !b.eos()) {
     c.write(a.read() + b.read());
   }
   c.close();
 }
 
-void Array2Stream(const float* array, uint64_t n, tlp::stream<float>& stream) {
+void Array2Stream(const float* array, uint64_t n, tlp::ostream<float>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
     stream.write(array[i]);
   }
   stream.close();
 }
 
-void Stream2Array(tlp::stream<float>& stream, float* array) {
+void Stream2Array(tlp::istream<float>& stream, float* array) {
   for (uint64_t i = 0; !stream.eos(); ++i) {
     array[i] = stream.read();
   }

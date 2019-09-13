@@ -111,8 +111,8 @@ const int kMaxNumPartitions = 1024;
 const int kMaxPartitionSize = 1024 * 1024;
 
 void Control(Pid num_partitions, const Vid* num_vertices, const Eid* num_edges,
-             tlp::stream<UpdateConfig>& update_config_q,
-             tlp::stream<TaskReq>& req_q, tlp::stream<TaskResp>& resp_q) {
+             tlp::ostream<UpdateConfig>& update_config_q,
+             tlp::ostream<TaskReq>& req_q, tlp::istream<TaskResp>& resp_q) {
   // Keeps track of all partitions.
 
   // Vid of the 0-th vertex in each partition.
@@ -208,10 +208,10 @@ void Control(Pid num_partitions, const Vid* num_vertices, const Eid* num_edges,
 }
 
 void UpdateHandler(Pid num_partitions,
-                   tlp::stream<UpdateConfig>& update_config_q,
-                   tlp::stream<UpdateReq>& update_req_q,
-                   tlp::stream<Update>& update_in_q,
-                   tlp::stream<Update>& update_out_q, Update* updates) {
+                   tlp::istream<UpdateConfig>& update_config_q,
+                   tlp::istream<UpdateReq>& update_req_q,
+                   tlp::istream<Update>& update_in_q,
+                   tlp::ostream<Update>& update_out_q, Update* updates) {
   // Base vid of all vertices; used to determine dst partition id.
   Vid base_vid = 0;
   // Used to determine dst partition id.
@@ -277,10 +277,10 @@ void UpdateHandler(Pid num_partitions,
   VLOG(3) << "info@UpdateHandler: done";
 }
 
-void ProcElem(tlp::stream<TaskReq>& req_q, tlp::stream<TaskResp>& resp_q,
-              tlp::stream<UpdateReq>& update_req_q,
-              tlp::stream<Update>& update_in_q,
-              tlp::stream<Update>& update_out_q, VertexAttr* vertices,
+void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
+              tlp::ostream<UpdateReq>& update_req_q,
+              tlp::istream<Update>& update_in_q,
+              tlp::ostream<Update>& update_out_q, VertexAttr* vertices,
               const Edge* edges) {
   VertexAttr vertices_local[kMaxPartitionSize];
   while (!req_q.eos()) {

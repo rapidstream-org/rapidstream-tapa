@@ -10,9 +10,9 @@ const int p = 2;
 const int kN = 64;  // Use fixed value for efficient hardware generation.
 
 // Scatter n*n matrix into p*p blocks, each block.
-void Scatter(const float* matrix_ptr, uint64_t n, tlp::stream<float>& block_00,
-             tlp::stream<float>& block_01, tlp::stream<float>& block_10,
-             tlp::stream<float>& block_11) {
+void Scatter(const float* matrix_ptr, uint64_t n, tlp::ostream<float>& block_00,
+             tlp::ostream<float>& block_01, tlp::ostream<float>& block_10,
+             tlp::ostream<float>& block_11) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   for (uint64_t i = 0; i < kNumElems; ++i) {
     block_00.write(*matrix_ptr);
@@ -32,9 +32,9 @@ void Scatter(const float* matrix_ptr, uint64_t n, tlp::stream<float>& block_00,
   }
 }
 
-void Gather(float* matrix_ptr, uint64_t n, tlp::stream<float>& block_00,
-            tlp::stream<float>& block_01, tlp::stream<float>& block_10,
-            tlp::stream<float>& block_11) {
+void Gather(float* matrix_ptr, uint64_t n, tlp::istream<float>& block_00,
+            tlp::istream<float>& block_01, tlp::istream<float>& block_10,
+            tlp::istream<float>& block_11) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   for (uint64_t i = 0; i < kNumElems; ++i) {
 #pragma HLS loop_tripcount min = kNumElems max = kNumElems
@@ -60,10 +60,10 @@ void Gather(float* matrix_ptr, uint64_t n, tlp::stream<float>& block_00,
 
 // Each PE processes n/p * n/p block of matrix.
 template <int i, int j>
-void ProcElem(tlp::stream<float>& a_fifo, tlp::stream<float>& b_fifo,
-              tlp::stream<float>& c_fifo, uint64_t n,
-              tlp::stream<float>& i_prev, tlp::stream<float>& i_next,
-              tlp::stream<float>& j_prev, tlp::stream<float>& j_next) {
+void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
+              tlp::ostream<float>& c_fifo, uint64_t n,
+              tlp::ostream<float>& i_prev, tlp::istream<float>& i_next,
+              tlp::ostream<float>& j_prev, tlp::istream<float>& j_next) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   static float a[kN / p * kN / p];
   static float b[kN / p * kN / p];
@@ -86,7 +86,7 @@ void ProcElem(tlp::stream<float>& a_fifo, tlp::stream<float>& b_fifo,
         }
       }
     }
-    const uint64_t kShift = 8;
+    const uint64_t kShift = 7;
     const uint64_t kNumElemsShifted = kNumElems - kShift;
     for (uint64_t ii = 0; ii < kShift; ++ii) {
       i_prev.write(b[ii]);

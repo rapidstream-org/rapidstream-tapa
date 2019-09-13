@@ -8,7 +8,7 @@ struct coalesce_t {
 };
 
 void Array2Stream(const float* array, uint64_t n,
-                  tlp::stream<coalesce_t<float, 2>>& stream) {
+                  tlp::ostream<coalesce_t<float, 2>>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
 #pragma HLS pipeline II = 2
     stream.write({array[i * 2], array[i * 2 + 1]});
@@ -16,7 +16,7 @@ void Array2Stream(const float* array, uint64_t n,
   stream.close();
 }
 
-void Stream2Array(tlp::stream<coalesce_t<float, 2>>& stream, float* array) {
+void Stream2Array(tlp::istream<coalesce_t<float, 2>>& stream, float* array) {
   for (uint64_t i = 0; !stream.eos(); ++i) {
 #pragma HLS pipeline II = 2
     auto packed = stream.read();
@@ -25,10 +25,8 @@ void Stream2Array(tlp::stream<coalesce_t<float, 2>>& stream, float* array) {
   }
 }
 
-void Module0Func(
-    /*output*/ tlp::stream<float>& fifo_st_0,
-    /*output*/ tlp::stream<float>& fifo_st_1,
-    /* input*/ tlp::stream<coalesce_t<float, 2>>& dram_t1_bank_0_fifo) {
+void Module0Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
+                 tlp::istream<coalesce_t<float, 2>>& dram_t1_bank_0_fifo) {
 module_0_epoch:
   while (!dram_t1_bank_0_fifo.eos()) {
     auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read();
@@ -39,10 +37,8 @@ module_0_epoch:
   fifo_st_1.close();
 }
 
-void Module1Func(
-    /*output*/ tlp::stream<float>& fifo_st_0,
-    /*output*/ tlp::stream<float>& fifo_st_1,
-    /* input*/ tlp::stream<float>& fifo_ld_0) {
+void Module1Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
+                 tlp::istream<float>& fifo_ld_0) {
 module_1_epoch:
   while (!fifo_ld_0.eos()) {
     auto fifo_ref_0 = fifo_ld_0.read();
@@ -53,10 +49,8 @@ module_1_epoch:
   fifo_st_1.close();
 }
 
-void Module2Func(
-    /*output*/ tlp::stream<float>& fifo_st_0,
-    /*output*/ tlp::stream<float>& fifo_st_1,
-    /* input*/ tlp::stream<float>& fifo_ld_0) {
+void Module2Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
+                 tlp::istream<float>& fifo_ld_0) {
   float fifo_ref_0_delayed_50_buf[50];
   int fifo_ref_0_delayed_50_ptr = 0;
 module_2_epoch:
@@ -75,10 +69,8 @@ module_2_epoch:
   fifo_st_1.close();
 }
 
-void Module3Func(
-    /*output*/ tlp::stream<float>& fifo_st_0,
-    /* input*/ tlp::stream<float>& fifo_ld_0,
-    /* input*/ tlp::stream<float>& fifo_ld_1) {
+void Module3Func(tlp::ostream<float>& fifo_st_0, tlp::istream<float>& fifo_ld_0,
+                 tlp::istream<float>& fifo_ld_1) {
 module_3_epoch:
   while (!fifo_ld_0.eos() && !fifo_ld_1.eos()) {
     float fifo_ref_0 = fifo_ld_0.read();
@@ -88,9 +80,8 @@ module_3_epoch:
   fifo_st_0.close();
 }
 
-void Module4Func(
-    /*output*/ tlp::stream<float>& fifo_st_0,
-    /* input*/ tlp::stream<float>& fifo_ld_0) {
+void Module4Func(tlp::ostream<float>& fifo_st_0,
+                 tlp::istream<float>& fifo_ld_0) {
   float fifo_ref_0_delayed_1_buf[1];
   int fifo_ref_0_delayed_1_ptr = 0;
 module_4_epoch:
@@ -107,9 +98,8 @@ module_4_epoch:
   fifo_st_0.close();
 }
 
-void Module5Func(
-    /*output*/ tlp::stream<float>& fifo_st_0,
-    /* input*/ tlp::stream<float>& fifo_ld_0) {
+void Module5Func(tlp::ostream<float>& fifo_st_0,
+                 tlp::istream<float>& fifo_ld_0) {
   float fifo_ref_0_delayed_50_buf[50];
   int fifo_ref_0_delayed_50_ptr = 0;
 module_5_epoch:
@@ -126,11 +116,9 @@ module_5_epoch:
   fifo_st_0.close();
 }
 
-void Module6Func(
-    /*output*/ tlp::stream<float>& fifo_st_0,
-    /* input*/ tlp::stream<float>& fifo_ld_0,
-    /* input*/ tlp::stream<float>& fifo_ld_1,
-    /* input*/ tlp::stream<float>& fifo_ld_2) {
+void Module6Func(tlp::ostream<float>& fifo_st_0, tlp::istream<float>& fifo_ld_0,
+                 tlp::istream<float>& fifo_ld_1,
+                 tlp::istream<float>& fifo_ld_2) {
 module_6_epoch:
   while (!fifo_ld_0.eos() && !fifo_ld_1.eos() && !fifo_ld_2.eos()) {
     auto fifo_ref_0 = fifo_ld_0.read();
@@ -141,9 +129,8 @@ module_6_epoch:
   fifo_st_0.close();
 }
 
-void Module7Func(
-    /*output*/ tlp::stream<float>& fifo_st_0,
-    /* input*/ tlp::stream<float>& fifo_ld_0) {
+void Module7Func(tlp::ostream<float>& fifo_st_0,
+                 tlp::istream<float>& fifo_ld_0) {
   float fifo_ref_0_delayed_49_buf[49];
   int fifo_ref_0_delayed_49_ptr = 0;
 module_7_epoch:
@@ -161,10 +148,9 @@ module_7_epoch:
   fifo_st_0.close();
 }
 
-void Module8Func(
-    /*output*/ tlp::stream<coalesce_t<float, 2>>& dram_t0_bank_0_fifo,
-    /* input*/ tlp::stream<float>& fifo_ld_0,
-    /* input*/ tlp::stream<float>& fifo_ld_1) {
+void Module8Func(tlp::ostream<coalesce_t<float, 2>>& dram_t0_bank_0_fifo,
+                 tlp::istream<float>& fifo_ld_0,
+                 tlp::istream<float>& fifo_ld_1) {
 module_8_epoch:
   while (!fifo_ld_0.eos() && !fifo_ld_1.eos()) {
     dram_t0_bank_0_fifo.write({fifo_ld_0.read(), fifo_ld_1.read()});
