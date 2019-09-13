@@ -277,6 +277,33 @@ class stream : public istream<T>, public ostream<T> {
   }
 };
 
+template <typename T>
+class mmap {
+ public:
+  mmap(T* ptr) : ptr_{ptr} {}
+  operator T*() { return ptr_; }
+
+  // Dereference.
+  T& operator[](std::size_t idx) { return ptr_[idx]; }
+  const T& operator[](std::size_t idx) const { return ptr_[idx]; }
+  T& operator*() { return *ptr_; }
+  const T& operator*() const { return *ptr_; }
+
+  // Increment / decrement.
+  T& operator++() { return *++ptr_; }
+  T& operator--() { return *--ptr_; }
+  T operator++(int) { return *ptr_++; }
+  T operator--(int) { return *ptr_--; }
+
+  // Arithmetic.
+  mmap<T> operator+(std::ptrdiff_t diff) { return ptr_ + diff; }
+  mmap<T> operator-(std::ptrdiff_t diff) { return ptr_ - diff; }
+  mmap<T> operator-(mmap<T> ptr) { return ptr_ - ptr; }
+
+ private:
+  T* ptr_;
+};
+
 static std::function<void(int)> signal_handler_func;
 inline void signal_handler_wrapper(int signal) { signal_handler_func(signal); }
 
