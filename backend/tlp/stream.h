@@ -75,4 +75,20 @@ void GetStreamInfo(clang::Stmt* root, std::vector<StreamInfo>& streams,
                    std::shared_ptr<std::unordered_map<const clang::Stmt*, bool>>
                        visited = nullptr);
 
+inline bool IsInputStream(const clang::NamedDecl* decl) {
+  return decl->getQualifiedNameAsString() == "tlp::istream";
+}
+inline bool IsOutputStream(const clang::NamedDecl* decl) {
+  return decl->getQualifiedNameAsString() == "tlp::ostream";
+}
+inline bool IsStreamInstance(const clang::NamedDecl* decl) {
+  return decl->getQualifiedNameAsString() == "tlp::stream";
+}
+inline bool IsStreamInterface(const clang::NamedDecl* decl) {
+  return IsInputStream(decl) || IsOutputStream(decl);
+}
+inline bool IsStream(const clang::NamedDecl* decl) {
+  return IsStreamInterface(decl) || IsStreamInstance(decl);
+}
+
 #endif  // TLP_STREAM_H_

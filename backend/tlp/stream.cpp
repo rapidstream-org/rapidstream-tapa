@@ -24,7 +24,7 @@ using llvm::dyn_cast;
 // StreamOpEnum (could be kNotStreamOperation).
 StreamOpEnum GetStreamOp(const CXXMemberCallExpr* call_expr) {
   // Check that the caller has type tlp::stream.
-  if (call_expr->getRecordDecl()->getQualifiedNameAsString() != "tlp::stream") {
+  if (!IsStreamInterface(call_expr->getRecordDecl())) {
     return StreamOpEnum::kNotStreamOperation;
   }
   // Check caller name and number of arguments.

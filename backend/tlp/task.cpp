@@ -130,7 +130,8 @@ vector<const CXXMemberCallExpr*> GetTlpInvokes(const Stmt* stmt) {
   return invokes;
 }
 
-// Given a Stmt, find all tlp::stream operations via DFS and update stream_ops.
+// Given a Stmt, find all tlp::istream and tlp::ostream operations via DFS and
+// update stream_ops.
 void GetTlpStreamOps(const Stmt* stmt,
                      vector<const CXXMemberCallExpr*>& stream_ops) {
   if (stmt == nullptr) {
@@ -140,13 +141,13 @@ void GetTlpStreamOps(const Stmt* stmt,
     GetTlpStreamOps(child, stream_ops);
   }
   if (const auto stream = dyn_cast<CXXMemberCallExpr>(stmt)) {
-    if (stream->getRecordDecl()->getQualifiedNameAsString() == "tlp::stream") {
+    if (IsStreamInterface(stream->getRecordDecl())) {
       stream_ops.push_back(stream);
     }
   }
 }
 
-// Given a Stmt, return all tlp::stream opreations via DFS.
+// Given a Stmt, return all tlp::istream and tlp::ostream opreations via DFS.
 vector<const CXXMemberCallExpr*> GetTlpStreamOps(const Stmt* stmt) {
   vector<const CXXMemberCallExpr*> stream_ops;
   GetTlpStreamOps(stmt, stream_ops);
@@ -157,7 +158,7 @@ const ClassTemplateSpecializationDecl* GetTlpStreamDecl(const Type* type) {
   if (type != nullptr) {
     if (const auto record = type->getAsRecordDecl()) {
       if (const auto decl = dyn_cast<ClassTemplateSpecializationDecl>(record)) {
-        if (decl->getQualifiedNameAsString() == "tlp::stream") {
+        if (IsStream(decl)) {
           return decl;
         }
       }
