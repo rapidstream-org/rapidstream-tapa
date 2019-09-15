@@ -15,39 +15,31 @@
 using std::binary_search;
 using std::make_shared;
 using std::pair;
-using std::regex;
-using std::regex_match;
-using std::regex_replace;
 using std::shared_ptr;
-using std::smatch;
 using std::sort;
 using std::string;
 using std::to_string;
 using std::unordered_map;
 using std::vector;
 
-using clang::ClassTemplateSpecializationDecl;
 using clang::CXXMemberCallExpr;
 using clang::DeclGroupRef;
 using clang::DeclRefExpr;
 using clang::DeclStmt;
-using clang::DoStmt;
 using clang::ElaboratedType;
 using clang::Expr;
 using clang::ExprWithCleanups;
-using clang::ForStmt;
 using clang::FunctionDecl;
 using clang::LValueReferenceType;
 using clang::MemberExpr;
-using clang::QualType;
+using clang::ForStmt;
+using clang::WhileStmt;
+using clang::DoStmt;
 using clang::RecordType;
-using clang::RecursiveASTVisitor;
 using clang::SourceLocation;
 using clang::Stmt;
 using clang::TemplateSpecializationType;
-using clang::Type;
 using clang::VarDecl;
-using clang::WhileStmt;
 
 using llvm::dyn_cast;
 
@@ -132,95 +124,6 @@ vector<const CXXMemberCallExpr*> GetTlpInvokes(const Stmt* stmt) {
   GetTlpInvokes(stmt, invokes);
   return invokes;
 }
-
-// Given a Stmt, find all tlp::istream and tlp::ostream operations via DFS and
-// update stream_ops.
-void GetTlpStreamOps(const Stmt* stmt,
-                     vector<const CXXMemberCallExpr*>& stream_ops) {
-  if (stmt == nullptr) {
-    return;
-  }
-  for (auto child : stmt->children()) {
-    GetTlpStreamOps(child, stream_ops);
-  }
-  if (const auto stream = dyn_cast<CXXMemberCallExpr>(stmt)) {
-    if (IsStreamInterface(stream->getRecordDecl())) {
-      stream_ops.push_back(stream);
-    }
-  }
-}
-
-// Given a Stmt, return all tlp::istream and tlp::ostream opreations via DFS.
-vector<const CXXMemberCallExpr*> GetTlpStreamOps(const Stmt* stmt) {
-  vector<const CXXMemberCallExpr*> stream_ops;
-  GetTlpStreamOps(stmt, stream_ops);
-  return stream_ops;
-}
-
-const ClassTemplateSpecializationDecl* GetTlpStreamDecl(const Type* type) {
-  if (type != nullptr) {
-    if (const auto record = type->getAsRecordDecl()) {
-      if (const auto decl = dyn_cast<ClassTemplateSpecializationDecl>(record)) {
-        if (IsStream(decl)) {
-          return decl;
-        }
-      }
-    }
-  }
-  return nullptr;
-}
-
-const ClassTemplateSpecializationDecl* GetTlpStreamDecl(
-    const QualType& qual_type) {
-  return GetTlpStreamDecl(
-      qual_type.getUnqualifiedType().getCanonicalType().getTypePtr());
-}
-
-// Test if a loop contains FIFO operations but not sub-loops.
-class RecursiveInnermostLoopsVisitor
-    : public RecursiveASTVisitor<RecursiveInnermostLoopsVisitor> {
- public:
-  // If has a sub-loop, stop recursion.
-  bool VisitDoStmt(DoStmt* stmt) {
-    return stmt == self_ ? true : !(has_loop_ = true);
-  }
-  bool VisitForStmt(ForStmt* stmt) {
-    return stmt == self_ ? true : !(has_loop_ = true);
-  }
-  bool VisitWhileStmt(WhileStmt* stmt) {
-    return stmt == self_ ? true : !(has_loop_ = true);
-  }
-
-  bool VisitCXXMemberCallExpr(CXXMemberCallExpr* expr) {
-    if (GetTlpStreamDecl(expr->getImplicitObjectArgument()->getType())) {
-      has_fifo_ = true;
-    }
-    return true;
-  }
-
-  bool IsInnermostLoop(const Stmt* stmt) {
-    switch (stmt->getStmtClass()) {
-      case Stmt::DoStmtClass:
-      case Stmt::ForStmtClass:
-      case Stmt::WhileStmtClass: {
-        self_ = stmt;
-        has_loop_ = false;
-        has_fifo_ = false;
-        TraverseStmt(const_cast<Stmt*>(stmt));
-        if (!has_loop_ && has_fifo_) {
-          return true;
-        }
-      }
-      default: {}
-    }
-    return false;
-  }
-
- private:
-  const Stmt* self_{nullptr};
-  bool has_loop_{false};
-  bool has_fifo_{false};
-};
 
 // Return all loops that do not contain other loops but do contain FIFO
 // operations.

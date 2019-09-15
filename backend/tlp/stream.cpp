@@ -13,10 +13,13 @@ using std::string;
 using std::unordered_map;
 using std::vector;
 
+using clang::ClassTemplateSpecializationDecl;
 using clang::CXXMemberCallExpr;
 using clang::DeclRefExpr;
 using clang::Expr;
+using clang::QualType;
 using clang::Stmt;
+using clang::Type;
 
 using llvm::dyn_cast;
 
@@ -184,4 +187,47 @@ void GetStreamInfo(Stmt* root, vector<StreamInfo>& streams,
       }
     }
   }
+}
+
+// Given a Stmt, find all tlp::istream and tlp::ostream operations via DFS and
+// update stream_ops.
+void GetTlpStreamOps(const Stmt* stmt,
+                     vector<const CXXMemberCallExpr*>& stream_ops) {
+  if (stmt == nullptr) {
+    return;
+  }
+  for (auto child : stmt->children()) {
+    GetTlpStreamOps(child, stream_ops);
+  }
+  if (const auto stream = dyn_cast<CXXMemberCallExpr>(stmt)) {
+    if (IsStreamInterface(stream->getRecordDecl())) {
+      stream_ops.push_back(stream);
+    }
+  }
+}
+
+// Given a Stmt, return all tlp::istream and tlp::ostream opreations via DFS.
+vector<const CXXMemberCallExpr*> GetTlpStreamOps(const Stmt* stmt) {
+  vector<const CXXMemberCallExpr*> stream_ops;
+  GetTlpStreamOps(stmt, stream_ops);
+  return stream_ops;
+}
+
+const ClassTemplateSpecializationDecl* GetTlpStreamDecl(const Type* type) {
+  if (type != nullptr) {
+    if (const auto record = type->getAsRecordDecl()) {
+      if (const auto decl = dyn_cast<ClassTemplateSpecializationDecl>(record)) {
+        if (IsStream(decl)) {
+          return decl;
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+const ClassTemplateSpecializationDecl* GetTlpStreamDecl(
+    const QualType& qual_type) {
+  return GetTlpStreamDecl(
+      qual_type.getUnqualifiedType().getCanonicalType().getTypePtr());
 }

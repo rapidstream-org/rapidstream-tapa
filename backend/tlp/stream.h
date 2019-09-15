@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "clang/AST/AST.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 
 // Enum of different operations performed on a stream.
 enum StreamOpEnum : uint64_t {
@@ -74,6 +75,59 @@ StreamOpEnum GetStreamOp(const clang::CXXMemberCallExpr* call_expr);
 void GetStreamInfo(clang::Stmt* root, std::vector<StreamInfo>& streams,
                    std::shared_ptr<std::unordered_map<const clang::Stmt*, bool>>
                        visited = nullptr);
+
+const clang::ClassTemplateSpecializationDecl* GetTlpStreamDecl(
+    const clang::Type* type);
+const clang::ClassTemplateSpecializationDecl* GetTlpStreamDecl(
+    const clang::QualType& qual_type);
+std::vector<const clang::CXXMemberCallExpr*> GetTlpStreamOps(
+    const clang::Stmt* stmt);
+
+// Test if a loop contains FIFO operations but not sub-loops.
+class RecursiveInnermostLoopsVisitor
+    : public clang::RecursiveASTVisitor<RecursiveInnermostLoopsVisitor> {
+ public:
+  // If has a sub-loop, stop recursion.
+  bool VisitDoStmt(clang::DoStmt* stmt) {
+    return stmt == self_ ? true : !(has_loop_ = true);
+  }
+  bool VisitForStmt(clang::ForStmt* stmt) {
+    return stmt == self_ ? true : !(has_loop_ = true);
+  }
+  bool VisitWhileStmt(clang::WhileStmt* stmt) {
+    return stmt == self_ ? true : !(has_loop_ = true);
+  }
+
+  bool VisitCXXMemberCallExpr(clang::CXXMemberCallExpr* expr) {
+    if (GetTlpStreamDecl(expr->getImplicitObjectArgument()->getType())) {
+      has_fifo_ = true;
+    }
+    return true;
+  }
+
+  bool IsInnermostLoop(const clang::Stmt* stmt) {
+    switch (stmt->getStmtClass()) {
+      case clang::Stmt::DoStmtClass:
+      case clang::Stmt::ForStmtClass:
+      case clang::Stmt::WhileStmtClass: {
+        self_ = stmt;
+        has_loop_ = false;
+        has_fifo_ = false;
+        TraverseStmt(const_cast<clang::Stmt*>(stmt));
+        if (!has_loop_ && has_fifo_) {
+          return true;
+        }
+      }
+      default: {}
+    }
+    return false;
+  }
+
+ private:
+  const clang::Stmt* self_{nullptr};
+  bool has_loop_{false};
+  bool has_fifo_{false};
+};
 
 inline bool IsInputStream(const clang::NamedDecl* decl) {
   return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::istream";
