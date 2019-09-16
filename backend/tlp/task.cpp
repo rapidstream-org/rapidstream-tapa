@@ -26,20 +26,20 @@ using clang::CXXMemberCallExpr;
 using clang::DeclGroupRef;
 using clang::DeclRefExpr;
 using clang::DeclStmt;
+using clang::DoStmt;
 using clang::ElaboratedType;
 using clang::Expr;
 using clang::ExprWithCleanups;
+using clang::ForStmt;
 using clang::FunctionDecl;
 using clang::LValueReferenceType;
 using clang::MemberExpr;
-using clang::ForStmt;
-using clang::WhileStmt;
-using clang::DoStmt;
 using clang::RecordType;
 using clang::SourceLocation;
 using clang::Stmt;
 using clang::TemplateSpecializationType;
 using clang::VarDecl;
+using clang::WhileStmt;
 
 using llvm::dyn_cast;
 
@@ -343,6 +343,20 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       }
       return false;
     };
+
+    auto mmap_ops = GetTlpMmapOps(loop_stmt);
+    if (!mmap_ops.empty()) {
+      bool need_peeking = false;
+      for (const auto& stream : streams) {
+        if (stream.is_consumer && stream.need_peeking) {
+          need_peeking = true;
+          break;
+        }
+      }
+      if (!need_peeking) {
+        continue;
+      }
+    }
 
     // Move increment statement to the end of loop body for ForStmt.
     if (const auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {

@@ -28,4 +28,7 @@ inline std::string GetMmapElemType(const clang::ParmVarDecl* param) {
   return "";
 }
 
+std::vector<const clang::CXXOperatorCallExpr*> GetTlpMmapOps(
+    const clang::Stmt* stmt);
+
 #endif  // TLP_MMAP_H_
