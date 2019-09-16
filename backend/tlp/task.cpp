@@ -344,18 +344,18 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       return false;
     };
 
+    // Is peeking buffer needed for this loop.
+    bool need_peeking = false;
+    for (const auto& stream : streams) {
+      if (is_accessed(stream) && stream.is_consumer && stream.need_peeking) {
+        need_peeking = true;
+        break;
+      }
+    }
+
     auto mmap_ops = GetTlpMmapOps(loop_stmt);
-    if (!mmap_ops.empty()) {
-      bool need_peeking = false;
-      for (const auto& stream : streams) {
-        if (stream.is_consumer && stream.need_peeking) {
-          need_peeking = true;
-          break;
-        }
-      }
-      if (!need_peeking) {
-        continue;
-      }
+    if (!mmap_ops.empty() && !need_peeking) {
+      continue;
     }
 
     // Move increment statement to the end of loop body for ForStmt.
