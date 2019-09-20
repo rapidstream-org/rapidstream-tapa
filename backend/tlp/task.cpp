@@ -33,8 +33,10 @@ using clang::Expr;
 using clang::ExprWithCleanups;
 using clang::ForStmt;
 using clang::FunctionDecl;
+using clang::FunctionProtoType;
 using clang::LValueReferenceType;
 using clang::MemberExpr;
+using clang::PrintingPolicy;
 using clang::RecordType;
 using clang::SourceLocation;
 using clang::Stmt;
@@ -43,6 +45,54 @@ using clang::VarDecl;
 using clang::WhileStmt;
 
 using llvm::dyn_cast;
+
+// Get a string representation of the function signature a stream operation.
+std::string GetSignature(const CXXMemberCallExpr* call_expr) {
+  auto target = call_expr->getDirectCallee();
+  assert(target != nullptr);
+
+  if (const auto instantiated = target->getTemplateInstantiationPattern()) {
+    target = instantiated;
+  }
+
+  string signature{target->getQualifiedNameAsString()};
+
+  signature += "(";
+
+  for (auto param : target->parameters()) {
+    PrintingPolicy policy{{}};
+    policy.Bool = true;
+    signature.append(param->getType().getAsString(policy));
+    signature += ", ";
+  }
+
+  if (target->isVariadic()) {
+    signature += ("...");
+  } else if (target->getNumParams() > 0) {
+    signature.resize(signature.size() - 2);
+  }
+  signature += ")";
+
+  if (auto target_type =
+          dyn_cast<FunctionProtoType>(target->getType().getTypePtr())) {
+    if (target_type->isConst()) signature.append(" const");
+    if (target_type->isVolatile()) signature.append(" volatile");
+    if (target_type->isRestrict()) signature.append(" restrict");
+
+    switch (target_type->getRefQualifier()) {
+      case clang::RQ_LValue:
+        signature.append(" &");
+        break;
+      case clang::RQ_RValue:
+        signature.append(" &&");
+        break;
+      default:
+        break;
+    }
+  }
+
+  return signature;
+}
 
 const char kUtilFuncs[] = R"(namespace tlp{
 
@@ -496,15 +546,13 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
     }
     default: {
       auto callee = dyn_cast<MemberExpr>(call_expr->getCallee());
-      auto diagnostics_builder =
-          ReportError(callee->getMemberLoc(),
-                      "tlp::stream::%0 has not yet been implemented");
+      auto diagnostics_builder = ReportError(
+          callee->getMemberLoc(), "'%0' has not yet been implemented");
       diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
           callee->getMemberLoc(),
           callee->getMemberLoc().getLocWithOffset(
               callee->getMemberNameInfo().getAsString().size())));
-      diagnostics_builder.AddString(
-          call_expr->getMethodDecl()->getNameAsString());
+      diagnostics_builder.AddString(GetSignature(call_expr));
       rewritten_text = "NOT_IMPLEMENTED";
     }
   }
