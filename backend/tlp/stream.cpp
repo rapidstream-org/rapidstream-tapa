@@ -48,7 +48,7 @@ StreamOpEnum GetStreamOp(const CXXMemberCallExpr* call_expr) {
     } else if (num_args == 1) {
       return StreamOpEnum::kNonBlockingPeek;
     }
-  } else if (callee == "try_read" && num_args == 0) {
+  } else if (callee == "try_read" && num_args == 1) {
     return StreamOpEnum::kTryRead;
   } else if (callee == "read") {
     if (num_args == 0) {
