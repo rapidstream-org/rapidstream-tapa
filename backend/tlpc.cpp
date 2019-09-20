@@ -89,7 +89,9 @@ int main(int argc, const char** argv) {
   ClangTool tool{parser.getCompilations(), parser.getSourcePathList()};
   Rewriter rewriter;
   int ret = tool.run(newFrontendActionFactory<TlpAction>().get());
-  llvm::outs() << *output;
+  if (ret == 0) {
+    llvm::outs() << *output;
+  }
   delete output;
   return ret;
 }

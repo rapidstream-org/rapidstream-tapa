@@ -22,6 +22,7 @@ using std::to_string;
 using std::unordered_map;
 using std::vector;
 
+using clang::CharSourceRange;
 using clang::CXXMemberCallExpr;
 using clang::DeclGroupRef;
 using clang::DeclRefExpr;
@@ -235,13 +236,17 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     int step = -1;
     if (const auto method = dyn_cast<MemberExpr>(invoke->getCallee())) {
       if (method->getNumTemplateArgs() != 1) {
-        llvm::errs() << "unexpected number of template args\n";
+        ReportError(method->getMemberLoc(),
+                    "exactly 1 template argument expected")
+            .AddSourceRange(CharSourceRange::getCharRange(
+                method->getMemberLoc(),
+                method->getEndLoc().getLocWithOffset(1)));
       }
       step = stoi(rewriter_.getRewrittenText(
           method->getTemplateArgs()[0].getSourceRange()));
     } else {
-      llvm::errs() << "unexpected callee: " << invoke->getStmtClassName()
-                   << "\n";
+      ReportError(invoke->getBeginLoc(), "unexpected invocation: %0")
+          .AddString(invoke->getStmtClassName());
     }
     invokes_str += "// step " + to_string(step) + "\n";
     for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
@@ -258,8 +263,8 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           invokes_str += arg_name;
         }
       } else {
-        llvm::errs() << "unexpected Expr: " << decl_ref->getStmtClassName()
-                     << "\n";
+        ReportError(arg->getBeginLoc(), "unexpected argument: %0")
+            .AddString(arg->getStmtClassName());
       }
     }
     invokes_str += ");\n";
@@ -301,7 +306,7 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
 
   // Retrieve stream information.
   const auto func_body = func->getBody();
-  GetStreamInfo(func_body, streams);
+  GetStreamInfo(func_body, streams, context_.getDiagnostics());
 
   // Before the original function body, insert data_pack pragmas.
   for (const auto& stream : streams) {
@@ -375,12 +380,10 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     } else if (auto while_stmt = dyn_cast<WhileStmt>(loop_stmt)) {
       loop_body = *while_stmt->getBody()->child_begin();
     } else if (loop_stmt != nullptr) {
-      llvm::errs() << "unexpected loop stmt: ";
-      loop_stmt->dumpColor();
-      exit(EXIT_FAILURE);
+      ReportError(loop_stmt->getBeginLoc(), "unexpected loop: %0")
+          .AddString(loop_stmt->getStmtClassName());
     } else {
-      llvm::errs() << "null loop stmt: ";
-      exit(EXIT_FAILURE);
+      ReportError(func_body->getBeginLoc(), "null loop stmt");
     }
 
     string loop_preamble;
@@ -491,7 +494,19 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
       rewritten_text = "tlp::close_fifo(" + stream.name + ")";
       break;
     }
-    default: { rewritten_text = "NOT_IMPLEMENTED"; }
+    default: {
+      auto callee = dyn_cast<MemberExpr>(call_expr->getCallee());
+      auto diagnostics_builder =
+          ReportError(callee->getMemberLoc(),
+                      "tlp::stream::%0 has not yet been implemented");
+      diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
+          callee->getMemberLoc(),
+          callee->getMemberLoc().getLocWithOffset(
+              callee->getMemberNameInfo().getAsString().size())));
+      diagnostics_builder.AddString(
+          call_expr->getMethodDecl()->getNameAsString());
+      rewritten_text = "NOT_IMPLEMENTED";
+    }
   }
 
   rewriter_.ReplaceText(call_expr->getSourceRange(), rewritten_text);

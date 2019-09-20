@@ -73,8 +73,7 @@ struct StreamInfo {
 StreamOpEnum GetStreamOp(const clang::CXXMemberCallExpr* call_expr);
 
 void GetStreamInfo(clang::Stmt* root, std::vector<StreamInfo>& streams,
-                   std::shared_ptr<std::unordered_map<const clang::Stmt*, bool>>
-                       visited = nullptr);
+                   clang::DiagnosticsEngine& diagnostics_engine);
 
 const clang::ClassTemplateSpecializationDecl* GetTlpStreamDecl(
     const clang::Type* type);

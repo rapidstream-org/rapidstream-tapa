@@ -45,6 +45,16 @@ class TlpVisitor : public clang::RecursiveASTVisitor<TlpVisitor> {
           nullptr);
   void RewriteStream(const clang::CXXMemberCallExpr* call_expr,
                      const StreamInfo& stream);
+
+  // Use the given format_string to create a unique diagnostic id and report
+  // error with it.
+  template <unsigned N>
+  clang::DiagnosticBuilder ReportError(clang::SourceLocation loc,
+                                       const char (&format_string)[N]) {
+    static const auto diagnostic_id = context_.getDiagnostics().getCustomDiagID(
+        clang::DiagnosticsEngine::Error, format_string);
+    return context_.getDiagnostics().Report(loc, diagnostic_id);
+  }
 };
 
 #endif  // TLP_TASK_H_

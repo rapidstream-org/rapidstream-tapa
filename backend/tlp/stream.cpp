@@ -13,10 +13,13 @@ using std::string;
 using std::unordered_map;
 using std::vector;
 
+using clang::CharSourceRange;
 using clang::ClassTemplateSpecializationDecl;
 using clang::CXXMemberCallExpr;
 using clang::DeclRefExpr;
+using clang::DiagnosticsEngine;
 using clang::Expr;
+using clang::MemberExpr;
 using clang::QualType;
 using clang::Stmt;
 using clang::Type;
@@ -107,20 +110,49 @@ string GetNameOfFirst(
 
 // Retrive information about the given streams.
 void GetStreamInfo(Stmt* root, vector<StreamInfo>& streams,
-                   shared_ptr<unordered_map<const Stmt*, bool>> visited) {
-  if (visited == nullptr) {
-    visited = make_shared<decltype(visited)::element_type>();
-  }
-  if ((*visited)[root]) {
-    return;
-  }
-  (*visited)[root] = true;
+                   DiagnosticsEngine& diagnostics_engine) {
+  auto report_conflict = [&diagnostics_engine](
+                             const CXXMemberCallExpr* call_expr,
+                             const string& name, const string& role1,
+                             const string& role2) {
+    static const auto stream_op_conflict = diagnostics_engine.getCustomDiagID(
+        clang::DiagnosticsEngine::Error,
+        "tlp::stream '%0' cannot be both %1 and %2");
+    auto callee = dyn_cast<MemberExpr>(call_expr->getCallee());
+    assert(callee != nullptr);
+    auto diagnostics_builder =
+        diagnostics_engine.Report(callee->getMemberLoc(), stream_op_conflict);
+    diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
+        callee->getMemberLoc(),
+        callee->getMemberLoc().getLocWithOffset(
+            callee->getMemberNameInfo().getAsString().size())));
+    diagnostics_builder.AddString(name);
+    diagnostics_builder.AddString(role1);
+    diagnostics_builder.AddString(role2);
+  };
+  auto report_used_as = [&diagnostics_engine](
+                            const CXXMemberCallExpr* call_expr,
+                            const string& name, const string& role) {
+    static const auto used_as = diagnostics_engine.getCustomDiagID(
+        clang::DiagnosticsEngine::Note, "'%0' used as %1 here");
+
+    auto diagnostics_builder = diagnostics_engine.Report(
+        dyn_cast<MemberExpr>(call_expr->getCallee())->getMemberLoc(), used_as);
+    auto callee = dyn_cast<MemberExpr>(call_expr->getCallee());
+    assert(callee != nullptr);
+    diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
+        callee->getMemberLoc(),
+        callee->getMemberLoc().getLocWithOffset(
+            callee->getMemberNameInfo().getAsString().size())));
+    diagnostics_builder.AddString(name);
+    diagnostics_builder.AddString(role);
+  };
 
   for (auto stmt : root->children()) {
     if (stmt == nullptr) {
       continue;
     }
-    GetStreamInfo(stmt, streams, visited);
+    GetStreamInfo(stmt, streams, diagnostics_engine);
 
     if (const auto call_expr = dyn_cast<CXXMemberCallExpr>(stmt)) {
       const string callee = call_expr->getMethodDecl()->getNameAsString();
@@ -130,40 +162,52 @@ void GetStreamInfo(Stmt* root, vector<StreamInfo>& streams,
         if (stream.name == caller) {
           const StreamOpEnum op = GetStreamOp(call_expr);
 
-          // TODO: use DiagnosticsEngine
           if (op & StreamOpEnum::kIsConsumer) {
             if (stream.is_producer) {
-              llvm::errs() << "stream " + stream.name +
-                                  " cannot be both producer and consumer";
-              exit(EXIT_FAILURE);
+              report_conflict(call_expr, stream.name, "consumer", "producer");
+              for (auto expr : stream.call_exprs) {
+                if (GetStreamOp(expr) & StreamOpEnum::kIsProducer) {
+                  report_used_as(expr, stream.name, "a producer");
+                }
+              }
             } else if (!stream.is_consumer) {
               stream.is_consumer = true;
             }
           }
           if (op & StreamOpEnum::kIsProducer) {
             if (stream.is_consumer) {
-              llvm::errs() << "stream " + stream.name +
-                                  " cannot be both producer and consumer";
-              exit(EXIT_FAILURE);
-
+              report_conflict(call_expr, stream.name, "producer", "consumer");
+              for (auto expr : stream.call_exprs) {
+                if (GetStreamOp(expr) & StreamOpEnum::kIsConsumer) {
+                  report_used_as(expr, stream.name, "a consumer");
+                }
+              }
             } else if (!stream.is_producer) {
               stream.is_producer = true;
             }
           }
           if (op & StreamOpEnum::kIsBlocking) {
             if (stream.is_non_blocking) {
-              llvm::errs() << "stream " + stream.name +
-                                  " cannot be both blocking and non-blocking";
-              exit(EXIT_FAILURE);
+              report_conflict(call_expr, stream.name, "blocking",
+                              "non-blocking");
+              for (auto expr : stream.call_exprs) {
+                if (GetStreamOp(expr) & StreamOpEnum::kIsNonBlocking) {
+                  report_used_as(expr, stream.name, "non-blocking");
+                }
+              }
             } else if (!stream.is_blocking) {
               stream.is_blocking = true;
             }
           }
           if (op & StreamOpEnum::kIsNonBlocking) {
             if (stream.is_blocking) {
-              llvm::errs() << "stream " + stream.name +
-                                  " cannot be both blocking and non-blocking";
-              exit(EXIT_FAILURE);
+              report_conflict(call_expr, stream.name, "non-blocking",
+                              "blocking");
+              for (auto expr : stream.call_exprs) {
+                if (GetStreamOp(expr) & StreamOpEnum::kIsBlocking) {
+                  report_used_as(expr, stream.name, "blocking");
+                }
+              }
             } else if (!stream.is_non_blocking) {
               stream.is_non_blocking = true;
             }
