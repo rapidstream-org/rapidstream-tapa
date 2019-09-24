@@ -6,11 +6,13 @@
 
 #include "clang/AST/AST.h"
 
-inline std::string GetCanonicalTypeName(
-    clang::QualType type, clang::PrintingPolicy policy = clang::LangOptions()) {
+inline std::string GetTemplateArgName(const clang::TemplateArgument& arg) {
   std::string name;
   llvm::raw_string_ostream oss{name};
-  type.getCanonicalType().print(oss, policy);
+  clang::LangOptions options;
+  options.CPlusPlus = true;
+  options.Bool = true;
+  arg.print(options, oss);
   return name;
 }
 

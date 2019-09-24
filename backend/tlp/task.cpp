@@ -335,18 +335,13 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Find interface streams.
   vector<StreamInfo> streams;
   for (const auto param : func->parameters()) {
-    if (auto ref = dyn_cast<LValueReferenceType>(
-            param->getType().getCanonicalType().getTypePtr())) {
-      if (auto decl = GetTlpStreamDecl(ref->getPointeeType())) {
-        const auto args = decl->getTemplateArgs().asArray();
-        string elem_type{
-            args[0].getAsType().getUnqualifiedType().getAsString()};
-        streams.emplace_back(param->getNameAsString(), elem_type);
-        rewriter_.ReplaceText(
-            param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-            "hls::stream<tlp::data_t<" + elem_type + ">>&");
-      }
-    } else if (IsMmap(param->getType())) {
+    if (IsStreamInterface(param)) {
+      auto elem_type = GetStreamElemType(param);
+      streams.emplace_back(param->getNameAsString(), elem_type);
+      rewriter_.ReplaceText(
+          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+          "hls::stream<tlp::data_t<" + elem_type + ">>&");
+    } else if (IsMmap(param)) {
       auto elem_type = GetMmapElemType(param);
       rewriter_.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),

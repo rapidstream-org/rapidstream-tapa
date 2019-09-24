@@ -7,23 +7,23 @@
 
 #include "type.h"
 
-inline bool IsMmap(const clang::NamedDecl* decl) {
+inline bool IsMmap(const clang::RecordDecl* decl) {
   return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::mmap";
 }
 
 inline bool IsMmap(clang::QualType type) {
-  return IsMmap(type.getCanonicalType().getTypePtr()->getAsRecordDecl());
+  return IsMmap(type->getAsRecordDecl());
+}
+
+inline bool IsMmap(const clang::ParmVarDecl* param) {
+  return IsMmap(param->getType());
 }
 
 inline std::string GetMmapElemType(const clang::ParmVarDecl* param) {
-  if (auto decl =
-          param->getType().getCanonicalType().getTypePtr()->getAsRecordDecl()) {
-    if (IsMmap(decl)) {
-      return GetCanonicalTypeName(
-          llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(decl)
-              ->getTemplateArgs()[0]
-              .getAsType());
-    }
+  if (IsMmap(param->getType())) {
+    return GetTemplateArgName(
+        param->getType()->getAs<clang::TemplateSpecializationType>()->getArg(
+            0));
   }
   return "";
 }

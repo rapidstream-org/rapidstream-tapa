@@ -9,6 +9,8 @@
 #include "clang/AST/AST.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 
+#include "type.h"
+
 // Enum of different operations performed on a stream.
 enum StreamOpEnum : uint64_t {
   kNotStreamOperation = 0,
@@ -128,20 +130,41 @@ class RecursiveInnermostLoopsVisitor
   bool has_fifo_{false};
 };
 
-inline bool IsInputStream(const clang::NamedDecl* decl) {
+inline bool IsInputStream(const clang::RecordDecl* decl) {
   return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::istream";
 }
-inline bool IsOutputStream(const clang::NamedDecl* decl) {
+inline bool IsOutputStream(const clang::RecordDecl* decl) {
   return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::ostream";
 }
-inline bool IsStreamInstance(const clang::NamedDecl* decl) {
+inline bool IsStreamInstance(const clang::RecordDecl* decl) {
   return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::stream";
 }
-inline bool IsStreamInterface(const clang::NamedDecl* decl) {
+inline bool IsStreamInterface(const clang::RecordDecl* decl) {
   return IsInputStream(decl) || IsOutputStream(decl);
 }
-inline bool IsStream(const clang::NamedDecl* decl) {
+inline bool IsStream(const clang::RecordDecl* decl) {
   return IsStreamInterface(decl) || IsStreamInstance(decl);
+}
+
+inline bool IsStreamInterface(const clang::LValueReferenceType* type) {
+  return type != nullptr &&
+         IsStreamInterface(type->getPointeeType()->getAsRecordDecl());
+}
+inline bool IsStreamInterface(clang::QualType type) {
+  return IsStreamInterface(type->getAs<clang::LValueReferenceType>());
+}
+inline bool IsStreamInterface(const clang::ParmVarDecl* param) {
+  return IsStreamInterface(param->getType());
+}
+inline std::string GetStreamElemType(const clang::ParmVarDecl* param) {
+  if (IsStreamInterface(param->getType())) {
+    return GetTemplateArgName(param->getType()
+                                  ->getAs<clang::LValueReferenceType>()
+                                  ->getPointeeType()
+                                  ->getAs<clang::TemplateSpecializationType>()
+                                  ->getArg(0));
+  }
+  return "";
 }
 
 #endif  // TLP_STREAM_H_
