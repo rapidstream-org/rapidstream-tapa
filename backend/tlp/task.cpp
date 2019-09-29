@@ -94,55 +94,6 @@ std::string GetSignature(const CXXMemberCallExpr* call_expr) {
   return signature;
 }
 
-const char kUtilFuncs[] = R"(namespace tlp{
-
-template <typename T>
-struct data_t {
-  bool eos;
-  T val;
-};
-
-template <typename T>
-inline T read_fifo(data_t<T>& value, bool valid, bool* valid_ptr,
-                    const T& def) {
-#pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  if (valid_ptr) {
-    *valid_ptr = valid;
-  }
-  return valid ? value.val : def;
-}
-
-template <typename T>
-inline T read_fifo(hls::stream<data_t<T>>& fifo, data_t<T>& value,
-                    bool& valid) {
-#pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  T val = value.val;
-  if (valid) {
-    valid = fifo.read_nb(value);
-  }
-  return val;
-}
-
-template <typename T>
-inline void write_fifo(hls::stream<data_t<T>>& fifo, const T& value) {
-#pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  fifo.write({false, value});
-}
-
-template <typename T>
-inline void close_fifo(hls::stream<data_t<T>>& fifo) {
-#pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  fifo.write({true, {}});
-}
-
-}  // namespace tlp
-
-)";
-
 // Given a Stmt, find the first tlp::task in its children.
 const ExprWithCleanups* GetTlpTask(const Stmt* stmt) {
   for (auto child : stmt->children()) {
@@ -202,7 +153,6 @@ bool TlpVisitor::VisitFunctionDecl(FunctionDecl* func) {
       // Insert utility functions before the first function.
       if (first_func_) {
         first_func_ = false;
-        rewriter_.InsertTextBefore(loc, kUtilFuncs);
       }
       if (auto task = GetTlpTask(func->getBody())) {
         ProcessUpperLevelTask(task, func);
@@ -282,6 +232,8 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   vector<const CXXMemberCallExpr*> invokes = GetTlpInvokes(task);
   string invokes_str{"#pragma HLS dataflow\n\n"};
 
+  invokes_str += "#ifdef __SYNTHESIS__\n";
+
   for (auto invoke : invokes) {
     int step = -1;
     if (const auto method = dyn_cast<MemberExpr>(invoke->getCallee())) {
@@ -319,6 +271,50 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     }
     invokes_str += ");\n";
   }
+
+  invokes_str += "#else // __SYNTHESIS__\n";
+  invokes_str += "std::vector<std::thread> threads;\n";
+
+  for (auto invoke : invokes) {
+    int step = -1;
+    if (const auto method = dyn_cast<MemberExpr>(invoke->getCallee())) {
+      if (method->getNumTemplateArgs() != 1) {
+        ReportError(method->getMemberLoc(),
+                    "exactly 1 template argument expected")
+            .AddSourceRange(CharSourceRange::getCharRange(
+                method->getMemberLoc(),
+                method->getEndLoc().getLocWithOffset(1)));
+      }
+      step = stoi(rewriter_.getRewrittenText(
+          method->getTemplateArgs()[0].getSourceRange()));
+    } else {
+      ReportError(invoke->getBeginLoc(), "unexpected invocation: %0")
+          .AddString(invoke->getStmtClassName());
+    }
+    invokes_str += "// step " + to_string(step) + "\n";
+    invokes_str += "threads.emplace_back(";
+    for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
+      const auto arg = invoke->getArg(i);
+      if (const auto decl_ref = dyn_cast<DeclRefExpr>(arg)) {
+        string arg_name =
+            rewriter_.getRewrittenText(decl_ref->getSourceRange());
+        if (IsStreamInstance(arg->getType())) {
+          arg_name = "std::ref(" + arg_name + ")";
+        }
+        invokes_str += arg_name + ", ";
+      } else {
+        ReportError(arg->getBeginLoc(), "unexpected argument: %0")
+            .AddString(arg->getStmtClassName());
+      }
+    }
+    invokes_str.pop_back();
+    invokes_str.pop_back();
+    invokes_str += ");\n";
+  }
+
+  invokes_str += "for (auto& t : threads) {t.join();}\n";
+  invokes_str += "#endif // __SYNTHESIS__\n\n;";
+
   // task->getSourceRange() does not include the final semicolon so we remove
   // the ending newline and semicolon from invokes_str.
   invokes_str.pop_back();
@@ -445,15 +441,10 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       }
     }
     // Insert proceed only if there are blocking-read fifos.
-    if (!loop_preamble.empty()) {
-      loop_preamble = "bool " +
-                      (StreamInfo::ProceedVar() + ("{" + loop_preamble)) +
-                      "};\n\n";
-      rewriter_.InsertText(loop_body->getBeginLoc(), loop_preamble,
-                           /* InsertAfter= */ true,
-                           /* indentNewLines= */ true);
+    if (false && !loop_preamble.empty()) {
       rewriter_.InsertText(loop_body->getBeginLoc(),
-                           string{"if ("} + StreamInfo::ProceedVar() + ") {\n",
+                           "if (/* " + StreamInfo::ProceedVar() + " = */" +
+                               loop_preamble + ") {\n",
                            /* InsertAfter= */ true,
                            /* indentNewLines= */ true);
       rewriter_.InsertText(loop_stmt->getEndLoc(), "} else {\n",
@@ -512,6 +503,8 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
     case StreamOpEnum::kTestEos: {
       rewritten_text =
           "(" + stream.ValidVar() + " && " + stream.ValueVar() + ".eos)";
+      rewritten_text = "tlp::eos_fifo(" + stream.name + ", " +
+                       stream.ValueVar() + ", " + stream.ValidVar() + ")";
       break;
     }
     case StreamOpEnum::kBlockingPeek:
@@ -525,6 +518,15 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
                          stream.ValueVar() + ", " + stream.ValidVar() + ")";
       } else {
         rewritten_text = stream.name + ".read().val";
+      }
+      break;
+    }
+    case StreamOpEnum::kOpen: {
+      if (stream.need_peeking) {
+        rewritten_text = "tlp::read_fifo(" + stream.name + ", " +
+                         stream.ValueVar() + ", " + stream.ValidVar() + ")";
+      } else {
+        rewritten_text = "assert(" + stream.name + ".read().eos == true);";
       }
       break;
     }

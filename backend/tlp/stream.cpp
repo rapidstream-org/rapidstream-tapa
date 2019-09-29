@@ -236,9 +236,19 @@ void GetStreamInfo(Stmt* root, vector<StreamInfo>& streams,
 // Given a Stmt, find all tlp::istream and tlp::ostream operations via DFS and
 // update stream_ops.
 void GetTlpStreamOps(const Stmt* stmt,
-                     vector<const CXXMemberCallExpr*>& stream_ops) {
+                     vector<const CXXMemberCallExpr*>& stream_ops,
+                     bool init = false) {
   if (stmt == nullptr) {
     return;
+  }
+  if (!init) {
+    switch (stmt->getStmtClass()) {
+      case Stmt::DoStmtClass:
+      case Stmt::ForStmtClass:
+      case Stmt::WhileStmtClass:
+        return;
+      default: {}
+    }
   }
   for (auto child : stmt->children()) {
     GetTlpStreamOps(child, stream_ops);
@@ -253,7 +263,7 @@ void GetTlpStreamOps(const Stmt* stmt,
 // Given a Stmt, return all tlp::istream and tlp::ostream opreations via DFS.
 vector<const CXXMemberCallExpr*> GetTlpStreamOps(const Stmt* stmt) {
   vector<const CXXMemberCallExpr*> stream_ops;
-  GetTlpStreamOps(stmt, stream_ops);
+  GetTlpStreamOps(stmt, stream_ops, /* init = */ true);
   return stream_ops;
 }
 

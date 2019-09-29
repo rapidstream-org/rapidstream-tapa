@@ -88,16 +88,10 @@ std::vector<const clang::CXXMemberCallExpr*> GetTlpStreamOps(
 class RecursiveInnermostLoopsVisitor
     : public clang::RecursiveASTVisitor<RecursiveInnermostLoopsVisitor> {
  public:
-  // If has a sub-loop, stop recursion.
-  bool VisitDoStmt(clang::DoStmt* stmt) {
-    return stmt == self_ ? true : !(has_loop_ = true);
-  }
-  bool VisitForStmt(clang::ForStmt* stmt) {
-    return stmt == self_ ? true : !(has_loop_ = true);
-  }
-  bool VisitWhileStmt(clang::WhileStmt* stmt) {
-    return stmt == self_ ? true : !(has_loop_ = true);
-  }
+  // Don't recurse into loops.
+  bool VisitDoStmt(clang::DoStmt* stmt) { return stmt == self_; }
+  bool VisitForStmt(clang::ForStmt* stmt) { return stmt == self_; }
+  bool VisitWhileStmt(clang::WhileStmt* stmt) { return stmt == self_; }
 
   bool VisitCXXMemberCallExpr(clang::CXXMemberCallExpr* expr) {
     if (GetTlpStreamDecl(expr->getImplicitObjectArgument()->getType())) {
@@ -112,10 +106,9 @@ class RecursiveInnermostLoopsVisitor
       case clang::Stmt::ForStmtClass:
       case clang::Stmt::WhileStmtClass: {
         self_ = stmt;
-        has_loop_ = false;
         has_fifo_ = false;
         TraverseStmt(const_cast<clang::Stmt*>(stmt));
-        if (!has_loop_ && has_fifo_) {
+        if (has_fifo_) {
           return true;
         }
       }
@@ -146,6 +139,9 @@ inline bool IsStream(const clang::RecordDecl* decl) {
   return IsStreamInterface(decl) || IsStreamInstance(decl);
 }
 
+inline bool IsStreamInstance(clang::QualType type) {
+  return IsStreamInstance(type->getAsRecordDecl());
+}
 inline bool IsStreamInterface(const clang::LValueReferenceType* type) {
   return type != nullptr &&
          IsStreamInterface(type->getPointeeType()->getAsRecordDecl());
