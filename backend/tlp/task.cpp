@@ -530,9 +530,9 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
     }
     case StreamOpEnum::kWrite: {
       rewritten_text =
-          "tlp::write_fifo(" + stream.name + ", " + stream.type + "{" +
+          "tlp::write_fifo(" + stream.name + ", " + stream.type + "(" +
           rewriter_.getRewrittenText(call_expr->getArg(0)->getSourceRange()) +
-          "})";
+          "))";
       break;
     }
     case StreamOpEnum::kClose: {
