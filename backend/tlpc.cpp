@@ -253,8 +253,11 @@ class Consumer : public ASTConsumer {
       // Remove inclusion of tlp.h and insert utilty functions.
       const regex pattern{R"(#\s*include\s*(<\s*tlp\.h\s*>|"\s*tlp\.h\s*"))"};
       code_table[task] = regex_replace(code_table[task], pattern, kUtilFuncs);
-      code[task_name]["code"] = code_table[task];
+      code["tasks"][task_name]["code"] = code_table[task];
+      code["tasks"][task_name]["level"] =
+          GetTlpTask(task->getBody()) == nullptr ? "lower" : "upper";
     }
+    code["top"] = *top_name;
     std::cout << code;
   }
 
