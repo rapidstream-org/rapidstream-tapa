@@ -203,7 +203,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                       {{"m_axi", ""},
                        {"port", param_name},
                        {"offset", "slave"},
-                       {"bundle", "gmem_" + param_name}});
+                       {"bundle", param_name}});
     }
   }
   for (const auto param : func->parameters()) {
@@ -339,6 +339,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Find interface streams.
   vector<StreamInfo> streams;
+  vector<MmapInfo> mmaps;
   for (const auto param : func->parameters()) {
     if (IsStreamInterface(param)) {
       auto elem_type = GetStreamElemType(param);
@@ -348,6 +349,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
           "hls::stream<tlp::data_t<" + elem_type + ">>&");
     } else if (IsMmap(param)) {
       auto elem_type = GetMmapElemType(param);
+      mmaps.emplace_back(param->getNameAsString(), elem_type);
       GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           elem_type + "*");
@@ -358,10 +360,23 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   const auto func_body = func->getBody();
   GetStreamInfo(func_body, streams, context_.getDiagnostics());
 
+  // Insert interface pragmas.
+  for (const auto& mmap : mmaps) {
+    InsertHlsPragma(func_body->getBeginLoc(), "interface",
+                    {{"m_axi", {}},
+                     {"port", mmap.name},
+                     {"offset", "direct"},
+                     {"bundle", mmap.name}});
+  }
+
   // Before the original function body, insert data_pack pragmas.
   for (const auto& stream : streams) {
     InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
                     {{"variable", stream.name}});
+  }
+  for (const auto& mmap : mmaps) {
+    InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
+                    {{"variable", mmap.name}});
   }
   if (!streams.empty()) {
     GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), "\n\n");
@@ -476,7 +491,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
                                /* indentNewLines= */ true);
     }
   }
-}
+}  // namespace internal
 
 void Visitor::RewriteStreams(
     const Stmt* stmt,
