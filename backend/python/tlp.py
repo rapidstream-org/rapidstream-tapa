@@ -5,6 +5,8 @@ from typing import (
 
 import enum
 import json
+import shutil
+import subprocess
 
 
 class Program:
@@ -37,3 +39,20 @@ class Task:
     self.level = level
     self.name = kwargs.pop('name')  # type: str
     self.code = kwargs.pop('code')  # type: str
+
+
+def clang_format(code: str) -> str:
+  for version in range(10, 4, -1):
+    clang_format_exe = shutil.which('clang-format-%d' % version)
+    if clang_format_exe is not None:
+      break
+  else:
+    clang_format_exe = shutil.which('clang-format')
+  if clang_format_exe is not None:
+    proc = subprocess.run([clang_format_exe],
+                          input=code,
+                          stdout=subprocess.PIPE,
+                          universal_newlines=True)
+    proc.check_returncode()
+    return proc.stdout
+  return code
