@@ -46,6 +46,9 @@ using clang::WhileStmt;
 
 using llvm::dyn_cast;
 
+namespace tlp {
+namespace internal {
+
 // Get a string representation of the function signature a stream operation.
 std::string GetSignature(const CXXMemberCallExpr* call_expr) {
   auto target = call_expr->getDirectCallee();
@@ -145,19 +148,25 @@ vector<const Stmt*> GetInnermostLoops(const Stmt* stmt) {
   return loops;
 }
 
+thread_local const FunctionDecl* Visitor::current_task{nullptr};
+
 // Apply tlp s2s transformations on a function.
-bool TlpVisitor::VisitFunctionDecl(FunctionDecl* func) {
-  if (func->hasBody() && func->isGlobal()) {
-    const auto loc = func->getBeginLoc();
-    if (context_.getSourceManager().isWrittenInMainFile(loc)) {
-      // Insert utility functions before the first function.
-      if (first_func_) {
-        first_func_ = false;
-      }
-      if (auto task = GetTlpTask(func->getBody())) {
-        ProcessUpperLevelTask(task, func);
-      } else {
-        ProcessLowerLevelTask(func);
+bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
+  if (func->hasBody() && func->isGlobal() &&
+      context_.getSourceManager().isWrittenInMainFile(func->getBeginLoc())) {
+    if (rewriters_.size() == 0) {
+      funcs_.push_back(func);
+    } else {
+      if (rewriters_.count(func) > 0) {
+        if (func == current_task) {
+          if (auto task = GetTlpTask(func->getBody())) {
+            ProcessUpperLevelTask(task, func);
+          } else {
+            ProcessLowerLevelTask(func);
+          }
+        } else {
+          GetRewriter().RemoveText(func->getSourceRange());
+        }
       }
     }
   }
@@ -166,9 +175,8 @@ bool TlpVisitor::VisitFunctionDecl(FunctionDecl* func) {
 }
 
 // Insert `#pragma HLS ...` after the token specified by loc.
-bool TlpVisitor::InsertHlsPragma(const SourceLocation& loc,
-                                 const string& pragma,
-                                 const vector<pair<string, string>>& args) {
+bool Visitor::InsertHlsPragma(const SourceLocation& loc, const string& pragma,
+                              const vector<pair<string, string>>& args) {
   string line{"\n#pragma HLS " + pragma};
   for (const auto& arg : args) {
     line += " " + arg.first;
@@ -176,19 +184,19 @@ bool TlpVisitor::InsertHlsPragma(const SourceLocation& loc,
       line += " = " + arg.second;
     }
   }
-  return rewriter_.InsertTextAfterToken(loc, line);
+  return GetRewriter().InsertTextAfterToken(loc, line);
 }
 
 // Apply tlp s2s transformations on a upper-level task.
-void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
-                                       const FunctionDecl* func) {
+void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
+                                    const FunctionDecl* func) {
   const auto func_body = func->getBody();
   // TODO: implement qdma streams
   vector<StreamInfo> streams;
   for (const auto param : func->parameters()) {
     const string param_name = param->getNameAsString();
     if (IsMmap(param->getType())) {
-      rewriter_.ReplaceText(
+      GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           GetMmapElemType(param) + "*");
       InsertHlsPragma(func_body->getBeginLoc(), "interface",
@@ -207,7 +215,7 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   InsertHlsPragma(
       func_body->getBeginLoc(), "interface",
       {{"s_axilite", ""}, {"port", "return"}, {"bundle", "control"}});
-  rewriter_.InsertTextAfterToken(func_body->getBeginLoc(), "\n");
+  GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), "\n");
 
   // Process stream declarations.
   for (const auto child : func_body->children()) {
@@ -218,7 +226,7 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           const string elem_type{args[0].getAsType().getAsString()};
           const string fifo_depth{args[1].getAsIntegral().toString(10)};
           const string var_name{var_decl->getNameAsString()};
-          rewriter_.ReplaceText(
+          GetRewriter().ReplaceText(
               var_decl->getSourceRange(),
               "hls::stream<tlp::data_t<" + elem_type + ">> " + var_name);
           InsertHlsPragma(child->getEndLoc(), "stream",
@@ -244,7 +252,7 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                 method->getMemberLoc(),
                 method->getEndLoc().getLocWithOffset(1)));
       }
-      step = stoi(rewriter_.getRewrittenText(
+      step = stoi(GetRewriter().getRewrittenText(
           method->getTemplateArgs()[0].getSourceRange()));
     } else {
       ReportError(invoke->getBeginLoc(), "unexpected invocation: %0")
@@ -255,7 +263,7 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       const auto arg = invoke->getArg(i);
       if (const auto decl_ref = dyn_cast<DeclRefExpr>(arg)) {
         const string arg_name =
-            rewriter_.getRewrittenText(decl_ref->getSourceRange());
+            GetRewriter().getRewrittenText(decl_ref->getSourceRange());
         if (i == 0) {
           invokes_str += arg_name + "(";
         } else {
@@ -285,7 +293,7 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                 method->getMemberLoc(),
                 method->getEndLoc().getLocWithOffset(1)));
       }
-      step = stoi(rewriter_.getRewrittenText(
+      step = stoi(GetRewriter().getRewrittenText(
           method->getTemplateArgs()[0].getSourceRange()));
     } else {
       ReportError(invoke->getBeginLoc(), "unexpected invocation: %0")
@@ -297,7 +305,7 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       const auto arg = invoke->getArg(i);
       if (const auto decl_ref = dyn_cast<DeclRefExpr>(arg)) {
         string arg_name =
-            rewriter_.getRewrittenText(decl_ref->getSourceRange());
+            GetRewriter().getRewrittenText(decl_ref->getSourceRange());
         if (IsStreamInstance(arg->getType())) {
           arg_name = "std::ref(" + arg_name + ")";
         }
@@ -319,27 +327,28 @@ void TlpVisitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   // the ending newline and semicolon from invokes_str.
   invokes_str.pop_back();
   invokes_str.pop_back();
-  rewriter_.ReplaceText(task->getSourceRange(), invokes_str);
+  GetRewriter().ReplaceText(task->getSourceRange(), invokes_str);
 
   // SDAccel only works with extern C kernels.
-  rewriter_.InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
-  rewriter_.InsertTextAfterToken(func->getEndLoc(), "\n\n}  // extern \"C\"\n");
+  GetRewriter().InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
+  GetRewriter().InsertTextAfterToken(func->getEndLoc(),
+                                     "\n\n}  // extern \"C\"\n");
 }
 
 // Apply tlp s2s transformations on a lower-level task.
-void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
+void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Find interface streams.
   vector<StreamInfo> streams;
   for (const auto param : func->parameters()) {
     if (IsStreamInterface(param)) {
       auto elem_type = GetStreamElemType(param);
       streams.emplace_back(param->getNameAsString(), elem_type);
-      rewriter_.ReplaceText(
+      GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           "hls::stream<tlp::data_t<" + elem_type + ">>&");
     } else if (IsMmap(param)) {
       auto elem_type = GetMmapElemType(param);
-      rewriter_.ReplaceText(
+      GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           elem_type + "*");
     }
@@ -355,7 +364,7 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
                     {{"variable", stream.name}});
   }
   if (!streams.empty()) {
-    rewriter_.InsertTextAfterToken(func_body->getBeginLoc(), "\n\n");
+    GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), "\n\n");
   }
   // Insert _x_value and _x_valid variables for read streams.
   string read_states;
@@ -366,7 +375,7 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       read_states += "bool " + stream.ValidVar() + "{false};\n\n";
     }
   }
-  rewriter_.InsertTextAfterToken(func_body->getBeginLoc(), read_states);
+  GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), read_states);
 
   // Rewrite stream operations via DFS.
   unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table;
@@ -407,9 +416,9 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     // Move increment statement to the end of loop body for ForStmt.
     if (const auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {
       const string inc =
-          rewriter_.getRewrittenText(for_stmt->getInc()->getSourceRange());
-      rewriter_.RemoveText(for_stmt->getInc()->getSourceRange());
-      rewriter_.InsertText(for_stmt->getBody()->getEndLoc(), inc + ";\n");
+          GetRewriter().getRewrittenText(for_stmt->getInc()->getSourceRange());
+      GetRewriter().RemoveText(for_stmt->getInc()->getSourceRange());
+      GetRewriter().InsertText(for_stmt->getBody()->getEndLoc(), inc + ";\n");
     }
 
     // Find loop body.
@@ -442,14 +451,14 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     }
     // Insert proceed only if there are blocking-read fifos.
     if (false && !loop_preamble.empty()) {
-      rewriter_.InsertText(loop_body->getBeginLoc(),
-                           "if (/* " + StreamInfo::ProceedVar() + " = */" +
-                               loop_preamble + ") {\n",
-                           /* InsertAfter= */ true,
-                           /* indentNewLines= */ true);
-      rewriter_.InsertText(loop_stmt->getEndLoc(), "} else {\n",
-                           /* InsertAfter= */ true,
-                           /* indentNewLines= */ true);
+      GetRewriter().InsertText(loop_body->getBeginLoc(),
+                               "if (/* " + StreamInfo::ProceedVar() + " = */" +
+                                   loop_preamble + ") {\n",
+                               /* InsertAfter= */ true,
+                               /* indentNewLines= */ true);
+      GetRewriter().InsertText(loop_stmt->getEndLoc(), "} else {\n",
+                               /* InsertAfter= */ true,
+                               /* indentNewLines= */ true);
 
       // If cannot proceed, still need to do state transition.
       string state_transition{};
@@ -462,14 +471,14 @@ void TlpVisitor::ProcessLowerLevelTask(const FunctionDecl* func) {
         }
       }
       state_transition += "}  // if (" + StreamInfo::ProceedVar() + ")\n";
-      rewriter_.InsertText(loop_stmt->getEndLoc(), state_transition,
-                           /* InsertAfter= */ true,
-                           /* indentNewLines= */ true);
+      GetRewriter().InsertText(loop_stmt->getEndLoc(), state_transition,
+                               /* InsertAfter= */ true,
+                               /* indentNewLines= */ true);
     }
   }
 }
 
-void TlpVisitor::RewriteStreams(
+void Visitor::RewriteStreams(
     const Stmt* stmt,
     unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table,
     shared_ptr<unordered_map<const Stmt*, bool>> visited) {
@@ -496,11 +505,18 @@ void TlpVisitor::RewriteStreams(
 
 // Given the CXXMemberCallExpr and the corresponding StreamInfo, rewrite the
 // code.
-void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
-                               const StreamInfo& stream) {
+void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
+                            const StreamInfo& stream) {
   string rewritten_text{};
   switch (GetStreamOp(call_expr)) {
-    case StreamOpEnum::kTestEos: {
+    case StreamOpEnum::kTryEos: {
+      rewritten_text = stream.name + ".try_eos(" +
+                       GetRewriter().getRewrittenText(
+                           call_expr->getArg(0)->getSourceRange()) +
+                       ")";
+      break;
+    }
+    case StreamOpEnum::kBlockingEos: {
       rewritten_text =
           "(" + stream.ValidVar() + " && " + stream.ValueVar() + ".eos)";
       rewritten_text = "tlp::eos_fifo(" + stream.name + ", " +
@@ -521,6 +537,13 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
       }
       break;
     }
+    case StreamOpEnum::kNonBlockingRead: {
+      rewritten_text = stream.name + ".read_nb(" +
+                       GetRewriter().getRewrittenText(
+                           call_expr->getArg(0)->getSourceRange()) +
+                       ")";
+      break;
+    }
     case StreamOpEnum::kOpen: {
       if (stream.need_peeking) {
         rewritten_text = "tlp::read_fifo(" + stream.name + ", " +
@@ -531,10 +554,11 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
       break;
     }
     case StreamOpEnum::kWrite: {
-      rewritten_text =
-          "tlp::write_fifo(" + stream.name + ", " + stream.type + "(" +
-          rewriter_.getRewrittenText(call_expr->getArg(0)->getSourceRange()) +
-          "))";
+      rewritten_text = "tlp::write_fifo(" + stream.name + ", " + stream.type +
+                       "(" +
+                       GetRewriter().getRewrittenText(
+                           call_expr->getArg(0)->getSourceRange()) +
+                       "))";
       break;
     }
     case StreamOpEnum::kClose: {
@@ -554,5 +578,8 @@ void TlpVisitor::RewriteStream(const CXXMemberCallExpr* call_expr,
     }
   }
 
-  rewriter_.ReplaceText(call_expr->getSourceRange(), rewritten_text);
+  GetRewriter().ReplaceText(call_expr->getSourceRange(), rewritten_text);
 }
+
+}  // namespace internal
+}  // namespace tlp

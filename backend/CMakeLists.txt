@@ -6,6 +6,10 @@ FetchContent_Declare(
     "SHA512=6098efa217d6c5fcdf6d6cbc6051020e728bdbf6190ca3d5be90e9fc382b8d666f1649506f7b4b70abff6084481799eba0fb0a44ad82a0bedfab98ee855e8d22"
   )
 
+FetchContent_Declare(json
+                     GIT_REPOSITORY "https://github.com/nlohmann/json.git"
+                     GIT_TAG "master")
+
 FetchContent_GetProperties(llvm)
 if(NOT llvm_POPULATED)
   function(add_llvm)
@@ -28,6 +32,12 @@ if(NOT llvm_POPULATED)
                           ${llvm_BINARY_DIR}/include PARENT_SCOPE)
   endfunction()
   add_llvm()
+endif()
+
+FetchContent_GetProperties(json)
+if(NOT json_POPULATED)
+  FetchContent_Populate(json)
+  add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
 add_library(type)
@@ -67,4 +77,4 @@ target_link_libraries(task PUBLIC stream mmap)
 add_executable(tlpc)
 target_sources(tlpc PRIVATE tlpc.cpp)
 target_compile_options(tlpc PRIVATE -fno-rtti)
-target_link_libraries(tlpc PRIVATE task)
+target_link_libraries(tlpc PRIVATE task nlohmann_json::nlohmann_json)
