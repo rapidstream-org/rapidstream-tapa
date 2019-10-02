@@ -1,3 +1,4 @@
 .cmake-format
 .vscode
+__pycache__
 build/
