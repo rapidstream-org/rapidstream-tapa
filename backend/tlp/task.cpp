@@ -456,14 +456,6 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       continue;
     }
 
-    // Move increment statement to the end of loop body for ForStmt.
-    if (const auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {
-      const string inc =
-          GetRewriter().getRewrittenText(for_stmt->getInc()->getSourceRange());
-      GetRewriter().RemoveText(for_stmt->getInc()->getSourceRange());
-      GetRewriter().InsertText(for_stmt->getBody()->getEndLoc(), inc + ";\n");
-    }
-
     // Find loop body.
     const Stmt* loop_body{nullptr};
     if (auto do_stmt = dyn_cast<DoStmt>(loop_stmt)) {
