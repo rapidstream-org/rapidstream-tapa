@@ -425,19 +425,24 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
         diagnostics_engine.getCustomDiagID(clang::DiagnosticsEngine::Note,
                                            "on tlp::stream '%0'");
     for (const auto& stream : streams) {
-      if (is_accessed(stream) && stream.is_blocking && stream.is_consumer) {
+      decltype(stream.call_exprs) call_exprs;
+      for (auto expr : stream.call_exprs) {
+        auto stream_op = GetStreamOp(expr);
+        if ((stream_op & StreamOpEnum::kIsBlocking) &&
+            (stream_op & StreamOpEnum::kIsConsumer) &&
+            binary_search(stream_ops.begin(), stream_ops.end(), expr)) {
+          call_exprs.push_back(expr);
+        }
+      }
+
+      if (!call_exprs.empty()) {
         diagnostics_engine.Report(blocking_read_in_pipeline_error);
-        for (auto expr : stream.call_exprs) {
-          auto stream_op = GetStreamOp(expr);
-          if ((stream_op & StreamOpEnum::kIsBlocking) &&
-              (stream_op & StreamOpEnum::kIsConsumer) &&
-              binary_search(stream_ops.begin(), stream_ops.end(), expr)) {
-            auto diagnostics_builder = diagnostics_engine.Report(
-                expr->getBeginLoc(), blocking_read_in_pipeline_note);
-            diagnostics_builder.AddString(stream.name);
-            diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
-                expr->getBeginLoc(), expr->getEndLoc().getLocWithOffset(1)));
-          }
+        for (auto expr : call_exprs) {
+          auto diagnostics_builder = diagnostics_engine.Report(
+              expr->getBeginLoc(), blocking_read_in_pipeline_note);
+          diagnostics_builder.AddString(stream.name);
+          diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
+              expr->getBeginLoc(), expr->getEndLoc().getLocWithOffset(1)));
         }
       }
     }
