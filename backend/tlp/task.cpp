@@ -523,16 +523,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
 
 void Visitor::RewriteStreams(
     const Stmt* stmt,
-    unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table,
-    shared_ptr<unordered_map<const Stmt*, bool>> visited) {
-  if (visited == nullptr) {
-    visited = make_shared<decltype(visited)::element_type>();
-  }
-  if ((*visited)[stmt]) {
-    return;
-  }
-  (*visited)[stmt] = true;
-
+    unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table) {
   for (auto child : stmt->children()) {
     if (child != nullptr) {
       RewriteStreams(child, stream_table);

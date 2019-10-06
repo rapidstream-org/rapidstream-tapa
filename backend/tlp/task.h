@@ -51,9 +51,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   void RewriteStreams(
       const clang::Stmt* stmt,
       std::unordered_map<const clang::CXXMemberCallExpr*, const StreamInfo*>
-          stream_table,
-      std::shared_ptr<std::unordered_map<const clang::Stmt*, bool>> visited =
-          nullptr);
+          stream_table);
   void RewriteStream(const clang::CXXMemberCallExpr* call_expr,
                      const StreamInfo& stream);
 
