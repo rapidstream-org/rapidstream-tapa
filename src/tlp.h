@@ -47,7 +47,9 @@ class istream : virtual public stream_base {
   // whether stream is empty
   virtual bool empty() const = 0;
   // whether stream has ended
+  virtual bool try_eos(bool&) const = 0;
   virtual bool eos() const = 0;
+  virtual bool eos(bool&) const = 0;
   // non-blocking non-destructive read
   virtual bool try_peek(T&) const = 0;
   // blocking non-destructive read
@@ -118,11 +120,23 @@ class stream : public istream<T>, public ostream<T> {
   // whether stream is empty
   bool empty() const override { return head == tail; }
   // whether stream has ended
+  bool try_eos(bool& eos) const override {
+    if (!empty()) {
+      eos = access(tail).eos;
+      return true;
+    }
+    return false;
+  }
   bool eos() const override {
     while (empty()) {
       yield("eos");
     }
     return access(tail).eos;
+  }
+  bool eos(bool& succeeded) const override {
+    bool eos;
+    succeeded = try_eos(eos);
+    return eos;
   }
   // non-blocking non-destructive read
   bool try_peek(T& val) const override {

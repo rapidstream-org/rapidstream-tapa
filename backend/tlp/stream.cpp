@@ -38,8 +38,14 @@ StreamOpEnum GetStreamOp(const CXXMemberCallExpr* call_expr) {
   const auto num_args = call_expr->getNumArgs();
   if (callee == "empty" && num_args == 0) {
     return StreamOpEnum::kTestEmpty;
-  } else if (callee == "eos" && num_args == 0) {
-    return StreamOpEnum::kTestEos;
+  } else if (callee == "try_eos" && num_args == 1) {
+    return StreamOpEnum::kTryEos;
+  } else if (callee == "eos") {
+    if (num_args == 0) {
+      return StreamOpEnum::kBlockingEos;
+    } else if (num_args == 1) {
+      return StreamOpEnum::kNonBlockingEos;
+    }
   } else if (callee == "try_peek" && num_args == 1) {
     return StreamOpEnum::kTryPeek;
   } else if (callee == "peek") {

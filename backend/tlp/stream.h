@@ -24,22 +24,26 @@ enum StreamOpEnum : uint64_t {
   kNeedEos = 1 << 7,
 
   kTestEmpty = 1ULL << 32 | kIsConsumer,
-  kTestEos = 2ULL << 32 | kIsConsumer | kNeedPeeking | kNeedEos,
-  kTryPeek = 3ULL << 32 | kIsConsumer | kNeedPeeking,
-  kBlockingPeek = 4ULL << 32 | kIsBlocking | kIsConsumer | kNeedPeeking,
-  kNonBlockingPeek = 5ULL << 32 | kIsNonBlocking | kIsConsumer | kNeedPeeking,
-  kTryRead = 6ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
-  kBlockingRead = 7ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
-  kNonBlockingRead = 8ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
+  kTryEos = 2ULL << 32 | kIsConsumer | kIsNonBlocking | kNeedPeeking | kNeedEos,
+  kBlockingEos =
+      3ULL << 32 | kIsConsumer | kIsBlocking | kNeedPeeking | kNeedEos,
+  kNonBlockingEos =
+      4ULL << 32 | kIsConsumer | kIsNonBlocking | kNeedPeeking | kNeedEos,
+  kTryPeek = 5ULL << 32 | kIsConsumer | kIsNonBlocking | kNeedPeeking,
+  kBlockingPeek = 6ULL << 32 | kIsBlocking | kIsConsumer | kNeedPeeking,
+  kNonBlockingPeek = 7ULL << 32 | kIsNonBlocking | kIsConsumer | kNeedPeeking,
+  kTryRead = 8ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
+  kBlockingRead = 9ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
+  kNonBlockingRead = 10ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
   kNonBlockingDefaultedRead =
-      9ULL << 32 | kIsDestructive | kIsNonBlocking | kIsDefaulted | kIsConsumer,
-  kTryOpen = 10ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
-  kOpen = 11ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
-  kTestFull = 12ULL << 32 | kIsConsumer,
-  kTryWrite = 13ULL << 32 | kIsDestructive | kIsNonBlocking | kIsProducer,
-  kWrite = 14ULL << 32 | kIsDestructive | kIsBlocking | kIsProducer,
-  kTryClose = 15ULL << 32 | kIsDestructive | kIsNonBlocking | kIsProducer,
-  kClose = 16ULL << 32 | kIsDestructive | kIsBlocking | kIsProducer
+      11ULL << 32 | kIsDestructive | kIsNonBlocking | kIsDefaulted | kIsConsumer,
+  kTryOpen = 12ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
+  kOpen = 13ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
+  kTestFull = 14ULL << 32 | kIsConsumer,
+  kTryWrite = 15ULL << 32 | kIsDestructive | kIsNonBlocking | kIsProducer,
+  kWrite = 16ULL << 32 | kIsDestructive | kIsBlocking | kIsProducer,
+  kTryClose = 17ULL << 32 | kIsDestructive | kIsNonBlocking | kIsProducer,
+  kClose = 18ULL << 32 | kIsDestructive | kIsBlocking | kIsProducer
 };
 
 // Information about a particular stream used in a task.
