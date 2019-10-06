@@ -193,7 +193,7 @@ void GetStreamInfo(Stmt* root, vector<StreamInfo>& streams,
             }
           }
           if (op & StreamOpEnum::kIsBlocking) {
-            if (stream.is_non_blocking) {
+            if (false && stream.is_non_blocking) {
               report_conflict(call_expr, stream.name, "blocking",
                               "non-blocking");
               for (auto expr : stream.call_exprs) {
@@ -206,7 +206,7 @@ void GetStreamInfo(Stmt* root, vector<StreamInfo>& streams,
             }
           }
           if (op & StreamOpEnum::kIsNonBlocking) {
-            if (stream.is_blocking) {
+            if (false && stream.is_blocking) {
               report_conflict(call_expr, stream.name, "non-blocking",
                               "blocking");
               for (auto expr : stream.call_exprs) {

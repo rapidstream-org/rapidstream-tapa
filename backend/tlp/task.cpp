@@ -402,6 +402,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   RewriteStreams(func_body, stream_table);
 
   // Find loops that contain FIFOs operations but do not contain sub-loops;
+  // These loops will be pipelined with II = 1.
   for (auto loop_stmt : GetInnermostLoops(func_body)) {
     auto stream_ops = GetTlpStreamOps(loop_stmt);
     sort(stream_ops.begin(), stream_ops.end());
@@ -413,6 +414,33 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       }
       return false;
     };
+
+    // Blocking reads (destructive or nondestructive) cannot be used.
+    auto& diagnostics_engine = context_.getDiagnostics();
+    static const auto blocking_read_in_pipeline_error =
+        diagnostics_engine.getCustomDiagID(
+            clang::DiagnosticsEngine::Error,
+            "blocking read cannot be used in an innermost loop");
+    static const auto blocking_read_in_pipeline_note =
+        diagnostics_engine.getCustomDiagID(clang::DiagnosticsEngine::Note,
+                                           "on tlp::stream '%0'");
+    for (const auto& stream : streams) {
+      if (is_accessed(stream) && stream.is_blocking && stream.is_consumer) {
+        diagnostics_engine.Report(blocking_read_in_pipeline_error);
+        for (auto expr : stream.call_exprs) {
+          auto stream_op = GetStreamOp(expr);
+          if ((stream_op & StreamOpEnum::kIsBlocking) &&
+              (stream_op & StreamOpEnum::kIsConsumer) &&
+              binary_search(stream_ops.begin(), stream_ops.end(), expr)) {
+            auto diagnostics_builder = diagnostics_engine.Report(
+                expr->getBeginLoc(), blocking_read_in_pipeline_note);
+            diagnostics_builder.AddString(stream.name);
+            diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
+                expr->getBeginLoc(), expr->getEndLoc().getLocWithOffset(1)));
+          }
+        }
+      }
+    }
 
     // Is peeking buffer needed for this loop.
     bool need_peeking = false;
