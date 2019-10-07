@@ -34,9 +34,10 @@ enum StreamOpEnum : uint64_t {
   kNonBlockingPeek = 7ULL << 32 | kIsNonBlocking | kIsConsumer | kNeedPeeking,
   kTryRead = 8ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
   kBlockingRead = 9ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
-  kNonBlockingRead = 10ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
-  kNonBlockingDefaultedRead =
-      11ULL << 32 | kIsDestructive | kIsNonBlocking | kIsDefaulted | kIsConsumer,
+  kNonBlockingRead =
+      10ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
+  kNonBlockingDefaultedRead = 11ULL << 32 | kIsDestructive | kIsNonBlocking |
+                              kIsDefaulted | kIsConsumer,
   kTryOpen = 12ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
   kOpen = 13ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
   kTestFull = 14ULL << 32 | kIsConsumer,
@@ -71,6 +72,7 @@ struct StreamInfo {
   bool need_peeking{false};
   bool need_eos{false};
 
+  std::string PeekVar() const { return "tlp_" + name + "_peek"; }
   std::string ValueVar() const { return "tlp_" + name + "_value"; }
   std::string ValidVar() const { return "tlp_" + name + "_valid"; }
   static std::string ProceedVar() { return "tlp_proceed"; }

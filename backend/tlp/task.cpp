@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "clang/AST/AST.h"
+#include "clang/Lex/Lexer.h"
 
 #include "mmap.h"
 #include "stream.h"
@@ -34,6 +35,7 @@ using clang::ExprWithCleanups;
 using clang::ForStmt;
 using clang::FunctionDecl;
 using clang::FunctionProtoType;
+using clang::Lexer;
 using clang::LValueReferenceType;
 using clang::MemberExpr;
 using clang::PrintingPolicy;
@@ -360,6 +362,18 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   const auto func_body = func->getBody();
   GetStreamInfo(func_body, streams, context_.getDiagnostics());
 
+  string new_params{};
+  for (auto stream : streams) {
+    if (stream.need_peeking) {
+      new_params += ", hls::stream<tlp::data_t<" + stream.type + ">>& " +
+                    stream.PeekVar();
+    }
+  }
+  if (!new_params.empty()) {
+    auto end_loc = func->getParamDecl(func->getNumParams() - 1)->getEndLoc();
+    GetRewriter().InsertText(GetEndOfLoc(end_loc), new_params);
+  }
+
   // Insert interface pragmas.
   for (const auto& mmap : mmaps) {
     InsertHlsPragma(func_body->getBeginLoc(), "interface",
@@ -373,6 +387,10 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   for (const auto& stream : streams) {
     InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
                     {{"variable", stream.name}});
+    if (stream.need_peeking) {
+      InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
+                      {{"variable", stream.PeekVar()}});
+    }
   }
   for (const auto& mmap : mmaps) {
     InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
@@ -381,16 +399,6 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   if (!streams.empty()) {
     GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), "\n\n");
   }
-  // Insert _x_value and _x_valid variables for read streams.
-  string read_states;
-  for (const auto& stream : streams) {
-    if (stream.is_consumer && stream.need_peeking) {
-      read_states += "tlp::data_t<" + stream.type + "> " + stream.ValueVar() +
-                     "{false, {}};\n";
-      read_states += "bool " + stream.ValidVar() + "{false};\n\n";
-    }
-  }
-  GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), read_states);
 
   // Rewrite stream operations via DFS.
   unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table;
@@ -539,61 +547,49 @@ void Visitor::RewriteStreams(
 void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
                             const StreamInfo& stream) {
   string rewritten_text{};
+  vector<string> args;
+  for (auto arg : call_expr->arguments()) {
+    args.push_back(GetRewriter().getRewrittenText(arg->getSourceRange()));
+  }
   switch (GetStreamOp(call_expr)) {
     case StreamOpEnum::kTryEos: {
-      rewritten_text = stream.name + ".try_eos(" +
-                       GetRewriter().getRewrittenText(
-                           call_expr->getArg(0)->getSourceRange()) +
-                       ")";
+      rewritten_text = "tlp::try_eos(" + stream.name + ", " + stream.PeekVar() +
+                       ", " + args[0] + ")";
       break;
     }
     case StreamOpEnum::kBlockingEos: {
-      rewritten_text =
-          "(" + stream.ValidVar() + " && " + stream.ValueVar() + ".eos)";
-      rewritten_text = "tlp::eos_fifo(" + stream.name + ", " +
-                       stream.ValueVar() + ", " + stream.ValidVar() + ")";
+      rewritten_text = "tlp::eos(" + stream.PeekVar() + ")";
       break;
     }
-    case StreamOpEnum::kBlockingPeek:
+    case StreamOpEnum::kBlockingPeek: {
+      rewritten_text = "tlp::peek(" + stream.PeekVar() + ")";
+      break;
+    }
     case StreamOpEnum::kNonBlockingPeek: {
-      rewritten_text = stream.ValueVar() + ".val";
+      rewritten_text = "tlp::peek(" + stream.name + ", " + stream.PeekVar() +
+                       ", " + args[0] + ")";
       break;
     }
     case StreamOpEnum::kBlockingRead: {
-      if (stream.need_peeking) {
-        rewritten_text = "tlp::read_fifo(" + stream.name + ", " +
-                         stream.ValueVar() + ", " + stream.ValidVar() + ")";
-      } else {
-        rewritten_text = stream.name + ".read().val";
-      }
+      rewritten_text = "tlp::read(" + stream.name + ")";
       break;
     }
     case StreamOpEnum::kNonBlockingRead: {
-      rewritten_text = stream.name + ".read_nb(" +
-                       GetRewriter().getRewrittenText(
-                           call_expr->getArg(0)->getSourceRange()) +
-                       ")";
+      rewritten_text = "tlp::read(" + stream.name + ", " + args[0] + ")";
       break;
     }
     case StreamOpEnum::kOpen: {
-      if (stream.need_peeking) {
-        rewritten_text = "tlp::read_fifo(" + stream.name + ", " +
-                         stream.ValueVar() + ", " + stream.ValidVar() + ")";
-      } else {
-        rewritten_text = "assert(" + stream.name + ".read().eos == true);";
-      }
+      // somehow using tlp::open crashes Vivado HLS
+      rewritten_text = "assert(" + stream.name + ".read().eos)";
       break;
     }
     case StreamOpEnum::kWrite: {
-      rewritten_text = "tlp::write_fifo(" + stream.name + ", " + stream.type +
-                       "(" +
-                       GetRewriter().getRewrittenText(
-                           call_expr->getArg(0)->getSourceRange()) +
-                       "))";
+      rewritten_text = "tlp::write(" + stream.name + ", " + stream.type + "(" +
+                       args[0] + "))";
       break;
     }
     case StreamOpEnum::kClose: {
-      rewritten_text = "tlp::close_fifo(" + stream.name + ")";
+      rewritten_text = "tlp::close(" + stream.name + ")";
       break;
     }
     default: {
@@ -610,6 +606,11 @@ void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
   }
 
   GetRewriter().ReplaceText(call_expr->getSourceRange(), rewritten_text);
+}
+
+SourceLocation Visitor::GetEndOfLoc(SourceLocation loc) {
+  return loc.getLocWithOffset(Lexer::MeasureTokenLength(
+      loc, GetRewriter().getSourceMgr(), GetRewriter().getLangOpts()));
 }
 
 }  // namespace internal

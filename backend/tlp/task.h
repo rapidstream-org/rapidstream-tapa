@@ -64,6 +64,8 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
         clang::DiagnosticsEngine::Error, format_string);
     return context_.getDiagnostics().Report(loc, diagnostic_id);
   }
+
+  clang::SourceLocation GetEndOfLoc(clang::SourceLocation loc);
 };
 
 // Find for a given upper-level task, return all direct children tasks (e.g.
