@@ -21,6 +21,7 @@
 
 + CMake 3.13+
 + A C++11 compiler
++ Google glog library
 
 <details><summary>How to install CMake 3.13+ on Ubuntu 16.04+ and CentOS 7?</summary>
 
@@ -36,6 +37,22 @@ CentOS 7
 ```bash
 sudo yum install python-pip
 sudo python -m pip install cmake
+```
+
+</details>
+
+<details><summary>How to install Google glog library on Ubuntu and CentOS?</summary>
+
+Ubuntu
+
+```bash
+sudo apt install libgoogle-glog-dev
+```
+
+CentOS
+
+```bash
+sudo yum install glog-devel
 ```
 
 </details>
