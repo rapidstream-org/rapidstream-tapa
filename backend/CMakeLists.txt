@@ -22,6 +22,7 @@ if(NOT llvm_POPULATED)
     set(LLVM_INCLUDE_TESTS OFF)
     set(LLVM_INCLUDE_BENCHMlRKS OFF)
     unset(CMAKE_CXX_CLANG_TIDY)
+    set(CMAKE_CXX_STANDARD 11)
 
     add_subdirectory(${llvm_SOURCE_DIR}/llvm ${llvm_BINARY_DIR}
                      EXCLUDE_FROM_ALL)
