@@ -58,6 +58,8 @@ using nlohmann::json;
 namespace tlp {
 namespace internal {
 
+extern const string* top_name;
+
 // Get a string representation of the function signature a stream operation.
 std::string GetSignature(const CXXMemberCallExpr* call_expr) {
   auto target = call_expr->getDirectCallee();
@@ -269,6 +271,33 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   // tasks: {task_name: [{step, {args: var_name: {var_type, port_name}}}]}
   // fifos: {fifo_name: {depth, produced_by, consumed_by}}
   auto& metadata = GetMetadata();
+
+  if (*top_name == func->getNameAsString()) {
+    for (const auto param : func->parameters()) {
+      const auto param_name = param->getNameAsString();
+      if (IsMmap(param)) {
+        metadata["ports"].push_back(
+            {{"name", param_name},
+             {"cat", "mmap"},
+             {"width",
+              context_
+                  .getTypeInfo(param->getType()
+                                   ->getAs<clang::TemplateSpecializationType>()
+                                   ->getArg(0)
+                                   .getAsType())
+                  .Width},
+             {"type", GetMmapElemType(param) + "*"}});
+      } else if (IsStreamInterface(param)) {
+        // TODO
+      } else {
+        metadata["ports"].push_back(
+            {{"name", param_name},
+             {"cat", "scalar"},
+             {"width", context_.getTypeInfo(param->getType()).Width},
+             {"type", param->getType().getAsString()}});
+      }
+    }
+  }
 
   // Process stream declarations.
   for (const auto child : func_body->children()) {

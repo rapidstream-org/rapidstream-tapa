@@ -248,7 +248,7 @@ inline void close(hls::stream<data_t<T>>& fifo) {
 namespace tlp {
 namespace internal {
 
-static const string* top_name;
+const string* top_name;
 
 class Consumer : public ASTConsumer {
  public:

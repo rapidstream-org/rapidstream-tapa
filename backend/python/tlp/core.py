@@ -1,4 +1,5 @@
 from typing import (
+    BinaryIO,
     Dict,
     Iterator,
     List,
@@ -74,6 +75,20 @@ class Task:
     return self.level == Task.Level.LOWER
 
 
+class Port:
+
+  def __init__(self, obj):
+    self.cat = {
+        'istream': Instance.Arg.Cat.ISTREAM,
+        'ostream': Instance.Arg.Cat.OSTREAM,
+        'scalar': Instance.Arg.Cat.SCALAR,
+        'mmap': Instance.Arg.Cat.MMAP
+    }[obj['cat']]
+    self.name = obj['name']
+    self.ctype = obj['type']
+    self.width = obj['width']
+
+
 class Program:
   """Describes a TLP self.
 
@@ -82,6 +97,7 @@ class Program:
     work_dir: Working directory.
     is_temp: Whether to delete the working directory after done.
     hls: HLS backend.
+    ports: Tuple of Port objects.
     _tasks: Dict mapping names of tasks to Task objects.
   """
 
@@ -104,6 +120,7 @@ class Program:
       self.work_dir = os.path.abspath(work_dir)
       os.makedirs(self.work_dir, exist_ok=True)
       self.is_temp = False
+    self.ports = tuple(map(Port, obj['tasks'][self.top]['ports']))
     self._tasks = collections.OrderedDict(
         (name, Task(name=name, **task))
         for name, task in sorted(obj['tasks'].items(), key=lambda x: x[0]))
@@ -115,6 +132,10 @@ class Program:
   @property
   def tasks(self) -> Tuple[Task, ...]:
     return tuple(self._tasks.values())
+
+  @property
+  def rtl_dir(self) -> str:
+    return os.path.join(self.work_dir, 'hdl')
 
   def get_task(self, name: str) -> Task:
     return self._tasks[name]
@@ -128,8 +149,7 @@ class Program:
     return os.path.join(self.work_dir, 'tar', name + '.tar')
 
   def get_rtl(self, name: str) -> str:
-    return os.path.abspath(
-        os.path.join(self.work_dir, 'hdl', name + self.rtl.RTL_SUFFIX))
+    return os.path.join(self.rtl_dir, name + self.rtl.RTL_SUFFIX)
 
   def extract_cpp(self) -> 'Program':
     """Extract HLS C++ files."""
@@ -307,6 +327,13 @@ class Program:
       for name, content in self.rtl.OTHER_MODULES.items():
         with open(self.get_rtl(name), 'w') as rtl_code:
           rtl_code.write(content)
+    return self
+
+  def pack_rtl(self, output_file: BinaryIO) -> 'Program':
+    self.rtl.pack(top_name=self.top,
+                  ports=self.ports,
+                  rtl_dir=self.rtl_dir,
+                  output_file=output_file)
     return self
 
 

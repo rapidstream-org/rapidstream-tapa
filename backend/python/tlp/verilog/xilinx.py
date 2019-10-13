@@ -5,9 +5,11 @@ for Xilinx devices.
 """
 
 from typing import (
+    BinaryIO,
     Dict,
     Iterable,
     Iterator,
+    IO,
     Tuple,
     Type,
     Union,
@@ -16,10 +18,18 @@ from typing import (
 import collections
 import enum
 import itertools
+import os
+import shutil
+import sys
+import tempfile
 
 from pyverilog.vparser import ast
 from pyverilog.vparser import parser
 from pyverilog.ast_code_generator import codegen
+
+import haoda.backend.xilinx
+
+import tlp.core
 
 # const strings
 
@@ -412,6 +422,79 @@ def generate_istream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
 def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in OSTREAM_SUFFIXES:
     yield make_port_arg(port=port + suffix, arg=arg + suffix)
+
+
+def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.core.Port],
+         output_file: Union[str, BinaryIO]) -> None:
+  port_tuple = tuple(ports)
+  if isinstance(output_file, str):
+    xo_file = output_file
+  else:
+    xo_file = tempfile.mktemp(prefix='tlp_' + top_name + '_', suffix='.xo')
+  with tempfile.NamedTemporaryFile(mode='w+',
+                                   prefix='tlp_' + top_name + '_',
+                                   suffix='_kernel.xml') as kernel_xml_obj:
+    print_kernel_xml(top_name=top_name,
+                     ports=port_tuple,
+                     kernel_xml=kernel_xml_obj)
+    with haoda.backend.xilinx.PackageXo(
+        xo_file=xo_file,
+        top_name=top_name,
+        kernel_xml=kernel_xml_obj.name,
+        hdl_dir=rtl_dir,
+        m_axi_names=(port.name
+                     for port in port_tuple
+                     if port.cat == tlp.core.Instance.Arg.Cat.MMAP)) as proc:
+      stdout, stderr = proc.communicate()
+    if proc.returncode == 0:
+      if not isinstance(output_file, str):
+        with open(xo_file, 'rb') as xo_obj:
+          shutil.copyfileobj(xo_obj, output_file)
+    else:
+      sys.stdout.write(stdout.decode('utf-8'))
+      sys.stderr.write(stderr.decode('utf-8'))
+  if not isinstance(output_file, str):
+    os.remove(xo_file)
+
+
+def print_kernel_xml(top_name: str, ports: Iterable[tlp.core.Port],
+                     kernel_xml: IO[str]) -> None:
+  """Generate kernel.xml file.
+
+  Args:
+    top_name: name of the top-level kernel function.
+    ports: Iterable of tlp.core.Port.
+    kernel_xml: file object to write to.
+  """
+  m_axi_ports = ''
+  args = ''
+  offset = 0x10
+  for arg_id, port in enumerate(ports):
+    host_size = port.width // 8
+    size = max(4, host_size)
+    rtl_port_name = 's_axi_control'
+    addr_qualifier = 0
+    if port.cat == tlp.core.Instance.Arg.Cat.MMAP:
+      size = host_size = 8  # m_axi interface must have 64-bit addresses
+      rtl_port_name = M_AXI_PREFIX + port.name
+      addr_qualifier = 1
+      m_axi_ports += haoda.backend.xilinx.PORT_TEMPLATE.format(
+          name=port.name, width=port.width).rstrip('\n')
+    args += haoda.backend.xilinx.ARG_TEMPLATE.format(
+        name=port.name,
+        addr_qualifier=addr_qualifier,
+        arg_id=arg_id,
+        port_name=rtl_port_name,
+        c_type=port.ctype,
+        size=size,
+        offset=offset,
+        host_size=host_size).rstrip('\n')
+    offset += size + 4
+  kernel_xml.write(
+      haoda.backend.xilinx.KERNEL_XML_TEMPLATE.format(top_name=top_name,
+                                                      m_axi_ports=m_axi_ports,
+                                                      args=args))
+  kernel_xml.flush()
 
 
 OTHER_MODULES = {
