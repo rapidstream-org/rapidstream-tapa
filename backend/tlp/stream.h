@@ -165,6 +165,26 @@ inline bool IsStreamInterface(clang::QualType type) {
 inline bool IsStreamInterface(const clang::ParmVarDecl* param) {
   return IsStreamInterface(param->getType());
 }
+inline bool IsInputStream(const clang::LValueReferenceType* type) {
+  return type != nullptr &&
+         IsInputStream(type->getPointeeType()->getAsRecordDecl());
+}
+inline bool IsInputStream(clang::QualType type) {
+  return IsInputStream(type->getAs<clang::LValueReferenceType>());
+}
+inline bool IsInputStream(const clang::ParmVarDecl* param) {
+  return IsInputStream(param->getType());
+}
+inline bool IsOutputStream(const clang::LValueReferenceType* type) {
+  return type != nullptr &&
+         IsOutputStream(type->getPointeeType()->getAsRecordDecl());
+}
+inline bool IsOutputStream(clang::QualType type) {
+  return IsOutputStream(type->getAs<clang::LValueReferenceType>());
+}
+inline bool IsOutputStream(const clang::ParmVarDecl* param) {
+  return IsOutputStream(param->getType());
+}
 inline std::string GetStreamElemType(const clang::ParmVarDecl* param) {
   if (IsStreamInterface(param->getType())) {
     return GetTemplateArgName(param->getType()

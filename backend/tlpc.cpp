@@ -253,7 +253,7 @@ static const string* top_name;
 class Consumer : public ASTConsumer {
  public:
   explicit Consumer(ASTContext& context, vector<const FunctionDecl*>& funcs)
-      : visitor_{context, funcs, rewriters_}, funcs_{funcs} {}
+      : visitor_{context, funcs, rewriters_, metadata_}, funcs_{funcs} {}
   void HandleTranslationUnit(ASTContext& context) override {
     // First pass traversal extracts all global functions as potential tasks.
     // this->funcs_ stores all potential tasks.
@@ -333,8 +333,11 @@ class Consumer : public ASTConsumer {
       const regex pattern{R"(#\s*include\s*(<\s*tlp\.h\s*>|"\s*tlp\.h\s*"))"};
       code_table[task] = regex_replace(code_table[task], pattern, kUtilFuncs);
       code["tasks"][task_name]["code"] = code_table[task];
-      code["tasks"][task_name]["level"] =
-          GetTlpTask(task->getBody()) == nullptr ? "lower" : "upper";
+      bool is_upper = GetTlpTask(task->getBody()) != nullptr;
+      code["tasks"][task_name]["level"] = is_upper ? "upper" : "lower";
+      if (is_upper) {
+        code["tasks"][task_name].update(metadata_[task]);
+      }
     }
     code["top"] = *top_name;
     std::cout << code;
@@ -344,6 +347,7 @@ class Consumer : public ASTConsumer {
   Visitor visitor_;
   vector<const FunctionDecl*>& funcs_;
   unordered_map<const FunctionDecl*, Rewriter> rewriters_;
+  unordered_map<const FunctionDecl*, json> metadata_;
 };
 
 class Action : public ASTFrontendAction {

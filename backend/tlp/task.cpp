@@ -1,6 +1,7 @@
 #include "task.h"
 
 #include <algorithm>
+#include <array>
 #include <regex>
 #include <string>
 #include <unordered_map>
@@ -10,9 +11,12 @@
 #include "clang/AST/AST.h"
 #include "clang/Lex/Lexer.h"
 
+#include "nlohmann/json.hpp"
+
 #include "mmap.h"
 #include "stream.h"
 
+using std::array;
 using std::binary_search;
 using std::make_shared;
 using std::pair;
@@ -25,6 +29,7 @@ using std::vector;
 
 using clang::CharSourceRange;
 using clang::CXXMemberCallExpr;
+using clang::CXXMethodDecl;
 using clang::DeclGroupRef;
 using clang::DeclRefExpr;
 using clang::DeclStmt;
@@ -47,6 +52,8 @@ using clang::VarDecl;
 using clang::WhileStmt;
 
 using llvm::dyn_cast;
+
+using nlohmann::json;
 
 namespace tlp {
 namespace internal {
@@ -197,27 +204,71 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   vector<StreamInfo> streams;
   for (const auto param : func->parameters()) {
     const string param_name = param->getNameAsString();
-    if (IsMmap(param->getType())) {
+    if (IsMmap(param)) {
       GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          GetMmapElemType(param) + "*");
-      InsertHlsPragma(func_body->getBeginLoc(), "interface",
-                      {{"m_axi", ""},
-                       {"port", param_name},
-                       {"offset", "slave"},
-                       {"bundle", param_name}});
+          "\n#ifdef COSIM\n" + GetMmapElemType(param) +
+              "*\n#else  // COSIM\nuint64_t\n#endif  // COSIM\n");
     }
   }
+
+  string replaced_body{"{\n"};
   for (const auto param : func->parameters()) {
-    InsertHlsPragma(func_body->getBeginLoc(), "interface",
-                    {{"s_axilite", ""},
-                     {"port", param->getNameAsString()},
-                     {"bundle", "control"}});
+    replaced_body +=
+        "#pragma HLS interface s_axilite port = " + param->getNameAsString() +
+        " bundle = control\n";
   }
-  InsertHlsPragma(
-      func_body->getBeginLoc(), "interface",
-      {{"s_axilite", ""}, {"port", "return"}, {"bundle", "control"}});
-  GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), "\n");
+  replaced_body +=
+      "#pragma HLS interface s_axilite port = return bundle = control\n\n";
+  for (const auto param : func->parameters()) {
+    if (IsMmap(param)) {
+      replaced_body +=
+          "#pragma HLS data_pack variable = " + param->getNameAsString() + "\n";
+    }
+  }
+
+  replaced_body += "\n#ifdef COSIM\n";
+  for (const auto param : func->parameters()) {
+    const bool is_mmap = IsMmap(param);
+    replaced_body += "{ auto val = ";
+    if (is_mmap) {
+      replaced_body += "*";
+    }
+    replaced_body += "reinterpret_cast<volatile ";
+    if (IsStreamInterface(param)) {
+      // TODO (maybe?)
+    } else {
+      auto elem_type = param->getType();
+      if (is_mmap) {
+        elem_type = elem_type->getAs<clang::TemplateSpecializationType>()
+                        ->getArg(0)
+                        .getAsType();
+      }
+      const bool is_const = elem_type.isConstQualified();
+      const auto param_name = param->getNameAsString();
+      if (is_const) {
+        replaced_body += "const ";
+      }
+      replaced_body += "uint8_t";
+      replaced_body += is_mmap ? "*" : "&";
+      replaced_body += ">(" + param_name + "); }\n";
+      if (is_mmap && !is_const) {
+        replaced_body += param_name + "[1] = {};\n";
+      }
+    }
+  }
+  replaced_body += "#endif  // COSIM\n";
+
+  replaced_body += "}\n";
+
+  // We need a empty shell.
+  GetRewriter().ReplaceText(func_body->getSourceRange(), replaced_body);
+
+  // Obtain the connection schema from the task.
+  // metadata: {tasks, fifos}
+  // tasks: {task_name: [{step, {args: var_name: {var_type, port_name}}}]}
+  // fifos: {fifo_name: {depth, produced_by, consumed_by}}
+  auto& metadata = GetMetadata();
 
   // Process stream declarations.
   for (const auto child : func_body->children()) {
@@ -225,14 +276,10 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       if (const auto var_decl = dyn_cast<VarDecl>(*decl_stmt->decl_begin())) {
         if (auto decl = GetTlpStreamDecl(var_decl->getType())) {
           const auto args = decl->getTemplateArgs().asArray();
-          const string elem_type{args[0].getAsType().getAsString()};
-          const string fifo_depth{args[1].getAsIntegral().toString(10)};
+          const string elem_type = GetTemplateArgName(args[0]);
+          const uint64_t fifo_depth{*args[1].getAsIntegral().getRawData()};
           const string var_name{var_decl->getNameAsString()};
-          GetRewriter().ReplaceText(
-              var_decl->getSourceRange(),
-              "hls::stream<tlp::data_t<" + elem_type + ">> " + var_name);
-          InsertHlsPragma(child->getEndLoc(), "stream",
-                          {{"variable", var_name}, {"depth", fifo_depth}});
+          metadata["fifos"][var_name]["depth"] = fifo_depth;
         }
       }
     }
@@ -240,51 +287,76 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
   // Instanciate tasks.
   vector<const CXXMemberCallExpr*> invokes = GetTlpInvokes(task);
-  string invokes_str{"#pragma HLS dataflow\n\n"};
-
-  invokes_str += "#ifdef __SYNTHESIS__\n";
 
   for (auto invoke : invokes) {
     int step = -1;
-    if (const auto method = dyn_cast<MemberExpr>(invoke->getCallee())) {
-      if (method->getNumTemplateArgs() != 1) {
-        ReportError(method->getMemberLoc(),
-                    "exactly 1 template argument expected")
-            .AddSourceRange(CharSourceRange::getCharRange(
-                method->getMemberLoc(),
-                method->getEndLoc().getLocWithOffset(1)));
-      }
-      step = stoi(GetRewriter().getRewrittenText(
-          method->getTemplateArgs()[0].getSourceRange()));
+    if (const auto method = dyn_cast<CXXMethodDecl>(invoke->getCalleeDecl())) {
+      step =
+          *reinterpret_cast<const int*>(method->getTemplateSpecializationArgs()
+                                            ->get(0)
+                                            .getAsIntegral()
+                                            .getRawData());
     } else {
-      ReportError(invoke->getBeginLoc(), "unexpected invocation: %0")
+      ReportError(invoke->getCallee()->getBeginLoc(),
+                  "unexpected invocation: %0")
           .AddString(invoke->getStmtClassName());
     }
-    invokes_str += "// step " + to_string(step) + "\n";
+    const FunctionDecl* task = nullptr;
+    string task_name;
     for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
       const auto arg = invoke->getArg(i);
       if (const auto decl_ref = dyn_cast<DeclRefExpr>(arg)) {
-        const string arg_name =
-            GetRewriter().getRewrittenText(decl_ref->getSourceRange());
+        const auto arg_name = decl_ref->getNameInfo().getName().getAsString();
         if (i == 0) {
-          invokes_str += arg_name + "(";
+          task_name = arg_name;
+          metadata["tasks"][task_name].push_back({{"step", step}});
+          task = decl_ref->getDecl()->getAsFunction();
         } else {
-          if (i > 1) {
-            invokes_str += ", ";
+          auto param = task->getParamDecl(i - 1);
+          string param_cat;
+          if (IsMmap(param)) {
+            param_cat = "mmap";
+          } else if (IsInputStream(param)) {
+            param_cat = "istream";
+            if (metadata["fifos"][arg_name].contains("consumed_by")) {
+              auto diagnostics_builder =
+                  ReportError(param->getLocation(),
+                              "tlp::stream '%0' consumed more than once");
+              diagnostics_builder.AddString(arg_name);
+              diagnostics_builder.AddSourceRange(
+                  CharSourceRange::getCharRange(param->getSourceRange()));
+            }
+            metadata["fifos"][arg_name]["consumed_by"] = {
+                task_name, metadata["tasks"][task_name].size() - 1};
+          } else if (IsOutputStream(param)) {
+            param_cat = "ostream";
+            if (metadata["fifos"][arg_name].contains("produced_by")) {
+              auto diagnostics_builder =
+                  ReportError(param->getLocation(),
+                              "tlp::stream '%0' produced more than once");
+              diagnostics_builder.AddString(arg_name);
+              diagnostics_builder.AddSourceRange(
+                  CharSourceRange::getCharRange(param->getSourceRange()));
+            }
+            metadata["fifos"][arg_name]["produced_by"] = {
+                task_name, metadata["tasks"][task_name].size() - 1};
+          } else {
+            param_cat = "scalar";
           }
-          invokes_str += arg_name;
+          (*metadata["tasks"][task_name].rbegin())["args"][arg_name] = {
+              {"cat", param_cat}, {"port", param->getNameAsString()}};
         }
       } else {
-        ReportError(arg->getBeginLoc(), "unexpected argument: %0")
-            .AddString(arg->getStmtClassName());
+        auto diagnostics_builder =
+            ReportError(arg->getBeginLoc(), "unexpected argument: %0");
+        diagnostics_builder.AddString(arg->getStmtClassName());
+        diagnostics_builder.AddSourceRange(
+            CharSourceRange::getCharRange(arg->getSourceRange()));
       }
     }
-    invokes_str += ");\n";
   }
 
-  invokes_str += "#else // __SYNTHESIS__\n";
-  invokes_str += "std::vector<std::thread> threads;\n";
-
+  /*
   for (auto invoke : invokes) {
     int step = -1;
     if (const auto method = dyn_cast<MemberExpr>(invoke->getCallee())) {
@@ -317,19 +389,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             .AddString(arg->getStmtClassName());
       }
     }
-    invokes_str.pop_back();
-    invokes_str.pop_back();
-    invokes_str += ");\n";
   }
-
-  invokes_str += "for (auto& t : threads) {t.join();}\n";
-  invokes_str += "#endif // __SYNTHESIS__\n\n;";
-
-  // task->getSourceRange() does not include the final semicolon so we remove
-  // the ending newline and semicolon from invokes_str.
-  invokes_str.pop_back();
-  invokes_str.pop_back();
-  GetRewriter().ReplaceText(task->getSourceRange(), invokes_str);
+  */
 
   // SDAccel only works with extern C kernels.
   GetRewriter().InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");

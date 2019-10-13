@@ -72,7 +72,7 @@ target_sources(task
                tlp/task.h
                PRIVATE
                tlp/task.cpp)
-target_link_libraries(task PUBLIC stream mmap)
+target_link_libraries(task PUBLIC stream mmap nlohmann_json::nlohmann_json)
 
 add_executable(tlpc)
 target_sources(tlpc PRIVATE tlpc.cpp)

@@ -10,6 +10,8 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 
+#include "nlohmann/json.hpp"
+
 #include "stream.h"
 
 namespace tlp {
@@ -22,11 +24,16 @@ std::vector<const clang::CXXMemberCallExpr*> GetTlpInvokes(
 
 class Visitor : public clang::RecursiveASTVisitor<Visitor> {
  public:
-  explicit Visitor(clang::ASTContext& context,
-                   std::vector<const clang::FunctionDecl*>& funcs,
-                   std::unordered_map<const clang::FunctionDecl*,
-                                      clang::Rewriter>& rewriters)
-      : context_{context}, funcs_{funcs}, rewriters_{rewriters} {}
+  explicit Visitor(
+      clang::ASTContext& context,
+      std::vector<const clang::FunctionDecl*>& funcs,
+      std::unordered_map<const clang::FunctionDecl*, clang::Rewriter>&
+          rewriters,
+      std::unordered_map<const clang::FunctionDecl*, nlohmann::json>& metadata)
+      : context_{context},
+        funcs_{funcs},
+        rewriters_{rewriters},
+        metadata_{metadata} {}
 
   bool VisitFunctionDecl(clang::FunctionDecl* func);
 
@@ -36,8 +43,10 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   clang::ASTContext& context_;
   std::vector<const clang::FunctionDecl*>& funcs_;
   std::unordered_map<const clang::FunctionDecl*, clang::Rewriter>& rewriters_;
+  std::unordered_map<const clang::FunctionDecl*, nlohmann::json>& metadata_;
 
   clang::Rewriter& GetRewriter() { return rewriters_[current_task]; }
+  nlohmann::json& GetMetadata() { return metadata_[current_task]; }
 
   bool InsertHlsPragma(
       const clang::SourceLocation& loc, const std::string& pragma,
