@@ -518,7 +518,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     static const auto blocking_read_in_pipeline_error =
         diagnostics_engine.getCustomDiagID(
             clang::DiagnosticsEngine::Error,
-            "blocking read cannot be used in an innermost loop");
+            "blocking read cannot be used in an innermost loop with peeking");
     static const auto blocking_read_in_pipeline_note =
         diagnostics_engine.getCustomDiagID(clang::DiagnosticsEngine::Note,
                                            "on tlp::stream '%0'");
@@ -533,7 +533,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
         }
       }
 
-      if (!call_exprs.empty()) {
+      if (!call_exprs.empty() && stream.need_peeking) {
         diagnostics_engine.Report(blocking_read_in_pipeline_error);
         for (auto expr : call_exprs) {
           auto diagnostics_builder = diagnostics_engine.Report(
@@ -559,21 +559,6 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       continue;
     }
 
-    // Find loop body.
-    const Stmt* loop_body{nullptr};
-    if (auto do_stmt = dyn_cast<DoStmt>(loop_stmt)) {
-      loop_body = *do_stmt->getBody()->child_begin();
-    } else if (auto for_stmt = dyn_cast<ForStmt>(loop_stmt)) {
-      loop_body = *for_stmt->getBody()->child_begin();
-    } else if (auto while_stmt = dyn_cast<WhileStmt>(loop_stmt)) {
-      loop_body = *while_stmt->getBody()->child_begin();
-    } else if (loop_stmt != nullptr) {
-      ReportError(loop_stmt->getBeginLoc(), "unexpected loop: %0")
-          .AddString(loop_stmt->getStmtClassName());
-    } else {
-      ReportError(func_body->getBeginLoc(), "null loop stmt");
-    }
-
     string loop_preamble;
     for (const auto& stream : streams) {
       if (is_accessed(stream) && stream.is_consumer && stream.is_blocking) {
@@ -586,32 +571,6 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
           loop_preamble += "!" + stream.name + ".empty()";
         }
       }
-    }
-    // Insert proceed only if there are blocking-read fifos.
-    if (false && !loop_preamble.empty()) {
-      GetRewriter().InsertText(loop_body->getBeginLoc(),
-                               "if (/* " + StreamInfo::ProceedVar() + " = */" +
-                                   loop_preamble + ") {\n",
-                               /* InsertAfter= */ true,
-                               /* indentNewLines= */ true);
-      GetRewriter().InsertText(loop_stmt->getEndLoc(), "} else {\n",
-                               /* InsertAfter= */ true,
-                               /* indentNewLines= */ true);
-
-      // If cannot proceed, still need to do state transition.
-      string state_transition{};
-      for (const auto& stream : streams) {
-        if (is_accessed(stream) && stream.is_consumer && stream.need_peeking) {
-          state_transition += "if (!" + stream.ValidVar() + ") {\n";
-          state_transition += stream.ValidVar() + " = " + stream.name +
-                              ".read_nb(" + stream.ValueVar() + ");\n";
-          state_transition += "}\n";
-        }
-      }
-      state_transition += "}  // if (" + StreamInfo::ProceedVar() + ")\n";
-      GetRewriter().InsertText(loop_stmt->getEndLoc(), state_transition,
-                               /* InsertAfter= */ true,
-                               /* indentNewLines= */ true);
     }
   }
 }  // namespace internal
