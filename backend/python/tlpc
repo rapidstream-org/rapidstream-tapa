@@ -138,7 +138,7 @@ def main():
     if proc.returncode != 0:
       parser.exit(status=proc.returncode, message=proc.stderr)
     if last_step == 'run_tlpcc':
-      with open(arg.output_file, 'w') as output_fp:
+      with open(args.output_file, 'w') as output_fp:
         output_fp.write(proc.stdout)
     tlp_program_json = lambda: io.StringIO(proc.stdout)
   else:
