@@ -75,7 +75,7 @@ target_sources(task
                tlp/task.cpp)
 target_link_libraries(task PUBLIC stream mmap nlohmann_json::nlohmann_json)
 
-add_executable(tlpc)
-target_sources(tlpc PRIVATE tlpc.cpp)
-target_compile_options(tlpc PRIVATE -fno-rtti)
-target_link_libraries(tlpc PRIVATE task nlohmann_json::nlohmann_json)
+add_executable(tlpcc)
+target_sources(tlpcc PRIVATE tlpcc.cpp)
+target_compile_options(tlpcc PRIVATE -fno-rtti)
+target_link_libraries(tlpcc PRIVATE task nlohmann_json::nlohmann_json)

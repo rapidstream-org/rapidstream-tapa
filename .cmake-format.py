@@ -5,7 +5,10 @@ additional_commands = {
         "kwargs": {
             "OUTPUT": 1,
             "INPUT": 1,
+            "TOP": 1,
+            "PLATFORM": 1,
             "TLPC": 1,
+            "TLPCC": 1,
         }
     },
 }
