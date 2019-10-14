@@ -30,6 +30,9 @@ function(add_tlp_target target_name)
                         "OUTPUT;INPUT;TOP;PLATFORM;TLPC;TLPCC"
                         "DRAM_MAPPING"
                         ${ARGN})
+  if(NOT TLP_INPUT)
+    message(FATAL_ERROR "INPUT not specified")
+  endif()
   if(NOT TLP_PLATFORM)
     message(FATAL_ERROR "PLATFORM not specified")
   endif()
@@ -63,13 +66,11 @@ function(add_tlp_target target_name)
     message(FATAL_ERROR "cannot find tlpcc")
   endif()
 
-  set(tlpcc_cmd
-      "${TLPC}"
-      "${TLP_INPUT}"
-      "--top=${TLP_TOP}"
-      "--tlpcc=${TLPCC}"
-      "--platform=${TLP_PLATFORM}"
-      "--output=${TLP_OUTPUT}")
+  set(tlpc_cmd ${TLPC} ${TLP_INPUT})
+  list(APPEND tlpc_cmd --top ${TLP_TOP})
+  list(APPEND tlpc_cmd --tlpcc ${TLPCC})
+  list(APPEND tlpc_cmd --platform ${TLP_PLATFORM})
+  list(APPEND tlpc_cmd --output ${TLP_OUTPUT})
 
   add_custom_command(OUTPUT ${TLP_OUTPUT}
                      COMMAND ${tlpc_cmd}
