@@ -16,6 +16,7 @@ from typing import (
 )
 
 import collections
+import copy
 import enum
 import itertools
 import os
@@ -373,6 +374,38 @@ def is_m_axi_unique_param(param: Union[str, ast.Parameter]) -> bool:
   if not isinstance(param, str):
     param = param.name
   return param in M_AXI_PARAMS
+
+
+def rename_m_axi_name(mapping: Dict[str, str], name: str, idx1: int,
+                      idx2: int) -> str:
+  try:
+    name_snippets = name.split('_')
+    return '_'.join(name_snippets[:idx1] +
+                    [mapping['_'.join(name_snippets[idx1:idx2])]] +
+                    name_snippets[idx2:])
+  except KeyError:
+    pass
+  raise ValueError("'%s' is a result of renaming done by Vivado HLS; " %
+                   '_'.join(name_snippets[idx1:idx2]) +
+                   'please use a different variable name')
+
+
+def rename_m_axi_port(mapping: Dict[str, str], port: IOPort) -> IOPort:
+  new_port = copy.copy(port)
+  new_port.name = rename_m_axi_name(mapping, port.name, 2, -1)
+  if port.width is not None and isinstance(port.width.msb, ast.Minus):
+    new_port.width = copy.copy(new_port.width)
+    new_port.width.msb = copy.copy(new_port.width.msb)
+    new_port.width.msb.left = ast.Identifier(
+        rename_m_axi_name(mapping, port.width.msb.left.name, 3, -2))
+  return new_port
+
+
+def rename_m_axi_param(mapping: Dict[str, str],
+                       param: ast.Parameter) -> ast.Parameter:
+  new_param = copy.copy(param)
+  new_param.name = rename_m_axi_name(mapping, param.name, 3, -2)
+  return new_param
 
 
 def make_port_arg(port: str, arg: str) -> ast.PortArg:

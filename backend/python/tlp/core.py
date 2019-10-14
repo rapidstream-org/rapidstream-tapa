@@ -244,21 +244,31 @@ class Program:
         }  # type: Dict[str, List[ast.Identifier]]
         for task_name, instance_objs in task.tasks.items():
           child = self.get_task(task_name)
-
-          # insert m_axi ports
           child_port_set = set(child.module.ports)
-          task.module.add_ports(port for port in child.module.ports.values()
-                                if self.rtl.is_m_axi_port(port))
-          task.module.add_params(
-              param for param in child.module.params.values()
-              if self.rtl.is_m_axi_param(param))
-
           for instance_idx, instance_obj in enumerate(instance_objs):
             instance = Instance(self.get_task(task_name),
                                 verilog=self.rtl,
                                 task_id=0,
                                 instance_id=instance_idx,
                                 **instance_obj)
+
+            # insert m_axi ports
+            mmap_port_map = {
+                arg.port: name
+                for name, arg in instance.args.items()
+                if arg.cat == Instance.Arg.Cat.MMAP
+            }
+            mmap_port_map.update(
+                {k.upper(): v.upper() for k, v in mmap_port_map.items()})
+
+            task.module.add_ports(
+                self.rtl.rename_m_axi_port(mmap_port_map, port)
+                for port in child.module.ports.values()
+                if self.rtl.is_m_axi_port(port))
+            task.module.add_params(
+                self.rtl.rename_m_axi_param(mmap_port_map, param)
+                for param in child.module.params.values()
+                if self.rtl.is_m_axi_param(param))
 
             # set up done reg
             reset_if_branch.append(
