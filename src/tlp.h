@@ -1,6 +1,7 @@
 #ifndef TASK_LEVEL_PARALLELIZATION_H_
 #define TASK_LEVEL_PARALLELIZATION_H_
 
+#include <cstdarg>
 #include <cstdint>
 
 #include <array>
@@ -294,7 +295,10 @@ class stream : public istream<T>, public ostream<T> {
 template <typename T>
 class mmap {
  public:
-  mmap(T* ptr) : ptr_{ptr} {}
+  mmap(T* ptr) : ptr_{ptr}, size_{0} {}
+  mmap(T* ptr, uint64_t size) : ptr_{ptr}, size_{size} {}
+  mmap(std::vector<typename std::remove_const<T>::type>& vec)
+      : ptr_{vec.data()}, size_{vec.size()} {}
   operator T*() { return ptr_; }
 
   // Dereference.
@@ -314,8 +318,13 @@ class mmap {
   mmap<T> operator-(std::ptrdiff_t diff) { return ptr_ - diff; }
   mmap<T> operator-(mmap<T> ptr) { return ptr_ - ptr; }
 
+  // Host-only APIs.
+  T* get() { return ptr_; }
+  uint64_t size() { return size_; }
+
  private:
   T* ptr_;
+  uint64_t size_;
 };
 
 struct task {

@@ -31,7 +31,7 @@ struct Edge {
 
 struct Update {
   Vid dst;
-  float delta;
+  Vid value;
 };
 
 void Graph(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
@@ -96,9 +96,33 @@ int main(int argc, char* argv[]) {
     edge_ptr += num_edges[i];
   }
   vector<Update> updates(total_num_edges * num_partitions);
-  Graph(num_partitions, num_vertices.data(), num_edges.data(), vertices.data(),
-        edges.data(), updates.data());
+  VLOG(10) << "num_vertices";
+  for (auto n : num_vertices) {
+    VLOG(10) << n;
+  }
+  VLOG(10) << "num_edges";
+  for (auto n : num_edges) {
+    VLOG(10) << n;
+  }
+  VLOG(10) << "vertices: ";
+  for (auto v : vertices) {
+    VLOG(10) << v;
+  }
+  VLOG(10) << "edges: ";
+  for (auto e : edges) {
+    VLOG(10) << e.src << " -> " << e.dst;
+  }
+  VLOG(10) << "updates: " << updates.size();
+  Graph(num_partitions, num_vertices, num_edges, vertices, edges, updates);
   Graph(base_vid, vertices_baseline, edges);
+  VLOG(10) << "vertices: ";
+  for (auto v : vertices) {
+    VLOG(10) << v;
+  }
+  VLOG(10) << "updates: ";
+  for (auto v : updates) {
+    VLOG(10) << "dst: " << v.dst << " value: " << v.value;
+  }
 
   uint64_t num_errors = 0;
   const uint64_t threshold = 10;  // only report up to these errors
