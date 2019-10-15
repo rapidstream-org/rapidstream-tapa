@@ -8,20 +8,17 @@ add_test(NAME vadd COMMAND vadd)
 
 find_package(FRT)
 if(FRT_FOUND)
-  add_tlp_target(vadd-tlp-hls
-                 OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/vadd-tlp-hls.cpp
+  add_tlp_target(vadd-hw-xo
                  INPUT vadd.cpp
-                 TLPC $<TARGET_FILE:tlpc>)
+                 TOP VecAdd
+                 PLATFORM xilinx_u200_qdma_201910_1
+                 TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
+                 TLPCC $<TARGET_FILE:tlpcc>)
 
-  add_xocc_targets(${CMAKE_CURRENT_BINARY_DIR}
-                   KERNEL VecAdd
-                   PLATFORM xilinx_u200_qdma_201910_1
-                   INPUT ${CMAKE_CURRENT_BINARY_DIR}/vadd-tlp-hls.cpp
-                   HLS_SRC hls_src
-                   SW_EMU_XCLBIN sw_emu_xclbin
-                   HW_EMU_XCLBIN hw_emu_xclbin
-                   HW_XCLBIN hw_xclbin)
-  add_dependencies(${hls_src} vadd-tlp-hls)
+  add_xocc_hw_link_targets(${CMAKE_CURRENT_BINARY_DIR}
+                           INPUT vadd-hw-xo
+                           HW_EMU_XCLBIN hw_emu_xclbin
+                           HW_XCLBIN hw_xclbin)
 
   add_executable(vadd-frt)
   target_sources(vadd-frt
@@ -30,12 +27,6 @@ if(FRT_FOUND)
                  vadd-frt.cpp)
   target_link_libraries(vadd-frt PRIVATE tlp frt::frt)
 
-  add_custom_target(
-    vadd-csim
-    COMMAND BITSTREAM=$<TARGET_PROPERTY:${sw_emu_xclbin},FILE_NAME>
-            $<TARGET_FILE:vadd-frt>
-    DEPENDS vadd-frt ${sw_emu_xclbin}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   add_custom_target(
     vadd-cosim
     COMMAND BITSTREAM=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>

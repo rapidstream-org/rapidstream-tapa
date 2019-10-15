@@ -1,6 +1,8 @@
 #include <cassert>
 #include <cstring>
 
+#include <iostream>
+
 #include <tlp.h>
 
 using Vid = uint32_t;
@@ -174,10 +176,16 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
     }
 
     // Wait until all partitions are done with the scatter phase.
-    for (Pid pid = 0; pid < num_partitions; ++pid) {
+    for (Pid pid = 0; pid < num_partitions;) {
       if (!done[pid]) {
-        TaskResp resp = resp_q.read();
-        assert(resp.phase == TaskReq::kScatter);
+        bool succeeded;
+        TaskResp resp = resp_q.read(succeeded);
+        if (succeeded) {
+          assert(resp.phase == TaskReq::kScatter);
+          ++pid;
+        }
+      } else {
+        ++pid;
       }
     }
 
@@ -191,14 +199,18 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
     }
 
     // Wait until all partitions are done with the gather phase.
-    for (Pid pid = 0; pid < num_partitions; ++pid) {
-      TaskResp resp = resp_q.read();
-      assert(resp.phase == TaskReq::kGather);
-      VLOG(3) << "recv@Control: " << resp;
-      if (resp.active) {
-        all_done = false;
-      } else {
-        done[pid] = true;
+    for (Pid pid = 0; pid < num_partitions;) {
+      bool succeeded;
+      TaskResp resp = resp_q.read(succeeded);
+      if (succeeded) {
+        assert(resp.phase == TaskReq::kGather);
+        VLOG(3) << "recv@Control: " << resp;
+        if (resp.active) {
+          all_done = false;
+        } else {
+          done[pid] = true;
+        }
+        ++pid;
       }
     }
     VLOG(3) << "info@Control: " << (all_done ? "" : "not ") << "all done";
@@ -225,20 +237,25 @@ void UpdateHandler(Pid num_partitions,
 
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
-  while (!update_config_q.eos()) {
-    auto config = update_config_q.read();
-    VLOG(5) << "recv@UpdateHandler: UpdateConfig: " << config;
-    switch (config.item) {
-      case UpdateConfig::kBaseVid:
-        base_vid = config.vid;
-        break;
-      case UpdateConfig::kPartitionSize:
-        partition_size = config.vid;
-        break;
-      case UpdateConfig::kUpdateOffset:
-        update_offsets[update_offset_idx] = config.eid;
-        ++update_offset_idx;
-        break;
+  for (;;) {
+    bool eos;
+    if (update_config_q.try_eos(eos)) {
+      if (eos) break;
+      bool succeeded;
+      auto config = update_config_q.read(succeeded);
+      VLOG(5) << "recv@UpdateHandler: UpdateConfig: " << config;
+      switch (config.item) {
+        case UpdateConfig::kBaseVid:
+          base_vid = config.vid;
+          break;
+        case UpdateConfig::kPartitionSize:
+          partition_size = config.vid;
+          break;
+        case UpdateConfig::kUpdateOffset:
+          update_offsets[update_offset_idx] = config.eid;
+          ++update_offset_idx;
+          break;
+      }
     }
   }
 
@@ -249,17 +266,22 @@ void UpdateHandler(Pid num_partitions,
     const auto update_req = update_req_q.read();
     VLOG(5) << "recv@UpdateHandler: UpdateReq: " << update_req;
     if (update_req.phase == TaskReq::kScatter) {
-      while (!update_in_q.eos()) {
-        Update update = update_in_q.read();
-        VLOG(5) << "recv@UpdateHandler: Update: " << update;
-        Pid pid = (update.dst - base_vid) / partition_size;
-        VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
-        Eid update_idx = num_updates[pid];
-        Eid update_offset = update_offsets[pid] + update_idx;
+      bool eos;
+      for (;;) {
+        if (update_in_q.try_eos(eos)) {
+          if (eos) break;
+          bool succeeded;
+          Update update = update_in_q.read(succeeded);
+          VLOG(5) << "recv@UpdateHandler: Update: " << update;
+          Pid pid = (update.dst - base_vid) / partition_size;
+          VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
+          Eid update_idx = num_updates[pid];
+          Eid update_offset = update_offsets[pid] + update_idx;
 
-        updates[update_offset] = update;
+          updates[update_offset] = update;
 
-        num_updates[pid] = update_idx + 1;
+          num_updates[pid] = update_idx + 1;
+        }
       }
       update_in_q.open();
     } else {
@@ -269,7 +291,7 @@ void UpdateHandler(Pid num_partitions,
       for (Eid update_idx = 0; update_idx < num_updates[pid]; ++update_idx) {
         Eid update_offset = update_offsets[pid] + update_idx;
         VLOG(5) << "send@UpdateHandler: update_offset: " << update_offset
-                << "Update: " << updates[update_offset];
+                << " Update: " << updates[update_offset];
         update_out_q.write(updates[update_offset]);
       }
       num_updates[pid] = 0;  // Reset for the next scatter phase.
@@ -304,13 +326,18 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
       }
       update_out_q.close();
     } else {
-      while (!update_in_q.eos()) {
-        auto update = update_in_q.read();
-        VLOG(5) << "recv@ProcElem: Update: " << update;
-        auto old_vertex_value = vertices_local[update.dst - req.base_vid];
-        if (update.value < old_vertex_value) {
-          vertices_local[update.dst - req.base_vid] = update.value;
-          active = true;
+      for (;;) {
+        bool eos;
+        if (update_in_q.try_eos(eos)) {
+          if (eos) break;
+          bool succeeded;
+          auto update = update_in_q.read(succeeded);
+          VLOG(5) << "recv@ProcElem: Update: " << update;
+          auto old_vertex_value = vertices_local[update.dst - req.base_vid];
+          if (update.value < old_vertex_value) {
+            vertices_local[update.dst - req.base_vid] = update.value;
+            active = true;
+          }
         }
       }
       update_in_q.open();
@@ -329,11 +356,11 @@ void Graph(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
            tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
            tlp::mmap<const Edge> edges, tlp::mmap<Update> updates) {
   tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
-  tlp::stream<TaskResp, 1> task_resp("task_resp");
-  tlp::stream<Update, 1> update_pe2handler("update_pe2handler");
-  tlp::stream<Update, 1> update_handler2pe("update_handler2pe");
-  tlp::stream<UpdateConfig, 1> update_config("update_config");
-  tlp::stream<UpdateReq, 1> update_req("update_req");
+  tlp::stream<TaskResp, 32> task_resp("task_resp");
+  tlp::stream<Update, 32> update_pe2handler("update_pe2handler");
+  tlp::stream<Update, 32> update_handler2pe("update_handler2pe");
+  tlp::stream<UpdateConfig, 32> update_config("update_config");
+  tlp::stream<UpdateReq, 32> update_req("update_req");
 
   tlp::task()
       .invoke<0>(Control, num_partitions, num_vertices, num_edges,

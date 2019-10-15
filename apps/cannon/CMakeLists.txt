@@ -8,19 +8,17 @@ add_test(NAME cannon COMMAND cannon)
 
 find_package(FRT)
 if(FRT_FOUND)
-  add_tlp_target(cannon-tlp-hls
-                 OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cannon-tlp-hls.cpp
+  add_tlp_target(cannon-hw-xo
                  INPUT cannon.cpp
-                 TLPC $<TARGET_FILE:tlpc>)
+                 TOP Cannon
+                 PLATFORM xilinx_u200_qdma_201910_1
+                 TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
+                 TLPCC $<TARGET_FILE:tlpcc>)
 
-  add_xocc_targets(${CMAKE_CURRENT_BINARY_DIR}
-                   KERNEL Cannon
-                   PLATFORM xilinx_u200_qdma_201910_1
-                   INPUT ${CMAKE_CURRENT_BINARY_DIR}/cannon-tlp-hls.cpp
-                   HLS_SRC hls_src
-                   HW_EMU_XCLBIN hw_emu_xclbin
-                   HW_XCLBIN hw_xclbin)
-  add_dependencies(${hls_src} cannon-tlp-hls)
+  add_xocc_hw_link_targets(${CMAKE_CURRENT_BINARY_DIR}
+                           INPUT cannon-hw-xo
+                           HW_EMU_XCLBIN hw_emu_xclbin
+                           HW_XCLBIN hw_xclbin)
 
   add_executable(cannon-frt)
   target_sources(cannon-frt
