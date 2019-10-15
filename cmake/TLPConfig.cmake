@@ -71,6 +71,7 @@ function(add_tlp_target target_name)
   list(APPEND tlpc_cmd --tlpcc ${TLPCC})
   list(APPEND tlpc_cmd --platform ${TLP_PLATFORM})
   list(APPEND tlpc_cmd --output ${TLP_OUTPUT})
+  list(APPEND tlpc_cmd --work-dir ${TLP_OUTPUT}.tlp)
 
   add_custom_command(OUTPUT ${TLP_OUTPUT}
                      COMMAND ${tlpc_cmd}
