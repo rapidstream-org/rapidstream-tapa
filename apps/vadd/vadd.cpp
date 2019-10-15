@@ -4,24 +4,31 @@
 
 void Add(tlp::istream<float>& a, tlp::istream<float>& b,
          tlp::ostream<float>& c) {
-  while (!a.eos() && !b.eos()) {
-    c.write(a.read() + b.read());
+  for (;;) {
+    bool a_eos;
+    bool b_eos;
+    if (a.try_eos(a_eos) && b.try_eos(b_eos)) {
+      if (a_eos || b_eos) break;
+      bool a_succeed;
+      bool b_succeed;
+      c.write(a.read(a_succeed) + b.read(b_succeed));
+    }
   }
   c.close();
 }
 
-void Array2Stream(tlp::mmap<const float> array, uint64_t n,
-                  tlp::ostream<float>& stream) {
+void Mmap2Stream(tlp::mmap<const float> mmap, uint64_t n,
+                 tlp::ostream<float>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
-    stream.write(array[i]);
+    stream.write(mmap[i]);
   }
   stream.close();
 }
 
-void Stream2Array(tlp::istream<float>& stream, tlp::mmap<float> array,
-                  uint64_t n) {
+void Stream2Mmap(tlp::istream<float>& stream, tlp::mmap<float> mmap,
+                 uint64_t n) {
   for (uint64_t i = 0; i < n; ++i) {
-    array[i] = stream.read();
+    mmap[i] = stream.read();
   }
 }
 
@@ -32,8 +39,8 @@ void VecAdd(tlp::mmap<const float> a_array, tlp::mmap<const float> b_array,
   tlp::stream<float, 8> c_stream("c");
 
   tlp::task()
-      .invoke<0>(Array2Stream, a_array, n, a_stream)
-      .invoke<0>(Array2Stream, b_array, n, b_stream)
+      .invoke<0>(Mmap2Stream, a_array, n, a_stream)
+      .invoke<0>(Mmap2Stream, b_array, n, b_stream)
       .invoke<0>(Add, a_stream, b_stream, c_stream)
-      .invoke<0>(Stream2Array, c_stream, c_array, n);
+      .invoke<0>(Stream2Mmap, c_stream, c_array, n);
 }
