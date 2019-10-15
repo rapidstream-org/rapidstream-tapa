@@ -64,9 +64,9 @@ void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
               tlp::ostream<float>& i_prev, tlp::istream<float>& i_next,
               tlp::ostream<float>& j_prev, tlp::istream<float>& j_next) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
-  static float a[kN / p * kN / p];
-  static float b[kN / p * kN / p];
-  static float c[kN / p * kN / p];
+  float a[kN / p * kN / p];
+  float b[kN / p * kN / p];
+  float c[kN / p * kN / p];
 
   // Initialize local a, b, and c.
   for (uint64_t ii = 0; ii < kNumElems; ++ii) {
