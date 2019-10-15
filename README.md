@@ -66,3 +66,8 @@ cmake ..
 make
 make test
 ```
+
+## Known Issues
+
++ Template functions cannot be tasks
++ Tasks cannot invoke functions with `tlp::stream` or `tlp::mmap`
