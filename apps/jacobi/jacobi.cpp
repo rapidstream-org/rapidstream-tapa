@@ -7,32 +7,43 @@ struct coalesce_t {
   const T& operator[](uint64_t idx) const { return data[idx]; }
 };
 
-void Array2Stream(tlp::mmap<const float> array, uint64_t n,
-                  tlp::ostream<coalesce_t<float, 2>>& stream) {
+void Mmap2Stream(tlp::mmap<const float> mmap, uint64_t n,
+                 tlp::ostream<coalesce_t<float, 2>>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
 #pragma HLS pipeline II = 2
-    stream.write({array[i * 2], array[i * 2 + 1]});
+    stream.write({mmap[i * 2], mmap[i * 2 + 1]});
   }
   stream.close();
 }
 
-void Stream2Array(tlp::istream<coalesce_t<float, 2>>& stream,
-                  tlp::mmap<float> array) {
-  for (uint64_t i = 0; !stream.eos(); ++i) {
+void Stream2Mmap(tlp::istream<coalesce_t<float, 2>>& stream,
+                 tlp::mmap<float> mmap) {
+  for (uint64_t i = 0;;) {
+    bool eos;
+    if (stream.try_eos(eos)) {
+      if (eos) break;
 #pragma HLS pipeline II = 2
-    auto packed = stream.read();
-    array[i * 2] = packed[0];
-    array[i * 2 + 1] = packed[1];
+      bool succeed;
+      auto packed = stream.read(succeed);
+      mmap[i * 2] = packed[0];
+      mmap[i * 2 + 1] = packed[1];
+      ++i;
+    }
   }
 }
 
 void Module0Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
                  tlp::istream<coalesce_t<float, 2>>& dram_t1_bank_0_fifo) {
 module_0_epoch:
-  while (!dram_t1_bank_0_fifo.eos()) {
-    auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read();
-    fifo_st_0.write(dram_t1_bank_0_buf[1]);
-    fifo_st_1.write(dram_t1_bank_0_buf[0]);
+  for (;;) {
+    bool eos;
+    if (dram_t1_bank_0_fifo.try_eos(eos)) {
+      if (eos) break;
+      bool succeed;
+      auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read(succeed);
+      fifo_st_0.write(dram_t1_bank_0_buf[1]);
+      fifo_st_1.write(dram_t1_bank_0_buf[0]);
+    }
   }
   fifo_st_0.close();
   fifo_st_1.close();
@@ -41,10 +52,15 @@ module_0_epoch:
 void Module1Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
                  tlp::istream<float>& fifo_ld_0) {
 module_1_epoch:
-  while (!fifo_ld_0.eos()) {
-    auto fifo_ref_0 = fifo_ld_0.read();
-    fifo_st_0.write(fifo_ref_0);
-    fifo_st_1.write(fifo_ref_0);
+  for (;;) {
+    bool eos;
+    if (fifo_ld_0.try_eos(eos)) {
+      if (eos) break;
+      bool succeed;
+      auto fifo_ref_0 = fifo_ld_0.read(succeed);
+      fifo_st_0.write(fifo_ref_0);
+      fifo_st_1.write(fifo_ref_0);
+    }
   }
   fifo_st_0.close();
   fifo_st_1.close();
@@ -55,16 +71,21 @@ void Module2Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
   float fifo_ref_0_delayed_50_buf[50];
   int fifo_ref_0_delayed_50_ptr = 0;
 module_2_epoch:
-  while (!fifo_ld_0.eos()) {
+  for (;;) {
+    bool eos;
+    if (fifo_ld_0.try_eos(eos)) {
+      if (eos) break;
 #pragma HLS dependence variable = fifo_ref_1_delayed_50_buf inter false
-    auto fifo_ref_0 = fifo_ld_0.read();
-    float fifo_ref_0_delayed_50 =
-        fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr];
-    fifo_st_0.write(fifo_ref_0_delayed_50);
-    fifo_st_1.write(fifo_ref_0_delayed_50);
-    fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr] = fifo_ref_0;
-    fifo_ref_0_delayed_50_ptr =
-        fifo_ref_0_delayed_50_ptr < 49 ? fifo_ref_0_delayed_50_ptr + 1 : 0;
+      bool succeed;
+      auto fifo_ref_0 = fifo_ld_0.read(succeed);
+      float fifo_ref_0_delayed_50 =
+          fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr];
+      fifo_st_0.write(fifo_ref_0_delayed_50);
+      fifo_st_1.write(fifo_ref_0_delayed_50);
+      fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr] = fifo_ref_0;
+      fifo_ref_0_delayed_50_ptr =
+          fifo_ref_0_delayed_50_ptr < 49 ? fifo_ref_0_delayed_50_ptr + 1 : 0;
+    }
   }
   fifo_st_0.close();
   fifo_st_1.close();
@@ -73,10 +94,17 @@ module_2_epoch:
 void Module3Func(tlp::ostream<float>& fifo_st_0, tlp::istream<float>& fifo_ld_0,
                  tlp::istream<float>& fifo_ld_1) {
 module_3_epoch:
-  while (!fifo_ld_0.eos() && !fifo_ld_1.eos()) {
-    float fifo_ref_0 = fifo_ld_0.read();
-    float fifo_ref_1 = fifo_ld_1.read();
-    fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
+  for (;;) {
+    bool eos_0;
+    bool eos_1;
+    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
+      if (eos_0 || eos_1) break;
+      bool succeed_0;
+      bool succeed_1;
+      float fifo_ref_0 = fifo_ld_0.read(succeed_0);
+      float fifo_ref_1 = fifo_ld_1.read(succeed_1);
+      fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
+    }
   }
   fifo_st_0.close();
 }
@@ -86,15 +114,20 @@ void Module4Func(tlp::ostream<float>& fifo_st_0,
   float fifo_ref_0_delayed_1_buf[1];
   int fifo_ref_0_delayed_1_ptr = 0;
 module_4_epoch:
-  while (!fifo_ld_0.eos()) {
+  for (;;) {
+    bool eos;
+    if (fifo_ld_0.try_eos(eos)) {
+      if (eos) break;
 #pragma HLS dependence variable = fifo_ref_0_delayed_1_buf inter false
-    auto fifo_ref_0 = fifo_ld_0.read();
-    const float fifo_ref_0_delayed_1 =
-        fifo_ref_0_delayed_1_buf[fifo_ref_0_delayed_1_ptr];
-    fifo_st_0.write(fifo_ref_0_delayed_1);
-    fifo_ref_0_delayed_1_buf[fifo_ref_0_delayed_1_ptr] = fifo_ref_0;
-    fifo_ref_0_delayed_1_ptr =
-        fifo_ref_0_delayed_1_ptr < 0 ? fifo_ref_0_delayed_1_ptr + 1 : 0;
+      bool succeed;
+      auto fifo_ref_0 = fifo_ld_0.read(succeed);
+      const float fifo_ref_0_delayed_1 =
+          fifo_ref_0_delayed_1_buf[fifo_ref_0_delayed_1_ptr];
+      fifo_st_0.write(fifo_ref_0_delayed_1);
+      fifo_ref_0_delayed_1_buf[fifo_ref_0_delayed_1_ptr] = fifo_ref_0;
+      fifo_ref_0_delayed_1_ptr =
+          fifo_ref_0_delayed_1_ptr < 0 ? fifo_ref_0_delayed_1_ptr + 1 : 0;
+    }
   }
   fifo_st_0.close();
 }
@@ -104,15 +137,20 @@ void Module5Func(tlp::ostream<float>& fifo_st_0,
   float fifo_ref_0_delayed_50_buf[50];
   int fifo_ref_0_delayed_50_ptr = 0;
 module_5_epoch:
-  while (!fifo_ld_0.eos()) {
+  for (;;) {
+    bool eos;
+    if (fifo_ld_0.try_eos(eos)) {
+      if (eos) break;
 #pragma HLS dependence variable = fifo_ref_0_delayed_50_buf inter false
-    auto fifo_ref_0 = fifo_ld_0.read();
-    const float fifo_ref_0_delayed_50 =
-        fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr];
-    fifo_st_0.write(fifo_ref_0_delayed_50);
-    fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr] = fifo_ref_0;
-    fifo_ref_0_delayed_50_ptr =
-        fifo_ref_0_delayed_50_ptr < 49 ? fifo_ref_0_delayed_50_ptr + 1 : 0;
+      bool succeed;
+      auto fifo_ref_0 = fifo_ld_0.read(succeed);
+      const float fifo_ref_0_delayed_50 =
+          fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr];
+      fifo_st_0.write(fifo_ref_0_delayed_50);
+      fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr] = fifo_ref_0;
+      fifo_ref_0_delayed_50_ptr =
+          fifo_ref_0_delayed_50_ptr < 49 ? fifo_ref_0_delayed_50_ptr + 1 : 0;
+    }
   }
   fifo_st_0.close();
 }
@@ -121,11 +159,21 @@ void Module6Func(tlp::ostream<float>& fifo_st_0, tlp::istream<float>& fifo_ld_0,
                  tlp::istream<float>& fifo_ld_1,
                  tlp::istream<float>& fifo_ld_2) {
 module_6_epoch:
-  while (!fifo_ld_0.eos() && !fifo_ld_1.eos() && !fifo_ld_2.eos()) {
-    auto fifo_ref_0 = fifo_ld_0.read();
-    auto fifo_ref_1 = fifo_ld_1.read();
-    auto fifo_ref_2 = fifo_ld_2.read();
-    fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
+  for (;;) {
+    bool eos_0;
+    bool eos_1;
+    bool eos_2;
+    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1) &&
+        fifo_ld_2.try_eos(eos_2)) {
+      if (eos_0 || eos_1 || eos_2) break;
+      bool succeed_0;
+      bool succeed_1;
+      bool succeed_2;
+      auto fifo_ref_0 = fifo_ld_0.read(succeed_0);
+      auto fifo_ref_1 = fifo_ld_1.read(succeed_1);
+      auto fifo_ref_2 = fifo_ld_2.read(succeed_2);
+      fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
+    }
   }
   fifo_st_0.close();
 }
@@ -135,16 +183,21 @@ void Module7Func(tlp::ostream<float>& fifo_st_0,
   float fifo_ref_0_delayed_49_buf[49];
   int fifo_ref_0_delayed_49_ptr = 0;
 module_7_epoch:
-  while (!fifo_ld_0.eos()) {
+  for (;;) {
+    bool eos;
+    if (fifo_ld_0.try_eos(eos)) {
+      if (eos) break;
 #pragma HLS dependence variable = fifo_ref_0_delayed_49_buf inter false
-    auto fifo_ref_0 = fifo_ld_0.read();
+      bool succeed;
+      auto fifo_ref_0 = fifo_ld_0.read(succeed);
 
-    const float fifo_ref_0_delayed_49 =
-        fifo_ref_0_delayed_49_buf[fifo_ref_0_delayed_49_ptr];
-    fifo_st_0.write(fifo_ref_0_delayed_49);
-    fifo_ref_0_delayed_49_buf[fifo_ref_0_delayed_49_ptr] = fifo_ref_0;
-    fifo_ref_0_delayed_49_ptr =
-        fifo_ref_0_delayed_49_ptr < 48 ? fifo_ref_0_delayed_49_ptr + 1 : 0;
+      const float fifo_ref_0_delayed_49 =
+          fifo_ref_0_delayed_49_buf[fifo_ref_0_delayed_49_ptr];
+      fifo_st_0.write(fifo_ref_0_delayed_49);
+      fifo_ref_0_delayed_49_buf[fifo_ref_0_delayed_49_ptr] = fifo_ref_0;
+      fifo_ref_0_delayed_49_ptr =
+          fifo_ref_0_delayed_49_ptr < 48 ? fifo_ref_0_delayed_49_ptr + 1 : 0;
+    }
   }
   fifo_st_0.close();
 }
@@ -153,8 +206,16 @@ void Module8Func(tlp::ostream<coalesce_t<float, 2>>& dram_t0_bank_0_fifo,
                  tlp::istream<float>& fifo_ld_0,
                  tlp::istream<float>& fifo_ld_1) {
 module_8_epoch:
-  while (!fifo_ld_0.eos() && !fifo_ld_1.eos()) {
-    dram_t0_bank_0_fifo.write({fifo_ld_0.read(), fifo_ld_1.read()});
+  for (;;) {
+    bool eos_0;
+    bool eos_1;
+    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
+      if (eos_0 || eos_1) break;
+      bool succeed_0;
+      bool succeed_1;
+      dram_t0_bank_0_fifo.write(
+          {fifo_ld_0.read(succeed_0), fifo_ld_1.read(succeed_1)});
+    }
   }
   dram_t0_bank_0_fifo.close();
 }
@@ -207,7 +268,7 @@ void Jacobi(tlp::mmap<float> bank_0_t0, tlp::mmap<const float> bank_0_t1,
       "from_t0_pe_1_to_super_sink");
 
   tlp::task()
-      .invoke<0>(Array2Stream, bank_0_t1, coalesced_data_num, bank_0_t1_buf)
+      .invoke<0>(Mmap2Stream, bank_0_t1, coalesced_data_num, bank_0_t1_buf)
       .invoke<0>(Module0Func,
                  /*output*/ from_super_source_to_t1_offset_0,
                  /*output*/ from_super_source_to_t1_offset_1,
@@ -267,5 +328,5 @@ void Jacobi(tlp::mmap<float> bank_0_t0, tlp::mmap<const float> bank_0_t1,
                  /*output*/ bank_0_t0_buf,
                  /* input*/ from_t0_pe_0_to_super_sink,
                  /* input*/ from_t0_pe_1_to_super_sink)
-      .invoke<0>(Stream2Array, bank_0_t0_buf, bank_0_t0);
+      .invoke<0>(Stream2Mmap, bank_0_t0_buf, bank_0_t0);
 }
