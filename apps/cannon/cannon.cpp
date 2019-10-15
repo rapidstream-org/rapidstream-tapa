@@ -59,7 +59,6 @@ void Gather(tlp::mmap<float> matrix_ptr, uint64_t n,
 }
 
 // Each PE processes n/p * n/p block of matrix.
-template <int i, int j>
 void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
               tlp::ostream<float>& c_fifo, uint64_t n,
               tlp::ostream<float>& i_prev, tlp::istream<float>& i_next,
@@ -140,13 +139,13 @@ void Cannon(tlp::mmap<const float> a_vec, tlp::mmap<const float> b_vec,
   tlp::task()
       .invoke<0>(Scatter, a_vec, kN, a_00, a_01, a_10, a_11)
       .invoke<0>(Scatter, b_vec, kN, b_00, b_01, b_10, b_11)
-      .invoke<0>(ProcElem<0, 0>, a_00, b_00, c_00, kN, fifo_00_10, fifo_10_00,
+      .invoke<0>(ProcElem, a_00, b_00, c_00, kN, fifo_00_10, fifo_10_00,
                  fifo_00_01, fifo_01_00)
-      .invoke<0>(ProcElem<0, 1>, a_01, b_01, c_01, kN, fifo_01_11, fifo_11_01,
+      .invoke<0>(ProcElem, a_01, b_01, c_01, kN, fifo_01_11, fifo_11_01,
                  fifo_01_00, fifo_00_01)
-      .invoke<0>(ProcElem<1, 0>, a_10, b_10, c_10, kN, fifo_10_00, fifo_00_10,
+      .invoke<0>(ProcElem, a_10, b_10, c_10, kN, fifo_10_00, fifo_00_10,
                  fifo_10_11, fifo_11_10)
-      .invoke<0>(ProcElem<1, 1>, a_11, b_11, c_11, kN, fifo_11_01, fifo_01_11,
+      .invoke<0>(ProcElem, a_11, b_11, c_11, kN, fifo_11_01, fifo_01_11,
                  fifo_11_10, fifo_10_11)
       .invoke<0>(Gather, c_vec, kN, c_00, c_01, c_10, c_11);
 }
