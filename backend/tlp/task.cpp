@@ -341,6 +341,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           metadata["tasks"][task_name].push_back({{"step", step}});
           task = decl_ref->getDecl()->getAsFunction();
         } else {
+          assert(task != nullptr);
           auto param = task->getParamDecl(i - 1);
           string param_cat;
           if (IsMmap(param)) {
