@@ -602,6 +602,10 @@ void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
     args.push_back(GetRewriter().getRewrittenText(arg->getSourceRange()));
   }
   switch (GetStreamOp(call_expr)) {
+    case StreamOpEnum::kTestEmpty: {
+      rewritten_text = stream.name + ".empty()";
+      break;
+    }
     case StreamOpEnum::kTryEos: {
       rewritten_text = "tlp::try_eos(" + stream.name + ", " + stream.PeekVar() +
                        ", " + args[0] + ")";
