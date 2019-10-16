@@ -45,11 +45,11 @@ struct Edge<Vid, std::nullptr_t> {
 
 template <typename Vid, typename Eid, typename VertexAttr, typename EdgeAttr>
 struct Partition {
-  using Edge = Edge<Vid, EdgeAttr>;
+  using EdgeType = Edge<Vid, EdgeAttr>;
   Vid base_vid;
   Vid num_vertices;
   Eid num_edges;
-  std::unique_ptr<Edge, std::function<void(Edge*)>> shard;
+  std::unique_ptr<EdgeType, std::function<void(EdgeType*)>> shard;
 };
 
 // Processes text between begin_ptr and end_ptr and return the edge array as a
@@ -64,7 +64,7 @@ inline std::vector<Edge<Vid, EdgeAttr>> ProcessEdgeList(
   using std::strtoull;
   using std::unique_ptr;
   using std::vector;
-  using Edge = Edge<Vid, EdgeAttr>;
+  using EdgeType = Edge<Vid, EdgeAttr>;
   if (max_vid != nullptr) {
     *max_vid = numeric_limits<Vid>::min();
   }
@@ -72,7 +72,7 @@ inline std::vector<Edge<Vid, EdgeAttr>> ProcessEdgeList(
     *min_vid = numeric_limits<Vid>::max();
   }
   const char* next_pos = nullptr;
-  vector<Edge> edges;
+  vector<EdgeType> edges;
   for (const char* ptr = begin_ptr; ptr < end_ptr; ++ptr) {
     // Skip spaces and tabs.
     for (; isblank(*ptr); ++ptr) {
@@ -123,7 +123,7 @@ inline std::vector<Edge<Vid, EdgeAttr>> ProcessEdgeList(
       }
     }
 
-    Edge edge{src, dst};
+    EdgeType edge{src, dst};
     if (*ptr != '\n' && *ptr != '\r') {
       edge.LoadAttr(ptr, &next_pos);
       ptr = next_pos;
@@ -144,8 +144,8 @@ template <typename Vid, typename Eid, typename VertexAttr,
 std::vector<Partition<Vid, Eid, VertexAttr, EdgeAttr>> LoadEdgeList(
     const std::string& filename, Vid partition_size) {
   using std::runtime_error;
-  using Partition = Partition<Vid, Eid, VertexAttr, EdgeAttr>;
-  using Edge = Edge<Vid, EdgeAttr>;
+  using PartitionType = Partition<Vid, Eid, VertexAttr, EdgeAttr>;
+  using EdgeType = Edge<Vid, EdgeAttr>;
 
   int fd = open(filename.c_str(), O_RDWR | O_CREAT,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
@@ -167,16 +167,16 @@ std::vector<Partition<Vid, Eid, VertexAttr, EdgeAttr>> LoadEdgeList(
 
   Vid max_vid;
   Vid min_vid;
-  std::vector<Edge> edges = ProcessEdgeList<Vid, EdgeAttr>(
+  std::vector<EdgeType> edges = ProcessEdgeList<Vid, EdgeAttr>(
       mmap_ptr, mmap_ptr + mmap_length, &max_vid, &min_vid);
   Vid num_vertices = max_vid - min_vid + 1;
   VLOG(8) << "max: " << max_vid << " min: " << min_vid
           << " num vertices: " << num_vertices;
 
   const size_t num_partitions = (num_vertices - 1) / partition_size + 1;
-  std::vector<std::vector<Edge>*> shards(num_partitions);
+  std::vector<std::vector<EdgeType>*> shards(num_partitions);
   for (auto& shard : shards) {
-    shard = new std::vector<Edge>;
+    shard = new std::vector<EdgeType>;
   }
   for (const auto& edge : edges) {
     VLOG(10) << "src: " << edge.src << " dst: " << edge.dst;
@@ -184,13 +184,13 @@ std::vector<Partition<Vid, Eid, VertexAttr, EdgeAttr>> LoadEdgeList(
     shards[partition_id]->push_back(edge);
   }
 
-  std::vector<Partition> partitions;
+  std::vector<PartitionType> partitions;
   partitions.reserve(num_partitions);
   for (size_t i = 0; i < num_partitions; ++i) {
     Vid base_vid = min_vid + partition_size * i;
     auto shard = shards[i];
     auto shard_ptr = shards[i]->data();
-    auto shard_deleter = [shard](Edge*) { delete shard; };
+    auto shard_deleter = [shard](EdgeType*) { delete shard; };
     partitions.push_back(
         {base_vid,
          Vid(std::min(partition_size, num_vertices + min_vid - base_vid)),
