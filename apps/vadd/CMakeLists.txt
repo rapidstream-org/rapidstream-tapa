@@ -39,12 +39,6 @@ if(FRT_FOUND)
                     DEPENDS vadd-frt ${hw_xclbin}
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-  add_test(NAME vadd-csim
-           COMMAND ${CMAKE_COMMAND}
-                   --build
-                   ${CMAKE_BINARY_DIR}
-                   --target
-                   vadd-csim)
   add_test(NAME vadd-cosim
            COMMAND ${CMAKE_COMMAND}
                    --build

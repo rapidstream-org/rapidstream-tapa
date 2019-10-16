@@ -39,12 +39,6 @@ if(FRT_FOUND)
                     DEPENDS jacobi-frt ${hw_xclbin}
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-  add_test(NAME jacobi-csim
-           COMMAND ${CMAKE_COMMAND}
-                   --build
-                   ${CMAKE_BINARY_DIR}
-                   --target
-                   jacobi-csim)
   add_test(NAME jacobi-cosim
            COMMAND ${CMAKE_COMMAND}
                    --build
