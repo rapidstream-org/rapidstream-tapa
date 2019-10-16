@@ -503,6 +503,8 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Find loops that contain FIFOs operations but do not contain sub-loops;
   // These loops will be pipelined with II = 1.
   for (auto loop_stmt : GetInnermostLoops(func_body)) {
+    InsertHlsPragma(GetLoopBody(loop_stmt)->getBeginLoc(), "pipeline",
+                    {{"II", "1"}});
     auto stream_ops = GetTlpStreamOps(loop_stmt);
     sort(stream_ops.begin(), stream_ops.end());
     auto is_accessed = [&stream_ops](const StreamInfo& stream) -> bool {

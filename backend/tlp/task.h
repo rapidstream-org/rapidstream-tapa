@@ -114,6 +114,23 @@ inline std::vector<const clang::FunctionDecl*> FindAllTasks(
   }
   return tasks;
 }
+
+// Return the body of a loop stmt or nullptr if the input is not a loop.
+inline const clang::Stmt* GetLoopBody(const clang::Stmt* loop) {
+  if (loop != nullptr) {
+    if (auto stmt = llvm::dyn_cast<clang::DoStmt>(loop)) {
+      return stmt->getBody();
+    }
+    if (auto stmt = llvm::dyn_cast<clang::ForStmt>(loop)) {
+      return stmt->getBody();
+    }
+    if (auto stmt = llvm::dyn_cast<clang::WhileStmt>(loop)) {
+      return stmt->getBody();
+    }
+  }
+  return nullptr;
+}
+
 }  // namespace internal
 }  // namespace tlp
 
