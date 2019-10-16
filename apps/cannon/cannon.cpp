@@ -63,6 +63,9 @@ void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
   float a[kN / p * kN / p];
   float b[kN / p * kN / p];
   float c[kN / p * kN / p];
+#pragma HLS array_partition variable = a cyclic factor = 32
+#pragma HLS array_partition variable = b block factor = 32
+#pragma HLS array_partition variable = c cyclic factor = 32
 
   // Initialize local a, b, and c.
   for (uint64_t i = 0; i < kNumElems; ++i) {
@@ -73,11 +76,14 @@ void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
 
   for (int l = 0; l < p; ++l) {
     for (uint64_t i = 0; i < kN / p; ++i) {
-      for (uint64_t k = 0; k < kN / p; ++k) {
-        for (uint64_t j = 0; j < kN / p; ++j) {
+      for (uint64_t j = 0; j < kN / p; ++j) {
 #pragma HLS pipeline II = 1
-          c[i * (kN / p) + j] += a[i * (kN / p) + k] * b[k * (kN / p) + j];
+#pragma HLS dependence false variable = c
+        float tmp = c[i * (kN / p) + j];
+        for (uint64_t k = 0; k < kN / p; ++k) {
+          tmp += a[i * (kN / p) + k] * b[k * (kN / p) + j];
         }
+        c[i * (kN / p) + j] = tmp;
       }
     }
     for (uint64_t a_wr = 0, b_wr = 0, a_rd = 0, b_rd = 0;
