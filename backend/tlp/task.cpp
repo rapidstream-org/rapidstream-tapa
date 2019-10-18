@@ -456,8 +456,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   string new_params{};
   for (auto stream : streams) {
     if (stream.need_peeking) {
-      new_params += ", hls::stream<tlp::data_t<" + stream.type + ">>& " +
-                    stream.PeekVar();
+      new_params += ", tlp::data_t<" + stream.type + "> " + stream.PeekVar();
     }
   }
   if (!new_params.empty()) {
@@ -481,6 +480,8 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     if (stream.need_peeking) {
       InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
                       {{"variable", stream.PeekVar()}});
+      InsertHlsPragma(func_body->getBeginLoc(), "interface",
+                      {{"ap_stable", {}}, {"port", stream.PeekVar()}});
     }
   }
   for (const auto& mmap : mmaps) {

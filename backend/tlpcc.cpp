@@ -110,19 +110,11 @@ struct data_t {
 
 // tlp::stream<T>::try_eos(bool&)
 template <typename T>
-inline bool try_eos(hls::stream<data_t<T>>& fifo,
-                    hls::stream<data_t<T>>& peek_fifo, bool& eos) {
+inline bool try_eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
+                    bool& eos) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  if (fifo.empty()) {
-    return false;
-  } else {
-    data_t<T> tmp;
-    peek_fifo.read_nb(tmp);
-    eos = tmp.eos;
-    return true;
-  }
-  //return fifo.empty() ? false : (peek_fifo.read_nb(tmp), eos = tmp.eos, true);
+#pragma HLS protocol
+  return fifo.empty() ? false : (eos = peek_val.eos, true);
 }
 
 // tlp::stream<T>::eos()
@@ -135,12 +127,11 @@ inline bool eos(hls::stream<data_t<T>>& peek_fifo) {
 
 // tlp::stream<T>::try_peek(T&)
 template <typename T>
-inline bool try_peek(hls::stream<data_t<T>>& fifo,
-                     hls::stream<data_t<T>>& peek_fifo, T& val) {
+inline bool try_peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
+                     T& val) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  data_t<T> tmp;
-  return fifo.empty() ? false : (peek_fifo.read_nb(tmp), val = tmp.val, true);
+#pragma HLS protocol
+  return fifo.empty() ? false : (val = peek_val.val, true);
 }
 
 // tlp::stream<T>::peek()
@@ -159,21 +150,20 @@ inline T peek(hls::stream<data_t<T>>& peek_fifo) {
 
 // tlp::stream<T>::peek(bool&)
 template <typename T>
-inline T peek(hls::stream<T>& fifo, hls::stream<T>& peek_fifo,
-              bool& succeeded) {
+inline T peek(hls::stream<T>& fifo, T peek_val, bool& succeeded) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS protocol
   T tmp;
-  (succeeded = !fifo.empty()) && peek_fifo.read_nb(tmp);
+  (succeeded = !fifo.empty()) && (tmp = peek_val);
   return tmp;
 }
 template <typename T>
-inline T peek(hls::stream<data_t<T>>& fifo, hls::stream<data_t<T>>& peek_fifo,
+inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
               bool& succeeded) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS protocol
   data_t<T> tmp;
-  (succeeded = !fifo.empty()) && peek_fifo.read_nb(tmp);
+  (succeeded = !fifo.empty()) && (tmp = peek_val);
   return tmp.val;
 }
 
