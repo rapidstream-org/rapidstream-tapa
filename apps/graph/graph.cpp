@@ -259,43 +259,46 @@ void UpdateHandler(Pid num_partitions,
     }
   }
 
-  while (!update_req_q.eos()) {
-    // Each UpdateReq either requests forwarding all Updates from ProcElem to
-    // the memory (scatter phase), or requests forwarding all Updates from the
-    // memory to ProcElem (gather phase).
-    const auto update_req = update_req_q.read();
-    VLOG(5) << "recv@UpdateHandler: UpdateReq: " << update_req;
-    if (update_req.phase == TaskReq::kScatter) {
-      bool eos;
-      for (;;) {
-        if (update_in_q.try_eos(eos)) {
-          if (eos) break;
-          bool succeeded;
-          Update update = update_in_q.read(succeeded);
-          VLOG(5) << "recv@UpdateHandler: Update: " << update;
-          Pid pid = (update.dst - base_vid) / partition_size;
-          VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
-          Eid update_idx = num_updates[pid];
-          Eid update_offset = update_offsets[pid] + update_idx;
+  for (bool eos;;) {
+    if (update_req_q.try_eos(eos)) {
+      if (eos) break;
+      // Each UpdateReq either requests forwarding all Updates from ProcElem to
+      // the memory (scatter phase), or requests forwarding all Updates from the
+      // memory to ProcElem (gather phase).
+      const auto update_req = update_req_q.read();
+      VLOG(5) << "recv@UpdateHandler: UpdateReq: " << update_req;
+      if (update_req.phase == TaskReq::kScatter) {
+        bool eos;
+        for (;;) {
+          if (update_in_q.try_eos(eos)) {
+            if (eos) break;
+            bool succeeded;
+            Update update = update_in_q.read(succeeded);
+            VLOG(5) << "recv@UpdateHandler: Update: " << update;
+            Pid pid = (update.dst - base_vid) / partition_size;
+            VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
+            Eid update_idx = num_updates[pid];
+            Eid update_offset = update_offsets[pid] + update_idx;
 
-          updates[update_offset] = update;
+            updates[update_offset] = update;
 
-          num_updates[pid] = update_idx + 1;
+            num_updates[pid] = update_idx + 1;
+          }
         }
+        update_in_q.open();
+      } else {
+        const auto pid = update_req.pid;
+        VLOG(6) << "info@UpdateHandler: num_updates[" << pid
+                << "]: " << num_updates[pid];
+        for (Eid update_idx = 0; update_idx < num_updates[pid]; ++update_idx) {
+          Eid update_offset = update_offsets[pid] + update_idx;
+          VLOG(5) << "send@UpdateHandler: update_offset: " << update_offset
+                  << " Update: " << updates[update_offset];
+          update_out_q.write(updates[update_offset]);
+        }
+        num_updates[pid] = 0;  // Reset for the next scatter phase.
+        update_out_q.close();
       }
-      update_in_q.open();
-    } else {
-      const auto pid = update_req.pid;
-      VLOG(6) << "info@UpdateHandler: num_updates[" << pid
-              << "]: " << num_updates[pid];
-      for (Eid update_idx = 0; update_idx < num_updates[pid]; ++update_idx) {
-        Eid update_offset = update_offsets[pid] + update_idx;
-        VLOG(5) << "send@UpdateHandler: update_offset: " << update_offset
-                << " Update: " << updates[update_offset];
-        update_out_q.write(updates[update_offset]);
-      }
-      num_updates[pid] = 0;  // Reset for the next scatter phase.
-      update_out_q.close();
     }
   }
   VLOG(3) << "info@UpdateHandler: done";
@@ -307,45 +310,47 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
               tlp::ostream<Update>& update_out_q,
               tlp::mmap<VertexAttr> vertices, tlp::mmap<const Edge> edges) {
   VertexAttr vertices_local[kMaxPartitionSize];
-  while (!req_q.eos()) {
-    const TaskReq req = req_q.read();
-    VLOG(5) << "recv@ProcElem: TaskReq: " << req;
-    update_req_q.write({req.phase, req.pid});
-    memcpy(vertices_local, vertices + req.vid_offset,
-           req.num_vertices * sizeof(VertexAttr));
-    bool active = false;
-    if (req.IsScatter()) {
-      for (Eid eid = 0; eid < req.num_edges; ++eid) {
-        auto edge = edges[req.eid_offset + eid];
-        auto vertex_attr = vertices_local[edge.src - req.base_vid];
-        Update update;
-        update.dst = edge.dst;
-        update.value = vertex_attr;
-        VLOG(5) << "send@ProcElem: Update: " << update;
-        update_out_q.write(update);
-      }
-      update_out_q.close();
-    } else {
-      for (;;) {
-        bool eos;
-        if (update_in_q.try_eos(eos)) {
-          if (eos) break;
-          bool succeeded;
-          auto update = update_in_q.read(succeeded);
-          VLOG(5) << "recv@ProcElem: Update: " << update;
-          auto old_vertex_value = vertices_local[update.dst - req.base_vid];
-          if (update.value < old_vertex_value) {
-            vertices_local[update.dst - req.base_vid] = update.value;
-            active = true;
+  for (bool eos;;) {
+    if (req_q.try_eos(eos)) {
+      if (eos) break;
+      const TaskReq req = req_q.read();
+      VLOG(5) << "recv@ProcElem: TaskReq: " << req;
+      update_req_q.write({req.phase, req.pid});
+      memcpy(vertices_local, vertices + req.vid_offset,
+             req.num_vertices * sizeof(VertexAttr));
+      bool active = false;
+      if (req.IsScatter()) {
+        for (Eid eid = 0; eid < req.num_edges; ++eid) {
+          auto edge = edges[req.eid_offset + eid];
+          auto vertex_attr = vertices_local[edge.src - req.base_vid];
+          Update update;
+          update.dst = edge.dst;
+          update.value = vertex_attr;
+          VLOG(5) << "send@ProcElem: Update: " << update;
+          update_out_q.write(update);
+        }
+        update_out_q.close();
+      } else {
+        for (bool eos;;) {
+          if (update_in_q.try_eos(eos)) {
+            if (eos) break;
+            bool succeeded;
+            auto update = update_in_q.read(succeeded);
+            VLOG(5) << "recv@ProcElem: Update: " << update;
+            auto old_vertex_value = vertices_local[update.dst - req.base_vid];
+            if (update.value < old_vertex_value) {
+              vertices_local[update.dst - req.base_vid] = update.value;
+              active = true;
+            }
           }
         }
+        update_in_q.open();
+        memcpy(vertices + req.vid_offset, vertices_local,
+               req.num_vertices * sizeof(VertexAttr));
       }
-      update_in_q.open();
-      memcpy(vertices + req.vid_offset, vertices_local,
-             req.num_vertices * sizeof(VertexAttr));
+      TaskResp resp{req.phase, req.pid, active};
+      resp_q.write(resp);
     }
-    TaskResp resp{req.phase, req.pid, active};
-    resp_q.write(resp);
   }
 
   // Terminates the UpdateHandler.
