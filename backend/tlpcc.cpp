@@ -241,6 +241,30 @@ inline void close(hls::stream<data_t<T>>& fifo) {
 
 }  // namespace tlp
 
+#define TLP_WHILE_NOT_EOS(fifo)                                  \
+  for (bool tlp_##fifo##_valid;                                  \
+       !tlp::eos(fifo, tlp_##fifo##_peek, tlp_##fifo##_valid) || \
+       !tlp_##fifo##_valid;)                                     \
+    if (tlp_##fifo##_valid)
+
+#define TLP_WHILE_NEITHER_EOS(fifo1, fifo2)                          \
+  for (bool tlp_##fifo1##_valid, tlp_##fifo2##_valid;                \
+       (!tlp::eos(fifo1, tlp_##fifo1##_peek, tlp_##fifo1##_valid) || \
+        !tlp_##fifo1##_valid) &&                                     \
+       (!tlp::eos(fifo2, tlp_##fifo2##_peek, tlp_##fifo2##_valid) || \
+        !tlp_##fifo2##_valid);)                                      \
+    if (tlp_##fifo1##_valid && tlp_##fifo2##_valid)
+
+#define TLP_WHILE_NONE_EOS(fifo1, fifo2, fifo3)                            \
+  for (bool tlp_##fifo1##_valid, tlp_##fifo2##_valid, tlp_##fifo3##_valid; \
+       (!tlp::eos(fifo1, tlp_##fifo1##_peek, tlp_##fifo1##_valid) ||       \
+        !tlp_##fifo1##_valid) &&                                           \
+       (!tlp::eos(fifo2, tlp_##fifo2##_peek, tlp_##fifo2##_valid) ||       \
+        !tlp_##fifo2##_valid) &&                                           \
+       (!tlp::eos(fifo3, tlp_##fifo3##_peek, tlp_##fifo3##_valid) ||       \
+        !tlp_##fifo3##_valid);)                                            \
+    if (tlp_##fifo1##_valid && tlp_##fifo2##_valid && tlp_##fifo3##_valid)
+
 )";
 
 namespace tlp {
