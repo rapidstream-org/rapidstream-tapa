@@ -125,6 +125,14 @@ inline bool eos(hls::stream<data_t<T>>& peek_fifo) {
   return peek_fifo.read().eos;
 }
 
+// tlp::stream<T>::eos(bool&)
+template <typename T>
+inline bool eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val, bool& valid) {
+#pragma HLS inline
+#pragma HLS latency min = 1 max = 1
+  return fifo.empty() ? (valid = false) : (valid = true, peek_val.eos);
+}
+
 // tlp::stream<T>::try_peek(T&)
 template <typename T>
 inline bool try_peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,

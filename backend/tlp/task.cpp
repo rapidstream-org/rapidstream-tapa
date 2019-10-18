@@ -618,6 +618,11 @@ void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
       rewritten_text = "tlp::eos(" + stream.PeekVar() + ")";
       break;
     }
+    case StreamOpEnum::kNonBlockingEos: {
+      rewritten_text = "tlp::eos(" + stream.name + ", " + stream.PeekVar() +
+                       ", " + args[0] + ")";
+      break;
+    }
     case StreamOpEnum::kBlockingPeek: {
       rewritten_text = "tlp::peek(" + stream.PeekVar() + ")";
       break;
