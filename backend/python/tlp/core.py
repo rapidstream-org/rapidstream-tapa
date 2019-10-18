@@ -174,6 +174,7 @@ class Program:
         if proc.returncode != 0:
           sys.stdout.write(stdout.decode('utf-8'))
           sys.stderr.write(stderr.decode('utf-8'))
+          raise RuntimeError('HLS failed for {}'.format(task.name))
       yield
 
     tuple(zip(*map(worker, self._tasks.values())))
