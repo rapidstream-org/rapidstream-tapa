@@ -4,15 +4,11 @@
 
 void Add(tlp::istream<float>& a, tlp::istream<float>& b,
          tlp::ostream<float>& c) {
-  for (;;) {
-    bool a_eos;
-    bool b_eos;
-    if (a.try_eos(a_eos) && b.try_eos(b_eos)) {
-      if (a_eos || b_eos) break;
-      bool a_succeed;
-      bool b_succeed;
-      c.write(a.read(a_succeed) + b.read(b_succeed));
-    }
+  TLP_WHILE_NEITHER_EOS(a, b) {
+#pragma HLS pipeline II = 1
+    bool a_succeed;
+    bool b_succeed;
+    c.write(a.read(a_succeed) + b.read(b_succeed));
   }
   c.close();
 }
