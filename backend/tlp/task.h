@@ -90,8 +90,12 @@ inline std::vector<const clang::FunctionDecl*> FindChildrenTasks(
       // Dynamic cast correctness is guaranteed by tlp.h.
       if (auto decl_ref =
               llvm::dyn_cast<clang::DeclRefExpr>(invoke->getArg(0))) {
-        tasks.push_back(
-            llvm::dyn_cast<clang::FunctionDecl>(decl_ref->getDecl()));
+        auto func_decl =
+            llvm::dyn_cast<clang::FunctionDecl>(decl_ref->getDecl());
+        if (func_decl->isTemplateInstantiation()) {
+          func_decl = func_decl->getPrimaryTemplate()->getTemplatedDecl();
+        }
+        tasks.push_back(func_decl);
       }
     }
     return tasks;
