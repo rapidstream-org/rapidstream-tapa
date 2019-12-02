@@ -13,7 +13,7 @@
 | `cannon` | static,feedback  | Cannon's algorithm    | 20        | 7       | 1       |
 | `graph`  | dynamic,feedback | connected components  | 6         | 3       | 1       |
 | `jacobi` | static           | 5-point stencil       | 23        | 17      | 1       |
-| `vadd`   | static           | naïve vector addition | 3         | 4       | 1       |
+| `vadd`   | static           | naÃ¯ve vector addition | 3         | 4       | 1       |
 
 ## Getting Started
 
@@ -82,7 +82,10 @@ sudo python3 -m pip install pyverilog
 
 <details><summary>How to install Python <code>haoda</code>?</summary>
 
-TBD
+```bash
+sudo apt install python3-pip
+sudo python3 -m pip install haoda
+```
 
 </details>
 
