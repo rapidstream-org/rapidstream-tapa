@@ -66,34 +66,12 @@ module_1_epoch:
   fifo_st_1.close();
 }
 
-void Module2Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
-                 tlp::istream<float>& fifo_ld_0) {
-  float fifo_ref_0_delayed_50_buf[50];
-  int fifo_ref_0_delayed_50_ptr = 0;
-module_2_epoch:
-  for (;;) {
-    bool eos;
-    if (fifo_ld_0.try_eos(eos)) {
-      if (eos) break;
-#pragma HLS dependence variable = fifo_ref_1_delayed_50_buf inter false
-      bool succeed;
-      auto fifo_ref_0 = fifo_ld_0.read(succeed);
-      float fifo_ref_0_delayed_50 =
-          fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr];
-      fifo_st_0.write(fifo_ref_0_delayed_50);
-      fifo_st_1.write(fifo_ref_0_delayed_50);
-      fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr] = fifo_ref_0;
-      fifo_ref_0_delayed_50_ptr =
-          fifo_ref_0_delayed_50_ptr < 49 ? fifo_ref_0_delayed_50_ptr + 1 : 0;
-    }
-  }
-  fifo_st_0.close();
-  fifo_st_1.close();
-}
-
-void Module3Func(tlp::ostream<float>& fifo_st_0, tlp::istream<float>& fifo_ld_0,
-                 tlp::istream<float>& fifo_ld_1) {
-module_3_epoch:
+void Module3Func1(tlp::ostream<float>& fifo_st_0,
+                  tlp::istream<float>& fifo_ld_0,
+                  tlp::istream<float>& fifo_ld_1) {
+  const int delay_0 = 50;
+  int count = 0;
+module_3_1_epoch:
   for (;;) {
     bool eos_0;
     bool eos_1;
@@ -101,64 +79,57 @@ module_3_epoch:
       if (eos_0 || eos_1) break;
       bool succeed_0;
       bool succeed_1;
-      float fifo_ref_0 = fifo_ld_0.read(succeed_0);
+      float fifo_ref_0;
+      bool do_ld_0 = count >= delay_0;
+      if (do_ld_0) {
+        fifo_ref_0 = fifo_ld_0.read(succeed_0);
+      }
       float fifo_ref_1 = fifo_ld_1.read(succeed_1);
       fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
+      if (!do_ld_0) {
+        ++count;
+      }
     }
   }
   fifo_st_0.close();
 }
 
-void Module4Func(tlp::ostream<float>& fifo_st_0,
-                 tlp::istream<float>& fifo_ld_0) {
-  float fifo_ref_0_delayed_1_buf[1];
-  int fifo_ref_0_delayed_1_ptr = 0;
-module_4_epoch:
+void Module3Func2(tlp::ostream<float>& fifo_st_0,
+                  tlp::istream<float>& fifo_ld_0,
+                  tlp::istream<float>& fifo_ld_1) {
+  const int delay_0 = 51;
+  int count = 0;
+module_3_2_epoch:
   for (;;) {
-    bool eos;
-    if (fifo_ld_0.try_eos(eos)) {
-      if (eos) break;
-#pragma HLS dependence variable = fifo_ref_0_delayed_1_buf inter false
-      bool succeed;
-      auto fifo_ref_0 = fifo_ld_0.read(succeed);
-      const float fifo_ref_0_delayed_1 =
-          fifo_ref_0_delayed_1_buf[fifo_ref_0_delayed_1_ptr];
-      fifo_st_0.write(fifo_ref_0_delayed_1);
-      fifo_ref_0_delayed_1_buf[fifo_ref_0_delayed_1_ptr] = fifo_ref_0;
-      fifo_ref_0_delayed_1_ptr =
-          fifo_ref_0_delayed_1_ptr < 0 ? fifo_ref_0_delayed_1_ptr + 1 : 0;
+    bool eos_0;
+    bool eos_1;
+    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
+      if (eos_0 || eos_1) break;
+      bool succeed_0;
+      bool succeed_1;
+      float fifo_ref_0;
+      bool do_ld_0 = count >= delay_0;
+      if (do_ld_0) {
+        fifo_ref_0 = fifo_ld_0.read(succeed_0);
+      }
+      float fifo_ref_1 = fifo_ld_1.read(succeed_1);
+      fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
+      if (!do_ld_0) {
+        ++count;
+      }
     }
   }
   fifo_st_0.close();
 }
 
-void Module5Func(tlp::ostream<float>& fifo_st_0,
-                 tlp::istream<float>& fifo_ld_0) {
-  float fifo_ref_0_delayed_50_buf[50];
-  int fifo_ref_0_delayed_50_ptr = 0;
-module_5_epoch:
-  for (;;) {
-    bool eos;
-    if (fifo_ld_0.try_eos(eos)) {
-      if (eos) break;
-#pragma HLS dependence variable = fifo_ref_0_delayed_50_buf inter false
-      bool succeed;
-      auto fifo_ref_0 = fifo_ld_0.read(succeed);
-      const float fifo_ref_0_delayed_50 =
-          fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr];
-      fifo_st_0.write(fifo_ref_0_delayed_50);
-      fifo_ref_0_delayed_50_buf[fifo_ref_0_delayed_50_ptr] = fifo_ref_0;
-      fifo_ref_0_delayed_50_ptr =
-          fifo_ref_0_delayed_50_ptr < 49 ? fifo_ref_0_delayed_50_ptr + 1 : 0;
-    }
-  }
-  fifo_st_0.close();
-}
-
-void Module6Func(tlp::ostream<float>& fifo_st_0, tlp::istream<float>& fifo_ld_0,
-                 tlp::istream<float>& fifo_ld_1,
-                 tlp::istream<float>& fifo_ld_2) {
-module_6_epoch:
+void Module6Func1(tlp::ostream<float>& fifo_st_0,
+                  tlp::istream<float>& fifo_ld_0,
+                  tlp::istream<float>& fifo_ld_1,
+                  tlp::istream<float>& fifo_ld_2) {
+  const int delay_0 = 50;
+  const int delay_2 = 50;
+  int count = 0;
+module_6_1_epoch:
   for (;;) {
     bool eos_0;
     bool eos_1;
@@ -169,34 +140,58 @@ module_6_epoch:
       bool succeed_0;
       bool succeed_1;
       bool succeed_2;
-      auto fifo_ref_0 = fifo_ld_0.read(succeed_0);
+      float fifo_ref_0;
+      bool do_ld_0 = count >= delay_0;
+      if (do_ld_0) {
+        fifo_ref_0 = fifo_ld_0.read(succeed_0);
+      }
       auto fifo_ref_1 = fifo_ld_1.read(succeed_1);
-      auto fifo_ref_2 = fifo_ld_2.read(succeed_2);
+      float fifo_ref_2;
+      bool do_ld_2 = count >= delay_2;
+      if (do_ld_2) {
+        fifo_ref_2 = fifo_ld_2.read(succeed_2);
+      }
       fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
+      if (!do_ld_0 || !do_ld_2) {
+        ++count;
+      }
     }
   }
   fifo_st_0.close();
 }
-
-void Module7Func(tlp::ostream<float>& fifo_st_0,
-                 tlp::istream<float>& fifo_ld_0) {
-  float fifo_ref_0_delayed_49_buf[49];
-  int fifo_ref_0_delayed_49_ptr = 0;
-module_7_epoch:
+void Module6Func2(tlp::ostream<float>& fifo_st_0,
+                  tlp::istream<float>& fifo_ld_0,
+                  tlp::istream<float>& fifo_ld_1,
+                  tlp::istream<float>& fifo_ld_2) {
+  const int delay_0 = 49;
+  const int delay_2 = 50;
+  int count = 0;
+module_6_2_epoch:
   for (;;) {
-    bool eos;
-    if (fifo_ld_0.try_eos(eos)) {
-      if (eos) break;
-#pragma HLS dependence variable = fifo_ref_0_delayed_49_buf inter false
-      bool succeed;
-      auto fifo_ref_0 = fifo_ld_0.read(succeed);
-
-      const float fifo_ref_0_delayed_49 =
-          fifo_ref_0_delayed_49_buf[fifo_ref_0_delayed_49_ptr];
-      fifo_st_0.write(fifo_ref_0_delayed_49);
-      fifo_ref_0_delayed_49_buf[fifo_ref_0_delayed_49_ptr] = fifo_ref_0;
-      fifo_ref_0_delayed_49_ptr =
-          fifo_ref_0_delayed_49_ptr < 48 ? fifo_ref_0_delayed_49_ptr + 1 : 0;
+    bool eos_0;
+    bool eos_1;
+    bool eos_2;
+    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1) &&
+        fifo_ld_2.try_eos(eos_2)) {
+      if (eos_0 || eos_1 || eos_2) break;
+      bool succeed_0;
+      bool succeed_1;
+      bool succeed_2;
+      float fifo_ref_0;
+      bool do_ld_0 = count >= delay_0;
+      if (do_ld_0) {
+        fifo_ref_0 = fifo_ld_0.read(succeed_0);
+      }
+      auto fifo_ref_1 = fifo_ld_1.read(succeed_1);
+      float fifo_ref_2;
+      bool do_ld_2 = count >= delay_2;
+      if (do_ld_2) {
+        fifo_ref_2 = fifo_ld_2.read(succeed_2);
+      }
+      fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
+      if (!do_ld_0 || !do_ld_2) {
+        ++count;
+      }
     }
   }
   fifo_st_0.close();
@@ -236,97 +231,83 @@ void Jacobi(tlp::mmap<float> bank_0_t0, tlp::mmap<const float> bank_0_t1,
       "from_t1_offset_1_to_t1_offset_2001");
   tlp::stream<float, 6> from_t1_offset_1_to_tcse_var_0_pe_0(
       "from_t1_offset_1_to_tcse_var_0_pe_0");
-  tlp::stream<float, 2> from_t1_offset_2000_to_t1_offset_2002(
-      "from_t1_offset_2000_to_t1_offset_2002");
-  tlp::stream<float, 8> from_t1_offset_2000_to_t0_pe_1(
+  tlp::stream<float, 58> from_t1_offset_2000_to_t0_pe_1(
       "from_t1_offset_2000_to_t0_pe_1");
-  tlp::stream<float, 2> from_t1_offset_2001_to_tcse_var_0_pe_1(
+  tlp::stream<float, 52> from_t1_offset_2001_to_tcse_var_0_pe_1(
       "from_t1_offset_2001_to_tcse_var_0_pe_1");
-  tlp::stream<float, 6> from_t1_offset_2001_to_t0_pe_0(
+  tlp::stream<float, 56> from_t1_offset_2001_to_t0_pe_0(
       "from_t1_offset_2001_to_t0_pe_0");
   tlp::stream<float, 2> from_tcse_var_0_pe_1_to_tcse_var_0_offset_0(
       "from_tcse_var_0_pe_1_to_tcse_var_0_offset_0");
-  tlp::stream<float, 2> from_t1_offset_2002_to_tcse_var_0_pe_0(
-      "from_t1_offset_2002_to_tcse_var_0_pe_0");
+  tlp::stream<float, 53> from_t1_offset_2000_to_tcse_var_0_pe_0(
+      "from_t1_offset_2000_to_tcse_var_0_pe_0");
   tlp::stream<float, 2> from_tcse_var_0_pe_0_to_tcse_var_0_offset_1(
       "from_tcse_var_0_pe_0_to_tcse_var_0_offset_1");
-  tlp::stream<float, 2> from_tcse_var_0_offset_0_to_tcse_var_0_offset_2000(
-      "from_tcse_var_0_offset_0_to_tcse_var_0_offset_2000");
   tlp::stream<float, 6> from_tcse_var_0_offset_0_to_t0_pe_1(
       "from_tcse_var_0_offset_0_to_t0_pe_1");
-  tlp::stream<float, 2> from_tcse_var_0_offset_1_to_tcse_var_0_offset_1999(
-      "from_tcse_var_0_offset_1_to_tcse_var_0_offset_1999");
   tlp::stream<float, 2> from_tcse_var_0_offset_1_to_t0_pe_0(
       "from_tcse_var_0_offset_1_to_t0_pe_0");
-  tlp::stream<float, 2> from_tcse_var_0_offset_2000_to_t0_pe_0(
-      "from_tcse_var_0_offset_2000_to_t0_pe_0");
+  tlp::stream<float, 52> from_tcse_var_0_offset_0_to_t0_pe_0(
+      "from_tcse_var_0_offset_0_to_t0_pe_0");
   tlp::stream<float, 4> from_t0_pe_0_to_super_sink(
       "from_t0_pe_0_to_super_sink");
-  tlp::stream<float, 2> from_tcse_var_0_offset_1999_to_t0_pe_1(
-      "from_tcse_var_0_offset_1999_to_t0_pe_1");
+  tlp::stream<float, 51> from_tcse_var_0_offset_1_to_t0_pe_1(
+      "from_tcse_var_0_offset_1_to_t0_pe_1");
   tlp::stream<float, 2> from_t0_pe_1_to_super_sink(
       "from_t0_pe_1_to_super_sink");
 
   tlp::task()
-      .invoke<0>(Mmap2Stream, bank_0_t1, coalesced_data_num, bank_0_t1_buf)
-      .invoke<0>(Module0Func,
+      .invoke<0>(Mmap2Stream, "Mmap2Stream", bank_0_t1, coalesced_data_num,
+                 bank_0_t1_buf)
+      .invoke<0>(Module0Func, "Module0Func",
                  /*output*/ from_super_source_to_t1_offset_0,
                  /*output*/ from_super_source_to_t1_offset_1,
                  /* input*/ bank_0_t1_buf)
-      .invoke<0>(Module1Func,
+      .invoke<0>(Module1Func, "Module1Func#1",
                  /*output*/ from_t1_offset_0_to_t1_offset_2000,
                  /*output*/ from_t1_offset_0_to_tcse_var_0_pe_1,
                  /* input*/ from_super_source_to_t1_offset_0)
-      .invoke<0>(Module1Func,
+      .invoke<0>(Module1Func, "Module1Func#2",
                  /*output*/ from_t1_offset_1_to_t1_offset_2001,
                  /*output*/ from_t1_offset_1_to_tcse_var_0_pe_0,
                  /* input*/ from_super_source_to_t1_offset_1)
-      .invoke<0>(Module2Func,
-                 /*output*/ from_t1_offset_2000_to_t1_offset_2002,
+      .invoke<0>(Module1Func, "Module2Func#1",
+                 /*output*/ from_t1_offset_2000_to_tcse_var_0_pe_0,
                  /*output*/ from_t1_offset_2000_to_t0_pe_1,
                  /* input*/ from_t1_offset_0_to_t1_offset_2000)
-      .invoke<0>(Module2Func,
+      .invoke<0>(Module1Func, "Module2Func#2",
                  /*output*/ from_t1_offset_2001_to_tcse_var_0_pe_1,
                  /*output*/ from_t1_offset_2001_to_t0_pe_0,
                  /* input*/ from_t1_offset_1_to_t1_offset_2001)
-      .invoke<0>(Module3Func,
+      .invoke<0>(Module3Func1, "Module3Func#1",
                  /*output*/ from_tcse_var_0_pe_1_to_tcse_var_0_offset_0,
                  /* input*/ from_t1_offset_2001_to_tcse_var_0_pe_1,
                  /* input*/ from_t1_offset_0_to_tcse_var_0_pe_1)
-      .invoke<0>(Module4Func,
-                 /*output*/ from_t1_offset_2002_to_tcse_var_0_pe_0,
-                 /* input*/ from_t1_offset_2000_to_t1_offset_2002)
-      .invoke<0>(Module3Func,
+      .invoke<0>(Module3Func2, "Module3Func#2",
                  /*output*/ from_tcse_var_0_pe_0_to_tcse_var_0_offset_1,
-                 /* input*/ from_t1_offset_2002_to_tcse_var_0_pe_0,
+                 /* input*/ from_t1_offset_2000_to_tcse_var_0_pe_0,
                  /* input*/ from_t1_offset_1_to_tcse_var_0_pe_0)
-      .invoke<0>(Module1Func,
-                 /*output*/ from_tcse_var_0_offset_0_to_tcse_var_0_offset_2000,
+      .invoke<0>(Module1Func, "Module1Func#3",
+                 /*output*/ from_tcse_var_0_offset_0_to_t0_pe_0,
                  /*output*/ from_tcse_var_0_offset_0_to_t0_pe_1,
                  /* input*/ from_tcse_var_0_pe_1_to_tcse_var_0_offset_0)
-      .invoke<0>(Module1Func,
-                 /*output*/ from_tcse_var_0_offset_1_to_tcse_var_0_offset_1999,
+      .invoke<0>(Module1Func, "Module1Func#4",
+                 /*output*/ from_tcse_var_0_offset_1_to_t0_pe_1,
                  /*output*/ from_tcse_var_0_offset_1_to_t0_pe_0,
                  /* input*/ from_tcse_var_0_pe_0_to_tcse_var_0_offset_1)
-      .invoke<0>(Module5Func,
-                 /*output*/ from_tcse_var_0_offset_2000_to_t0_pe_0,
-                 /* input*/ from_tcse_var_0_offset_0_to_tcse_var_0_offset_2000)
-      .invoke<0>(Module6Func,
+      .invoke<0>(Module6Func1, "Module6Func#1",
                  /*output*/ from_t0_pe_0_to_super_sink,
-                 /* input*/ from_tcse_var_0_offset_2000_to_t0_pe_0,
+                 /* input*/ from_tcse_var_0_offset_0_to_t0_pe_0,
                  /* input*/ from_tcse_var_0_offset_1_to_t0_pe_0,
                  /* input*/ from_t1_offset_2001_to_t0_pe_0)
-      .invoke<0>(Module7Func,
-                 /*output*/ from_tcse_var_0_offset_1999_to_t0_pe_1,
-                 /* input*/ from_tcse_var_0_offset_1_to_tcse_var_0_offset_1999)
-      .invoke<0>(Module6Func,
+      .invoke<0>(Module6Func2, "Module6Func#2",
                  /*output*/ from_t0_pe_1_to_super_sink,
-                 /* input*/ from_tcse_var_0_offset_1999_to_t0_pe_1,
+                 /* input*/ from_tcse_var_0_offset_1_to_t0_pe_1,
                  /* input*/ from_tcse_var_0_offset_0_to_t0_pe_1,
                  /* input*/ from_t1_offset_2000_to_t0_pe_1)
-      .invoke<0>(Module8Func,
+      .invoke<0>(Module8Func, "Module8Func",
                  /*output*/ bank_0_t0_buf,
                  /* input*/ from_t0_pe_0_to_super_sink,
                  /* input*/ from_t0_pe_1_to_super_sink)
-      .invoke<0>(Stream2Mmap, bank_0_t0_buf, bank_0_t0);
+      .invoke<0>(Stream2Mmap, "Stream2Mmap", bank_0_t0_buf, bank_0_t0);
 }
