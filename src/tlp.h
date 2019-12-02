@@ -11,6 +11,12 @@
 #include <unordered_map>
 #include <vector>
 
+#if __cplusplus >= 201402L
+#include <shared_mutex>
+#else
+#include <mutex>
+#endif  // __cplusplus >= 201402L
+
 #include <signal.h>
 #include <time.h>
 
@@ -25,6 +31,17 @@ inline uint64_t get_time_ns() {
   clock_gettime(CLOCK_MONOTONIC, &tp);
   return static_cast<uint64_t>(tp.tv_sec) * 1000000000 + tp.tv_nsec;
 }
+
+#if __cplusplus >= 201402L
+using mutex = std::shared_timed_mutex;
+using shared_lock = std::shared_lock<mutex>;
+#else
+using std::mutex;
+using shared_lock = std::unique_lock<mutex>;
+#endif  // __cplusplus >= 201402L
+
+extern mutex thread_name_mtx;
+extern std::unordered_map<std::thread::id, std::string> thread_name_table;
 
 template <typename T>
 struct elem_t {
@@ -94,8 +111,10 @@ class ostream : virtual public stream_base {
 template <typename T, uint64_t N = 1>
 class stream : public istream<T>, public ostream<T> {
  public:
-  // constructor
-  stream(const std::string& name = "") : name{name}, tail{0}, head{0} {}
+  // constructors
+  stream() : tail{0}, head{0} {}
+  template <size_t S>
+  stream(const char (&name)[S]) : name{name}, tail{0}, head{0} {}
   // deleted copy constructor
   stream(const stream&) = delete;
   // default move constructor
@@ -266,7 +285,14 @@ class stream : public istream<T>, public ostream<T> {
     if (last_signal_timestamp != 0) {
       // print stalling message if within 500 ms of signal
       if (get_time_ns() - last_signal_timestamp < kSignalThreshold) {
-        LOG(INFO) << "stalling for: " << (name.empty() ? "" : name + ".")
+        shared_lock lock(thread_name_mtx);
+        std::string thread_name;
+        auto it = thread_name_table.find(std::this_thread::get_id());
+        if (it != thread_name_table.end()) {
+          thread_name = it->second + " is ";
+        }
+        LOG(INFO) << thread_name
+                  << "stalling for: " << (name.empty() ? "" : name + ".")
                   << func << "()";
       }
       last_signal_timestamp = 0;
@@ -328,16 +354,29 @@ struct task {
   void wait_for(int step) {
     for (auto& t : threads[step]) {
       t.join();
+      thread_name_mtx.lock();
+      thread_name_table.erase(t.get_id());
+      thread_name_mtx.unlock();
     }
   }
 
   template <int step, typename Function, typename... Args>
   task& invoke(Function&& f, Args&&... args) {
+    return invoke<step>(f, "", args...);
+  }
+
+  template <int step, typename Function, typename... Args, size_t S>
+  task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
     // wait until current_step >= step
     for (; current_step < step; ++current_step) {
       wait_for(current_step);
     }
     threads[step].push_back(std::thread(f, std::ref(args)...));
+    if (name[0] != '\0') {
+      thread_name_mtx.lock();
+      thread_name_table[threads[step].rbegin()->get_id()] = name;
+      thread_name_mtx.unlock();
+    }
     return *this;
   }
 };

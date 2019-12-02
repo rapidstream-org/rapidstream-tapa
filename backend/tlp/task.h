@@ -74,6 +74,8 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
     return context_.getDiagnostics().Report(loc, diagnostic_id);
   }
 
+  clang::CharSourceRange GetCharSourceRange(const clang::Stmt* stmt);
+  clang::CharSourceRange GetCharSourceRange(clang::SourceRange range);
   clang::SourceLocation GetEndOfLoc(clang::SourceLocation loc);
 };
 

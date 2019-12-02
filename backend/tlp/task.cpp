@@ -46,7 +46,10 @@ using clang::MemberExpr;
 using clang::PrintingPolicy;
 using clang::RecordType;
 using clang::SourceLocation;
+using clang::SourceRange;
 using clang::Stmt;
+using clang::StringLiteral;
+using clang::TemplateArgument;
 using clang::TemplateSpecializationType;
 using clang::VarDecl;
 using clang::WhileStmt;
@@ -319,12 +322,14 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
   for (auto invoke : invokes) {
     int step = -1;
+    bool has_name = false;
     if (const auto method = dyn_cast<CXXMethodDecl>(invoke->getCalleeDecl())) {
+      auto args = method->getTemplateSpecializationArgs()->asArray();
       step =
-          *reinterpret_cast<const int*>(method->getTemplateSpecializationArgs()
-                                            ->get(0)
-                                            .getAsIntegral()
-                                            .getRawData());
+          *reinterpret_cast<const int*>(args[0].getAsIntegral().getRawData());
+      if (args.rbegin()->getKind() == TemplateArgument::Integral) {
+        has_name = true;
+      }
     } else {
       ReportError(invoke->getCallee()->getBeginLoc(),
                   "unexpected invocation: %0")
@@ -342,7 +347,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           task = decl_ref->getDecl()->getAsFunction();
         } else {
           assert(task != nullptr);
-          auto param = task->getParamDecl(i - 1);
+          auto param = task->getParamDecl(has_name ? i - 2 : i - 1);
           string param_cat;
           if (IsMmap(param)) {
             param_cat = "mmap";
@@ -376,13 +381,18 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           (*metadata["tasks"][task_name].rbegin())["args"][arg_name] = {
               {"cat", param_cat}, {"port", param->getNameAsString()}};
         }
-      } else {
-        auto diagnostics_builder =
-            ReportError(arg->getBeginLoc(), "unexpected argument: %0");
-        diagnostics_builder.AddString(arg->getStmtClassName());
-        diagnostics_builder.AddSourceRange(
-            CharSourceRange::getCharRange(arg->getSourceRange()));
+        continue;
+      } else if (const auto string_literal = dyn_cast<StringLiteral>(arg)) {
+        if (i == 1 && has_name) {
+          (*metadata["tasks"][task_name].rbegin())["name"] =
+              string_literal->getString();
+          continue;
+        }
       }
+      auto diagnostics_builder =
+          ReportError(arg->getBeginLoc(), "unexpected argument: %0");
+      diagnostics_builder.AddString(arg->getStmtClassName());
+      diagnostics_builder.AddSourceRange(GetCharSourceRange(arg));
     }
   }
 
@@ -673,6 +683,13 @@ void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
 SourceLocation Visitor::GetEndOfLoc(SourceLocation loc) {
   return loc.getLocWithOffset(Lexer::MeasureTokenLength(
       loc, GetRewriter().getSourceMgr(), GetRewriter().getLangOpts()));
+}
+CharSourceRange Visitor::GetCharSourceRange(SourceRange range) {
+  return CharSourceRange::getCharRange(range.getBegin(),
+                                       GetEndOfLoc(range.getEnd()));
+}
+CharSourceRange Visitor::GetCharSourceRange(const Stmt* stmt) {
+  return GetCharSourceRange(stmt->getSourceRange());
 }
 
 }  // namespace internal

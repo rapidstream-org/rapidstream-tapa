@@ -4,8 +4,13 @@
 #include <thread>
 
 using std::function;
+using std::string;
+using std::unordered_map;
 
 namespace tlp {
+
+mutex thread_name_mtx;
+unordered_map<std::thread::id, string> thread_name_table;
 
 thread_local uint64_t last_signal_timestamp = 0;
 function<void(int)> signal_handler_func;
