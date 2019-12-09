@@ -124,6 +124,15 @@ class stream : public istream<T>, public ostream<T> {
   // default move assignment operator
   stream& operator=(stream&&) = default;
 
+  ~stream() {
+    // do not call virtual function empty() in destructor
+    if (head != tail) {
+      LOG(WARNING) << "stream '" << name
+                   << "' destructed with leftovers; hardware behavior may be "
+                      "unexpected in consecutive invocations";
+    }
+  }
+
   // must call APIs from tlp::istream or tlp::ostream; calling from tlp::stream
   // directly is not allowed
  private:
