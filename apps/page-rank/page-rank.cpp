@@ -122,8 +122,8 @@ ostream& operator<<(ostream& os, const UpdateReq& obj) {
   return os << "{phase: " << obj.phase << ", pid: " << obj.pid << "}";
 }
 
-const int kMaxNumPartitions = 1024;
-const int kMaxPartitionSize = 1024 * 1024;
+const int kMaxNumPartitions = 1024 * 32;
+const int kMaxPartitionSize = 1024 * 32;
 
 void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
              tlp::mmap<const Eid> num_edges,
