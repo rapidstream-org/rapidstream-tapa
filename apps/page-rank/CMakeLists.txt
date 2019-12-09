@@ -1,3 +1,5 @@
+find_package(Boost REQUIRED)
+
 add_library(page_rank_host)
 target_include_directories(page_rank_host PRIVATE ../graph)
 target_sources(page_rank_host PRIVATE ../graph/nxgraph.hpp page-rank-host.cpp)

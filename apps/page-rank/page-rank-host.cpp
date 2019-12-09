@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <boost/align.hpp>
+
 #include <tlp.h>
 
 #include "nxgraph.hpp"
@@ -16,7 +18,8 @@ using std::endl;
 using std::numeric_limits;
 using std::ostream;
 using std::runtime_error;
-using std::vector;
+template <typename T>
+using vector = std::vector<T, boost::alignment::aligned_allocator<T, 4096>>;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
