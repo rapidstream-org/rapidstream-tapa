@@ -118,7 +118,8 @@ int main(int argc, char* argv[]) {
   const size_t num_partitions = partitions.size();
 
   vector<Vid> num_vertices(num_partitions + 1);
-  vector<Eid> num_edges(num_partitions);
+  vector<Eid> num_edges(num_partitions * 2);
+  vector<Eid> num_in_edges(num_partitions);
   Vid total_num_vertices = 0;
   Eid total_num_edges = 0;
   num_vertices[0] = partitions[0].base_vid;
@@ -128,6 +129,19 @@ int main(int argc, char* argv[]) {
     num_edges[i] = partitions[i].num_edges;
     total_num_vertices += partitions[i].num_vertices;
     total_num_edges += partitions[i].num_edges;
+  }
+
+  // calculate the update offsets
+  for (size_t i = 0; i < num_partitions; ++i) {
+    for (auto* ptr = partitions[i].shard.get();
+         ptr < partitions[i].shard.get() + partitions[i].num_edges; ++ptr) {
+      ++num_in_edges[(ptr->dst - base_vid) / partition_size];
+    }
+  }
+  for (size_t i = 1; i < num_partitions; ++i) {
+    num_edges[num_partitions + i] =
+        num_edges[num_partitions + i - 1] + num_in_edges[i - 1];
+    VLOG(5) << "update offset #" << i << ": " << num_edges[num_partitions + i];
   }
 
   vector<Edge> edges(total_num_edges);
@@ -155,7 +169,7 @@ int main(int argc, char* argv[]) {
   }
   vector<VertexAttr> vertices{vertices_baseline};
 
-  vector<Update> updates(total_num_edges * num_partitions);
+  vector<Update> updates(total_num_edges);
 
   if (VLOG_IS_ON(10)) {
     VLOG(10) << "num_vertices";
@@ -176,8 +190,8 @@ int main(int argc, char* argv[]) {
     }
     VLOG(10) << "updates: " << updates.size();
   }
-  PageRank(num_partitions, num_vertices, num_edges, vertices, edges, updates);
   PageRank(base_vid, vertices_baseline, edges);
+  PageRank(num_partitions, num_vertices, num_edges, vertices, edges, updates);
 
   vector<VertexAttr> best_baseline(10);
   vector<VertexAttr> best{best_baseline};

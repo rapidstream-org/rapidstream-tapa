@@ -168,8 +168,9 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
       {UpdateConfig::kPartitionSize, num_vertices_local[0], 0});
   for (Pid pid = 0; pid < num_partitions; ++pid) {
     VLOG(8) << "info@Control: eid offset[" << pid
-            << "]: " << eid_offset_acc * pid;
-    UpdateConfig info{UpdateConfig::kUpdateOffset, 0, eid_offset_acc * pid};
+            << "]: " << num_edges[num_partitions + pid];
+    UpdateConfig info{UpdateConfig::kUpdateOffset, 0,
+                      num_edges[num_partitions + pid]};
     update_config_q.write(info);
   }
   update_config_q.close();
