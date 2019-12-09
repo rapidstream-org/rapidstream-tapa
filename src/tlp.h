@@ -315,7 +315,8 @@ class mmap {
  public:
   mmap(T* ptr) : ptr_{ptr}, size_{0} {}
   mmap(T* ptr, uint64_t size) : ptr_{ptr}, size_{size} {}
-  mmap(std::vector<typename std::remove_const<T>::type>& vec)
+  template <typename Allocator>
+  mmap(std::vector<typename std::remove_const<T>::type, Allocator>& vec)
       : ptr_{vec.data()}, size_{vec.size()} {}
   operator T*() { return ptr_; }
 
