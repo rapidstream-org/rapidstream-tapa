@@ -6,11 +6,11 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v1
     - name: apt-install
-      run: sudo apt install python-pip libgoogle-glog-dev -y
+      run: sudo apt install python-pip libboost-dev libgoogle-glog-dev -y
     - name: pip-install
       run: sudo -H python -m pip install cmake
     - name: cmake-configure
