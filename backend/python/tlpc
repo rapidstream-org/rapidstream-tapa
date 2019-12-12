@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 import argparse
-import sys
-import shutil
-import subprocess
+import io
+import json
 import os
 import os.path
-import io
+import re
+import shutil
+import subprocess
+import sys
 
 import haoda.backend.xilinx
-
 import tlp.core
 import tlp.verilog.xilinx
 
@@ -117,8 +118,9 @@ def main():
     # set top-level task name
     if args.top is None:
       parser.error('tlpcc cannot run without --top')
-    tlpcc_cmd += '-top', args.top, '--', '-I', os.path.join(
-        os.path.dirname(sys.argv[0]), '..', '..', 'src')
+    tlp_include_dir = os.path.join(os.path.dirname(sys.argv[0]), '..', '..',
+                                   'src')
+    tlpcc_cmd += '-top', args.top, '--', '-I', tlp_include_dir
 
     # find clang include location
     for clang_version in ('10', '9', '8'):
@@ -137,10 +139,46 @@ def main():
                           check=False)
     if proc.returncode != 0:
       parser.exit(status=proc.returncode, message=proc.stderr)
-    if last_step == 'run_tlpcc':
-      with open(args.output_file, 'w') as output_fp:
-        output_fp.write(proc.stdout)
-    tlp_program_json = lambda: io.StringIO(proc.stdout)
+    tlp_program_json_dict = json.loads(proc.stdout)
+
+    # Use -MM to find all user headers
+    input_file_basename = os.path.basename(args.input_file)
+    input_file_dirname = os.path.dirname(args.input_file)
+    deps = subprocess.check_output([
+        'clang++-' + clang_version,
+        '-MM',
+        input_file_basename,
+        '-I',
+        tlp_include_dir,
+    ],
+                                   cwd=input_file_dirname,
+                                   universal_newlines=True)  # type: str
+    # partition -MM output at '.o: '
+    deps = deps.rstrip('\n').partition('.o: ')[-1].replace('\\\n', ' ')
+    # split at non-escaped space and replace escaped spaces with spaces
+    dep_set = {x.replace('\\ ', ' ') for x in re.split(r'(?<!\\) ', deps)}
+    dep_set = set(
+        filter(
+            lambda x: not os.path.isabs(x) and x not in {
+                '',
+                input_file_basename,
+                os.path.join(tlp_include_dir, 'tlp.h'),
+            }, dep_set))
+    for dep in dep_set:
+      tlp_program_json_dict.setdefault('headers', {})
+      with open(os.path.join(input_file_dirname, dep), 'r') as dep_fp:
+        tlp_program_json_dict['headers'][dep] = dep_fp.read()
+    tlp_program_json_str = json.dumps(tlp_program_json_dict)
+
+    # save program.json if work_dir is set or run_tlpcc is the last step
+    if args.work_dir is not None or last_step == 'run_tlpcc':
+      if last_step == 'run_tlpcc':
+        tlp_program_json_file = args.output_file
+      else:
+        tlp_program_json_file = os.path.join(args.work_dir, 'program.json')
+      with open(tlp_program_json_file, 'w') as output_fp:
+        output_fp.write(tlp_program_json_str)
+    tlp_program_json = lambda: io.StringIO(tlp_program_json_str)
   else:
     tlp_program_json = lambda: open(args.input_file)
   with tlp_program_json() as tlp_program_json_obj:

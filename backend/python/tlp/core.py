@@ -1,14 +1,3 @@
-from typing import (
-    BinaryIO,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    TextIO,
-    Tuple,
-    Union,
-)
-
 import collections
 import enum
 import json
@@ -17,6 +6,8 @@ import shutil
 import sys
 import tarfile
 import tempfile
+from typing import (BinaryIO, Dict, Iterator, List, Optional, TextIO, Tuple,
+                    Union)
 
 from pyverilog.vparser import ast
 
@@ -113,6 +104,7 @@ class Program:
     self.top = obj['top']  # type: str
     self.hls = hls
     self.rtl = rtl
+    self.headers = obj.get('headers', {})  # type: Dict[str, str]
     if work_dir is None:
       self.work_dir = tempfile.mkdtemp(prefix='tlp-')
       self.is_temp = True
@@ -137,12 +129,17 @@ class Program:
   def rtl_dir(self) -> str:
     return os.path.join(self.work_dir, 'hdl')
 
+  @property
+  def cpp_dir(self) -> str:
+    cpp_dir = os.path.join(self.work_dir, 'cpp')
+    os.makedirs(cpp_dir, exist_ok=True)
+    return cpp_dir
+
   def get_task(self, name: str) -> Task:
     return self._tasks[name]
 
   def get_cpp(self, name: str) -> str:
-    os.makedirs(os.path.join(self.work_dir, 'cpp'), exist_ok=True)
-    return os.path.join(self.work_dir, 'cpp', name + '.cpp')
+    return os.path.join(self.cpp_dir, name + '.cpp')
 
   def get_tar(self, name: str) -> str:
     os.makedirs(os.path.join(self.work_dir, 'tar'), exist_ok=True)
@@ -156,6 +153,11 @@ class Program:
     for task in self._tasks.values():
       with open(self.get_cpp(task.name), 'w') as src_code:
         src_code.write(tlp.util.clang_format(task.code))
+    for name, content in self.headers.items():
+      header_path = os.path.join(self.cpp_dir, name)
+      os.makedirs(os.path.dirname(header_path), exist_ok=True)
+      with open(header_path, 'w') as header_fp:
+        header_fp.write(content)
     return self
 
   def run_hls(self, clock_period: Union[int, float, str],
