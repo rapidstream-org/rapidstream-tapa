@@ -96,7 +96,7 @@ ostream& operator<<(ostream& os, const UpdateReq& obj) {
   return os << "{phase: " << obj.phase << ", pid: " << obj.pid << "}";
 }
 
-const int kMaxNumPartitions = 1024 * 32;
+const int kMaxNumPartitions = 2048;
 const int kMaxPartitionSize = 1024 * 32;
 
 void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
@@ -107,14 +107,19 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
 
   // Vid of the 0-th vertex in each partition.
   Vid base_vids[kMaxNumPartitions];
+#pragma HLS resource variable = base_vids latency = 4
   // Number of vertices in each partition.
   Vid num_vertices_local[kMaxNumPartitions];
+#pragma HLS resource variable = num_vertices_local latency = 4
   // Number of edges in each partition.
   Eid num_edges_local[kMaxNumPartitions];
+#pragma HLS resource variable = num_edges_local latency = 4
   // Memory offset of the 0-th vertex in each partition.
   Vid vid_offsets[kMaxNumPartitions];
+#pragma HLS resource variable = vid_offsets latency = 4
   // Memory offset of the 0-th edge in each partition.
   Eid eid_offsets[kMaxNumPartitions];
+#pragma HLS resource variable = eid_offsets latency = 4
 
   Vid base_vid_acc = num_vertices[0];
   Vid vid_offset_acc = 0;
@@ -214,6 +219,7 @@ void UpdateHandler(Pid num_partitions,
   Vid partition_size = 1;
   // Memory offsets of each update partition.
   Eid update_offsets[kMaxNumPartitions];
+#pragma HLS resource variable = update_offsets latency = 4
   // Number of updates of each update partition in memory.
   Eid num_updates[kMaxNumPartitions] = {};
 
