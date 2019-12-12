@@ -16,11 +16,21 @@ jobs:
         sudo -H python -m pip install cmake
     - name: Configure myself
       run: cmake -S . -B build
-    - name: Cache build dependencies
+    - name: Cache llvm-src
       uses: actions/cache@v1
       with:
-        path: build/_deps
-        key: ${{ runner.os }}-build-deps
+        path: build/_deps/llvm-src
+        key: ${{ runner.os }}-llvm-src
+    - name: Cache llvm-build
+      uses: actions/cache@v1
+      with:
+        path: build/_deps/llvm-build
+        key: ${{ runner.os }}-llvm-build
+    - name: Cache llvm-subbuild
+      uses: actions/cache@v1
+      with:
+        path: build/_deps/llvm-subbuild
+        key: ${{ runner.os }}-llvm-subbuild
     - name: Build myself
       run: cmake --build build --target all
     - name: Test myself
