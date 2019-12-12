@@ -8,19 +8,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
-    - name: apt-install
-      run: sudo apt install python-pip libboost-dev libgoogle-glog-dev -y
-    - name: pip-install
-      run: sudo -H python -m pip install cmake
-    - name: cmake-configure
+    - name: Checkout myself
+      uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        sudo apt install python-pip libboost-dev libgoogle-glog-dev -y
+        sudo -H python -m pip install cmake
+    - name: Configure myself
       run: cmake -S . -B build
-    - name: cache dependencies
+    - name: Cache build dependencies
       uses: actions/cache@v1
       with:
         path: build/_deps
         key: ${{ runner.os }}-build-deps
-    - name: cmake-build
+    - name: Build myself
       run: cmake --build build --target all
-    - name: cmake-test
+    - name: Test myself
       run: cmake --build build --target test
