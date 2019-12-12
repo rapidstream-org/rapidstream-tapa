@@ -13,6 +13,8 @@
 
 #include "nxgraph.hpp"
 
+#include "page-rank.h"
+
 using std::clog;
 using std::endl;
 using std::numeric_limits;
@@ -22,38 +24,6 @@ template <typename T>
 using vector = std::vector<T, boost::alignment::aligned_allocator<T, 4096>>;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
-
-// typedefs that should have been placed in header
-
-using Vid = uint32_t;     // can hold all vertices
-using Degree = uint32_t;  // can hold the maximum degree
-using Eid = uint32_t;     // can hold all edges
-using Pid = uint32_t;     // can hold all partitions
-
-constexpr float kDampingFactor = .85f;
-constexpr float kConvergenceThreshold = 0.0001f;
-
-struct VertexAttr {
-  Degree out_degree;
-  float ranking;
-  float tmp;
-  uint32_t padding;
-};
-
-struct Edge {
-  Vid src;
-  Vid dst;
-};
-
-struct Update {
-  Vid dst;
-  float delta;
-};
-
-ostream& operator<<(ostream& os, const VertexAttr& obj) {
-  return os << "{out_degree: " << obj.out_degree << ", ranking: " << obj.ranking
-            << ", tmp: " << obj.tmp << "}";
-}
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
