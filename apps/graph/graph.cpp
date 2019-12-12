@@ -281,9 +281,10 @@ void UpdateHandler(Pid num_partitions,
       update_in_q.open();
     } else {
       const auto pid = update_req.pid;
+      auto num_updates_pid = num_updates[pid];
       VLOG(6) << "info@UpdateHandler: num_updates[" << pid
-              << "]: " << num_updates[pid];
-      for (Eid update_idx = 0; update_idx < num_updates[pid]; ++update_idx) {
+              << "]: " << num_updates_pid;
+      for (Eid update_idx = 0; update_idx < num_updates_pid; ++update_idx) {
         Eid update_offset = update_offsets[pid] + update_idx;
         VLOG(5) << "send@UpdateHandler: update_offset: " << update_offset
                 << " Update: " << updates[update_offset];
