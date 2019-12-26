@@ -176,6 +176,7 @@ def main():
         tlp_program_json_file = args.output_file
       else:
         tlp_program_json_file = os.path.join(args.work_dir, 'program.json')
+      os.makedirs(os.path.dirname(tlp_program_json_file), exist_ok=True)
       with open(tlp_program_json_file, 'w') as output_fp:
         output_fp.write(tlp_program_json_str)
     tlp_program_json = lambda: io.StringIO(tlp_program_json_str)
