@@ -542,6 +542,8 @@ OTHER_MODULES = {
             name='fifo_srl',
             width=32,
             depth=32,
-            addr_width=(32 - 1).bit_length(),
-            depth_width=((32 - 1).bit_length() + 1))
+            addr_width=(32 - 1).bit_length()),
+    'fifo':
+        haoda.backend.xilinx.AUTO_FIFO_TEMPLATE.format(
+            name='fifo', width=32, depth=32, addr_width=(32 - 1).bit_length()),
 }
