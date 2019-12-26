@@ -98,6 +98,7 @@ struct dummy {
 
 #endif  // __SYNTHESIS__
 
+#include <ap_utils.h>
 #include <hls_stream.h>
 
  namespace tlp{

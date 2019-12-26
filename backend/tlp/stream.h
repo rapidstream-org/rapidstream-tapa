@@ -12,7 +12,7 @@
 #include "type.h"
 
 // Enum of different operations performed on a stream.
-enum StreamOpEnum : uint64_t {
+enum class StreamOpEnum : uint64_t {
   kNotStreamOperation = 0,
   kIsDestructive = 1 << 0,  // Changes FIFO state.
   kIsNonBlocking = 1 << 1,
@@ -48,19 +48,9 @@ enum StreamOpEnum : uint64_t {
 };
 
 // Information about a particular stream used in a task.
-struct StreamInfo {
+struct StreamInfo : public ObjectInfo {
   StreamInfo(const std::string& name, const std::string& type)
-      : name{name}, type{type} {
-    if (this->type.substr(0, 7) == "struct ") {
-      this->type.erase(0, 7);
-    } else if (this->type.substr(0, 6) == "class ") {
-      this->type.erase(0, 6);
-    }
-  }
-  // Name of the stream in the task.
-  std::string name;
-  // Type of the stream.
-  std::string type;
+      : ObjectInfo(name, type) {}
   // List of operations performed.
   std::vector<StreamOpEnum> ops{};
   // List of AST nodes. Each of them corresponds to a stream operation.

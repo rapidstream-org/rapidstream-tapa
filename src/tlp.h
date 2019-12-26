@@ -7,6 +7,7 @@
 #include <array>
 #include <atomic>
 #include <future>
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -311,6 +312,8 @@ class stream : public istream<T>, public ostream<T> {
 };
 
 template <typename T>
+class async_mmap;
+template <typename T>
 class mmap {
  public:
   mmap(T* ptr) : ptr_{ptr}, size_{0} {}
@@ -335,15 +338,99 @@ class mmap {
   // Arithmetic.
   mmap<T> operator+(std::ptrdiff_t diff) { return ptr_ + diff; }
   mmap<T> operator-(std::ptrdiff_t diff) { return ptr_ - diff; }
-  mmap<T> operator-(mmap<T> ptr) { return ptr_ - ptr; }
+  std::ptrdiff_t operator-(mmap<T> ptr) { return ptr_ - ptr; }
+
+  // Convert to async_mmap.
+  tlp::async_mmap<T> async_mmap() { return tlp::async_mmap<T>(*this); }
 
   // Host-only APIs.
   T* get() { return ptr_; }
   uint64_t size() { return size_; }
 
- private:
+ protected:
   T* ptr_;
   uint64_t size_;
+};
+
+template <typename T>
+class async_mmap : public mmap<T> {
+  using super = mmap<T>;
+
+ public:
+  async_mmap(super&& mem) : super(mem) {}
+  async_mmap(const super& mem) : super(mem) {}
+  async_mmap(T* ptr) : super(ptr) {}
+  async_mmap(T* ptr, uint64_t size) : super(ptr, size) {}
+  template <typename Allocator>
+  async_mmap(std::vector<typename std::remove_const<T>::type, Allocator>& vec)
+      : super(vec) {}
+
+  // Read operations.
+  void read_addr_write(uint64_t addr) { read_addr_q_.push(addr); }
+  bool read_addr_try_write(uint64_t addr) {
+    read_addr_write(addr);
+    return true;
+  }
+  bool read_data_empty() { return read_addr_q_.empty(); }
+  bool read_data_try_read(T& resp) {
+    if (read_data_empty()) {
+      return false;
+    }
+    resp = super::ptr_[read_addr_q_.front()];
+    read_addr_q_.pop();
+    return true;
+  };
+
+  // Write operations.
+  void write_addr_write(uint64_t addr) {
+    if (write_data_q_.empty()) {
+      write_addr_q_.push(addr);
+    } else {
+      super::ptr_[addr] = write_data_q_.front();
+      write_data_q_.pop();
+    }
+  }
+  bool write_addr_try_write(uint64_t addr) {
+    write_addr_write(addr);
+    return true;
+  }
+  void write_data_write(const T& data) {
+    if (write_addr_q_.empty()) {
+      write_data_q_.push(data);
+    } else {
+      super::ptr_[write_addr_q_.front()] = data;
+      write_addr_q_.pop();
+    }
+  }
+
+  // Waits until no operations are pending or on-going.
+  void fence() {}
+
+ private:
+  // Must be operated via the read/write addr/data stream APIs.
+  operator T*() { return super::ptr_; }
+
+  // Dereference not permitted.
+  T& operator[](std::size_t idx) { return super::ptr_[idx]; }
+  const T& operator[](std::size_t idx) const { return super::ptr_[idx]; }
+  T& operator*() { return *super::ptr_; }
+  const T& operator*() const { return *super::ptr_; }
+
+  // Increment / decrement not permitted.
+  T& operator++() { return *++super::ptr_; }
+  T& operator--() { return *--super::ptr_; }
+  T operator++(int) { return *super::ptr_++; }
+  T operator--(int) { return *super::ptr_--; }
+
+  // Arithmetic not permitted.
+  async_mmap<T> operator+(std::ptrdiff_t diff) { return super::ptr_ + diff; }
+  async_mmap<T> operator-(std::ptrdiff_t diff) { return super::ptr_ - diff; }
+  std::ptrdiff_t operator-(async_mmap<T> ptr) { return super::ptr_ - ptr; }
+
+  // The software simulator queues pending operations.
+  std::queue<uint64_t> read_addr_q_;
+  std::queue<uint64_t> write_addr_q_;
+  std::queue<T> write_data_q_;
 };
 
 struct task {
@@ -389,6 +476,16 @@ struct task {
     }
     return *this;
   }
+};
+
+template <typename T, uint64_t N>
+struct vec_t {
+  T data[N];
+  T& operator[](uint64_t idx) { return data[idx]; }
+  const T& operator[](uint64_t idx) const { return data[idx]; }
+  static constexpr uint64_t length = N;
+  static constexpr uint64_t bytes = N * sizeof(T);
+  static constexpr uint64_t bits = N * sizeof(T);
 };
 
 }  // namespace tlp

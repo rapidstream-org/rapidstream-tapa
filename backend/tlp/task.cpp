@@ -13,6 +13,7 @@
 
 #include "nlohmann/json.hpp"
 
+#include "async_mmap.h"
 #include "mmap.h"
 #include "stream.h"
 
@@ -209,7 +210,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   vector<StreamInfo> streams;
   for (const auto param : func->parameters()) {
     const string param_name = param->getNameAsString();
-    if (IsMmap(param)) {
+    if (IsMmap(param) || IsAsyncMmap(param)) {
       GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           "\n#ifdef COSIM\n" + GetMmapElemType(param) +
@@ -226,7 +227,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   replaced_body +=
       "#pragma HLS interface s_axilite port = return bundle = control\n\n";
   for (const auto param : func->parameters()) {
-    if (IsMmap(param)) {
+    if (IsMmap(param) || IsAsyncMmap(param)) {
       replaced_body +=
           "#pragma HLS data_pack variable = " + param->getNameAsString() + "\n";
     }
@@ -234,7 +235,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
   replaced_body += "\n#ifdef COSIM\n";
   for (const auto param : func->parameters()) {
-    const bool is_mmap = IsMmap(param);
+    const bool is_mmap = IsMmap(param) || IsAsyncMmap(param);
     replaced_body += "{ auto val = ";
     if (is_mmap) {
       replaced_body += "*";
@@ -278,10 +279,10 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   if (*top_name == func->getNameAsString()) {
     for (const auto param : func->parameters()) {
       const auto param_name = param->getNameAsString();
-      if (IsMmap(param)) {
+      if (IsMmap(param) || IsAsyncMmap(param)) {
         metadata["ports"].push_back(
             {{"name", param_name},
-             {"cat", "mmap"},
+             {"cat", IsAsyncMmap(param) ? "async_mmap" : "mmap"},
              {"width",
               context_
                   .getTypeInfo(param->getType()
@@ -351,6 +352,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           string param_cat;
           if (IsMmap(param)) {
             param_cat = "mmap";
+          } else if (IsAsyncMmap(param)) {
+            param_cat = "async_mmap";
           } else if (IsInputStream(param)) {
             param_cat = "istream";
             if (metadata["fifos"][arg_name].contains("consumed_by")) {
@@ -443,6 +446,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Find interface streams.
   vector<StreamInfo> streams;
   vector<MmapInfo> mmaps;
+  vector<AsyncMmapInfo> async_mmaps;
   for (const auto param : func->parameters()) {
     if (IsStreamInterface(param)) {
       auto elem_type = GetStreamElemType(param);
@@ -456,6 +460,13 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           elem_type + "*");
+    } else if (IsAsyncMmap(param)) {
+      auto elem_type = GetMmapElemType(param);
+      AsyncMmapInfo async_mmap(param->getNameAsString(), elem_type);
+      async_mmap.GetAsyncMmapInfo(func->getBody(), context_.getDiagnostics());
+      GetRewriter().ReplaceText(param->getSourceRange(),
+                                async_mmap.GetReplacedText());
+      async_mmaps.push_back(async_mmap);
     }
   }
 
@@ -498,6 +509,18 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
                     {{"variable", mmap.name}});
   }
+  for (const auto& async_mmap : async_mmaps) {
+    if (async_mmap.is_data) {
+      if (async_mmap.is_write) {
+        InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
+                        {{"variable", async_mmap.WriteDataVar()}});
+      }
+      if (async_mmap.is_read) {
+        InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
+                        {{"variable", async_mmap.ReadDataVar()}});
+      }
+    }
+  }
   if (!streams.empty()) {
     GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), "\n\n");
   }
@@ -510,6 +533,50 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     }
   }
   RewriteStreams(func_body, stream_table);
+
+  for (const auto& async_mmap : async_mmaps) {
+    for (size_t i = 0; i < async_mmap.ops.size(); ++i) {
+      auto call_expr = async_mmap.call_exprs[i];
+      vector<string> args;
+      for (auto arg : call_expr->arguments()) {
+        args.push_back(GetRewriter().getRewrittenText(arg->getSourceRange()));
+      }
+      string rewritten_text;
+      switch (async_mmap.ops[i]) {
+        case AsyncMmapOpEnum::kFence:
+          rewritten_text = "ap_wait_n(80)";
+          break;
+        case AsyncMmapOpEnum::kWriteAddrWrite:
+          rewritten_text =
+              async_mmap.WriteAddrVar() + ".write(" + args[0] + ")";
+          break;
+        case AsyncMmapOpEnum::kWriteDataWrite:
+          rewritten_text =
+              async_mmap.WriteDataVar() + ".write(" + args[0] + ")";
+          break;
+        case AsyncMmapOpEnum::kReadAddrTryWrite:
+          rewritten_text =
+              async_mmap.ReadAddrVar() + ".write_nb(" + args[0] + ")";
+          break;
+        case AsyncMmapOpEnum::kReadDataEmpty:
+          rewritten_text = async_mmap.ReadDataVar() + ".empty()";
+          break;
+        case AsyncMmapOpEnum::kReadDataTryRead:
+          rewritten_text =
+              async_mmap.ReadDataVar() + ".read_nb(" + args[0] + ")";
+          break;
+        default: {
+          auto callee = dyn_cast<MemberExpr>(call_expr->getCallee());
+          auto diagnostics_builder = ReportError(
+              callee->getMemberLoc(), "'%0' has not yet been implemented");
+          diagnostics_builder.AddSourceRange(GetCharSourceRange(callee));
+          diagnostics_builder.AddString(GetSignature(call_expr));
+          rewritten_text = "NOT_IMPLEMENTED";
+        }
+      }
+      GetRewriter().ReplaceText(call_expr->getSourceRange(), rewritten_text);
+    }
+  }
 
   // Find loops that contain FIFOs operations but do not contain sub-loops;
   // These loops will be pipelined with II = 1.
@@ -540,8 +607,8 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       decltype(stream.call_exprs) call_exprs;
       for (auto expr : stream.call_exprs) {
         auto stream_op = GetStreamOp(expr);
-        if ((stream_op & StreamOpEnum::kIsBlocking) &&
-            (stream_op & StreamOpEnum::kIsConsumer) &&
+        if (static_cast<bool>(stream_op & StreamOpEnum::kIsBlocking) &&
+            static_cast<bool>(stream_op & StreamOpEnum::kIsConsumer) &&
             binary_search(stream_ops.begin(), stream_ops.end(), expr)) {
           call_exprs.push_back(expr);
         }
