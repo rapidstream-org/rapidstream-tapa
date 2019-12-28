@@ -119,9 +119,8 @@ int main(int argc, char* argv[]) {
 
   vector<Edge> edges;
   edges.reserve(total_num_edges);
-  if (sizeof(Edge) != sizeof(nxgraph::Edge<Vid>)) {
-    throw runtime_error("inconsistent Edge type");
-  }
+  static_assert(sizeof(Edge) == sizeof(nxgraph::Edge<Vid>),
+                "inconsistent Edge type");
 
   for (size_t i = 0; i < num_partitions; ++i) {
     auto partition_begin = edges.end();
