@@ -212,7 +212,7 @@ void UpdateHandler(Pid num_partitions,
                    tlp::istream<UpdateReq>& update_req_q,
                    tlp::istream<Update>& update_in_q,
                    tlp::ostream<Update>& update_out_q,
-                   tlp::mmap<Update> updates) {
+                   tlp::async_mmap<Update> updates) {
   // Base vid of all vertices; used to determine dst partition id.
   Vid base_vid = 0;
   // Used to determine dst partition id.
@@ -222,6 +222,7 @@ void UpdateHandler(Pid num_partitions,
 #pragma HLS resource variable = update_offsets latency = 4
   // Number of updates of each update partition in memory.
   Eid num_updates[kMaxNumPartitions] = {};
+#pragma HLS resource variable = num_updates core = RAM_S2P_BRAM
 
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
@@ -251,29 +252,147 @@ void UpdateHandler(Pid num_partitions,
     const auto update_req = update_req_q.read();
     VLOG(5) << "recv@UpdateHandler: UpdateReq: " << update_req;
     if (update_req.phase == TaskReq::kScatter) {
+      Pid last_pid = 0xffffffff;
+      Eid last_update_idx = 0xffffffff;
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
+#pragma HLS dependence false variable = num_updates
         bool succeeded;
         Update update = update_in_q.read(succeeded);
         VLOG(5) << "recv@UpdateHandler: Update: " << update;
         Pid pid = (update.dst - base_vid) / partition_size;
         VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
-        Eid update_idx = num_updates[pid];
+
+        Eid update_idx;
+        if (last_pid != pid) {
+          // write last_update_idx back
+          {
+#pragma HLS latency min = 1 max = 1
+            update_idx = num_updates[pid];
+            if (last_pid != 0xffffffff) {
+              num_updates[last_pid] = last_update_idx;
+            }
+          }
+
+          last_pid = pid;
+          last_update_idx = update_idx + 1;
+        } else {
+          // accumulate on last pid
+          update_idx = last_update_idx;
+
+          last_update_idx += 1;
+        }
+
         Eid update_offset = update_offsets[pid] + update_idx;
-        updates[update_offset] = update;
-        num_updates[pid] = update_idx + 1;
+        updates.write_addr_write(update_offset);
+        updates.write_data_write(update);
+      }
+      if (last_pid != 0xffffffff) {
+        num_updates[last_pid] = last_update_idx;
       }
       update_in_q.open();
+      updates.fence();
     } else {
       const auto pid = update_req.pid;
       const auto num_updates_pid = num_updates[pid];
       VLOG(6) << "info@UpdateHandler: num_updates[" << pid
               << "]: " << num_updates_pid;
-      for (Eid update_idx = 0; update_idx < num_updates_pid; ++update_idx) {
-        Eid update_offset = update_offsets[pid] + update_idx;
-        VLOG(5) << "send@UpdateHandler: update_offset: " << update_offset
-                << " Update: " << updates[update_offset];
-        update_out_q.write(updates[update_offset]);
+      constexpr int kWindowSize = 4;
+      constexpr int kBufferSize = 2;
+      Update window[kWindowSize];
+      Update buffer[kBufferSize];
+#pragma HLS array_partition variable = window complete
+#pragma HLS array_partition variable = buffer complete
+#pragma HLS data_pack variable = window
+#pragma HLS data_pack variable = buffer
+      for (int i = 0; i < kWindowSize; ++i) {
+#pragma HLS unroll
+        window[i] = {0, 0.f};
+      }
+      for (int i = 0; i < kBufferSize; ++i) {
+#pragma HLS unroll
+        buffer[i] = {0, 0.f};
+      }
+      for (Eid i_rd = 0, i_wr = 0; i_rd < num_updates_pid;) {
+#pragma HLS pipeline II = 1
+        auto read_addr = update_offsets[pid] + i_wr;
+        if (i_wr < num_updates_pid) {
+          if (updates.read_addr_try_write(read_addr)) {
+            ++i_wr;
+          }
+        }
+
+        int idx_without_conflict = FindFirstWithoutConflict(buffer, window);
+        int idx_empty = FindFirstEmpty(buffer);
+        bool input_has_conflict = true;
+        bool input_empty = updates.read_data_empty();
+        Update input_update{0, 0.f};
+        if (idx_without_conflict == -1 && idx_empty != -1 && !input_empty) {
+          updates.read_data_try_read(input_update);
+          input_has_conflict = HasConflict(window, input_update);
+          ++i_rd;
+        }
+
+        // possible write actions:
+        // 1. write one of the updates in the reorder buffer
+        // 2. write the input
+        // 3. write a bubble
+
+        Update output_update =
+            idx_without_conflict != -1
+                ? buffer[idx_without_conflict]
+                : !input_has_conflict ? input_update : Update{0, 0.f};
+
+        // possible buffer actions:
+        // 1. remove an update
+        // 2. do nothing
+        // 3. put input in buffer (if not full)
+
+        if (idx_without_conflict != -1) {
+          buffer[idx_without_conflict] = {0, 0.f};
+        } else if (idx_empty != -1 && !input_empty && input_has_conflict) {
+          buffer[idx_empty] = input_update;
+        }
+
+        // update the window
+        for (int i = 0; i < kWindowSize - 1; ++i) {
+#pragma HLS unroll
+          window[i] = window[i + 1];
+        }
+        window[kWindowSize - 1] = output_update;
+
+        // write the output
+        update_out_q.write(output_update);
+      }
+
+      // after the loop, flush the reorder buffer
+      for (int i = 0; i < kBufferSize;) {
+#pragma HLS pipeline II = 1
+        if (buffer[i].dst == 0) {
+          ++i;
+        } else {
+          auto update = buffer[i];
+          bool has_conflict = false;
+          for (int j = 0; j < kWindowSize; ++j) {
+#pragma HLS unroll
+            if (buffer[i].dst == window[j].dst) {
+              has_conflict |= true;
+            }
+          }
+          if (!has_conflict) {
+            ++i;
+          } else {
+            update = {0, 0.f};
+            LOG(WARNING) << "bubble inserted";
+          }
+
+          for (int i = 0; i < kWindowSize - 1; ++i) {
+#pragma HLS unroll
+            window[i] = window[i + 1];
+          }
+          window[kWindowSize - 1] = update;
+          update_out_q.write(update);
+        }
       }
       num_updates[pid] = 0;  // Reset for the next scatter phase.
       update_out_q.close();
@@ -313,10 +432,14 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
       }
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
+#pragma HLS dependence false variable = vertices_local
         bool succeeded;
         auto update = update_in_q.read(succeeded);
-        VLOG(5) << "recv@ProcElem: Update: " << update;
-        vertices_local[update.dst - req.base_vid].tmp += update.delta;
+        if (update.dst != 0) {
+          VLOG(5) << "recv@ProcElem: Update: " << update;
+#pragma HLS latency max = 4
+          vertices_local[update.dst - req.base_vid].tmp += update.delta;
+        }
       }
       update_in_q.open();
       float max_delta = 0.f;
@@ -343,7 +466,7 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-              tlp::mmap<const Edge> edges, tlp::mmap<Update> updates) {
+              tlp::mmap<const Edge> edges, tlp::async_mmap<Update> updates) {
   tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
   tlp::stream<TaskResp, 32> task_resp("task_resp");
   tlp::stream<Update, 32> update_pe2handler("update_pe2handler");

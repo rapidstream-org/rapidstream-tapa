@@ -27,7 +27,7 @@ using std::chrono::high_resolution_clock;
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-              tlp::mmap<const Edge> edges, tlp::mmap<Update> updates);
+              tlp::mmap<const Edge> edges, tlp::async_mmap<Update> updates);
 
 // Ground truth implementation of page rank.
 //
@@ -117,14 +117,23 @@ int main(int argc, char* argv[]) {
     VLOG(5) << "update offset #" << i << ": " << num_edges[num_partitions + i];
   }
 
-  vector<Edge> edges(total_num_edges);
+  vector<Edge> edges;
+  edges.reserve(total_num_edges);
   if (sizeof(Edge) != sizeof(nxgraph::Edge<Vid>)) {
     throw runtime_error("inconsistent Edge type");
   }
-  auto edge_ptr = edges.data();
+
   for (size_t i = 0; i < num_partitions; ++i) {
-    memcpy(edge_ptr, partitions[i].shard.get(), num_edges[i] * sizeof(Edge));
-    edge_ptr += num_edges[i];
+    auto partition_begin = edges.end();
+    auto edge_ptr = reinterpret_cast<Edge*>(partitions[i].shard.get());
+    edges.insert(edges.end(), edge_ptr, edge_ptr + num_edges[i]);
+
+    // increase burst length of update writes
+    std::sort(partition_begin, edges.end(),
+              [&](const Edge& lhs, const Edge& rhs) -> bool {
+                return (lhs.dst - base_vid) / partition_size <
+                       (rhs.dst - base_vid) / partition_size;
+              });
   }
 
   vector<VertexAttr> vertices_baseline(total_num_vertices);

@@ -29,7 +29,17 @@ if(Boost_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}
       INPUT page-rank-hw-xo
       HW_EMU_XCLBIN hw_emu_xclbin_target
-      HW_XCLBIN hw_xclbin_target)
+      HW_XCLBIN hw_xclbin_target
+                --sp
+                PageRank.m_axi_num_vertices:DDR[0]
+                --sp
+                PageRank.m_axi_num_edges:DDR[0]
+                --sp
+                PageRank.m_axi_vertices:DDR[0]
+                --sp
+                PageRank.m_axi_edges:DDR[1]
+                --sp
+                PageRank.m_axi_updates:DDR[2])
 
     add_executable(page-rank-frt)
     target_sources(page-rank-frt PRIVATE page-rank-frt.cpp)

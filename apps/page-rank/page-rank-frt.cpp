@@ -7,7 +7,7 @@
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-              tlp::mmap<const Edge> edges, tlp::mmap<Update> updates) {
+              tlp::mmap<const Edge> edges, tlp::async_mmap<Update> updates) {
   auto instance =
       fpga::Invoke(getenv("BITSTREAM"), num_partitions,
                    fpga::WriteOnly(num_vertices.get(), num_vertices.size()),
