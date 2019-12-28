@@ -4,37 +4,94 @@ This module defines constants and helper functions for verilog files generated
 for Xilinx devices.
 """
 
-from typing import (
-    BinaryIO,
-    Dict,
-    Iterable,
-    Iterator,
-    IO,
-    Tuple,
-    Type,
-    Union,
-)
-
 import collections
 import copy
-import enum
 import itertools
 import os
 import shutil
 import sys
 import tempfile
+from typing import (IO, BinaryIO, Dict, Iterable, Iterator, Optional, Tuple,
+                    Type, Union)
 
-from pyverilog.vparser import ast
-from pyverilog.vparser import parser
 from pyverilog.ast_code_generator import codegen
+from pyverilog.vparser import ast, parser
 
 import haoda.backend.xilinx
-
 import tlp.core
 
 # const strings
 
 RTL_SUFFIX = '.v'
+
+# width=0 means configurable
+M_AXI_PORT_WIDTHS = dict(
+    ADDR=0,
+    BURST=2,
+    CACHE=4,
+    DATA=0,
+    ID=1,
+    LAST=1,
+    LEN=8,
+    LOCK=2,
+    PROT=3,
+    QOS=4,
+    READY=1,
+    REGION=4,
+    RESP=2,
+    SIZE=3,
+    STRB=0,
+    USER=1,
+    VALID=1,
+)
+
+# [(name, direction), ...]
+M_AXI_ADDR_PORTS = (
+    ('ADDR', 'output'),
+    ('BURST', 'output'),
+    ('CACHE', 'output'),
+    ('ID', 'output'),
+    ('LEN', 'output'),
+    ('LOCK', 'output'),
+    ('PROT', 'output'),
+    ('QOS', 'output'),
+    ('READY', 'input'),
+    ('REGION', 'output'),
+    ('SIZE', 'output'),
+    ('USER', 'output'),
+    ('VALID', 'output'),
+)
+
+# {channel: [(name, direction), ...]}
+M_AXI_PORTS = collections.OrderedDict(
+    AR=M_AXI_ADDR_PORTS,
+    AW=M_AXI_ADDR_PORTS,
+    B=(
+        ('ID', 'input'),
+        ('READY', 'output'),
+        ('RESP', 'input'),
+        ('USER', 'input'),
+        ('VALID', 'input'),
+    ),
+    R=(
+        ('DATA', 'input'),
+        ('ID', 'input'),
+        ('LAST', 'input'),
+        ('READY', 'output'),
+        ('RESP', 'input'),
+        ('USER', 'input'),
+        ('VALID', 'input'),
+    ),
+    W=(
+        ('DATA', 'output'),
+        ('ID', 'output'),
+        ('LAST', 'output'),
+        ('READY', 'input'),
+        ('STRB', 'output'),
+        ('USER', 'output'),
+        ('VALID', 'output'),
+    ),
+)  # type: Dict[str, Tuple[Tuple[str, str], ...]]
 
 M_AXI_PREFIX = 'm_axi_'
 
@@ -161,11 +218,6 @@ Directive = Tuple[int, str]
 IOPort = Union[ast.Input, ast.Output, ast.Inout]
 Signal = Union[ast.Reg, ast.Wire]
 Logic = Union[ast.Assign, ast.Always]
-
-
-class FIFOStyle(enum.Enum):
-  BRAM = 'bram'
-  SRL = 'srl'
 
 
 class Module:
@@ -313,7 +365,6 @@ class Module:
       name: str,
       width: int,
       depth: int,
-      style: FIFOStyle = FIFOStyle.BRAM,
   ) -> 'Module':
 
     def ports() -> Iterator[ast.PortArg]:
@@ -328,7 +379,7 @@ class Module:
           for port_name, arg_suffix in zip(FIFO_WRITE_PORTS, OSTREAM_SUFFIXES))
       yield make_port_arg(port=FIFO_WRITE_PORTS[-1], arg="1'b1")
 
-    return self.add_instance(module_name='fifo_' + style.value,
+    return self.add_instance(module_name='fifo',
                              instance_name=name,
                              ports=ports(),
                              params=(
@@ -340,6 +391,111 @@ class Module:
                                  ast.ParamArg(paramname='DEPTH',
                                               argname=ast.Constant(depth)),
                              ))
+
+  def add_async_mmap_instance(self,
+                              name: str,
+                              tags: Iterable[str],
+                              data_width: int,
+                              addr_width: int = 64,
+                              buffer_size: Optional[int] = None,
+                              max_wait_time: Optional[int] = 3,
+                              max_burst_len: Optional[int] = 255) -> 'Module':
+    paramargs = [
+        ast.ParamArg(paramname='DataWidth', argname=ast.Constant(data_width)),
+        ast.ParamArg(paramname='DataWidthBytesLog',
+                     argname=ast.Constant((data_width // 8 - 1).bit_length())),
+    ]
+    portargs = [
+        make_port_arg(port='clk', arg=HANDSHAKE_INPUT_PORTS[0]),
+        make_port_arg(port='rst', arg=HANDSHAKE_INPUT_PORTS[1] + '_inv'),
+    ]
+    paramargs.append(
+        ast.ParamArg(paramname='AddrWidth', argname=ast.Constant(addr_width)))
+    if buffer_size:
+      paramargs.extend((ast.ParamArg(paramname='BufferSize',
+                                     argname=ast.Constant(buffer_size)),
+                        ast.ParamArg(paramname='BufferSizeLog',
+                                     argname=ast.Constant(
+                                         (buffer_size - 1).bit_length()))))
+    if max_wait_time:
+      paramargs.append(
+          ast.ParamArg(paramname='WaitTimeWidth',
+                       argname=ast.Constant(max_wait_time.bit_length())))
+      portargs.append(
+          make_port_arg(port='max_wait_time',
+                        arg="{}'d{}".format(max_wait_time.bit_length(),
+                                            max_wait_time)))
+    if max_burst_len:
+      paramargs.append(
+          ast.ParamArg(paramname='BurstLenWidth',
+                       argname=ast.Constant(max_burst_len.bit_length())))
+      portargs.append(
+          make_port_arg(port='max_burst_len',
+                        arg="{}'d{}".format(max_burst_len.bit_length(),
+                                            max_burst_len)))
+
+    for channel, ports in M_AXI_PORTS.items():
+      for port, direction in ports:
+        width = M_AXI_PORT_WIDTHS[port]  # type: Optional[int]
+        if width == 0:
+          if port == 'ADDR':
+            width = addr_width
+          elif port == 'DATA':
+            width = data_width
+          elif port == 'STRB':
+            width = data_width // 8
+        elif width == 1:
+          width = None
+        if width is not None:
+          width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
+        portargs.append(
+            make_port_arg(port='m_axi_{channel}{port}'.format(channel=channel,
+                                                              port=port),
+                          arg='m_axi_{name}_{channel}{port}'.format(
+                              name=name, channel=channel, port=port)))
+
+    for tag in tags:
+      for suffix in async_mmap_suffixes(tag=tag):
+        arg = async_mmap_arg_name(arg=name, tag=tag, suffix=suffix)
+        if tag.endswith('addr') and suffix.endswith('din'):
+          elem_size_bytes_m1 = data_width // 8 - 1
+          arg = "{name} + {{{arg}[{}:0], {}'d0}}".format(
+              addr_width - elem_size_bytes_m1.bit_length() - 1,
+              elem_size_bytes_m1.bit_length(),
+              arg=arg,
+              name=name)
+        portargs.append(make_port_arg(port=tag + suffix[2:], arg=arg))
+
+    return self.add_instance(module_name='async_mmap',
+                             instance_name=name + '_m_axi',
+                             ports=portargs,
+                             params=paramargs)
+
+  def add_m_axi(self, name: str, data_width: int,
+                addr_width: int = 64) -> 'Module':
+    for channel, ports in M_AXI_PORTS.items():
+      io_ports = []
+      for port, direction in ports:
+        width = M_AXI_PORT_WIDTHS[port]  # type: Optional[int]
+        if width == 0:
+          if port == 'ADDR':
+            width = addr_width
+          elif port == 'DATA':
+            width = data_width
+          elif port == 'STRB':
+            width = data_width // 8
+        elif width == 1:
+          width = None
+        if width is not None:
+          width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
+        io_ports.append((ast.Input if direction == 'input' else ast.Output)(
+            name='m_axi_{name}_{channel}{port}'.format(name=name,
+                                                       channel=channel,
+                                                       port=port),
+            width=width))
+
+      self.add_ports(io_ports)
+    return self
 
   def replace_assign(self, signal: str, content: ast.Node) -> 'Module':
     signal = 'ap_' + signal
@@ -457,6 +613,58 @@ def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
     yield make_port_arg(port=port + suffix, arg=arg + suffix)
 
 
+def async_mmap_suffixes(tag: str) -> Tuple[str, str, str]:
+  if tag in {'read_addr', 'write_addr', 'write_data'}:
+    return OSTREAM_SUFFIXES
+  if tag == 'read_data':
+    return ISTREAM_SUFFIXES
+  raise ValueError('invalid tag `%s`; tag must be one of `read_addr`, '
+                   '`read_data`, `write_addr`, or `write_data`' % tag)
+
+
+def async_mmap_arg_name(arg: str, tag: str, suffix: str) -> str:
+  return arg + '_' + tag + suffix
+
+
+def async_mmap_width(tag: str, suffix: str,
+                     data_width: int) -> Optional[ast.Width]:
+  if suffix in {'_V_din', '_V_dout'}:
+    if tag.endswith('addr'):
+      data_width = 64
+    return ast.Width(msb=ast.Constant(data_width - 1), lsb=ast.Constant(0))
+  return None
+
+
+def generate_async_mmap_ports(tag: str, port: str,
+                              arg: str) -> Iterator[ast.PortArg]:
+  for suffix in async_mmap_suffixes(tag):
+    yield make_port_arg(port='tlp_' + port + '_' + tag + suffix,
+                        arg=async_mmap_arg_name(arg=arg, tag=tag,
+                                                suffix=suffix))
+
+
+def generate_async_mmap_signals(tag: str, arg: str,
+                                data_width: int) -> Iterator[ast.Wire]:
+  for suffix in async_mmap_suffixes(tag):
+    yield ast.Wire(name=async_mmap_arg_name(arg=arg, tag=tag, suffix=suffix),
+                   width=async_mmap_width(tag=tag,
+                                          suffix=suffix,
+                                          data_width=data_width))
+
+
+def generate_async_mmap_ioports(tag: str, arg: str,
+                                data_width: int) -> Iterator[IOPort]:
+  for suffix in async_mmap_suffixes(tag):
+    if suffix in {'_V_din', '_V_write', '_V_read'}:
+      ioport_type = ast.Output
+    else:
+      ioport_type = ast.Input
+    yield ioport_type(name=async_mmap_arg_name(arg=arg, tag=tag, suffix=suffix),
+                      width=async_mmap_width(tag=tag,
+                                             suffix=suffix,
+                                             data_width=data_width))
+
+
 def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.core.Port],
          output_file: Union[str, BinaryIO]) -> None:
   port_tuple = tuple(ports)
@@ -475,9 +683,9 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.core.Port],
         top_name=top_name,
         kernel_xml=kernel_xml_obj.name,
         hdl_dir=rtl_dir,
-        m_axi_names=(port.name
-                     for port in port_tuple
-                     if port.cat == tlp.core.Instance.Arg.Cat.MMAP)) as proc:
+        m_axi_names=(port.name for port in port_tuple if port.cat in {
+            tlp.core.Instance.Arg.Cat.MMAP, tlp.core.Instance.Arg.Cat.ASYNC_MMAP
+        })) as proc:
       stdout, stderr = proc.communicate()
     if proc.returncode == 0:
       if not isinstance(output_file, str):
@@ -507,7 +715,9 @@ def print_kernel_xml(top_name: str, ports: Iterable[tlp.core.Port],
     size = max(4, host_size)
     rtl_port_name = 's_axi_control'
     addr_qualifier = 0
-    if port.cat == tlp.core.Instance.Arg.Cat.MMAP:
+    if port.cat in {
+        tlp.core.Instance.Arg.Cat.MMAP, tlp.core.Instance.Arg.Cat.ASYNC_MMAP
+    }:
       size = host_size = 8  # m_axi interface must have 64-bit addresses
       rtl_port_name = M_AXI_PREFIX + port.name
       addr_qualifier = 1

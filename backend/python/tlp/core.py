@@ -73,7 +73,8 @@ class Port:
         'istream': Instance.Arg.Cat.ISTREAM,
         'ostream': Instance.Arg.Cat.OSTREAM,
         'scalar': Instance.Arg.Cat.SCALAR,
-        'mmap': Instance.Arg.Cat.MMAP
+        'mmap': Instance.Arg.Cat.MMAP,
+        'async_mmap': Instance.Arg.Cat.ASYNC_MMAP,
     }[obj['cat']]
     self.name = obj['name']
     self.ctype = obj['type']
@@ -192,6 +193,8 @@ class Program:
 
   def instrument_rtl(self) -> 'Program':
     """Instrument HDL files generated from HLS."""
+    width_table = {port.name: port.width for port in self.ports}
+
     # extract and parse RTL
     for task in self._tasks.values():
       oldcwd = os.getcwd()
@@ -245,33 +248,57 @@ class Program:
             'idle': [],
             'ready': []
         }  # type: Dict[str, List[ast.Identifier]]
+
+        async_mmap_args = collections.OrderedDict(
+        )  # type: Dict[str, List[str]]
+
+        # iterate over all sub-tasks
         for task_name, instance_objs in task.tasks.items():
           child = self.get_task(task_name)
           child_port_set = set(child.module.ports)
+
+          # iterate over all instances of sub-tasks
           for instance_idx, instance_obj in enumerate(instance_objs):
             instance = Instance(self.get_task(task_name),
                                 verilog=self.rtl,
-                                task_id=0,
                                 instance_id=instance_idx,
                                 **instance_obj)
 
-            # insert m_axi ports
-            mmap_port_map = {
-                arg.port: name
-                for name, arg in instance.args.items()
-                if arg.cat == Instance.Arg.Cat.MMAP
-            }
-            mmap_port_map.update(
-                {k.upper(): v.upper() for k, v in mmap_port_map.items()})
+            for arg_name, arg in sorted(
+                (item for item in instance.args.items()), key=lambda x: x[0]):
+              # arg_name is the upper-level name
+              # port_name is the lower-level name
+              port_name = instance_obj['args'][arg_name]['port']
 
-            task.module.add_ports(
-                self.rtl.rename_m_axi_port(mmap_port_map, port)
-                for port in child.module.ports.values()
-                if self.rtl.is_m_axi_port(port))
-            task.module.add_params(
-                self.rtl.rename_m_axi_param(mmap_port_map, param)
-                for param in child.module.params.values()
-                if self.rtl.is_m_axi_param(param))
+              # check which ports are used for async_mmap
+              if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+                for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
+                  if set(x.portname for x in self.rtl.generate_async_mmap_ports(
+                      tag=tag, port=port_name, arg=arg_name)) & set(
+                          self._tasks[task_name].module.ports):
+                    async_mmap_args.setdefault(arg_name, []).append(tag)
+
+              # add m_axi ports to the upper task
+              if arg.cat == Instance.Arg.Cat.MMAP or (
+                  arg.cat == Instance.Arg.Cat.ASYNC_MMAP and
+                  task.name == self.top):
+                task.module.add_m_axi(name=arg_name,
+                                      data_width=width_table[arg_name])
+
+              # declare wires or forward async_mmap ports
+              for tag in async_mmap_args.get(arg_name, []):
+                if task.name == self.top:
+                  task.module.add_signals(
+                      self.rtl.generate_async_mmap_signals(
+                          tag=tag,
+                          arg=arg_name,
+                          data_width=width_table[arg_name]))
+                else:
+                  task.module.add_ports(
+                      self.rtl.generate_async_mmap_ioports(
+                          tag=tag,
+                          arg=arg_name,
+                          data_width=width_table[arg_name]))
 
             # set up done reg
             reset_if_branch.append(
@@ -320,10 +347,26 @@ class Program:
               elif arg.cat == Instance.Arg.Cat.MMAP:
                 portargs.extend(
                     self.rtl.generate_m_axi_ports(port=arg.port, arg=arg_name))
+              elif arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+                for tag in async_mmap_args[arg_name]:
+                  portargs.extend(
+                      self.rtl.generate_async_mmap_ports(tag=tag,
+                                                         port=port_name,
+                                                         arg=arg_name))
 
             task.module.add_instance(module_name=child.name,
                                      instance_name=instance.name,
                                      ports=portargs)
+
+        # instantiate async_mmap module in the top module
+        if task.name == self.top:
+          for arg_name in async_mmap_args:
+            portargs = []
+            task.module.add_async_mmap_instance(
+                name=arg_name,
+                tags=async_mmap_args[arg_name],
+                data_width=width_table[arg_name])
+
         task.module.add_logics(
             (ast.Always(sens_list=self.rtl.CLK_SENS_LIST,
                         statement=ast.Block((ast.IfStatement(
@@ -340,6 +383,10 @@ class Program:
       for name, content in self.rtl.OTHER_MODULES.items():
         with open(self.get_rtl(name), 'w') as rtl_code:
           rtl_code.write(content)
+      for file_name in 'async_mmap.v', 'detect_burst.v', 'generate_last.v':
+        shutil.copy(
+            os.path.join(os.path.dirname(tlp.__file__), 'assets', 'verilog',
+                         file_name), self.rtl_dir)
     return self
 
   def pack_rtl(self, output_file: BinaryIO) -> 'Program':
@@ -358,7 +405,6 @@ class Instance:
 
   Attributes:
     task: Task, corresponding task of this instance.
-    task_id: int, index of the instance in the parent task.
     instance_id: int, index of the instance of the same task.
     step: int, bulk-synchronous step when instantiated.
     args: a dict mapping arg names to Arg.
@@ -376,6 +422,8 @@ class Instance:
       SCALAR = 1 << 2
       STREAM = 1 << 3
       MMAP = 1 << 4
+      ASYNC = 1 << 5
+      ASYNC_MMAP = MMAP | ASYNC
       ISTREAM = STREAM | INPUT
       OSTREAM = STREAM | OUTPUT
 
@@ -385,18 +433,17 @@ class Instance:
             'istream': Instance.Arg.Cat.ISTREAM,
             'ostream': Instance.Arg.Cat.OSTREAM,
             'scalar': Instance.Arg.Cat.SCALAR,
-            'mmap': Instance.Arg.Cat.MMAP
+            'mmap': Instance.Arg.Cat.MMAP,
+            'async_mmap': Instance.Arg.Cat.ASYNC_MMAP
         }[cat]
       else:
         self.cat = cat
       self.port = port
       self.width = None
 
-  def __init__(self, task: Task, verilog, task_id: int, instance_id: int,
-               **kwargs):
+  def __init__(self, task: Task, verilog, instance_id: int, **kwargs):
     self.verilog = verilog
     self.task = task
-    self.task_id = task_id
     self.instance_id = instance_id
     self.step = kwargs.pop('step')
     self.args = {k: Instance.Arg(**v) for k, v in kwargs.pop('args').items()
