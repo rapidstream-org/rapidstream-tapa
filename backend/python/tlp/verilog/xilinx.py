@@ -312,7 +312,8 @@ class Module:
   def add_ports(self, ports: Iterable[IOPort]) -> 'Module':
     port_tuple = tuple(ports)
     self._module_def.portlist.ports += tuple(
-        ast.Port(name=port.name, width=None, type=None) for port in port_tuple)
+        ast.Port(name=port.name, width=None, dimensions=None, type=None)
+        for port in port_tuple)
     self._module_def.items = (
         self._module_def.items[:self._last_io_port_idx + 1] + port_tuple +
         self._module_def.items[self._last_io_port_idx + 1:])
