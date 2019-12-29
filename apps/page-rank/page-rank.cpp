@@ -210,6 +210,10 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
 // Handles edge read requests.
 void EdgeHandler(tlp::istream<Eid>& eid_q, tlp::ostream<Edge>& edge_q,
                  tlp::async_mmap<Edge> edges) {
+  // Consume EoS if any.
+  bool succeeded;
+  if (eid_q.eos(succeeded)) eid_q.open();
+
   uint8_t outstanding = 0;
   for (bool not_empty, not_eos;
        (not_eos = !eid_q.eos(not_empty)) || outstanding > 0;) {
@@ -244,6 +248,11 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
   // Number of updates of each update partition in memory.
   Eid num_updates[kMaxNumPartitions] = {};
 #pragma HLS resource variable = num_updates core = RAM_S2P_BRAM
+
+  // Consume EoS if any.
+  bool succeeded;
+  if (update_config_q.eos(succeeded)) update_config_q.open();
+  if (update_req_q.eos(succeeded)) update_req_q.open();
 
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
@@ -429,6 +438,11 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
               tlp::ostream<Update>& update_out_q,
               tlp::mmap<VertexAttr> vertices) {
   VertexAttr vertices_local[kMaxPartitionSize];
+
+  // Consume EoS if any.
+  bool succeeded;
+  if (req_q.eos(succeeded)) req_q.open();
+
   TLP_WHILE_NOT_EOS(req_q) {
     const TaskReq req = req_q.read();
     VLOG(5) << "recv@ProcElem: TaskReq: " << req;
