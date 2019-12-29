@@ -207,8 +207,7 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
   req_q.close();
 }
 
-void UpdateHandler(Pid num_partitions,
-                   tlp::istream<UpdateConfig>& update_config_q,
+void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
                    tlp::istream<UpdateReq>& update_req_q,
                    tlp::istream<Update>& update_in_q,
                    tlp::ostream<Update>& update_out_q,
@@ -477,8 +476,8 @@ void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
   tlp::task()
       .invoke<0>(Control, num_partitions, num_vertices, num_edges,
                  update_config, task_req, task_resp)
-      .invoke<0>(UpdateHandler, num_partitions, update_config, update_req,
-                 update_pe2handler, update_handler2pe, updates)
+      .invoke<0>(UpdateHandler, update_config, update_req, update_pe2handler,
+                 update_handler2pe, updates)
       .invoke<0>(ProcElem, task_req, task_resp, update_req, update_handler2pe,
                  update_pe2handler, vertices, edges);
 }

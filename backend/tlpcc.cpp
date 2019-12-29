@@ -163,7 +163,7 @@ inline T peek(hls::stream<T>& fifo, T peek_val, bool& succeeded) {
 #pragma HLS inline
 #pragma HLS protocol
   T tmp;
-  (succeeded = !fifo.empty()) && (tmp = peek_val);
+  (succeeded = !fifo.empty()) && (tmp = peek_val, true);
   return tmp;
 }
 template <typename T>
@@ -172,7 +172,7 @@ inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
 #pragma HLS inline
 #pragma HLS protocol
   data_t<T> tmp;
-  (succeeded = !fifo.empty()) && (tmp = peek_val);
+  (succeeded = !fifo.empty()) && (tmp = peek_val, true);
   return tmp.val;
 }
 
