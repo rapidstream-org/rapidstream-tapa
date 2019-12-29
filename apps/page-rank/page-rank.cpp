@@ -207,6 +207,28 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
   req_q.close();
 }
 
+// Handles edge read requests.
+void EdgeHandler(tlp::istream<Eid>& eid_q, tlp::ostream<Edge>& edge_q,
+                 tlp::async_mmap<Edge> edges) {
+  uint8_t outstanding = 0;
+  for (bool not_empty, not_eos;
+       (not_eos = !eid_q.eos(not_empty)) || outstanding > 0;) {
+    if (not_eos && not_empty && outstanding < 255) {
+      bool succeeded;
+      auto eid = eid_q.peek(succeeded);
+      if (edges.read_addr_try_write(eid)) {
+        auto eid = eid_q.read(succeeded);
+        ++outstanding;
+      }
+    }
+    Edge edge;
+    if (edges.read_data_try_read(edge)) {
+      --outstanding;
+      edge_q.write(edge);
+    }
+  }
+}
+
 void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
                    tlp::istream<UpdateReq>& update_req_q,
                    tlp::istream<Update>& update_in_q,
@@ -401,10 +423,11 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
 }
 
 void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
+              tlp::ostream<Eid>& eid_q, tlp::istream<Edge>& edge_q,
               tlp::ostream<UpdateReq>& update_req_q,
               tlp::istream<Update>& update_in_q,
               tlp::ostream<Update>& update_out_q,
-              tlp::mmap<VertexAttr> vertices, tlp::mmap<const Edge> edges) {
+              tlp::mmap<VertexAttr> vertices) {
   VertexAttr vertices_local[kMaxPartitionSize];
   TLP_WHILE_NOT_EOS(req_q) {
     const TaskReq req = req_q.read();
@@ -414,13 +437,22 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
     if (req.IsScatter()) {
       memcpy(vertices_local, vertices + req.vid_offset,
              req.num_vertices * sizeof(VertexAttr));
-      for (Eid eid = 0; eid < req.num_edges; ++eid) {
-        auto edge = edges[req.eid_offset + eid];
-        auto src = vertices_local[edge.src - req.base_vid];
-        // use pre-computed src.tmp = src.ranking / src.out_degree
-        Update update{edge.dst, src.tmp};
-        VLOG(5) << "send@ProcElem: Update: " << update;
-        update_out_q.write(update);
+      for (Eid eid_rd = 0, eid_wr = 0; eid_rd < req.num_edges;) {
+        if (eid_wr < req.num_edges) {
+          if (eid_q.try_write(req.eid_offset + eid_wr)) {
+            ++eid_wr;
+          }
+        }
+        bool succeeded;
+        auto edge = edge_q.read(succeeded);
+        if (succeeded) {
+          auto src = vertices_local[edge.src - req.base_vid];
+          // use pre-computed src.tmp = src.ranking / src.out_degree
+          Update update{edge.dst, src.tmp};
+          VLOG(5) << "send@ProcElem: Update: " << update;
+          update_out_q.write(update);
+          ++eid_rd;
+        }
       }
       update_out_q.close();
     } else {
@@ -459,14 +491,18 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
     resp_q.write(resp);
   }
 
+  eid_q.close();
+
   // Terminates the UpdateHandler.
   update_req_q.close();
 }
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-              tlp::mmap<const Edge> edges, tlp::async_mmap<Update> updates) {
+              tlp::async_mmap<Edge> edges, tlp::async_mmap<Update> updates) {
   tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
+  tlp::stream<Eid, 32> edge_req("edge_req");
+  tlp::stream<Edge, 32> edge_resp("edge_resp");
   tlp::stream<TaskResp, 32> task_resp("task_resp");
   tlp::stream<Update, 32> update_pe2handler("update_pe2handler");
   tlp::stream<Update, 32> update_handler2pe("update_handler2pe");
@@ -476,8 +512,9 @@ void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
   tlp::task()
       .invoke<0>(Control, num_partitions, num_vertices, num_edges,
                  update_config, task_req, task_resp)
+      .invoke<0>(EdgeHandler, edge_req, edge_resp, edges)
       .invoke<0>(UpdateHandler, update_config, update_req, update_pe2handler,
                  update_handler2pe, updates)
-      .invoke<0>(ProcElem, task_req, task_resp, update_req, update_handler2pe,
-                 update_pe2handler, vertices, edges);
+      .invoke<0>(ProcElem, task_req, task_resp, edge_req, edge_resp, update_req,
+                 update_handler2pe, update_pe2handler, vertices);
 }

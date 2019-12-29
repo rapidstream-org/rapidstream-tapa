@@ -27,7 +27,7 @@ using std::chrono::high_resolution_clock;
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-              tlp::mmap<const Edge> edges, tlp::async_mmap<Update> updates);
+              tlp::async_mmap<Edge> edges, tlp::async_mmap<Update> updates);
 
 // Ground truth implementation of page rank.
 //
