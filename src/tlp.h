@@ -155,7 +155,7 @@ class stream : public istream<T>, public ostream<T> {
     return false;
   }
   bool eos(bool& succeeded) const override {
-    bool eos;
+    bool eos = false;
     succeeded = try_eos(eos);
     return eos;
   }
