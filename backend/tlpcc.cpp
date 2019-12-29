@@ -232,6 +232,14 @@ inline void write(hls::stream<data_t<T>>& fifo, const T& value) {
   fifo.write({false, value});
 }
 
+// tlp::stream<T>::try_write(const T&)
+template <typename T>
+inline bool try_write(hls::stream<data_t<T>>& fifo, const T& value) {
+#pragma HLS inline
+#pragma HLS latency min = 1 max = 1
+  return fifo.write_nb({false, value});
+}
+
 // tlp::stream<T>::close()
 template <typename T>
 inline void close(hls::stream<data_t<T>>& fifo) {
