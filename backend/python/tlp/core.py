@@ -93,11 +93,17 @@ class Program:
     _tasks: Dict mapping names of tasks to Task objects.
   """
 
-  def __init__(self, fp: TextIO, hls, rtl, work_dir: Optional[str] = None):
+  def __init__(self,
+               fp: TextIO,
+               hls,
+               rtl,
+               cflags: str = None,
+               work_dir: Optional[str] = None):
     """Construct Program object from a json file.
 
     Args:
       fp: TextIO of json object.
+      cflags: The cflags send to HLS.
       work_dir: Specifiy a working directory as a string. If None, a temporary
           one will be created.
     """
@@ -105,6 +111,7 @@ class Program:
     self.top = obj['top']  # type: str
     self.hls = hls
     self.rtl = rtl
+    self.cflags = cflags
     self.headers = obj.get('headers', {})  # type: Dict[str, str]
     if work_dir is None:
       self.work_dir = tempfile.mkdtemp(prefix='tlp-')
@@ -168,7 +175,8 @@ class Program:
     def worker(task: Task) -> Iterator[None]:
       with open(self.get_tar(task.name), 'wb') as tarfileobj:
         with self.hls.RunHls(tarfileobj,
-                             kernel_files=[self.get_cpp(task.name)],
+                             kernel_files=[(self.get_cpp(task.name),
+                                            self.cflags)],
                              top_name=task.name,
                              clock_period=clock_period,
                              part_num=part_num) as proc:

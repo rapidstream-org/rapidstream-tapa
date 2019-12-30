@@ -480,7 +480,7 @@ struct task {
 };
 
 template <typename T>
-constexpr uint64_t widthof() {
+inline constexpr uint64_t widthof() {
   return sizeof(T) * CHAR_BIT;
 }
 
@@ -497,7 +497,7 @@ struct vec_t {
 };
 
 template <typename T, uint64_t N, typename Allocator>
-async_mmap<vec_t<T, N>> async_mmap_from_vec(
+inline async_mmap<vec_t<T, N>> async_mmap_from_vec(
     std::vector<typename std::remove_const<T>::type, Allocator>& vec) {
   if (vec.size() % N != 0) {
     throw std::runtime_error("vector must be aligned to make async_mmap vec");

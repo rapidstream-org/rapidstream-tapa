@@ -48,6 +48,10 @@ def main():
                       type=str,
                       dest='platform',
                       help='SDAccel platform')
+  parser.add_argument('--cflags',
+                      type=str,
+                      dest='cflags',
+                      help='cflags for kernel, space separated')
   parser.add_argument('--output',
                       '-o',
                       type=str,
@@ -187,10 +191,19 @@ def main():
     tlp_program_json = lambda: io.StringIO(tlp_program_json_str)
   else:
     tlp_program_json = lambda: open(args.input_file)
+
+  cflags = ' -I' + os.path.join(
+      os.path.dirname(tlp.__file__),
+      'assets',
+      'cpp',
+  )
+  if args.cflags is not None:
+    cflags += ' ' + args.cflags
   with tlp_program_json() as tlp_program_json_obj:
     program = tlp.core.Program(tlp_program_json_obj,
                                hls=haoda.backend.xilinx,
                                rtl=tlp.verilog.xilinx,
+                               cflags=cflags,
                                work_dir=args.work_dir)
 
   if all_steps or args.extract_cpp is not None:
