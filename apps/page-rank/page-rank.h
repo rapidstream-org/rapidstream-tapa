@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include <ap_int.h>
+
 using Vid = uint32_t;     // can hold all vertices
 using Degree = uint32_t;  // can hold the maximum degree
 using Eid = uint32_t;     // can hold all edges
@@ -23,10 +25,18 @@ struct Edge {
   Vid dst;
 };
 
+constexpr uint64_t kEdgeVecLen = 8;
+
 struct Update {
   Vid dst;
   float delta;
 };
+
+// Round n up to a multiple of N.
+template <uint64_t N, typename T>
+inline T RoundUp(T n) {
+  return ((n - 1) / N + 1) * N;
+}
 
 inline std::ostream& operator<<(std::ostream& os, const VertexAttr& obj) {
   return os << "{out_degree: " << obj.out_degree << ", ranking: " << obj.ranking

@@ -1,15 +1,19 @@
 find_package(Boost)
 
 if(Boost_FOUND)
+  include(VivadoAPIntConfig)
+  add_library(page-rank-h INTERFACE)
+  target_sources(page-rank-h INTERFACE page-rank.h)
+  target_link_libraries(page-rank-h INTERFACE vivado_ap_int)
 
   add_library(page_rank_host)
   target_include_directories(page_rank_host PRIVATE ../graph)
   target_sources(page_rank_host PRIVATE ../graph/nxgraph.hpp page-rank-host.cpp)
-  target_link_libraries(page_rank_host PUBLIC tlp)
+  target_link_libraries(page_rank_host PUBLIC page-rank-h tlp)
 
   add_executable(page-rank)
   target_sources(page-rank PRIVATE page-rank.cpp)
-  target_link_libraries(page-rank PUBLIC page_rank_host)
+  target_link_libraries(page-rank PUBLIC page-rank-h page_rank_host)
   add_test(NAME page-rank
            COMMAND page-rank ${CMAKE_CURRENT_BINARY_DIR}/../graph/facebook.txt
                    512)
@@ -43,7 +47,8 @@ if(Boost_FOUND)
 
     add_executable(page-rank-frt)
     target_sources(page-rank-frt PRIVATE page-rank-frt.cpp)
-    target_link_libraries(page-rank-frt PRIVATE page_rank_host frt::frt)
+    target_link_libraries(page-rank-frt PRIVATE page-rank-h page_rank_host
+                                                frt::frt)
 
     add_custom_target(
       page-rank-cosim

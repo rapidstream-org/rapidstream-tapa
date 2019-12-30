@@ -27,7 +27,8 @@ using std::chrono::high_resolution_clock;
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-              tlp::async_mmap<Edge> edges, tlp::async_mmap<Update> updates);
+              tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
+              tlp::async_mmap<Update> updates);
 
 // Ground truth implementation of page rank.
 //
@@ -44,6 +45,7 @@ void PageRank(Vid base_vid, vector<VertexAttr>& vertices,
     // scatter
     updates.clear();
     for (const auto& edge : edges) {
+      if (edge.src == 0) continue;
       auto& src = vertices[edge.src - base_vid];
       CHECK_NE(src.out_degree, 0);
       // use pre-computed src.tmp = src.ranking / src.out_degree
@@ -99,9 +101,9 @@ int main(int argc, char* argv[]) {
   const auto& base_vid = num_vertices[0];
   for (size_t i = 0; i < num_partitions; ++i) {
     num_vertices[i + 1] = partitions[i].num_vertices;
-    num_edges[i] = partitions[i].num_edges;
+    num_edges[i] = RoundUp<kEdgeVecLen>(partitions[i].num_edges);
     total_num_vertices += partitions[i].num_vertices;
-    total_num_edges += partitions[i].num_edges;
+    total_num_edges += num_edges[i];
   }
 
   // calculate the update offsets
@@ -125,7 +127,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < num_partitions; ++i) {
     auto partition_begin = edges.end();
     auto edge_ptr = reinterpret_cast<Edge*>(partitions[i].shard.get());
-    edges.insert(edges.end(), edge_ptr, edge_ptr + num_edges[i]);
+    edges.insert(edges.end(), edge_ptr, edge_ptr + partitions[i].num_edges);
 
     // increase burst length of update writes
     std::sort(partition_begin, edges.end(),
@@ -133,6 +135,9 @@ int main(int argc, char* argv[]) {
                 return (lhs.dst - base_vid) / partition_size <
                        (rhs.dst - base_vid) / partition_size;
               });
+
+    // align to kEdgeVecLen
+    edges.insert(edges.end(), num_edges[i] - partitions[i].num_edges, {});
   }
 
   vector<VertexAttr> vertices_baseline(total_num_vertices);
@@ -142,6 +147,7 @@ int main(int argc, char* argv[]) {
     v.ranking = 1.f / total_num_vertices;
   }
   for (auto& e : edges) {
+    if (e.src == 0) continue;
     ++vertices_baseline[e.src - base_vid].out_degree;
   }
   // pre-compute the deltas sent through out-going edges
@@ -172,7 +178,8 @@ int main(int argc, char* argv[]) {
     VLOG(10) << "updates: " << updates.size();
   }
   PageRank(base_vid, vertices_baseline, edges);
-  PageRank(num_partitions, num_vertices, num_edges, vertices, edges, updates);
+  PageRank(num_partitions, num_vertices, num_edges, vertices,
+           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges), updates);
 
   vector<VertexAttr> best_baseline(10);
   vector<VertexAttr> best{best_baseline};

@@ -209,14 +209,16 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
 
 // Handles edge read requests.
 void EdgeHandler(tlp::istream<Eid>& eid_q, tlp::ostream<Edge>& edge_q,
-                 tlp::async_mmap<Edge> edges) {
+                 tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges) {
   // Consume EoS if any.
   bool succeeded;
   if (eid_q.eos(succeeded)) eid_q.open();
 
   uint8_t outstanding = 0;
+  uint8_t leftover = 0;
   for (bool not_empty, not_eos;
        (not_eos = !eid_q.eos(not_empty)) || outstanding > 0;) {
+#pragma HLS latency min = 1 max = 1
     if (not_eos && not_empty && outstanding < 255) {
       bool succeeded;
       auto eid = eid_q.peek(succeeded);
@@ -225,10 +227,14 @@ void EdgeHandler(tlp::istream<Eid>& eid_q, tlp::ostream<Edge>& edge_q,
         ++outstanding;
       }
     }
-    Edge edge;
-    if (edges.read_data_try_read(edge)) {
+    tlp::vec_t<Edge, kEdgeVecLen> edge_v;
+    if (leftover == 0 && edges.read_data_try_read(edge_v)) {
       --outstanding;
-      edge_q.write(edge);
+      leftover = kEdgeVecLen;
+    }
+    if (leftover != 0) {
+      edge_q.write(edge_v[kEdgeVecLen - leftover]);
+      --leftover;
     }
   }
 }
@@ -451,20 +457,22 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
     if (req.IsScatter()) {
       memcpy(vertices_local, vertices + req.vid_offset,
              req.num_vertices * sizeof(VertexAttr));
-      for (Eid eid_rd = 0, eid_wr = 0; eid_rd < req.num_edges;) {
-        if (eid_wr < req.num_edges) {
-          if (eid_q.try_write(req.eid_offset + eid_wr)) {
-            ++eid_wr;
+      for (Eid eid_rd = 0, vec_eid_wr = 0; eid_rd < req.num_edges;) {
+        if (vec_eid_wr < req.num_edges / kEdgeVecLen) {
+          if (eid_q.try_write(req.eid_offset / kEdgeVecLen + vec_eid_wr)) {
+            ++vec_eid_wr;
           }
         }
         bool succeeded;
         auto edge = edge_q.read(succeeded);
         if (succeeded) {
-          auto src = vertices_local[edge.src - req.base_vid];
-          // use pre-computed src.tmp = src.ranking / src.out_degree
-          Update update{edge.dst, src.tmp};
-          VLOG(5) << "send@ProcElem: Update: " << update;
-          update_out_q.write(update);
+          if (edge.src != 0) {
+            auto src = vertices_local[edge.src - req.base_vid];
+            // use pre-computed src.tmp = src.ranking / src.out_degree
+            Update update{edge.dst, src.tmp};
+            VLOG(5) << "send@ProcElem: Update: " << update;
+            update_out_q.write(update);
+          }
           ++eid_rd;
         }
       }
@@ -513,7 +521,8 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-              tlp::async_mmap<Edge> edges, tlp::async_mmap<Update> updates) {
+              tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
+              tlp::async_mmap<Update> updates) {
   tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
   tlp::stream<Eid, 32> edge_req("edge_req");
   tlp::stream<Edge, 32> edge_resp("edge_resp");
