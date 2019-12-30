@@ -28,7 +28,7 @@ using std::chrono::high_resolution_clock;
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
               tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
-              tlp::async_mmap<Update> updates);
+              tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates);
 
 // Ground truth implementation of page rank.
 //
@@ -113,9 +113,12 @@ int main(int argc, char* argv[]) {
       ++num_in_edges[(ptr->dst - base_vid) / partition_size];
     }
   }
-  for (size_t i = 1; i < num_partitions; ++i) {
-    num_edges[num_partitions + i] =
-        num_edges[num_partitions + i - 1] + num_in_edges[i - 1];
+  Eid total_num_updates = 0;
+  for (size_t i = 1; i < num_partitions + 1; ++i) {
+    Eid delta = num_in_edges[i - 1] * kUpdateVecLen;
+    if (i < num_partitions)
+      num_edges[num_partitions + i] = num_edges[num_partitions + i - 1] + delta;
+    total_num_updates += delta;
     VLOG(5) << "update offset #" << i << ": " << num_edges[num_partitions + i];
   }
 
@@ -156,7 +159,7 @@ int main(int argc, char* argv[]) {
   }
   vector<VertexAttr> vertices{vertices_baseline};
 
-  vector<Update> updates(total_num_edges);
+  vector<Update> updates(total_num_updates);
 
   if (VLOG_IS_ON(10)) {
     VLOG(10) << "num_vertices";
@@ -179,7 +182,8 @@ int main(int argc, char* argv[]) {
   }
   PageRank(base_vid, vertices_baseline, edges);
   PageRank(num_partitions, num_vertices, num_edges, vertices,
-           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges), updates);
+           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges),
+           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates));
 
   vector<VertexAttr> best_baseline(10);
   vector<VertexAttr> best{best_baseline};

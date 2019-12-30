@@ -32,6 +32,8 @@ struct Update {
   float delta;
 };
 
+constexpr uint64_t kUpdateVecLen = 8;
+
 // Round n up to a multiple of N.
 template <uint64_t N, typename T>
 inline T RoundUp(T n) {

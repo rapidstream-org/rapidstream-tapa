@@ -243,7 +243,7 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
                    tlp::istream<UpdateReq>& update_req_q,
                    tlp::istream<Update>& update_in_q,
                    tlp::ostream<Update>& update_out_q,
-                   tlp::async_mmap<Update> updates) {
+                   tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
   // Base vid of all vertices; used to determine dst partition id.
   Vid base_vid = 0;
   // Used to determine dst partition id.
@@ -262,6 +262,7 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
 
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
+update_inits:
   TLP_WHILE_NOT_EOS(update_config_q) {
 #pragma HLS pipeline II = 1
     bool succeeded;
@@ -281,6 +282,7 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
     }
   }
 
+update_requests:
   TLP_WHILE_NOT_EOS(update_req_q) {
     // Each UpdateReq either requests forwarding all Updates from ProcElem to
     // the memory (scatter phase), or requests forwarding all Updates from the
@@ -290,41 +292,77 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
     if (update_req.phase == TaskReq::kScatter) {
       Pid last_pid = 0xffffffff;
       Eid last_update_idx = 0xffffffff;
+      tlp::vec_t<Update, kUpdateVecLen> update_v{0};
+      uint8_t update_v_i = 0;
+    update_writes:
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = num_updates
         bool succeeded;
-        Update update = update_in_q.read(succeeded);
+        const Update update = update_in_q.read(succeeded);
         VLOG(5) << "recv@UpdateHandler: Update: " << update;
-        Pid pid = (update.dst - base_vid) / partition_size;
+        const Pid pid = (update.dst - base_vid) / partition_size;
         VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
 
+        // number of updates already written to current partition, not including
+        // the current update
         Eid update_idx;
         if (last_pid != pid) {
-          // write last_update_idx back
-          {
 #pragma HLS latency min = 1 max = 1
-            update_idx = num_updates[pid];
-            if (last_pid != 0xffffffff) {
-              num_updates[last_pid] = last_update_idx;
-            }
+          update_idx = num_updates[pid];
+          if (last_pid != 0xffffffff) {
+            num_updates[last_pid] = RoundUp<kUpdateVecLen>(last_update_idx);
           }
-
-          last_pid = pid;
-          last_update_idx = update_idx + 1;
         } else {
-          // accumulate on last pid
           update_idx = last_update_idx;
-
-          last_update_idx += 1;
         }
 
-        Eid update_offset = update_offsets[pid] + update_idx;
-        updates.write_addr_write(update_offset);
-        updates.write_data_write(update);
+        // flush because we are switching partitions
+        const bool flush = last_pid != pid && last_pid != 0xffffffff;
+        // send old update_v with preivous update_idx and pid
+        const Eid output_update_idx = flush ? last_update_idx : update_idx;
+        const Pid output_pid = flush ? last_pid : pid;
+
+        // set for next iteration
+        last_pid = pid;
+        last_update_idx = update_idx + 1;
+
+        tlp::vec_t<Update, kUpdateVecLen> output_update_v = update_v;
+        const bool write_enable = flush || update_v_i == kUpdateVecLen - 1;
+        // update_v_i is the number of updates in update_v
+        if (write_enable) {
+          if (flush) {
+            // send old update_v
+            // new update_v contains current update
+            update_v = {};
+            update_v.set(0, update);
+            update_v_i = 1;
+          } else {
+            // send old update_v with current update written
+            // new update_v is empty
+            output_update_v.set(kUpdateVecLen - 1, update);
+            update_v = {};
+            update_v_i = 0;
+          }
+        } else {
+          // write update to update_v
+          update_v.set(update_v_i, update);
+          update_v_i += 1;
+        }
+
+        if (write_enable) {
+          Eid update_offset = update_offsets[output_pid] + output_update_idx;
+          updates.write_addr_write(update_offset / kUpdateVecLen);
+          updates.write_data_write(output_update_v);
+        }
       }
       if (last_pid != 0xffffffff) {
-        num_updates[last_pid] = last_update_idx;
+        if (update_v_i > 0) {
+          Eid update_offset = update_offsets[last_pid] + last_update_idx - 1;
+          updates.write_addr_write(update_offset / kUpdateVecLen);
+          updates.write_data_write(update_v);
+        }
+        num_updates[last_pid] = RoundUp<kUpdateVecLen>(last_update_idx);
       }
       update_in_q.open();
       updates.fence();
@@ -349,22 +387,35 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
 #pragma HLS unroll
         buffer[i] = {0, 0.f};
       }
+
+      // update vec
+      tlp::vec_t<Update, kUpdateVecLen> update_v{0};
+      uint8_t update_v_i = kUpdateVecLen - 1;
+
+    update_reads:
       for (Eid i_rd = 0, i_wr = 0; i_rd < num_updates_pid;) {
 #pragma HLS pipeline II = 1
         auto read_addr = update_offsets[pid] + i_wr;
         if (i_wr < num_updates_pid) {
-          if (updates.read_addr_try_write(read_addr)) {
-            ++i_wr;
+          if (updates.read_addr_try_write(read_addr / kUpdateVecLen)) {
+            i_wr += kUpdateVecLen;
           }
         }
 
         int idx_without_conflict = FindFirstWithoutConflict(buffer, window);
         int idx_empty = FindFirstEmpty(buffer);
         bool input_has_conflict = true;
-        bool input_empty = updates.read_data_empty();
-        Update input_update{0, 0.f};
+        bool input_empty =
+            updates.read_data_empty() && update_v_i == kUpdateVecLen - 1;
+        Update input_update{};
         if (idx_without_conflict == -1 && idx_empty != -1 && !input_empty) {
-          updates.read_data_try_read(input_update);
+          if (update_v_i == kUpdateVecLen - 1) {
+            updates.read_data_try_read(update_v);
+            update_v_i = 0;
+          } else {
+            ++update_v_i;
+          }
+          input_update = update_v[update_v_i];
           input_has_conflict = HasConflict(window, input_update);
           ++i_rd;
         }
@@ -402,6 +453,7 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
       }
 
       // after the loop, flush the reorder buffer
+    update_read_cleanup:
       for (int i = 0; i < kBufferSize;) {
 #pragma HLS pipeline II = 1
         if (buffer[i].dst == 0) {
@@ -522,7 +574,7 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
               tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
-              tlp::async_mmap<Update> updates) {
+              tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
   tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
   tlp::stream<Eid, 32> edge_req("edge_req");
   tlp::stream<Edge, 32> edge_resp("edge_resp");
