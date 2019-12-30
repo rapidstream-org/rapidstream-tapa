@@ -455,22 +455,36 @@ class Module:
                           arg='m_axi_{name}_{channel}{port}'.format(
                               name=name, channel=channel, port=port)))
 
-    for tag in tags:
+    tags = set(tags)
+    for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
       for suffix in async_mmap_suffixes(tag=tag):
-        arg = async_mmap_arg_name(arg=name, tag=tag, suffix=suffix)
-        if tag.endswith('addr') and suffix.endswith('din'):
-          elem_size_bytes_m1 = data_width // 8 - 1
-          arg = "{name} + {{{arg}[{}:0], {}'d0}}".format(
-              addr_width - elem_size_bytes_m1.bit_length() - 1,
-              elem_size_bytes_m1.bit_length(),
-              arg=arg,
-              name=name)
+        if tag in tags:
+          arg = async_mmap_arg_name(arg=name, tag=tag, suffix=suffix)
+          if tag.endswith('_addr') and suffix.endswith('_din'):
+            elem_size_bytes_m1 = data_width // 8 - 1
+            arg = "{name} + {{{arg}[{}:0], {}'d0}}".format(
+                addr_width - elem_size_bytes_m1.bit_length() - 1,
+                elem_size_bytes_m1.bit_length(),
+                arg=arg,
+                name=name)
+        else:
+          if suffix.endswith('_read') or suffix.endswith('_write'):
+            arg = "1'b0"
+          else:
+            arg = ''
         portargs.append(make_port_arg(port=tag + suffix[2:], arg=arg))
 
     return self.add_instance(module_name='async_mmap',
                              instance_name=name + '_m_axi',
                              ports=portargs,
                              params=paramargs)
+
+  def find_port(self, prefix: str, suffix: str) -> Optional[str]:
+    '''Find an IO port with given prefix and suffix in this module.'''
+    for port_name in self.ports:
+      if port_name.startswith(prefix) and port_name.endswith(suffix):
+        return port_name
+    return None
 
   def add_m_axi(self, name: str, data_width: int,
                 addr_width: int = 64) -> 'Module':
@@ -636,12 +650,17 @@ def async_mmap_width(tag: str, suffix: str,
   return None
 
 
-def generate_async_mmap_ports(tag: str, port: str,
-                              arg: str) -> Iterator[ast.PortArg]:
+def generate_async_mmap_ports(tag: str, port: str, arg: str,
+                              instance: tlp.core.Instance
+                             ) -> Iterator[ast.PortArg]:
+  prefix = 'tlp_' + port + '_' + tag + '_V_'
   for suffix in async_mmap_suffixes(tag):
-    yield make_port_arg(port='tlp_' + port + '_' + tag + suffix,
-                        arg=async_mmap_arg_name(arg=arg, tag=tag,
-                                                suffix=suffix))
+    port_name = instance.task.module.find_port(prefix=prefix, suffix=suffix)
+    if port_name is not None:
+      yield make_port_arg(port=port_name,
+                          arg=async_mmap_arg_name(arg=arg,
+                                                  tag=tag,
+                                                  suffix=suffix))
 
 
 def generate_async_mmap_signals(tag: str, arg: str,

@@ -274,8 +274,8 @@ class Program:
               if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
                 for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
                   if set(x.portname for x in self.rtl.generate_async_mmap_ports(
-                      tag=tag, port=port_name, arg=arg_name)) & set(
-                          self._tasks[task_name].module.ports):
+                      tag=tag, port=port_name, arg=arg_name, instance=instance)
+                        ) & set(self._tasks[task_name].module.ports):
                     async_mmap_args.setdefault(arg_name, []).append(tag)
 
               # add m_axi ports to the upper task
@@ -352,7 +352,8 @@ class Program:
                   portargs.extend(
                       self.rtl.generate_async_mmap_ports(tag=tag,
                                                          port=port_name,
-                                                         arg=arg_name))
+                                                         arg=arg_name,
+                                                         instance=instance))
 
             task.module.add_instance(module_name=child.name,
                                      instance_name=instance.name,
