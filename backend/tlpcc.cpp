@@ -51,6 +51,7 @@ using llvm::cl::ValueExpected;
 using nlohmann::json;
 
 const char kUtilFuncs[] = R"(
+#include <climits>
 #include <cstdint>
 
 #ifndef __SYNTHESIS__
@@ -98,6 +99,7 @@ struct dummy {
 
 #endif  // __SYNTHESIS__
 
+#include <ap_int.h>
 #include <ap_utils.h>
 #include <hls_stream.h>
 
@@ -247,6 +249,31 @@ inline void close(hls::stream<data_t<T>>& fifo) {
 #pragma HLS latency min = 1 max = 1
   fifo.write({true, {}});
 }
+
+template <typename T>
+constexpr uint64_t widthof() {
+  return sizeof(T) * CHAR_BIT;
+}
+
+template <typename T, uint64_t N>
+struct vec_t {
+  static constexpr uint64_t length = N;
+  static constexpr uint64_t bytes = length * sizeof(T);
+  static constexpr uint64_t bits = bytes * CHAR_BIT;
+  ap_uint<bits> data;
+  // T& operator[](uint64_t idx) { return *(reinterpret_cast<T*>(&data) + idx);
+  // }
+  void set(uint64_t idx, const T& val) {
+    data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>()) =
+        reinterpret_cast<ap_uint<widthof<T>()>&&>(val);
+  }
+  T get(uint64_t idx) const {
+    return reinterpret_cast<T&&>(static_cast<ap_uint<widthof<T>()>>(
+        data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>())));
+  }
+  T operator[](uint64_t idx) const { return get(idx); }
+};
+
 
 }  // namespace tlp
 

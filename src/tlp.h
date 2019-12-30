@@ -1,6 +1,7 @@
 #ifndef TASK_LEVEL_PARALLELIZATION_H_
 #define TASK_LEVEL_PARALLELIZATION_H_
 
+#include <climits>
 #include <cstdarg>
 #include <cstdint>
 
@@ -478,15 +479,32 @@ struct task {
   }
 };
 
+template <typename T>
+constexpr uint64_t widthof() {
+  return sizeof(T) * CHAR_BIT;
+}
+
 template <typename T, uint64_t N>
 struct vec_t {
   T data[N];
-  T& operator[](uint64_t idx) { return data[idx]; }
-  const T& operator[](uint64_t idx) const { return data[idx]; }
+  // T& operator[](uint64_t idx) { return data[idx]; }
+  void set(uint64_t idx, const T& val) { data[idx] = val; }
+  const T& get(uint64_t idx) const { return data[idx]; }
+  const T& operator[](uint64_t idx) const { return get(idx); }
   static constexpr uint64_t length = N;
-  static constexpr uint64_t bytes = N * sizeof(T);
-  static constexpr uint64_t bits = N * sizeof(T);
+  static constexpr uint64_t bytes = length * sizeof(T);
+  static constexpr uint64_t bits = bytes * CHAR_BIT;
 };
+
+template <typename T, uint64_t N, typename Allocator>
+async_mmap<vec_t<T, N>> async_mmap_from_vec(
+    std::vector<typename std::remove_const<T>::type, Allocator>& vec) {
+  if (vec.size() % N != 0) {
+    throw std::runtime_error("vector must be aligned to make async_mmap vec");
+  }
+  return async_mmap<vec_t<T, N>>(reinterpret_cast<vec_t<T, N>*>(vec.data()),
+                                 vec.size() / N);
+}
 
 }  // namespace tlp
 
