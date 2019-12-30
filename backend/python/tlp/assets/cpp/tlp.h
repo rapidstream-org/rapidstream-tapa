@@ -222,7 +222,7 @@ struct vec_t {
   // }
   void set(uint64_t idx, const T& val) {
     data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>()) =
-        reinterpret_cast<ap_uint<widthof<T>()>&&>(val);
+        reinterpret_cast<const ap_uint<widthof<T>()>&>(val);
   }
   T get(uint64_t idx) const {
     return reinterpret_cast<T&&>(static_cast<ap_uint<widthof<T>()>>(
