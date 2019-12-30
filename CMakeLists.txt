@@ -20,7 +20,8 @@ target_link_libraries(tlp INTERFACE glog PUBLIC pthread)
 
 add_subdirectory(backend)
 
-include(cmake/TLPConfig.cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(TLPConfig)
 enable_testing()
 add_subdirectory(apps/cannon)
 add_subdirectory(apps/graph)
