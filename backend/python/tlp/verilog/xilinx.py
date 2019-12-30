@@ -470,6 +470,8 @@ class Module:
         else:
           if suffix.endswith('_read') or suffix.endswith('_write'):
             arg = "1'b0"
+          elif suffix.endswith('_din'):
+            arg = "'d0"
           else:
             arg = ''
         portargs.append(make_port_arg(port=tag + suffix[2:], arg=arg))
