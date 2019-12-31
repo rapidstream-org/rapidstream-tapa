@@ -494,21 +494,27 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
               tlp::ostream<UpdateReq>& update_req_q,
               tlp::istream<Update>& update_in_q,
               tlp::ostream<Update>& update_out_q,
-              tlp::mmap<VertexAttr> vertices) {
+              tlp::mmap<VertexAttrAligned> vertices) {
   VertexAttr vertices_local[kMaxPartitionSize];
 
   // Consume EoS if any.
   bool succeeded;
   if (req_q.eos(succeeded)) req_q.open();
 
+task_requests:
   TLP_WHILE_NOT_EOS(req_q) {
     const TaskReq req = req_q.read();
     VLOG(5) << "recv@ProcElem: TaskReq: " << req;
     update_req_q.write({req.phase, req.pid});
     bool active = false;
     if (req.IsScatter()) {
-      memcpy(vertices_local, vertices + req.vid_offset,
-             req.num_vertices * sizeof(VertexAttr));
+    vertex_reads:
+      for (Vid i = 0; i < req.num_vertices; ++i) {
+#pragma HLS pipeline II = 1
+        vertices_local[i] = vertices[req.vid_offset + i];
+      }
+
+    edge_reads:
       for (Eid eid_rd = 0, vec_eid_wr = 0; eid_rd < req.num_edges;) {
         if (vec_eid_wr < req.num_edges / kEdgeVecLen) {
           if (eid_q.try_write(req.eid_offset / kEdgeVecLen + vec_eid_wr)) {
@@ -530,11 +536,14 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
       }
       update_out_q.close();
     } else {
+    vertex_resets:
       for (Vid i = 0; i < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
         vertices_local[i] = vertices[req.vid_offset + i];
         vertices_local[i].tmp = 0.f;
       }
+
+    update_reads:
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = vertices_local
@@ -548,6 +557,8 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
       }
       update_in_q.open();
       float max_delta = 0.f;
+
+    vertex_writes:
       for (Vid i = 0; i < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
         auto vertex = vertices_local[i];
@@ -572,7 +583,8 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
 }
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-              tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
+              tlp::mmap<const Eid> num_edges,
+              tlp::mmap<VertexAttrAligned> vertices,
               tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
               tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
   tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");

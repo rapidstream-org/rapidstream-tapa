@@ -6,7 +6,8 @@
 #include "page-rank.h"
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-              tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
+              tlp::mmap<const Eid> num_edges,
+              tlp::mmap<VertexAttrAligned> vertices,
               tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
               tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
   auto instance =

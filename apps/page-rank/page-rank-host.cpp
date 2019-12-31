@@ -26,7 +26,8 @@ using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
 void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-              tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
+              tlp::mmap<const Eid> num_edges,
+              tlp::mmap<VertexAttrAligned> vertices,
               tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
               tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates);
 
@@ -34,7 +35,7 @@ void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
 //
 // Initially the vertices should contain valid out degree information and
 // ranking.
-void PageRank(Vid base_vid, vector<VertexAttr>& vertices,
+void PageRank(Vid base_vid, vector<VertexAttrAligned>& vertices,
               const vector<Edge>& edges) {
   const auto num_vertices = vertices.size();
   vector<Update> updates;
@@ -143,7 +144,7 @@ int main(int argc, char* argv[]) {
     edges.insert(edges.end(), num_edges[i] - partitions[i].num_edges, {});
   }
 
-  vector<VertexAttr> vertices_baseline(total_num_vertices);
+  vector<VertexAttrAligned> vertices_baseline(total_num_vertices);
   // initialize vertex attributes
   for (auto& v : vertices_baseline) {
     v.out_degree = 0;
@@ -157,7 +158,7 @@ int main(int argc, char* argv[]) {
   for (auto& v : vertices_baseline) {
     v.tmp = v.ranking / v.out_degree;
   }
-  vector<VertexAttr> vertices{vertices_baseline};
+  vector<VertexAttrAligned> vertices = vertices_baseline;
 
   vector<Update> updates(total_num_updates);
 

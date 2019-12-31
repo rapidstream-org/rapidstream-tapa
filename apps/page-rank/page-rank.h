@@ -3,6 +3,29 @@
 
 #include <iostream>
 
+// Some utility functions.
+
+// Round n up to a multiple of N.
+template <uint64_t N, typename T>
+inline T RoundUp(T n) {
+  return ((n - 1) / N + 1) * N;
+}
+
+// Test for a power of 2.
+template <uint64_t N>
+inline constexpr bool IsPowerOf2() {
+  return N > 0 ? N % 2 == 0 && IsPowerOf2<N / 2>() : false;
+}
+
+template <>
+inline constexpr bool IsPowerOf2<1>() {
+  return true;
+}
+
+constexpr uint64_t kVecLenBytes = 64;  // 512 bits
+
+// Page Rank.
+
 using Vid = uint32_t;     // can hold all vertices
 using Degree = uint32_t;  // can hold the maximum degree
 using Eid = uint32_t;     // can hold all edges
@@ -15,28 +38,37 @@ struct VertexAttr {
   Degree out_degree;
   float ranking;
   float tmp;
-  uint32_t padding;
 };
+
+struct VertexAttrAligned : public VertexAttr {
+  uint32_t padding;
+
+  VertexAttrAligned() = default;
+  VertexAttrAligned(const VertexAttr& v) : VertexAttr(v) {}
+};
+
+static_assert(IsPowerOf2<sizeof(VertexAttrAligned)>(),
+              "VertexAttrAligned is not aligned to a power of 2");
+
+constexpr uint64_t kVertexVecLen = kVecLenBytes / sizeof(VertexAttrAligned);
 
 struct Edge {
   Vid src;
   Vid dst;
 };
 
-constexpr uint64_t kEdgeVecLen = 8;
+constexpr uint64_t kEdgeVecLen = kVecLenBytes / sizeof(Edge);
+static_assert(IsPowerOf2<sizeof(Edge)>(),
+              "Edge is not aligned to a power of 2");
 
 struct Update {
   Vid dst;
   float delta;
 };
 
-constexpr uint64_t kUpdateVecLen = 8;
-
-// Round n up to a multiple of N.
-template <uint64_t N, typename T>
-inline T RoundUp(T n) {
-  return ((n - 1) / N + 1) * N;
-}
+constexpr uint64_t kUpdateVecLen = kVecLenBytes / sizeof(Update);
+static_assert(IsPowerOf2<sizeof(Update)>(),
+              "Update is not aligned to a power of 2");
 
 inline std::ostream& operator<<(std::ostream& os, const VertexAttr& obj) {
   return os << "{out_degree: " << obj.out_degree << ", ranking: " << obj.ranking
