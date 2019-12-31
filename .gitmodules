@@ -1,3 +1,0 @@
-[submodule "3rdparty/vivado_ap_int"]
-	path = 3rdparty/vivado_ap_int
-	url = https://github.com/Xilinx/HLS_arbitrary_Precision_Types.git

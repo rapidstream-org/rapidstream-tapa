@@ -43,8 +43,7 @@ include(CPack)
 
 add_subdirectory(backend)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(TLPConfig)
+include(cmake/TLPConfig.cmake)
 enable_testing()
 add_subdirectory(apps/cannon)
 add_subdirectory(apps/graph)
