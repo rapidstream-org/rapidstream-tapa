@@ -102,7 +102,8 @@ const int kMaxPartitionSize = 1024 * 32;
 void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
              tlp::mmap<const Eid> num_edges,
              tlp::ostream<UpdateConfig>& update_config_q,
-             tlp::ostream<TaskReq>& req_q, tlp::istream<TaskResp>& resp_q) {
+             tlp::ostream<TaskReq>& task_req_q,
+             tlp::istream<TaskResp>& task_resp_q) {
   // Keeps track of all partitions.
 
   // Vid of the 0-th vertex in each partition.
@@ -141,7 +142,7 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
   }
   const Vid total_num_vertices = base_vid_acc - base_vids[0];
 
-  // Initialize UpdateHandler, needed only once per execution.
+  // Initialize UpdateMem, needed only once per execution.
   update_config_q.write({UpdateConfig::kBaseVid, base_vids[0], 0});
   update_config_q.write(
       {UpdateConfig::kPartitionSize, num_vertices_local[0], 0});
@@ -164,13 +165,13 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
                   base_vids[pid],       num_vertices_local[pid],
                   num_edges_local[pid], vid_offsets[pid],
                   eid_offsets[pid],     0.f};
-      req_q.write(req);
+      task_req_q.write(req);
     }
 
     // Wait until all partitions are done with the scatter phase.
     for (Pid pid = 0; pid < num_partitions;) {
       bool succeeded;
-      TaskResp resp = resp_q.read(succeeded);
+      TaskResp resp = task_resp_q.read(succeeded);
       if (succeeded) {
         assert(resp.phase == TaskReq::kScatter);
         ++pid;
@@ -184,13 +185,13 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
           base_vids[pid],       num_vertices_local[pid],
           num_edges_local[pid], vid_offsets[pid],
           eid_offsets[pid],     (1.f - kDampingFactor) / total_num_vertices};
-      req_q.write(req);
+      task_req_q.write(req);
     }
 
     // Wait until all partitions are done with the gather phase.
     for (Pid pid = 0; pid < num_partitions;) {
       bool succeeded;
-      TaskResp resp = resp_q.read(succeeded);
+      TaskResp resp = task_resp_q.read(succeeded);
       if (succeeded) {
         assert(resp.phase == TaskReq::kGather);
         VLOG(3) << "recv@Control: " << resp;
@@ -204,25 +205,53 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
   }
 
   // Terminates the ProcElem.
-  req_q.close();
+  task_req_q.close();
+}
+
+struct VertexReq {
+  TaskReq::Phase phase;
+  Vid offset;
+  Vid length;
+};
+
+void VertexMem(tlp::istream<VertexReq>& task_req_q,
+               tlp::istream<VertexAttr>& vertex_in_q,
+               tlp::ostream<VertexAttr>& vertex_out_q,
+               tlp::mmap<VertexAttrAligned> vertices) {
+  // Consume EoS if any.
+  if (task_req_q.eos(nullptr)) task_req_q.open();
+
+  TLP_WHILE_NOT_EOS(task_req_q) {
+    const auto req = task_req_q.read(nullptr);
+    // Read vertices from DRAM.
+    for (Vid i = 0; i < req.length; ++i) {
+      vertex_out_q.write(vertices[req.offset + i]);
+    }
+    if (req.phase == TaskReq::kGather) {
+      // Write vertices to DRAM.
+      for (Vid i = 0; i < req.length; ++i) {
+        vertices[req.offset + i] = vertex_in_q.read();
+      }
+    }
+  }
 }
 
 // Handles edge read requests.
-void EdgeHandler(tlp::istream<Eid>& eid_q, tlp::ostream<Edge>& edge_q,
-                 tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges) {
+void EdgeMem(tlp::istream<Eid>& edge_req_q, tlp::ostream<Edge>& edge_resp_q,
+             tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges) {
   // Consume EoS if any.
-  if (eid_q.eos(nullptr)) eid_q.open();
+  if (edge_req_q.eos(nullptr)) edge_req_q.open();
 
   uint8_t outstanding = 0;
   uint8_t leftover = 0;
   for (bool not_empty, not_eos;
-       (not_eos = !eid_q.eos(not_empty)) || outstanding > 0;) {
+       (not_eos = !edge_req_q.eos(not_empty)) || outstanding > 0;) {
 #pragma HLS latency min = 1 max = 1
     if (not_eos && not_empty && outstanding < 255) {
       bool succeeded;
-      auto eid = eid_q.peek(succeeded);
+      auto eid = edge_req_q.peek(succeeded);
       if (edges.read_addr_try_write(eid)) {
-        auto eid = eid_q.read(succeeded);
+        auto eid = edge_req_q.read(succeeded);
         ++outstanding;
       }
     }
@@ -232,17 +261,17 @@ void EdgeHandler(tlp::istream<Eid>& eid_q, tlp::ostream<Edge>& edge_q,
       leftover = kEdgeVecLen;
     }
     if (leftover != 0) {
-      edge_q.write(edge_v[kEdgeVecLen - leftover]);
+      edge_resp_q.write(edge_v[kEdgeVecLen - leftover]);
       --leftover;
     }
   }
 }
 
-void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
-                   tlp::istream<UpdateReq>& update_req_q,
-                   tlp::istream<Update>& update_in_q,
-                   tlp::ostream<Update>& update_out_q,
-                   tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
+void UpdateMem(tlp::istream<UpdateConfig>& update_config_q,
+               tlp::istream<UpdateReq>& update_req_q,
+               tlp::istream<Update>& update_in_q,
+               tlp::ostream<Update>& update_out_q,
+               tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
   // Base vid of all vertices; used to determine dst partition id.
   Vid base_vid = 0;
   // Used to determine dst partition id.
@@ -264,7 +293,7 @@ update_inits:
   TLP_WHILE_NOT_EOS(update_config_q) {
 #pragma HLS pipeline II = 1
     auto config = update_config_q.read(nullptr);
-    VLOG(5) << "recv@UpdateHandler: UpdateConfig: " << config;
+    VLOG(5) << "recv@UpdateMem: UpdateConfig: " << config;
     switch (config.item) {
       case UpdateConfig::kBaseVid:
         base_vid = config.vid;
@@ -285,7 +314,7 @@ update_requests:
     // the memory (scatter phase), or requests forwarding all Updates from the
     // memory to ProcElem (gather phase).
     const auto update_req = update_req_q.read();
-    VLOG(5) << "recv@UpdateHandler: UpdateReq: " << update_req;
+    VLOG(5) << "recv@UpdateMem: UpdateReq: " << update_req;
     if (update_req.phase == TaskReq::kScatter) {
       Pid last_pid = 0xffffffff;
       Eid last_update_idx = 0xffffffff;
@@ -296,9 +325,9 @@ update_requests:
 #pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = num_updates
         const Update update = update_in_q.read(nullptr);
-        VLOG(5) << "recv@UpdateHandler: Update: " << update;
+        VLOG(5) << "recv@UpdateMem: Update: " << update;
         const Pid pid = (update.dst - base_vid) / partition_size;
-        VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
+        VLOG(5) << "info@UpdateMem: dst partition id: " << pid;
 
         // number of updates already written to current partition, not including
         // the current update
@@ -365,7 +394,7 @@ update_requests:
     } else {
       const auto pid = update_req.pid;
       const auto num_updates_pid = num_updates[pid];
-      VLOG(6) << "info@UpdateHandler: num_updates[" << pid
+      VLOG(6) << "info@UpdateMem: num_updates[" << pid
               << "]: " << num_updates_pid;
       constexpr int kWindowSize = 4;
       constexpr int kBufferSize = 2;
@@ -482,42 +511,45 @@ update_requests:
       update_out_q.close();
     }
   }
-  VLOG(3) << "info@UpdateHandler: done";
+  VLOG(3) << "info@UpdateMem: done";
 }
 
-void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
-              tlp::ostream<Eid>& eid_q, tlp::istream<Edge>& edge_q,
+void ProcElem(tlp::istream<TaskReq>& task_req_q,
+              tlp::ostream<TaskResp>& task_resp_q,
+              tlp::ostream<VertexReq>& vertex_req_q,
+              tlp::istream<VertexAttr>& vertex_in_q,
+              tlp::ostream<VertexAttr>& vertex_out_q,
+              tlp::ostream<Eid>& edge_req_q, tlp::istream<Edge>& edge_resp_q,
               tlp::ostream<UpdateReq>& update_req_q,
               tlp::istream<Update>& update_in_q,
-              tlp::ostream<Update>& update_out_q,
-              tlp::mmap<VertexAttrAligned> vertices) {
+              tlp::ostream<Update>& update_out_q) {
   VertexAttr vertices_local[kMaxPartitionSize];
 
   // Consume EoS if any.
-  if (req_q.eos(nullptr)) req_q.open();
+  if (task_req_q.eos(nullptr)) task_req_q.open();
 
 task_requests:
-  TLP_WHILE_NOT_EOS(req_q) {
-    const TaskReq req = req_q.read();
+  TLP_WHILE_NOT_EOS(task_req_q) {
+    const TaskReq req = task_req_q.read();
     VLOG(5) << "recv@ProcElem: TaskReq: " << req;
     update_req_q.write({req.phase, req.pid});
+    vertex_req_q.write({req.phase, req.vid_offset, req.num_vertices});
     bool active = false;
     if (req.IsScatter()) {
     vertex_reads:
       for (Vid i = 0; i < req.num_vertices; ++i) {
-#pragma HLS pipeline II = 1
-        vertices_local[i] = vertices[req.vid_offset + i];
+        vertices_local[i] = vertex_in_q.read();
       }
 
     edge_reads:
       for (Eid eid_rd = 0, vec_eid_wr = 0; eid_rd < req.num_edges;) {
         if (vec_eid_wr < req.num_edges / kEdgeVecLen) {
-          if (eid_q.try_write(req.eid_offset / kEdgeVecLen + vec_eid_wr)) {
+          if (edge_req_q.try_write(req.eid_offset / kEdgeVecLen + vec_eid_wr)) {
             ++vec_eid_wr;
           }
         }
         bool succeeded;
-        auto edge = edge_q.read(succeeded);
+        auto edge = edge_resp_q.read(succeeded);
         if (succeeded) {
           if (edge.src != 0) {
             auto src = vertices_local[edge.src - req.base_vid];
@@ -533,8 +565,7 @@ task_requests:
     } else {
     vertex_resets:
       for (Vid i = 0; i < req.num_vertices; ++i) {
-#pragma HLS pipeline II = 1
-        vertices_local[i] = vertices[req.vid_offset + i];
+        vertices_local[i] = vertex_in_q.read();
         vertices_local[i].tmp = 0.f;
       }
 
@@ -554,7 +585,6 @@ task_requests:
 
     vertex_writes:
       for (Vid i = 0; i < req.num_vertices; ++i) {
-#pragma HLS pipeline II = 1
         auto vertex = vertices_local[i];
         const float new_ranking = req.init + vertex.tmp * kDampingFactor;
         const float abs_delta = std::abs(new_ranking - vertex.ranking);
@@ -562,17 +592,16 @@ task_requests:
         vertex.ranking = new_ranking;
         // pre-compute vertex.tmp = vertex.ranking / vertex.out_degree
         vertex.tmp = vertex.ranking / vertex.out_degree;
-        vertices[req.vid_offset + i] = vertex;
+        vertex_out_q.write(vertex);
       }
       active = max_delta > kConvergenceThreshold;
     }
     TaskResp resp{req.phase, req.pid, active};
-    resp_q.write(resp);
+    task_resp_q.write(resp);
   }
 
-  eid_q.close();
-
-  // Terminates the UpdateHandler.
+  vertex_req_q.close();
+  edge_req_q.close();
   update_req_q.close();
 }
 
@@ -582,20 +611,25 @@ void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
               tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
               tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
   tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
+  tlp::stream<TaskResp, 32> task_resp("task_resp");
+  tlp::stream<VertexReq, 32> vertex_req("vertex_req");
+  tlp::stream<VertexAttr, 32> vertex_pe2mm("vertex_pe2mm");
+  tlp::stream<VertexAttr, 32> vertex_mm2pe("vertex_mm2pe");
   tlp::stream<Eid, 32> edge_req("edge_req");
   tlp::stream<Edge, 32> edge_resp("edge_resp");
-  tlp::stream<TaskResp, 32> task_resp("task_resp");
-  tlp::stream<Update, 32> update_pe2handler("update_pe2handler");
-  tlp::stream<Update, 32> update_handler2pe("update_handler2pe");
   tlp::stream<UpdateConfig, 32> update_config("update_config");
   tlp::stream<UpdateReq, 32> update_req("update_req");
+  tlp::stream<Update, 32> update_pe2mm("update_pe2mm");
+  tlp::stream<Update, 32> update_mm2pe("update_mm2pe");
 
   tlp::task()
       .invoke<0>(Control, num_partitions, num_vertices, num_edges,
                  update_config, task_req, task_resp)
-      .invoke<0>(EdgeHandler, edge_req, edge_resp, edges)
-      .invoke<0>(UpdateHandler, update_config, update_req, update_pe2handler,
-                 update_handler2pe, updates)
-      .invoke<0>(ProcElem, task_req, task_resp, edge_req, edge_resp, update_req,
-                 update_handler2pe, update_pe2handler, vertices);
+      .invoke<0>(VertexMem, vertex_req, vertex_pe2mm, vertex_mm2pe, vertices)
+      .invoke<0>(EdgeMem, edge_req, edge_resp, edges)
+      .invoke<0>(UpdateMem, update_config, update_req, update_pe2mm,
+                 update_mm2pe, updates)
+      .invoke<0>(ProcElem, task_req, task_resp, vertex_req, vertex_mm2pe,
+                 vertex_pe2mm, edge_req, edge_resp, update_req, update_mm2pe,
+                 update_pe2mm);
 }
