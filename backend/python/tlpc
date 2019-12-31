@@ -122,16 +122,9 @@ def main():
     # set top-level task name
     if args.top is None:
       parser.error('tlpcc cannot run without --top')
-    tlpcc_cmd += '-top', args.top
-
-    cflags = []
     tlp_include_dir = os.path.join(os.path.dirname(sys.argv[0]), '..', '..',
                                    'src')
-    cflags += '-I', tlp_include_dir
-    ap_int_include_dir = os.path.join(os.path.dirname(sys.argv[0]), '..', '..',
-                                      '3rdparty', 'vivado_ap_int', 'include')
-    cflags += '-I', ap_int_include_dir
-    tlpcc_cmd += ('--', *cflags)
+    tlpcc_cmd += '-top', args.top, '--', '-I', tlp_include_dir
 
     # find clang include location
     for clang_version in ('10', '9', '8'):
@@ -158,7 +151,8 @@ def main():
         'clang++-' + clang_version,
         '-MM',
         input_file_basename,
-        *cflags,
+        '-I',
+        tlp_include_dir,
     ],
                                    cwd=input_file_dirname,
                                    universal_newlines=True)  # type: str
