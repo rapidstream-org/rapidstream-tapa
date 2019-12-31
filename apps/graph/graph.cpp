@@ -240,8 +240,7 @@ void UpdateHandler(Pid num_partitions,
   int update_offset_idx = 0;
   TLP_WHILE_NOT_EOS(update_config_q) {
 #pragma HLS pipeline II = 1
-    bool succeeded;
-    auto config = update_config_q.read(succeeded);
+    auto config = update_config_q.read(nullptr);
     VLOG(5) << "recv@UpdateHandler: UpdateConfig: " << config;
     switch (config.item) {
       case UpdateConfig::kBaseVid:
@@ -266,8 +265,7 @@ void UpdateHandler(Pid num_partitions,
     if (update_req.phase == TaskReq::kScatter) {
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
-        bool succeeded;
-        Update update = update_in_q.read(succeeded);
+        Update update = update_in_q.read(nullptr);
         VLOG(5) << "recv@UpdateHandler: Update: " << update;
         Pid pid = (update.dst - base_vid) / partition_size;
         VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
@@ -325,8 +323,7 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = vertices_local
-        bool succeeded;
-        auto update = update_in_q.read(succeeded);
+        auto update = update_in_q.read(nullptr);
         VLOG(5) << "recv@ProcElem: Update: " << update;
         auto idx = update.dst - req.base_vid;
         auto old_vertex_value = vertices_local[idx];

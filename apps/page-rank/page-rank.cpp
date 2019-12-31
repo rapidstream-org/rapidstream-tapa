@@ -211,8 +211,7 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
 void EdgeHandler(tlp::istream<Eid>& eid_q, tlp::ostream<Edge>& edge_q,
                  tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges) {
   // Consume EoS if any.
-  bool succeeded;
-  if (eid_q.eos(succeeded)) eid_q.open();
+  if (eid_q.eos(nullptr)) eid_q.open();
 
   uint8_t outstanding = 0;
   uint8_t leftover = 0;
@@ -256,17 +255,15 @@ void UpdateHandler(tlp::istream<UpdateConfig>& update_config_q,
 #pragma HLS resource variable = num_updates core = RAM_S2P_BRAM
 
   // Consume EoS if any.
-  bool succeeded;
-  if (update_config_q.eos(succeeded)) update_config_q.open();
-  if (update_req_q.eos(succeeded)) update_req_q.open();
+  if (update_config_q.eos(nullptr)) update_config_q.open();
+  if (update_req_q.eos(nullptr)) update_req_q.open();
 
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
 update_inits:
   TLP_WHILE_NOT_EOS(update_config_q) {
 #pragma HLS pipeline II = 1
-    bool succeeded;
-    auto config = update_config_q.read(succeeded);
+    auto config = update_config_q.read(nullptr);
     VLOG(5) << "recv@UpdateHandler: UpdateConfig: " << config;
     switch (config.item) {
       case UpdateConfig::kBaseVid:
@@ -298,8 +295,7 @@ update_requests:
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = num_updates
-        bool succeeded;
-        const Update update = update_in_q.read(succeeded);
+        const Update update = update_in_q.read(nullptr);
         VLOG(5) << "recv@UpdateHandler: Update: " << update;
         const Pid pid = (update.dst - base_vid) / partition_size;
         VLOG(5) << "info@UpdateHandler: dst partition id: " << pid;
@@ -498,8 +494,7 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
   VertexAttr vertices_local[kMaxPartitionSize];
 
   // Consume EoS if any.
-  bool succeeded;
-  if (req_q.eos(succeeded)) req_q.open();
+  if (req_q.eos(nullptr)) req_q.open();
 
 task_requests:
   TLP_WHILE_NOT_EOS(req_q) {
@@ -547,8 +542,7 @@ task_requests:
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = vertices_local
-        bool succeeded;
-        auto update = update_in_q.read(succeeded);
+        auto update = update_in_q.read(nullptr);
         if (update.dst != 0) {
           VLOG(5) << "recv@ProcElem: Update: " << update;
 #pragma HLS latency max = 4
