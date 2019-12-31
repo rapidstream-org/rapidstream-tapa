@@ -91,7 +91,16 @@ template <typename T>
 inline bool eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val, bool& valid) {
 #pragma HLS inline
 #pragma HLS latency min = 1 max = 1
-  return fifo.empty() ? (valid = false) : (valid = true, peek_val.eos);
+  return (valid = !fifo.empty()) && peek_val.eos;
+}
+
+// tlp::stream<T>::eos(std::nullptr_t)
+template <typename T>
+inline bool eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
+                std::nullptr_t) {
+#pragma HLS inline
+#pragma HLS latency min = 1 max = 1
+  return !fifo.empty() && peek_val.eos;
 }
 
 // tlp::stream<T>::try_peek(T&)
@@ -135,6 +144,25 @@ inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
   return tmp.val;
 }
 
+// tlp::stream<T>::peek(std::nullptr_t)
+template <typename T>
+inline T peek(hls::stream<T>& fifo, T peek_val, std::nullptr_t) {
+#pragma HLS inline
+#pragma HLS protocol
+  T tmp;
+  !fifo.empty() && (tmp = peek_val, true);
+  return tmp;
+}
+template <typename T>
+inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
+              std::nullptr_t) {
+#pragma HLS inline
+#pragma HLS protocol
+  data_t<T> tmp;
+  !fifo.empty() && (tmp = peek_val, true);
+  return tmp.val;
+}
+
 // tlp::stream<T>::try_read(T&)
 template <typename T>
 inline bool try_read(hls::stream<T>& fifo, T& value) {
@@ -172,6 +200,24 @@ inline T read(hls::stream<data_t<T>>& fifo, bool& succeeded) {
 #pragma HLS latency min = 1 max = 1
   data_t<T> value;
   succeeded = fifo.read_nb(value);
+  return value.val;
+}
+
+// tlp::stream<T>::read(std::nullptr_t)
+template <typename T>
+inline T read(hls::stream<T>& fifo, std::nullptr_t) {
+#pragma HLS inline
+#pragma HLS latency min = 1 max = 1
+  T value;
+  fifo.read_nb(value);
+  return value;
+}
+template <typename T>
+inline T read(hls::stream<data_t<T>>& fifo, std::nullptr_t) {
+#pragma HLS inline
+#pragma HLS latency min = 1 max = 1
+  data_t<T> value;
+  fifo.read_nb(value);
   return value.val;
 }
 

@@ -69,10 +69,12 @@ class istream : virtual public stream_base {
   // whether stream has ended
   virtual bool try_eos(bool&) const = 0;
   virtual bool eos(bool&) const = 0;
+  virtual bool eos(std::nullptr_t) const = 0;
   // non-blocking non-destructive read
   virtual bool try_peek(T&) const = 0;
   // alternative non-blocking non-destructive read
   virtual T peek(bool&) const = 0;
+  virtual T peek(std::nullptr_t) const = 0;
 
   // consumer non-const operations
 
@@ -82,6 +84,7 @@ class istream : virtual public stream_base {
   virtual T read() = 0;
   // alterative non-blocking destructive read
   virtual T read(bool&) = 0;
+  virtual T read(std::nullptr_t) = 0;
   // non-blocking destructive read with default value
   virtual T read(bool*, const T&) = 0;
   // non-blocking open
@@ -160,6 +163,11 @@ class stream : public istream<T>, public ostream<T> {
     succeeded = try_eos(eos);
     return eos;
   }
+  bool eos(std::nullptr_t) const override {
+    bool eos = false;
+    try_eos(eos);
+    return eos;
+  }
   // non-blocking non-destructive read
   bool try_peek(T& val) const override {
     if (!empty()) {
@@ -176,6 +184,11 @@ class stream : public istream<T>, public ostream<T> {
   T peek(bool& succeeded) const override {
     T val;
     succeeded = try_peek(val);
+    return val;
+  }
+  T peek(std::nullptr_t) const override {
+    T val;
+    try_peek(val);
     return val;
   }
 
@@ -206,6 +219,11 @@ class stream : public istream<T>, public ostream<T> {
   T read(bool& succeeded) override {
     T val;
     succeeded = try_read(val);
+    return val;
+  }
+  T read(std::nullptr_t) override {
+    T val;
+    try_read(val);
     return val;
   }
   // non-blocking destructive read with default value
