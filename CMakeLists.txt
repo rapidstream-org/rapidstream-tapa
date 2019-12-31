@@ -8,6 +8,8 @@ endif()
 
 project(tlp)
 
+add_subdirectory(backend)
+
 add_library(tlp)
 target_sources(tlp PUBLIC src/tlp.h PRIVATE src/tlp.cpp)
 target_compile_features(tlp PUBLIC cxx_std_11)
@@ -40,8 +42,6 @@ set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 
 set(CPACK_GENERATOR TGZ DEB)
 include(CPack)
-
-add_subdirectory(backend)
 
 include(cmake/TLPConfig.cmake)
 enable_testing()
