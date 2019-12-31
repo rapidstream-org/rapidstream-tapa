@@ -47,8 +47,8 @@ extern std::unordered_map<std::thread::id, std::string> thread_name_table;
 
 template <typename T>
 struct elem_t {
-  bool eos;
   T val;
+  bool eos;
 };
 
 class stream_base {
@@ -267,7 +267,7 @@ class stream : public istream<T>, public ostream<T> {
   // non-blocking write
   bool try_write(const T& val) override {
     if (!full()) {
-      access(head) = {false, val};
+      access(head) = {val, false};
       ++head;
       return true;
     }
@@ -282,7 +282,7 @@ class stream : public istream<T>, public ostream<T> {
   // non-blocking close
   bool try_close() override {
     if (!full()) {
-      access(head) = {true, {}};
+      access(head) = {{}, true};
       ++head;
       return true;
     }

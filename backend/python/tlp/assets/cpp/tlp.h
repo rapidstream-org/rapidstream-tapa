@@ -65,8 +65,8 @@ namespace tlp {
 
 template <typename T>
 struct data_t {
-  bool eos;
   T val;
+  bool eos;
 };
 
 // tlp::stream<T>::try_eos(bool&)
@@ -234,7 +234,7 @@ template <typename T>
 inline void write(hls::stream<data_t<T>>& fifo, const T& value) {
 #pragma HLS inline
 #pragma HLS latency min = 1 max = 1
-  fifo.write({false, value});
+  fifo.write({value, false});
 }
 
 // tlp::stream<T>::try_write(const T&)
@@ -242,7 +242,7 @@ template <typename T>
 inline bool try_write(hls::stream<data_t<T>>& fifo, const T& value) {
 #pragma HLS inline
 #pragma HLS latency min = 1 max = 1
-  return fifo.write_nb({false, value});
+  return fifo.write_nb({value, false});
 }
 
 // tlp::stream<T>::close()
@@ -250,7 +250,7 @@ template <typename T>
 inline void close(hls::stream<data_t<T>>& fifo) {
 #pragma HLS inline
 #pragma HLS latency min = 1 max = 1
-  fifo.write({true, {}});
+  fifo.write({{}, true});
 }
 
 template <typename T>
