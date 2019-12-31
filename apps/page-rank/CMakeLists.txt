@@ -1,10 +1,8 @@
 find_package(Boost)
 
 if(Boost_FOUND)
-  include(VivadoAPIntConfig)
   add_library(page-rank-h INTERFACE)
   target_sources(page-rank-h INTERFACE page-rank.h)
-  target_link_libraries(page-rank-h INTERFACE vivado_ap_int)
 
   add_library(page_rank_host)
   target_include_directories(page_rank_host PRIVATE ../graph)

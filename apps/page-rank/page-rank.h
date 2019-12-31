@@ -3,8 +3,6 @@
 
 #include <iostream>
 
-#include <ap_int.h>
-
 using Vid = uint32_t;     // can hold all vertices
 using Degree = uint32_t;  // can hold the maximum degree
 using Eid = uint32_t;     // can hold all edges
