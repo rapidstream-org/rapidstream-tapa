@@ -396,122 +396,140 @@ update_requests:
       const auto num_updates_pid = num_updates[pid];
       VLOG(6) << "info@UpdateMem: num_updates[" << pid
               << "]: " << num_updates_pid;
-      constexpr int kWindowSize = 4;
-      constexpr int kBufferSize = 2;
-      Update window[kWindowSize];
-      Update buffer[kBufferSize];
-#pragma HLS array_partition variable = window complete
-#pragma HLS array_partition variable = buffer complete
-#pragma HLS data_pack variable = window
-#pragma HLS data_pack variable = buffer
-      for (int i = 0; i < kWindowSize; ++i) {
-#pragma HLS unroll
-        window[i] = {0, 0.f};
-      }
-      for (int i = 0; i < kBufferSize; ++i) {
-#pragma HLS unroll
-        buffer[i] = {0, 0.f};
-      }
 
       // update vec
       tlp::vec_t<Update, kUpdateVecLen> update_v{0};
-      uint8_t update_v_i = kUpdateVecLen - 1;
+      uint8_t update_v_i = kUpdateVecLen;
 
     update_reads:
       for (Eid i_rd = 0, i_wr = 0; i_rd < num_updates_pid;) {
-#pragma HLS pipeline II = 1
         auto read_addr = update_offsets[pid] + i_wr;
-        if (i_wr < num_updates_pid) {
-          if (updates.read_addr_try_write(read_addr / kUpdateVecLen)) {
-            i_wr += kUpdateVecLen;
-          }
+        if (i_wr < num_updates_pid &&
+            updates.read_addr_try_write(read_addr / kUpdateVecLen)) {
+          i_wr += kUpdateVecLen;
         }
 
-        int idx_without_conflict = FindFirstWithoutConflict(buffer, window);
-        int idx_empty = FindFirstEmpty(buffer);
-        bool input_has_conflict = true;
-        bool input_empty =
-            updates.read_data_empty() && update_v_i == kUpdateVecLen - 1;
-        Update input_update{};
-        if (idx_without_conflict == -1 && idx_empty != -1 && !input_empty) {
-          if (update_v_i == kUpdateVecLen - 1) {
-            updates.read_data_try_read(update_v);
-            update_v_i = 0;
-          } else {
-            ++update_v_i;
-          }
-          input_update = update_v[update_v_i];
-          input_has_conflict = HasConflict(window, input_update);
+        // update_v_i has the number of updates already written
+        if (update_v_i >= kUpdateVecLen &&
+            updates.read_data_try_read(update_v)) {
+          update_v_i = 0;
+        }
+
+        if (update_v_i < kUpdateVecLen &&
+            update_out_q.try_write(update_v[update_v_i])) {
+          update_v_i += 1;
           ++i_rd;
         }
-
-        // possible write actions:
-        // 1. write one of the updates in the reorder buffer
-        // 2. write the input
-        // 3. write a bubble
-
-        Update output_update =
-            idx_without_conflict != -1
-                ? buffer[idx_without_conflict]
-                : !input_has_conflict ? input_update : Update{0, 0.f};
-
-        // possible buffer actions:
-        // 1. remove an update
-        // 2. do nothing
-        // 3. put input in buffer (if not full)
-
-        if (idx_without_conflict != -1) {
-          buffer[idx_without_conflict] = {0, 0.f};
-        } else if (idx_empty != -1 && !input_empty && input_has_conflict) {
-          buffer[idx_empty] = input_update;
-        }
-
-        // update the window
-        for (int i = 0; i < kWindowSize - 1; ++i) {
-#pragma HLS unroll
-          window[i] = window[i + 1];
-        }
-        window[kWindowSize - 1] = output_update;
-
-        // write the output
-        update_out_q.write(output_update);
       }
 
-      // after the loop, flush the reorder buffer
-    update_read_cleanup:
-      for (int i = 0; i < kBufferSize;) {
-#pragma HLS pipeline II = 1
-        if (buffer[i].dst == 0) {
-          ++i;
-        } else {
-          auto update = buffer[i];
-          bool has_conflict = false;
-          for (int j = 0; j < kWindowSize; ++j) {
-#pragma HLS unroll
-            if (buffer[i].dst == window[j].dst) {
-              has_conflict |= true;
-            }
-          }
-          if (!has_conflict) {
-            ++i;
-          } else {
-            update = {0, 0.f};
-            LOG(WARNING) << "bubble inserted";
-          }
-
-          for (int i = 0; i < kWindowSize - 1; ++i) {
-#pragma HLS unroll
-            window[i] = window[i + 1];
-          }
-          window[kWindowSize - 1] = update;
-          update_out_q.write(update);
-        }
-      }
       num_updates[pid] = 0;  // Reset for the next scatter phase.
       update_out_q.close();
     }
   }
   VLOG(3) << "info@UpdateMem: done";
+  update_out_q.close();
+}
+
+void UpdateReorderer(tlp::istream<Update>& update_in_q,
+                     tlp::ostream<Update>& update_out_q) {
+  TLP_WHILE_NOT_EOS(update_in_q) {
+    constexpr int kWindowSize = 4;
+    constexpr int kBufferSize = 2;
+    Update window[kWindowSize];
+    Update buffer[kBufferSize];
+#pragma HLS array_partition variable = window complete
+#pragma HLS array_partition variable = buffer complete
+#pragma HLS data_pack variable = window
+#pragma HLS data_pack variable = buffer
+    for (int i = 0; i < kWindowSize; ++i) {
+#pragma HLS unroll
+      window[i] = {};
+    }
+    for (int i = 0; i < kBufferSize; ++i) {
+#pragma HLS unroll
+      buffer[i] = {};
+    }
+
+  update_reads:
+    TLP_WHILE_NOT_EOS(update_in_q) {
+#pragma HLS pipeline II = 1
+      int idx_without_conflict = FindFirstWithoutConflict(buffer, window);
+      int idx_empty = FindFirstEmpty(buffer);
+      bool input_has_conflict = true;
+      bool input_empty = update_in_q.empty();
+      Update input_update{};
+      if (idx_without_conflict == -1 && idx_empty != -1 && !input_empty) {
+        input_update = update_in_q.read(nullptr);
+        input_has_conflict = HasConflict(window, input_update);
+      }
+
+      // possible write actions:
+      // 1. write one of the updates in the reorder buffer
+      // 2. write the input
+      // 3. write a bubble
+
+      Update output_update =
+          idx_without_conflict != -1
+              ? buffer[idx_without_conflict]
+              : !input_has_conflict ? input_update : Update{0, 0.f};
+
+      // possible buffer actions:
+      // 1. remove an update
+      // 2. do nothing
+      // 3. put input in buffer (if not full)
+
+      if (idx_without_conflict != -1) {
+        buffer[idx_without_conflict] = {0, 0.f};
+      } else if (idx_empty != -1 && !input_empty && input_has_conflict) {
+        buffer[idx_empty] = input_update;
+      }
+
+      // update the window
+      for (int i = 0; i < kWindowSize - 1; ++i) {
+#pragma HLS unroll
+        window[i] = window[i + 1];
+      }
+      window[kWindowSize - 1] = output_update;
+
+      // write the output
+      update_out_q.write(output_update);
+    }
+
+    // after the loop, flush the reorder buffer
+  update_read_cleanup:
+    for (int i = 0; i < kBufferSize;) {
+#pragma HLS pipeline II = 1
+      if (buffer[i].dst == 0) {
+        ++i;
+      } else {
+        auto update = buffer[i];
+        bool has_conflict = false;
+        for (int j = 0; j < kWindowSize; ++j) {
+#pragma HLS unroll
+          if (buffer[i].dst == window[j].dst) {
+            has_conflict |= true;
+          }
+        }
+        if (!has_conflict) {
+          ++i;
+        } else {
+          update = {0, 0.f};
+          LOG(WARNING) << "bubble inserted";
+        }
+
+        for (int i = 0; i < kWindowSize - 1; ++i) {
+#pragma HLS unroll
+          window[i] = window[i + 1];
+        }
+        window[kWindowSize - 1] = update;
+        update_out_q.write(update);
+      }
+    }
+
+    update_in_q.open();
+    update_out_q.close();
+  }
+  update_in_q.open();
 }
 
 void ProcElem(tlp::istream<TaskReq>& task_req_q,
@@ -620,7 +638,8 @@ void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
   tlp::stream<UpdateConfig, 32> update_config("update_config");
   tlp::stream<UpdateReq, 32> update_req("update_req");
   tlp::stream<Update, 32> update_pe2mm("update_pe2mm");
-  tlp::stream<Update, 32> update_mm2pe("update_mm2pe");
+  tlp::stream<Update, 32> update_mm2ro("update_mm2ro");
+  tlp::stream<Update, 32> update_ro2pe("update_ro2pe");
 
   tlp::task()
       .invoke<0>(Control, num_partitions, num_vertices, num_edges,
@@ -628,8 +647,9 @@ void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
       .invoke<0>(VertexMem, vertex_req, vertex_pe2mm, vertex_mm2pe, vertices)
       .invoke<0>(EdgeMem, edge_req, edge_resp, edges)
       .invoke<0>(UpdateMem, update_config, update_req, update_pe2mm,
-                 update_mm2pe, updates)
+                 update_mm2ro, updates)
+      .invoke<0>(UpdateReorderer, update_mm2ro, update_ro2pe)
       .invoke<0>(ProcElem, task_req, task_resp, vertex_req, vertex_mm2pe,
-                 vertex_pe2mm, edge_req, edge_resp, update_req, update_mm2pe,
+                 vertex_pe2mm, edge_req, edge_resp, update_req, update_ro2pe,
                  update_pe2mm);
 }
