@@ -452,6 +452,8 @@ class async_mmap : public mmap<T> {
   std::queue<T> write_data_q_;
 };
 
+extern std::atomic_bool sleeping;
+
 struct task {
   int current_step{0};
   std::unordered_map<int, std::vector<std::thread>> threads{};
@@ -460,7 +462,23 @@ struct task {
   task();
   task(task&&) = default;
   task(const task&) = delete;
-  ~task() { wait_for(current_step); }
+  ~task() {
+    wait_for(current_step);
+    for (auto& pair : threads) {
+      for (auto& thread : pair.second) {
+        if (thread.joinable()) {
+          // use an atomic flag to make sure thread is no longer doing anything
+          sleeping = false;
+          // make thread sleep forever to avoid accessing freed memory
+          pthread_kill(thread.native_handle(), SIGUSR1);
+          // wait until thread is sleeping
+          while (!sleeping) std::this_thread::yield();
+          // let OS do the clean-up when the whole program terminates
+          thread.detach();
+        }
+      }
+    }
+  }
 
   task& operator=(task&&) = default;
   task& operator=(const task&) = delete;

@@ -1,8 +1,12 @@
 #include "tlp.h"
 
+#include <atomic>
+#include <chrono>
 #include <functional>
+#include <limits>
 #include <thread>
 
+using std::atomic_bool;
 using std::function;
 using std::string;
 using std::unordered_map;
@@ -14,12 +18,19 @@ unordered_map<std::thread::id, string> thread_name_table;
 
 thread_local uint64_t last_signal_timestamp = 0;
 function<void(int)> signal_handler_func;
+atomic_bool sleeping;
 
 void signal_handler_wrapper(int signal) { signal_handler_func(signal); }
+void sleep_forever_handler(int signal) {
+  sleeping = true;
+  std::this_thread::sleep_for(
+      std::chrono::nanoseconds(std::numeric_limits<int64_t>::max()));
+}
 
 task::task() : main_thread_id{std::this_thread::get_id()} {
   signal_handler_func = [this](int signal) { signal_handler(signal); };
   signal(SIGINT, signal_handler_wrapper);
+  signal(SIGUSR1, sleep_forever_handler);
 }
 
 void task::signal_handler(int signal) {
