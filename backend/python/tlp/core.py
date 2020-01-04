@@ -9,7 +9,7 @@ import tempfile
 from typing import (BinaryIO, Dict, Iterator, List, Optional, TextIO, Tuple,
                     Union)
 
-from pyverilog.vparser import ast
+from tlp.verilog import ast
 
 import tlp.util
 
@@ -308,31 +308,61 @@ class Program:
                           arg=arg_name,
                           data_width=width_table[arg_name]))
 
-            # set up done reg
-            reset_if_branch.append(
-                ast.NonblockingSubstitution(left=instance.handshake_done_reg,
-                                            right=self.rtl.FALSE))
-            reset_else_branch.append(
-                ast.NonblockingSubstitution(
-                    left=instance.handshake_done_reg,
-                    right=ast.Lor(left=instance.handshake_done_reg,
-                                  right=instance.handshake_done)))
-            is_done_assignments.append(
-                ast.Assign(left=instance.is_done,
-                           right=ast.Lor(left=instance.handshake_done,
-                                         right=instance.handshake_done_reg)))
+            if instance.is_autorun:
+              reset_start = None
+            else:
+              # set up done reg
+              reset_if_branch.append(
+                  ast.NonblockingSubstitution(left=instance.done_reg,
+                                              right=self.rtl.FALSE))
+              reset_else_branch.append(
+                  ast.NonblockingSubstitution(left=instance.done_reg,
+                                              right=ast.Lor(
+                                                  left=instance.done_reg,
+                                                  right=instance.done_pulse)))
+              # assign done signal
+              is_done_assignments.append(
+                  ast.Assign(left=instance.done,
+                             right=ast.Lor(left=instance.done_pulse,
+                                           right=instance.done_reg)))
+
+              # set up start signal
+              reset_start = ast.IfStatement(cond=ast.Eq(left=instance.ready,
+                                                        right=self.rtl.TRUE),
+                                            true_statement=ast.make_block(
+                                                ast.NonblockingSubstitution(
+                                                    left=instance.start,
+                                                    right=self.rtl.FALSE)),
+                                            false_statement=None)
             start_assignments.append(
-                ast.Assign(left=instance.start,
-                           right=ast.Land(left=self.rtl.START,
-                                          right=ast.Ulnot(instance.is_done))))
-            for signal, signals in handshake_output_signals.items():
-              signals.append(instance.get_signal(signal))
+                ast.Always(sens_list=self.rtl.CLK_SENS_LIST,
+                           statement=ast.make_block(
+                               ast.IfStatement(
+                                   cond=self.rtl.RESET_COND,
+                                   true_statement=ast.make_block(
+                                       ast.NonblockingSubstitution(
+                                           left=instance.start,
+                                           right=self.rtl.FALSE)),
+                                   false_statement=ast.IfStatement(
+                                       cond=ast.Eq(left=self.rtl.START,
+                                                   right=self.rtl.TRUE),
+                                       true_statement=ast.make_block(
+                                           ast.NonblockingSubstitution(
+                                               left=instance.start,
+                                               right=self.rtl.TRUE)),
+                                       false_statement=reset_start)))))
+
+            if not instance.is_autorun:
+              for signal, signals in handshake_output_signals.items():
+                signals.append(instance.get_signal(signal))
 
             # insert handshake signals
             task.module.add_signals(instance.handshake_signals)
 
             # add task module instances
-            portargs = list(self.rtl.generate_handshake_ports(instance.name))
+            portargs = list(
+                self.rtl.generate_handshake_ports(instance.name,
+                                                  instance.is_autorun))
             for arg_name, arg in sorted(
                 (item for item in instance.args.items()), key=lambda x: x[0]):
               if arg.cat == Instance.Arg.Cat.SCALAR:
@@ -376,17 +406,19 @@ class Program:
                 tags=async_mmap_args[arg_name],
                 data_width=width_table[arg_name])
 
-        task.module.add_logics(
-            (ast.Always(sens_list=self.rtl.CLK_SENS_LIST,
-                        statement=ast.Block((ast.IfStatement(
-                            cond=self.rtl.RESET_COND,
-                            true_statement=ast.Block(reset_if_branch),
-                            false_statement=ast.Block(reset_else_branch)),))),
-             *is_done_assignments, *start_assignments))
+        task.module.add_logics((ast.Always(
+            sens_list=self.rtl.CLK_SENS_LIST,
+            statement=ast.make_block(
+                ast.IfStatement(
+                    cond=ast.Lor(left=self.rtl.RESET_COND,
+                                 right=self.rtl.START),
+                    true_statement=ast.make_block(reset_if_branch),
+                    false_statement=ast.make_block(reset_else_branch)),)),
+                                *is_done_assignments, *start_assignments))
         for signal, signals in handshake_output_signals.items():
           task.module.replace_assign(signal=signal,
-                                     content=self.rtl.make_operation(
-                                         ast.Land, signals))
+                                     content=ast.make_operation(
+                                         ast.Land, reversed(signals)))
         with open(self.get_rtl(task.name), 'w') as rtl_code:
           rtl_code.write(task.module.code)
       for name, content in self.rtl.OTHER_MODULES.items():
@@ -463,11 +495,23 @@ class Instance:
     return '{0.task.name}_{0.instance_id}'.format(self)
 
   @property
+  def is_autorun(self) -> bool:
+    return self.step < 0
+
+  @property
   def start(self) -> ast.Identifier:
+    """The handshake start signal.
+
+    This signal is asserted until the ready signal is asserted when the instance
+    of task starts.
+
+    Returns:
+      The ast.Identifier node of this signal.
+    """
     return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_START)
 
   @property
-  def handshake_done(self) -> ast.Identifier:
+  def done_pulse(self) -> ast.Identifier:
     """The handshake done signal.
 
     This signal is asserted for 1 cycle when the instance of task finishes.
@@ -475,23 +519,22 @@ class Instance:
     Returns:
       The ast.Identifier node of this signal.
     """
-    return ast.Identifier(self.name + '_' +
-                          self.verilog.HANDSHAKE_OUTPUT_PORTS[0])
+    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_DONE)
 
   @property
-  def handshake_done_reg(self) -> ast.Identifier:
+  def done_reg(self) -> ast.Identifier:
     """Registered handshake done signal.
 
     This signal is asserted 1 cycle after the instance of task finishes and is
-    kept until reset.
+    kept until reset or next time start signal is asserted.
 
     Returns:
       The ast.Identifier node of this signal.
     """
-    return ast.Identifier(self.handshake_done.name + '_reg')
+    return ast.Identifier(self.done_pulse.name + '_reg')
 
   @property
-  def is_done(self) -> ast.Identifier:
+  def done(self) -> ast.Identifier:
     """Whether this instance has done.
 
     This signal is asserted as soon as the instance finishes and is kept until
@@ -503,22 +546,20 @@ class Instance:
     return ast.Identifier(self.name + '_is_done')
 
   @property
-  def is_idle(self) -> ast.Identifier:
+  def idle(self) -> ast.Identifier:
     """Whether this isntance is idle."""
-    return ast.Identifier(self.name + '_' +
-                          self.verilog.HANDSHAKE_OUTPUT_PORTS[1])
+    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_IDLE)
 
   @property
-  def is_ready(self) -> ast.Identifier:
+  def ready(self) -> ast.Identifier:
     """Whether this isntance is ready to take new input."""
-    return ast.Identifier(self.name + '_' +
-                          self.verilog.HANDSHAKE_OUTPUT_PORTS[2])
+    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_READY)
 
   def get_signal(self, signal: str) -> ast.Identifier:
     if signal not in {'done', 'idle', 'ready'}:
       raise ValueError(
           'signal should be one of (done, idle, ready), got {}'.format(signal))
-    return getattr(self, 'is_' + signal)
+    return getattr(self, signal)
 
   @property
   def handshake_signals(self) -> Iterator[Union[ast.Wire, ast.Reg]]:
@@ -527,8 +568,9 @@ class Instance:
     Yields:
       Union[ast.Wire, ast.Reg] of signals.
     """
-    yield ast.Wire(name=self.start.name, width=None)
-    yield from (ast.Wire(name=self.name + '_' + suffix, width=None)
-                for suffix in self.verilog.HANDSHAKE_OUTPUT_PORTS)
-    yield ast.Wire(name=self.is_done.name, width=None)
-    yield ast.Reg(name=self.handshake_done_reg.name, width=None)
+    yield ast.Reg(name=self.start.name, width=None)
+    if not self.is_autorun:
+      yield from (ast.Wire(name=self.name + '_' + suffix, width=None)
+                  for suffix in self.verilog.HANDSHAKE_OUTPUT_PORTS)
+      yield ast.Wire(name=self.done.name, width=None)
+      yield ast.Reg(name=self.done_reg.name, width=None)

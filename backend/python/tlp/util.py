@@ -4,7 +4,7 @@ from typing import (
 import shutil
 import subprocess
 
-from pyverilog.vparser import ast
+from tlp.verilog import ast
 
 
 def clang_format(code: str, *args: str) -> str:
@@ -28,4 +28,4 @@ def clang_format(code: str, *args: str) -> str:
 
 def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in verilog.ISTREAM_SUFFIXES[:1]:
-    yield verilog.make_port_arg(port='tlp_' + port + '_peek', arg=arg + suffix)
+    yield ast.make_port_arg(port='tlp_' + port + '_peek', arg=arg + suffix)

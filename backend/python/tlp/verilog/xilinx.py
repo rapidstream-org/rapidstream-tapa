@@ -12,13 +12,14 @@ import shutil
 import sys
 import tempfile
 from typing import (IO, BinaryIO, Dict, Iterable, Iterator, Optional, Tuple,
-                    Type, Union)
+                    Union)
 
 from pyverilog.ast_code_generator import codegen
-from pyverilog.vparser import ast, parser
+from pyverilog.vparser import parser
 
 import haoda.backend.xilinx
 import tlp.core
+from tlp.verilog import ast
 
 # const strings
 
@@ -188,18 +189,23 @@ FIFO_WRITE_PORTS = (
     'if_write_ce',
 )
 
+HANDSHAKE_CLK = 'ap_clk'
+HANDSHAKE_RST_N = 'ap_rst_n'
+HANDSHAKE_START = 'ap_start'
+HANDSHAKE_DONE = 'ap_done'
+HANDSHAKE_IDLE = 'ap_idle'
+HANDSHAKE_READY = 'ap_ready'
+
 HANDSHAKE_INPUT_PORTS = (
-    'ap_clk',
-    'ap_rst_n',
-    'ap_start',
+    HANDSHAKE_CLK,
+    HANDSHAKE_RST_N,
+    HANDSHAKE_START,
 )
 HANDSHAKE_OUTPUT_PORTS = (
-    'ap_done',
-    'ap_idle',
-    'ap_ready',
+    HANDSHAKE_DONE,
+    HANDSHAKE_IDLE,
+    HANDSHAKE_READY,
 )
-HANDSHAKE_START = HANDSHAKE_INPUT_PORTS[-1]
-HANDSHAKE_DONE = HANDSHAKE_OUTPUT_PORTS[0]
 
 # const ast nodes
 
@@ -208,9 +214,9 @@ DONE = ast.Identifier(HANDSHAKE_DONE)
 TRUE = ast.Identifier("1'b1")
 FALSE = ast.Identifier("1'b0")
 SENS_TYPE = 'posedge'
-CLK = ast.Identifier(HANDSHAKE_INPUT_PORTS[0])
+CLK = ast.Identifier(HANDSHAKE_CLK)
 CLK_SENS_LIST = ast.SensList((ast.Sens(CLK, type=SENS_TYPE),))
-RESET_COND = ast.Eq(left=ast.Identifier(HANDSHAKE_INPUT_PORTS[1]), right=FALSE)
+RESET_COND = ast.Eq(left=ast.Identifier(HANDSHAKE_RST_N), right=FALSE)
 
 # type aliases
 
@@ -369,16 +375,16 @@ class Module:
   ) -> 'Module':
 
     def ports() -> Iterator[ast.PortArg]:
-      yield make_port_arg(port='clk', arg='ap_clk')
-      yield make_port_arg(port='reset', arg='ap_rst_n_inv')
+      yield ast.make_port_arg(port='clk', arg='ap_clk')
+      yield ast.make_port_arg(port='reset', arg='ap_rst_n_inv')
       yield from (
-          make_port_arg(port=port_name, arg=name + arg_suffix)
+          ast.make_port_arg(port=port_name, arg=name + arg_suffix)
           for port_name, arg_suffix in zip(FIFO_READ_PORTS, ISTREAM_SUFFIXES))
-      yield make_port_arg(port=FIFO_READ_PORTS[-1], arg="1'b1")
+      yield ast.make_port_arg(port=FIFO_READ_PORTS[-1], arg="1'b1")
       yield from (
-          make_port_arg(port=port_name, arg=name + arg_suffix)
+          ast.make_port_arg(port=port_name, arg=name + arg_suffix)
           for port_name, arg_suffix in zip(FIFO_WRITE_PORTS, OSTREAM_SUFFIXES))
-      yield make_port_arg(port=FIFO_WRITE_PORTS[-1], arg="1'b1")
+      yield ast.make_port_arg(port=FIFO_WRITE_PORTS[-1], arg="1'b1")
 
     return self.add_instance(module_name='fifo',
                              instance_name=name,
@@ -407,8 +413,8 @@ class Module:
                      argname=ast.Constant((data_width // 8 - 1).bit_length())),
     ]
     portargs = [
-        make_port_arg(port='clk', arg=HANDSHAKE_INPUT_PORTS[0]),
-        make_port_arg(port='rst', arg=HANDSHAKE_INPUT_PORTS[1] + '_inv'),
+        ast.make_port_arg(port='clk', arg=HANDSHAKE_CLK),
+        ast.make_port_arg(port='rst', arg=HANDSHAKE_RST_N + '_inv'),
     ]
     paramargs.append(
         ast.ParamArg(paramname='AddrWidth', argname=ast.Constant(addr_width)))
@@ -423,17 +429,17 @@ class Module:
           ast.ParamArg(paramname='WaitTimeWidth',
                        argname=ast.Constant(max_wait_time.bit_length())))
       portargs.append(
-          make_port_arg(port='max_wait_time',
-                        arg="{}'d{}".format(max_wait_time.bit_length(),
-                                            max_wait_time)))
+          ast.make_port_arg(port='max_wait_time',
+                            arg="{}'d{}".format(max_wait_time.bit_length(),
+                                                max_wait_time)))
     if max_burst_len:
       paramargs.append(
           ast.ParamArg(paramname='BurstLenWidth',
                        argname=ast.Constant(max_burst_len.bit_length())))
       portargs.append(
-          make_port_arg(port='max_burst_len',
-                        arg="{}'d{}".format(max_burst_len.bit_length(),
-                                            max_burst_len)))
+          ast.make_port_arg(port='max_burst_len',
+                            arg="{}'d{}".format(max_burst_len.bit_length(),
+                                                max_burst_len)))
 
     for channel, ports in M_AXI_PORTS.items():
       for port, direction in ports:
@@ -450,10 +456,11 @@ class Module:
         if width is not None:
           width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
         portargs.append(
-            make_port_arg(port='m_axi_{channel}{port}'.format(channel=channel,
-                                                              port=port),
-                          arg='m_axi_{name}_{channel}{port}'.format(
-                              name=name, channel=channel, port=port)))
+            ast.make_port_arg(
+                port='m_axi_{channel}{port}'.format(channel=channel, port=port),
+                arg='m_axi_{name}_{channel}{port}'.format(name=name,
+                                                          channel=channel,
+                                                          port=port)))
 
     tags = set(tags)
     for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
@@ -474,7 +481,7 @@ class Module:
             arg = "'d0"
           else:
             arg = ''
-        portargs.append(make_port_arg(port=tag + suffix[2:], arg=arg))
+        portargs.append(ast.make_port_arg(port=tag + suffix[2:], arg=arg))
 
     return self.add_instance(module_name='async_mmap',
                              instance_name=name + '_m_axi',
@@ -581,53 +588,31 @@ def rename_m_axi_param(mapping: Dict[str, str],
   return new_param
 
 
-def make_port_arg(port: str, arg: str) -> ast.PortArg:
-  return ast.PortArg(portname=port, argname=ast.Identifier(name=arg))
-
-
-def make_operation(operator: Type[ast.Operator],
-                   nodes: Iterable[ast.Node]) -> ast.Operator:
-  """Make an operation node out of an iterable of Nodes.
-
-  Note that the nodes appears in the reverse order of the iterable.
-
-  Args:
-    op: Operator.
-    nodes: Iterable of Node. If empty, raises StopIteration.
-
-  Returns:
-    Operator of the result.
-  """
-  iterator = iter(nodes)
-  node = next(iterator)
-  try:
-    return operator(make_operation(operator, iterator), node)
-  except StopIteration:
-    return node
-
-
-def generate_handshake_ports(name: str) -> Iterator[ast.PortArg]:
-  for port in HANDSHAKE_INPUT_PORTS:
-    yield make_port_arg(port=port, arg=port)
+def generate_handshake_ports(name: str,
+                             autorun: bool = False) -> Iterator[ast.PortArg]:
+  for port in HANDSHAKE_CLK, HANDSHAKE_RST_N:
+    yield ast.make_port_arg(port=port, arg=port)
+  yield ast.make_port_arg(port=HANDSHAKE_START,
+                          arg=name + '_' + HANDSHAKE_START)
   for port in HANDSHAKE_OUTPUT_PORTS:
-    yield make_port_arg(port=port, arg=name + '_' + port)
+    yield ast.make_port_arg(port=port, arg="" if autorun else name + '_' + port)
 
 
 def generate_m_axi_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in M_AXI_SUFFIXES:
-    yield make_port_arg(port=M_AXI_PREFIX + port + suffix,
-                        arg=M_AXI_PREFIX + arg + suffix)
-  yield make_port_arg(port=port + '_offset', arg=arg)
+    yield ast.make_port_arg(port=M_AXI_PREFIX + port + suffix,
+                            arg=M_AXI_PREFIX + arg + suffix)
+  yield ast.make_port_arg(port=port + '_offset', arg=arg)
 
 
 def generate_istream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in ISTREAM_SUFFIXES:
-    yield make_port_arg(port=port + suffix, arg=arg + suffix)
+    yield ast.make_port_arg(port=port + suffix, arg=arg + suffix)
 
 
 def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in OSTREAM_SUFFIXES:
-    yield make_port_arg(port=port + suffix, arg=arg + suffix)
+    yield ast.make_port_arg(port=port + suffix, arg=arg + suffix)
 
 
 def async_mmap_suffixes(tag: str) -> Tuple[str, str, str]:
@@ -659,10 +644,10 @@ def generate_async_mmap_ports(tag: str, port: str, arg: str,
   for suffix in async_mmap_suffixes(tag):
     port_name = instance.task.module.find_port(prefix=prefix, suffix=suffix)
     if port_name is not None:
-      yield make_port_arg(port=port_name,
-                          arg=async_mmap_arg_name(arg=arg,
-                                                  tag=tag,
-                                                  suffix=suffix))
+      yield ast.make_port_arg(port=port_name,
+                              arg=async_mmap_arg_name(arg=arg,
+                                                      tag=tag,
+                                                      suffix=suffix))
 
 
 def generate_async_mmap_signals(tag: str, arg: str,
