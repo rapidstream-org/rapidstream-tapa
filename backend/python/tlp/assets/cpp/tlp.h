@@ -78,19 +78,11 @@ inline bool try_eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
   return fifo.empty() ? false : (eos = peek_val.eos, true);
 }
 
-// tlp::stream<T>::eos()
-template <typename T>
-inline bool eos(hls::stream<data_t<T>>& peek_fifo) {
-#pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  return peek_fifo.read().eos;
-}
-
 // tlp::stream<T>::eos(bool&)
 template <typename T>
 inline bool eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val, bool& valid) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS protocol
   return (valid = !fifo.empty()) && peek_val.eos;
 }
 
@@ -99,7 +91,7 @@ template <typename T>
 inline bool eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
                 std::nullptr_t) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS protocol
   return !fifo.empty() && peek_val.eos;
 }
 
@@ -109,20 +101,6 @@ inline bool try_peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val, T& val) {
 #pragma HLS inline
 #pragma HLS protocol
   return fifo.empty() ? false : (val = peek_val.val, true);
-}
-
-// tlp::stream<T>::peek()
-template <typename T>
-inline T peek(hls::stream<T>& peek_fifo) {
-#pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  return peek_fifo.read();
-}
-template <typename T>
-inline T peek(hls::stream<data_t<T>>& peek_fifo) {
-#pragma HLS inline
-#pragma HLS latency min = 1 max = 1
-  return peek_fifo.read().val;
 }
 
 // tlp::stream<T>::peek(bool&)
@@ -149,39 +127,42 @@ template <typename T>
 inline T peek(hls::stream<T>& fifo, T peek_val, std::nullptr_t) {
 #pragma HLS inline
 #pragma HLS protocol
-  T tmp;
-  !fifo.empty() && (tmp = peek_val, true);
-  return tmp;
+  return peek_val;
 }
 template <typename T>
 inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
               std::nullptr_t) {
 #pragma HLS inline
 #pragma HLS protocol
-  data_t<T> tmp;
-  !fifo.empty() && (tmp = peek_val, true);
-  return tmp.val;
+  return peek_val.val;
 }
 
 // tlp::stream<T>::try_read(T&)
 template <typename T>
 inline bool try_read(hls::stream<T>& fifo, T& value) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS protocol
   return fifo.read_nb(value);
+}
+template <typename T>
+inline bool try_read(hls::stream<data_t<T>>& fifo, T& value) {
+#pragma HLS inline
+#pragma HLS protocol
+  data_t<T> tmp;
+  return fifo.read_nb(tmp) && (value = tmp.val, true);
 }
 
 // tlp::stream<T>::read()
 template <typename T>
 inline T read(hls::stream<T>& fifo) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS latency max = 1
   return fifo.read();
 }
 template <typename T>
 inline T read(hls::stream<data_t<T>>& fifo) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS latency max = 1
   return fifo.read().val;
 }
 
@@ -189,7 +170,7 @@ inline T read(hls::stream<data_t<T>>& fifo) {
 template <typename T>
 inline T read(hls::stream<T>& fifo, bool& succeeded) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS latency max = 1
   T value;
   succeeded = fifo.read_nb(value);
   return value;
@@ -197,7 +178,7 @@ inline T read(hls::stream<T>& fifo, bool& succeeded) {
 template <typename T>
 inline T read(hls::stream<data_t<T>>& fifo, bool& succeeded) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS latency max = 1
   data_t<T> value;
   succeeded = fifo.read_nb(value);
   return value.val;
@@ -207,7 +188,7 @@ inline T read(hls::stream<data_t<T>>& fifo, bool& succeeded) {
 template <typename T>
 inline T read(hls::stream<T>& fifo, std::nullptr_t) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS latency max = 1
   T value;
   fifo.read_nb(value);
   return value;
@@ -215,17 +196,26 @@ inline T read(hls::stream<T>& fifo, std::nullptr_t) {
 template <typename T>
 inline T read(hls::stream<data_t<T>>& fifo, std::nullptr_t) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS latency max = 1
   data_t<T> value;
   fifo.read_nb(value);
   return value.val;
+}
+
+// tlp::stream<T>::try_open()
+template <typename T>
+inline void try_open(hls::stream<data_t<T>>& fifo) {
+#pragma HLS inline
+#pragma HLS latency max = 1
+  data_t<T> tmp;
+  assert(!fifo.read_nb(tmp) || tmp.eos);
 }
 
 // tlp::stream<T>::open()
 template <typename T>
 inline void open(hls::stream<data_t<T>>& fifo) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+#pragma HLS latency max = 1
   assert(fifo.read().eos);
 }
 
@@ -233,7 +223,8 @@ inline void open(hls::stream<data_t<T>>& fifo) {
 template <typename T>
 inline void write(hls::stream<data_t<T>>& fifo, const T& value) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+//#pragma HLS latency max = 1
+#pragma HLS protocol
   fifo.write({value, false});
 }
 
@@ -241,7 +232,8 @@ inline void write(hls::stream<data_t<T>>& fifo, const T& value) {
 template <typename T>
 inline bool try_write(hls::stream<data_t<T>>& fifo, const T& value) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+//#pragma HLS latency max = 1
+#pragma HLS protocol
   return fifo.write_nb({value, false});
 }
 
@@ -249,7 +241,8 @@ inline bool try_write(hls::stream<data_t<T>>& fifo, const T& value) {
 template <typename T>
 inline void close(hls::stream<data_t<T>>& fifo) {
 #pragma HLS inline
-#pragma HLS latency min = 1 max = 1
+//#pragma HLS latency max = 1
+#pragma HLS protocol
   fifo.write({{}, true});
 }
 
