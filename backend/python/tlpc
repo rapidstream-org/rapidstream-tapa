@@ -11,7 +11,6 @@ import sys
 
 import haoda.backend.xilinx
 import tlp.core
-import tlp.verilog.xilinx
 
 
 def main():
@@ -195,8 +194,6 @@ def main():
     cflags += ' ' + args.cflags
   with tlp_program_json() as tlp_program_json_obj:
     program = tlp.core.Program(tlp_program_json_obj,
-                               hls=haoda.backend.xilinx,
-                               rtl=tlp.verilog.xilinx,
                                cflags=cflags,
                                work_dir=args.work_dir)
 

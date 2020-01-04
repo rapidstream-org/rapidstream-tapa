@@ -1,5 +1,4 @@
 import collections
-import enum
 import json
 import os.path
 import shutil
@@ -9,76 +8,13 @@ import tempfile
 from typing import (BinaryIO, Dict, Iterator, List, Optional, TextIO, Tuple,
                     Union)
 
-from tlp.verilog import ast
-
 import tlp.util
+from haoda.backend import xilinx as hls
+from tlp.verilog import ast
+from tlp.verilog import xilinx as rtl
 
-
-class Task:
-  """Describes a TLP task.
-
-  Attributes:
-    level: Task.Level, upper or lower.
-    name: str, name of the task, function name as defined in the source code.
-    code: str, HLS C++ code of this task.
-    tasks: A dict mapping child task names to json instance description objects.
-    fifos: A dict mapping child fifo names to json FIFO description objects.
-    module: rtl.Module, should be attached after RTL code is generated.
-
-  Properties:
-    is_upper: bool, True if this task is an upper-level task.
-    is_lower: bool, True if this task is an lower-level task.
-  """
-
-  class Level(enum.Enum):
-    LOWER = 0
-    UPPER = 1
-
-  def __init__(self, **kwargs):
-    level = kwargs.pop('level')  # type: Union[Task.Level, str]
-    if isinstance(level, str):
-      if level == 'lower':
-        level = Task.Level.LOWER
-      elif level == 'upper':
-        level = Task.Level.UPPER
-    if not isinstance(level, Task.Level):
-      raise TypeError('unexpected `level`: ' + level)
-    self.level = level
-    self.name = kwargs.pop('name')  # type: str
-    self.code = kwargs.pop('code')  # type: str
-    self.tasks = collections.OrderedDict()
-    self.fifos = collections.OrderedDict()
-    if self.is_upper:
-      self.tasks = collections.OrderedDict(
-          sorted((item for item in kwargs.pop('tasks').items()),
-                 key=lambda x: x[0]))
-      self.fifos = collections.OrderedDict(
-          sorted((item for item in kwargs.pop('fifos').items()),
-                 key=lambda x: x[0]))
-    self.module = None  # type: Any
-
-  @property
-  def is_upper(self) -> bool:
-    return self.level == Task.Level.UPPER
-
-  @property
-  def is_lower(self) -> bool:
-    return self.level == Task.Level.LOWER
-
-
-class Port:
-
-  def __init__(self, obj):
-    self.cat = {
-        'istream': Instance.Arg.Cat.ISTREAM,
-        'ostream': Instance.Arg.Cat.OSTREAM,
-        'scalar': Instance.Arg.Cat.SCALAR,
-        'mmap': Instance.Arg.Cat.MMAP,
-        'async_mmap': Instance.Arg.Cat.ASYNC_MMAP,
-    }[obj['cat']]
-    self.name = obj['name']
-    self.ctype = obj['type']
-    self.width = obj['width']
+from .instance import Instance, Port
+from .task import Task
 
 
 class Program:
@@ -88,15 +24,12 @@ class Program:
     top: Name of the top-level module.
     work_dir: Working directory.
     is_temp: Whether to delete the working directory after done.
-    hls: HLS backend.
     ports: Tuple of Port objects.
     _tasks: Dict mapping names of tasks to Task objects.
   """
 
   def __init__(self,
                fp: TextIO,
-               hls,
-               rtl,
                cflags: str = None,
                work_dir: Optional[str] = None):
     """Construct Program object from a json file.
@@ -109,8 +42,6 @@ class Program:
     """
     obj = json.load(fp)
     self.top = obj['top']  # type: str
-    self.hls = hls
-    self.rtl = rtl
     self.cflags = cflags
     self.headers = obj.get('headers', {})  # type: Dict[str, str]
     if work_dir is None:
@@ -154,7 +85,7 @@ class Program:
     return os.path.join(self.work_dir, 'tar', name + '.tar')
 
   def get_rtl(self, name: str) -> str:
-    return os.path.join(self.rtl_dir, name + self.rtl.RTL_SUFFIX)
+    return os.path.join(self.rtl_dir, name + rtl.RTL_SUFFIX)
 
   def extract_cpp(self) -> 'Program':
     """Extract HLS C++ files."""
@@ -174,12 +105,11 @@ class Program:
 
     def worker(task: Task) -> Iterator[None]:
       with open(self.get_tar(task.name), 'wb') as tarfileobj:
-        with self.hls.RunHls(tarfileobj,
-                             kernel_files=[(self.get_cpp(task.name),
-                                            self.cflags)],
-                             top_name=task.name,
-                             clock_period=clock_period,
-                             part_num=part_num) as proc:
+        with hls.RunHls(tarfileobj,
+                        kernel_files=[(self.get_cpp(task.name), self.cflags)],
+                        top_name=task.name,
+                        clock_period=clock_period,
+                        part_num=part_num) as proc:
           yield
           stdout, stderr = proc.communicate()
         if proc.returncode != 0:
@@ -207,7 +137,7 @@ class Program:
     for task in self._tasks.values():
       oldcwd = os.getcwd()
       os.chdir(self.work_dir)
-      task.module = self.rtl.Module([self.get_rtl(task.name)])
+      task.module = rtl.Module([self.get_rtl(task.name)])
       os.chdir(oldcwd)
 
     # instrument the upper-level RTL
@@ -218,7 +148,7 @@ class Program:
           task_name, task_idx = fifo['consumed_by']
           fifo_port = task.tasks[task_name][task_idx]['args'][fifo_name]['port']
           child_ports = self.get_task(task_name).module.ports
-          width = child_ports[fifo_port + self.rtl.ISTREAM_SUFFIXES[0]].width
+          width = child_ports[fifo_port + rtl.ISTREAM_SUFFIXES[0]].width
           # TODO: err properly if not integer literals
           fifo_width = int(width.msb.value) - int(width.lsb.value) + 1
 
@@ -226,12 +156,12 @@ class Program:
           task.module.add_signals(
               ast.Wire(name=fifo_name + suffix,
                        width=child_ports[fifo_port + suffix].width)
-              for suffix in self.rtl.ISTREAM_SUFFIXES)
+              for suffix in rtl.ISTREAM_SUFFIXES)
 
           task_name, task_idx = fifo['produced_by']
           fifo_port = task.tasks[task_name][task_idx]['args'][fifo_name]['port']
           child_ports = self.get_task(task_name).module.ports
-          width = child_ports[fifo_port + self.rtl.OSTREAM_SUFFIXES[0]].width
+          width = child_ports[fifo_port + rtl.OSTREAM_SUFFIXES[0]].width
           # TODO: err properly if not integer literals
           fifo_width = int(width.msb.value) - int(width.lsb.value) + 1
 
@@ -239,7 +169,7 @@ class Program:
           task.module.add_signals(
               ast.Wire(name=fifo_name + suffix,
                        width=child_ports[fifo_port + suffix].width)
-              for suffix in self.rtl.OSTREAM_SUFFIXES)
+              for suffix in rtl.OSTREAM_SUFFIXES)
 
           # add FIFO instances
           task.module.add_fifo_instance(name=fifo_name,
@@ -268,7 +198,7 @@ class Program:
           # iterate over all instances of sub-tasks
           for instance_idx, instance_obj in enumerate(instance_objs):
             instance = Instance(self.get_task(task_name),
-                                verilog=self.rtl,
+                                verilog=rtl,
                                 instance_id=instance_idx,
                                 **instance_obj)
 
@@ -281,7 +211,7 @@ class Program:
               # check which ports are used for async_mmap
               if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
                 for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
-                  if set(x.portname for x in self.rtl.generate_async_mmap_ports(
+                  if set(x.portname for x in rtl.generate_async_mmap_ports(
                       tag=tag, port=port_name, arg=arg_name, instance=instance)
                         ) & set(self._tasks[task_name].module.ports):
                     async_mmap_args.setdefault(arg_name, []).append(tag)
@@ -297,13 +227,13 @@ class Program:
               for tag in async_mmap_args.get(arg_name, []):
                 if task.name == self.top:
                   task.module.add_signals(
-                      self.rtl.generate_async_mmap_signals(
+                      rtl.generate_async_mmap_signals(
                           tag=tag,
                           arg=arg_name,
                           data_width=width_table[arg_name]))
                 else:
                   task.module.add_ports(
-                      self.rtl.generate_async_mmap_ioports(
+                      rtl.generate_async_mmap_ioports(
                           tag=tag,
                           arg=arg_name,
                           data_width=width_table[arg_name]))
@@ -314,7 +244,7 @@ class Program:
               # set up done reg
               reset_if_branch.append(
                   ast.NonblockingSubstitution(left=instance.done_reg,
-                                              right=self.rtl.FALSE))
+                                              right=rtl.FALSE))
               reset_else_branch.append(
                   ast.NonblockingSubstitution(left=instance.done_reg,
                                               right=ast.Lor(
@@ -328,29 +258,29 @@ class Program:
 
               # set up start signal
               reset_start = ast.IfStatement(cond=ast.Eq(left=instance.ready,
-                                                        right=self.rtl.TRUE),
+                                                        right=rtl.TRUE),
                                             true_statement=ast.make_block(
                                                 ast.NonblockingSubstitution(
                                                     left=instance.start,
-                                                    right=self.rtl.FALSE)),
+                                                    right=rtl.FALSE)),
                                             false_statement=None)
             start_assignments.append(
-                ast.Always(sens_list=self.rtl.CLK_SENS_LIST,
-                           statement=ast.make_block(
-                               ast.IfStatement(
-                                   cond=self.rtl.RESET_COND,
-                                   true_statement=ast.make_block(
-                                       ast.NonblockingSubstitution(
-                                           left=instance.start,
-                                           right=self.rtl.FALSE)),
-                                   false_statement=ast.IfStatement(
-                                       cond=ast.Eq(left=self.rtl.START,
-                                                   right=self.rtl.TRUE),
-                                       true_statement=ast.make_block(
-                                           ast.NonblockingSubstitution(
-                                               left=instance.start,
-                                               right=self.rtl.TRUE)),
-                                       false_statement=reset_start)))))
+                ast.Always(
+                    sens_list=rtl.CLK_SENS_LIST,
+                    statement=ast.make_block(
+                        ast.IfStatement(cond=rtl.RESET_COND,
+                                        true_statement=ast.make_block(
+                                            ast.NonblockingSubstitution(
+                                                left=instance.start,
+                                                right=rtl.FALSE)),
+                                        false_statement=ast.IfStatement(
+                                            cond=ast.Eq(left=rtl.START,
+                                                        right=rtl.TRUE),
+                                            true_statement=ast.make_block(
+                                                ast.NonblockingSubstitution(
+                                                    left=instance.start,
+                                                    right=rtl.TRUE)),
+                                            false_statement=reset_start)))))
 
             if not instance.is_autorun:
               for signal, signals in handshake_output_signals.items():
@@ -361,8 +291,8 @@ class Program:
 
             # add task module instances
             portargs = list(
-                self.rtl.generate_handshake_ports(instance.name,
-                                                  instance.is_autorun))
+                rtl.generate_handshake_ports(instance.name,
+                                             instance.is_autorun))
             for arg_name, arg in sorted(
                 (item for item in instance.args.items()), key=lambda x: x[0]):
               if arg.cat == Instance.Arg.Cat.SCALAR:
@@ -371,27 +301,25 @@ class Program:
                                 argname=ast.Identifier(name=arg_name)))
               elif arg.cat == Instance.Arg.Cat.ISTREAM:
                 portargs.extend(
-                    self.rtl.generate_istream_ports(port=arg.port,
-                                                    arg=arg_name))
+                    rtl.generate_istream_ports(port=arg.port, arg=arg_name))
                 portargs.extend(
                     portarg for portarg in tlp.util.generate_peek_ports(
-                        self.rtl, port=arg.port, arg=arg_name)
+                        rtl, port=arg.port, arg=arg_name)
                     if portarg.portname in child_port_set)
 
               elif arg.cat == Instance.Arg.Cat.OSTREAM:
                 portargs.extend(
-                    self.rtl.generate_ostream_ports(port=arg.port,
-                                                    arg=arg_name))
+                    rtl.generate_ostream_ports(port=arg.port, arg=arg_name))
               elif arg.cat == Instance.Arg.Cat.MMAP:
                 portargs.extend(
-                    self.rtl.generate_m_axi_ports(port=arg.port, arg=arg_name))
+                    rtl.generate_m_axi_ports(port=arg.port, arg=arg_name))
               elif arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
                 for tag in async_mmap_args[arg_name]:
                   portargs.extend(
-                      self.rtl.generate_async_mmap_ports(tag=tag,
-                                                         port=port_name,
-                                                         arg=arg_name,
-                                                         instance=instance))
+                      rtl.generate_async_mmap_ports(tag=tag,
+                                                    port=port_name,
+                                                    arg=arg_name,
+                                                    instance=instance))
 
             task.module.add_instance(module_name=child.name,
                                      instance_name=instance.name,
@@ -407,11 +335,10 @@ class Program:
                 data_width=width_table[arg_name])
 
         task.module.add_logics((ast.Always(
-            sens_list=self.rtl.CLK_SENS_LIST,
+            sens_list=rtl.CLK_SENS_LIST,
             statement=ast.make_block(
                 ast.IfStatement(
-                    cond=ast.Lor(left=self.rtl.RESET_COND,
-                                 right=self.rtl.START),
+                    cond=ast.Lor(left=rtl.RESET_COND, right=rtl.START),
                     true_statement=ast.make_block(reset_if_branch),
                     false_statement=ast.make_block(reset_else_branch)),)),
                                 *is_done_assignments, *start_assignments))
@@ -421,7 +348,7 @@ class Program:
                                          ast.Land, reversed(signals)))
         with open(self.get_rtl(task.name), 'w') as rtl_code:
           rtl_code.write(task.module.code)
-      for name, content in self.rtl.OTHER_MODULES.items():
+      for name, content in rtl.OTHER_MODULES.items():
         with open(self.get_rtl(name), 'w') as rtl_code:
           rtl_code.write(content)
       for file_name in 'async_mmap.v', 'detect_burst.v', 'generate_last.v':
@@ -431,146 +358,8 @@ class Program:
     return self
 
   def pack_rtl(self, output_file: BinaryIO) -> 'Program':
-    self.rtl.pack(top_name=self.top,
-                  ports=self.ports,
-                  rtl_dir=self.rtl_dir,
-                  output_file=output_file)
+    rtl.pack(top_name=self.top,
+             ports=self.ports,
+             rtl_dir=self.rtl_dir,
+             output_file=output_file)
     return self
-
-
-class Instance:
-  """Instance of a child Task in an upper-level task.
-
-  A task can be instantiated multiple times in the same upper-level task.
-  Each object of this class corresponds to such a instance of a task.
-
-  Attributes:
-    task: Task, corresponding task of this instance.
-    instance_id: int, index of the instance of the same task.
-    step: int, bulk-synchronous step when instantiated.
-    args: a dict mapping arg names to Arg.
-
-  Properties:
-    name: str, instance name, unique in the parent module.
-
-  """
-
-  class Arg:
-
-    class Cat(enum.Enum):
-      INPUT = 1 << 0
-      OUTPUT = 1 << 1
-      SCALAR = 1 << 2
-      STREAM = 1 << 3
-      MMAP = 1 << 4
-      ASYNC = 1 << 5
-      ASYNC_MMAP = MMAP | ASYNC
-      ISTREAM = STREAM | INPUT
-      OSTREAM = STREAM | OUTPUT
-
-    def __init__(self, cat: Union[str, Cat], port: str):
-      if isinstance(cat, str):
-        self.cat = {
-            'istream': Instance.Arg.Cat.ISTREAM,
-            'ostream': Instance.Arg.Cat.OSTREAM,
-            'scalar': Instance.Arg.Cat.SCALAR,
-            'mmap': Instance.Arg.Cat.MMAP,
-            'async_mmap': Instance.Arg.Cat.ASYNC_MMAP
-        }[cat]
-      else:
-        self.cat = cat
-      self.port = port
-      self.width = None
-
-  def __init__(self, task: Task, verilog, instance_id: int, **kwargs):
-    self.verilog = verilog
-    self.task = task
-    self.instance_id = instance_id
-    self.step = kwargs.pop('step')
-    self.args = {k: Instance.Arg(**v) for k, v in kwargs.pop('args').items()
-                }  # type: Dict[str, Instance.Arg]
-
-  @property
-  def name(self) -> str:
-    return '{0.task.name}_{0.instance_id}'.format(self)
-
-  @property
-  def is_autorun(self) -> bool:
-    return self.step < 0
-
-  @property
-  def start(self) -> ast.Identifier:
-    """The handshake start signal.
-
-    This signal is asserted until the ready signal is asserted when the instance
-    of task starts.
-
-    Returns:
-      The ast.Identifier node of this signal.
-    """
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_START)
-
-  @property
-  def done_pulse(self) -> ast.Identifier:
-    """The handshake done signal.
-
-    This signal is asserted for 1 cycle when the instance of task finishes.
-
-    Returns:
-      The ast.Identifier node of this signal.
-    """
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_DONE)
-
-  @property
-  def done_reg(self) -> ast.Identifier:
-    """Registered handshake done signal.
-
-    This signal is asserted 1 cycle after the instance of task finishes and is
-    kept until reset or next time start signal is asserted.
-
-    Returns:
-      The ast.Identifier node of this signal.
-    """
-    return ast.Identifier(self.done_pulse.name + '_reg')
-
-  @property
-  def done(self) -> ast.Identifier:
-    """Whether this instance has done.
-
-    This signal is asserted as soon as the instance finishes and is kept until
-    reset.
-
-    Returns:
-      The ast.Identifier node of this signal.
-    """
-    return ast.Identifier(self.name + '_is_done')
-
-  @property
-  def idle(self) -> ast.Identifier:
-    """Whether this isntance is idle."""
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_IDLE)
-
-  @property
-  def ready(self) -> ast.Identifier:
-    """Whether this isntance is ready to take new input."""
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_READY)
-
-  def get_signal(self, signal: str) -> ast.Identifier:
-    if signal not in {'done', 'idle', 'ready'}:
-      raise ValueError(
-          'signal should be one of (done, idle, ready), got {}'.format(signal))
-    return getattr(self, signal)
-
-  @property
-  def handshake_signals(self) -> Iterator[Union[ast.Wire, ast.Reg]]:
-    """All handshake signals used for this instance.
-
-    Yields:
-      Union[ast.Wire, ast.Reg] of signals.
-    """
-    yield ast.Reg(name=self.start.name, width=None)
-    if not self.is_autorun:
-      yield from (ast.Wire(name=self.name + '_' + suffix, width=None)
-                  for suffix in self.verilog.HANDSHAKE_OUTPUT_PORTS)
-      yield ast.Wire(name=self.done.name, width=None)
-      yield ast.Reg(name=self.done_reg.name, width=None)

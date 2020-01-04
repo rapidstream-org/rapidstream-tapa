@@ -18,7 +18,7 @@ from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
 
 import haoda.backend.xilinx
-import tlp.core
+import tlp.instance
 from tlp.verilog import ast
 
 # const strings
@@ -638,7 +638,7 @@ def async_mmap_width(tag: str, suffix: str,
 
 
 def generate_async_mmap_ports(tag: str, port: str, arg: str,
-                              instance: tlp.core.Instance
+                              instance: tlp.instance.Instance
                              ) -> Iterator[ast.PortArg]:
   prefix = 'tlp_' + port + '_' + tag + '_V_'
   for suffix in async_mmap_suffixes(tag):
@@ -672,7 +672,7 @@ def generate_async_mmap_ioports(tag: str, arg: str,
                                              data_width=data_width))
 
 
-def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.core.Port],
+def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.instance.Port],
          output_file: Union[str, BinaryIO]) -> None:
   port_tuple = tuple(ports)
   if isinstance(output_file, str):
@@ -691,7 +691,8 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.core.Port],
         kernel_xml=kernel_xml_obj.name,
         hdl_dir=rtl_dir,
         m_axi_names=(port.name for port in port_tuple if port.cat in {
-            tlp.core.Instance.Arg.Cat.MMAP, tlp.core.Instance.Arg.Cat.ASYNC_MMAP
+            tlp.instance.Instance.Arg.Cat.MMAP,
+            tlp.instance.Instance.Arg.Cat.ASYNC_MMAP
         })) as proc:
       stdout, stderr = proc.communicate()
     if proc.returncode == 0:
@@ -705,13 +706,13 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.core.Port],
     os.remove(xo_file)
 
 
-def print_kernel_xml(top_name: str, ports: Iterable[tlp.core.Port],
+def print_kernel_xml(top_name: str, ports: Iterable[tlp.instance.Port],
                      kernel_xml: IO[str]) -> None:
   """Generate kernel.xml file.
 
   Args:
     top_name: name of the top-level kernel function.
-    ports: Iterable of tlp.core.Port.
+    ports: Iterable of tlp.instance.Port.
     kernel_xml: file object to write to.
   """
   m_axi_ports = ''
@@ -723,7 +724,8 @@ def print_kernel_xml(top_name: str, ports: Iterable[tlp.core.Port],
     rtl_port_name = 's_axi_control'
     addr_qualifier = 0
     if port.cat in {
-        tlp.core.Instance.Arg.Cat.MMAP, tlp.core.Instance.Arg.Cat.ASYNC_MMAP
+        tlp.instance.Instance.Arg.Cat.MMAP,
+        tlp.instance.Instance.Arg.Cat.ASYNC_MMAP
     }:
       size = host_size = 8  # m_axi interface must have 64-bit addresses
       rtl_port_name = M_AXI_PREFIX + port.name
