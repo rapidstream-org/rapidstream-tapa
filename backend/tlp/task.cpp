@@ -546,6 +546,10 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
         case AsyncMmapOpEnum::kFence:
           rewritten_text = "ap_wait_n(80)";
           break;
+        case AsyncMmapOpEnum::kWriteAddrTryWrite:
+          rewritten_text =
+              async_mmap.WriteAddrVar() + ".write_nb(" + args[0] + ")";
+          break;
         case AsyncMmapOpEnum::kWriteAddrWrite:
           rewritten_text =
               async_mmap.WriteAddrVar() + ".write(" + args[0] + ")";
@@ -709,6 +713,10 @@ void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
                        ", " + args[0] + ")";
       break;
     }
+    case StreamOpEnum::kTryRead: {
+      rewritten_text = "tlp::try_read(" + stream.name + ", " + args[0] + ")";
+      break;
+    }
     case StreamOpEnum::kBlockingRead: {
       rewritten_text = "tlp::read(" + stream.name + ")";
       break;
@@ -717,9 +725,12 @@ void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
       rewritten_text = "tlp::read(" + stream.name + ", " + args[0] + ")";
       break;
     }
+    case StreamOpEnum::kTryOpen: {
+      rewritten_text = "tlp::try_open(" + stream.name + ")";
+      break;
+    }
     case StreamOpEnum::kOpen: {
-      // somehow using tlp::open crashes Vivado HLS
-      rewritten_text = "assert(" + stream.name + ".read().eos)";
+      rewritten_text = "tlp::open(" + stream.name + ")";
       break;
     }
     case StreamOpEnum::kWrite: {

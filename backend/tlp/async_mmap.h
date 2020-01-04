@@ -17,6 +17,8 @@ enum class AsyncMmapOpEnum : uint64_t {
   kAddr = 1ULL << 11,
   kData = 1ULL << 12,
 
+  kWriteAddrTryWrite =
+      kWrite | kAddr | static_cast<uint64_t>(StreamOpEnum::kTryWrite),
   kWriteAddrWrite =
       kWrite | kAddr | static_cast<uint64_t>(StreamOpEnum::kWrite),
   kWriteDataWrite =
