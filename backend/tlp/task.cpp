@@ -733,6 +733,10 @@ void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
       rewritten_text = "tlp::open(" + stream.name + ")";
       break;
     }
+    case StreamOpEnum::kTestFull: {
+      rewritten_text = stream.name + ".full()";
+      break;
+    }
     case StreamOpEnum::kWrite: {
       rewritten_text = "tlp::write(" + stream.name + ", " + stream.type + "(" +
                        args[0] + "))";
