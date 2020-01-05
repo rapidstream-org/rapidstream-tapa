@@ -40,7 +40,7 @@ enum class StreamOpEnum : uint64_t {
                               kIsDefaulted | kIsConsumer,
   kTryOpen = 12ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
   kOpen = 13ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
-  kTestFull = 14ULL << 32 | kIsConsumer,
+  kTestFull = 14ULL << 32 | kIsProducer,
   kTryWrite = 15ULL << 32 | kIsDestructive | kIsNonBlocking | kIsProducer,
   kWrite = 16ULL << 32 | kIsDestructive | kIsBlocking | kIsProducer,
   kTryClose = 17ULL << 32 | kIsDestructive | kIsNonBlocking | kIsProducer,
