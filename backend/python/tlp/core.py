@@ -8,8 +8,8 @@ import tempfile
 from typing import (BinaryIO, Dict, Iterator, List, Optional, TextIO, Tuple,
                     Union)
 
-import tlp.util
 from haoda.backend import xilinx as hls
+from tlp import util
 from tlp.verilog import ast
 from tlp.verilog import xilinx as rtl
 
@@ -91,7 +91,7 @@ class Program:
     """Extract HLS C++ files."""
     for task in self._tasks.values():
       with open(self.get_cpp(task.name), 'w') as src_code:
-        src_code.write(tlp.util.clang_format(task.code))
+        src_code.write(util.clang_format(task.code))
     for name, content in self.headers.items():
       header_path = os.path.join(self.cpp_dir, name)
       os.makedirs(os.path.dirname(header_path), exist_ok=True)
@@ -175,6 +175,44 @@ class Program:
           task.module.add_fifo_instance(name=fifo_name,
                                         width=fifo_width,
                                         depth=fifo['depth'])
+
+          # print debugging info
+          debugging_blocks = []
+          col_width = max(
+              max(len(name), len(util.get_instance_name(fifo['consumed_by'])),
+                  len(util.get_instance_name(fifo['produced_by'])))
+              for name, fifo in task.fifos.items())
+          fmtargs = {
+              'fifo_prefix': '\\033[97m',
+              'fifo_suffix': '\\033[0m',
+              'task_prefix': '\\033[90m',
+              'task_suffix': '\\033[0m',
+          }
+          for suffixes, fmt, fifo_tag in zip(
+              (rtl.ISTREAM_SUFFIXES, rtl.OSTREAM_SUFFIXES),
+              ('DEBUG: R: {fifo_prefix}{fifo:>{width}}{fifo_suffix} -> '
+               '{task_prefix}{task:<{width}}{task_suffix} %h',
+               'DEBUG: W: {task_prefix}{task:>{width}}{task_suffix} -> '
+               '{fifo_prefix}{fifo:<{width}}{fifo_suffix} %h'),
+              ('consumed_by', 'produced_by')):
+            display = ast.SingleStatement(statement=ast.SystemCall(
+                syscall='display',
+                args=(ast.StringConst(value=fmt.format(
+                    width=col_width,
+                    fifo=fifo_name,
+                    task=(util.get_instance_name(fifo[fifo_tag])),
+                    **fmtargs)), ast.Identifier(name=fifo_name + suffixes[0]))))
+            debugging_blocks.append(
+                ast.Always(
+                    sens_list=rtl.CLK_SENS_LIST,
+                    statement=ast.make_block(
+                        ast.IfStatement(cond=ast.Eq(
+                            left=ast.Identifier(name=fifo_name + suffixes[-1]),
+                            right=rtl.TRUE,
+                        ),
+                                        true_statement=ast.make_block(display),
+                                        false_statement=None))))
+          task.module.add_logics(debugging_blocks)
 
         # instantiate children tasks
         reset_if_branch = []
@@ -302,10 +340,9 @@ class Program:
               elif arg.cat == Instance.Arg.Cat.ISTREAM:
                 portargs.extend(
                     rtl.generate_istream_ports(port=arg.port, arg=arg_name))
-                portargs.extend(
-                    portarg for portarg in tlp.util.generate_peek_ports(
-                        rtl, port=arg.port, arg=arg_name)
-                    if portarg.portname in child_port_set)
+                portargs.extend(portarg for portarg in util.generate_peek_ports(
+                    rtl, port=arg.port, arg=arg_name)
+                                if portarg.portname in child_port_set)
 
               elif arg.cat == Instance.Arg.Cat.OSTREAM:
                 portargs.extend(
@@ -353,7 +390,7 @@ class Program:
           rtl_code.write(content)
       for file_name in 'async_mmap.v', 'detect_burst.v', 'generate_last.v':
         shutil.copy(
-            os.path.join(os.path.dirname(tlp.__file__), 'assets', 'verilog',
+            os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
                          file_name), self.rtl_dir)
     return self
 

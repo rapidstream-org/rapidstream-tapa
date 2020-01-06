@@ -1,6 +1,7 @@
 import enum
 from typing import Dict, Iterator, Union
 
+from tlp import util
 from tlp.verilog import ast
 
 from .task import Task
@@ -60,7 +61,7 @@ class Instance:
 
   @property
   def name(self) -> str:
-    return '{0.task.name}_{0.instance_id}'.format(self)
+    return util.get_instance_name((self.task.name, self.instance_id))
 
   @property
   def is_autorun(self) -> bool:

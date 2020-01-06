@@ -43,7 +43,7 @@ class Task:
       self.fifos = collections.OrderedDict(
           sorted((item for item in kwargs.pop('fifos').items()),
                  key=lambda x: x[0]))
-    self.module = None  # type: Optional[rtl.Module]
+    self.module = None  # type: Optional[tlp.verilog.xilinx.Module]
 
   @property
   def is_upper(self) -> bool:
