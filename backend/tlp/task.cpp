@@ -604,9 +604,13 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
         diagnostics_engine.getCustomDiagID(
             clang::DiagnosticsEngine::Error,
             "blocking read cannot be used in an innermost loop with peeking");
-    static const auto blocking_read_in_pipeline_note =
-        diagnostics_engine.getCustomDiagID(clang::DiagnosticsEngine::Note,
-                                           "on tlp::stream '%0'");
+    static const auto blocking_write_in_pipeline_warning =
+        diagnostics_engine.getCustomDiagID(
+            clang::DiagnosticsEngine::Warning,
+            "blocking write used in an innermost loop may lead to incorrect "
+            "RTL code");
+    static const auto tlp_stream_note = diagnostics_engine.getCustomDiagID(
+        clang::DiagnosticsEngine::Note, "on tlp::stream '%0'");
     for (const auto& stream : streams) {
       decltype(stream.call_exprs) call_exprs;
       for (auto expr : stream.call_exprs) {
@@ -621,8 +625,31 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       if (!call_exprs.empty() && stream.need_peeking) {
         diagnostics_engine.Report(blocking_read_in_pipeline_error);
         for (auto expr : call_exprs) {
-          auto diagnostics_builder = diagnostics_engine.Report(
-              expr->getBeginLoc(), blocking_read_in_pipeline_note);
+          auto diagnostics_builder =
+              diagnostics_engine.Report(expr->getBeginLoc(), tlp_stream_note);
+          diagnostics_builder.AddString(stream.name);
+          diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
+              expr->getBeginLoc(), expr->getEndLoc().getLocWithOffset(1)));
+        }
+      }
+    }
+
+    for (const auto& stream : streams) {
+      decltype(stream.call_exprs) call_exprs;
+      for (auto expr : stream.call_exprs) {
+        auto stream_op = GetStreamOp(expr);
+        if (static_cast<bool>(stream_op & StreamOpEnum::kIsBlocking) &&
+            static_cast<bool>(stream_op & StreamOpEnum::kIsProducer) &&
+            binary_search(stream_ops.begin(), stream_ops.end(), expr)) {
+          call_exprs.push_back(expr);
+        }
+      }
+
+      if (!call_exprs.empty()) {
+        diagnostics_engine.Report(blocking_write_in_pipeline_warning);
+        for (auto expr : call_exprs) {
+          auto diagnostics_builder =
+              diagnostics_engine.Report(expr->getBeginLoc(), tlp_stream_note);
           diagnostics_builder.AddString(stream.name);
           diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
               expr->getBeginLoc(), expr->getEndLoc().getLocWithOffset(1)));
