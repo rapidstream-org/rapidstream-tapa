@@ -175,7 +175,7 @@ class stream : public istream<T>, public ostream<T> {
     if (!empty()) {
       auto& elem = access(tail);
       if (elem.eos) {
-        LOG(WARNING) << "stream '" << name << "' peeded when closed";
+        throw std::runtime_error("stream '" + name + "' peeked when closed");
       }
       val = elem.val;
       return true;
