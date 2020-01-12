@@ -731,13 +731,14 @@ void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
                        ", " + args[0] + ")";
       break;
     }
-    case StreamOpEnum::kBlockingPeek: {
-      rewritten_text = "tlp::peek(" + stream.PeekVar() + ")";
-      break;
-    }
     case StreamOpEnum::kNonBlockingPeek: {
       rewritten_text = "tlp::peek(" + stream.name + ", " + stream.PeekVar() +
                        ", " + args[0] + ")";
+      break;
+    }
+    case StreamOpEnum::kNonBlockingPeekWithEos: {
+      rewritten_text = "tlp::peek(" + stream.name + ", " + stream.PeekVar() +
+                       ", " + args[0] + ", " + args[1] + ")";
       break;
     }
     case StreamOpEnum::kTryRead: {

@@ -137,6 +137,17 @@ inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
   return peek_val.val;
 }
 
+// tlp::stream<T>::peek(bool&, bool&)
+template <typename T>
+inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val, bool& succeeded,
+              bool& is_eos) {
+#pragma HLS inline
+#pragma HLS protocol
+  succeeded = !fifo.empty();
+  is_eos = peek_val.eos && succeeded;
+  return peek_val.val;
+}
+
 // tlp::stream<T>::try_read(T&)
 template <typename T>
 inline bool try_read(hls::stream<T>& fifo, T& value) {

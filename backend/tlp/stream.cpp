@@ -49,10 +49,10 @@ StreamOpEnum GetStreamOp(const CXXMemberCallExpr* call_expr) {
   } else if (callee == "try_peek" && num_args == 1) {
     return StreamOpEnum::kTryPeek;
   } else if (callee == "peek") {
-    if (num_args == 0) {
-      return StreamOpEnum::kBlockingPeek;
-    } else if (num_args == 1) {
+    if (num_args == 1) {
       return StreamOpEnum::kNonBlockingPeek;
+    } else if (num_args == 2) {
+      return StreamOpEnum::kNonBlockingPeekWithEos;
     }
   } else if (callee == "try_read" && num_args == 1) {
     return StreamOpEnum::kTryRead;

@@ -30,8 +30,9 @@ enum class StreamOpEnum : uint64_t {
   kNonBlockingEos =
       4ULL << 32 | kIsConsumer | kIsNonBlocking | kNeedPeeking | kNeedEos,
   kTryPeek = 5ULL << 32 | kIsConsumer | kIsNonBlocking | kNeedPeeking,
-  kBlockingPeek = 6ULL << 32 | kIsBlocking | kIsConsumer | kNeedPeeking,
-  kNonBlockingPeek = 7ULL << 32 | kIsNonBlocking | kIsConsumer | kNeedPeeking,
+  kNonBlockingPeek = 6ULL << 32 | kIsNonBlocking | kIsConsumer | kNeedPeeking,
+  kNonBlockingPeekWithEos =
+      7ULL << 32 | kIsNonBlocking | kIsConsumer | kNeedPeeking | kNeedEos,
   kTryRead = 8ULL << 32 | kIsDestructive | kIsNonBlocking | kIsConsumer,
   kBlockingRead = 9ULL << 32 | kIsDestructive | kIsBlocking | kIsConsumer,
   kNonBlockingRead =

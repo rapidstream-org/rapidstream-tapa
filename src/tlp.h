@@ -75,6 +75,8 @@ class istream : virtual public stream_base {
   // alternative non-blocking non-destructive read
   virtual T peek(bool&) const = 0;
   virtual T peek(std::nullptr_t) const = 0;
+  // alternative non-blocking non-destructive read with eos
+  virtual T peek(bool&, bool&) const = 0;
 
   // consumer non-const operations
 
@@ -190,6 +192,18 @@ class stream : public istream<T>, public ostream<T> {
     T val;
     try_peek(val);
     return val;
+  }
+  // peek val and eos at the same time
+  T peek(bool& succeeded, bool& is_eos) const override {
+    if (!empty()) {
+      auto& elem = access(tail);
+      succeeded = true;
+      is_eos = elem.eos;
+      return elem.val;
+    }
+    succeeded = false;
+    is_eos = false;
+    return {};
   }
 
   // consumer non-const operations
