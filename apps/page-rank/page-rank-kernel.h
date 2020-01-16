@@ -137,5 +137,27 @@ inline void Shift(T (&window)[N], T elem) {
   }
   window[N - 1] = elem;
 }
+template <int N>
+inline bool Any(const bool (&valid)[N]) {
+  bool ret = false;
+  for (int i = 0; i < N; ++i) {
+#pragma HLS unroll
+    ret |= valid[i];
+  }
+  return ret;
+}
+
+template <typename T>
+inline int Arbitrate(const bool (&valid)[2], T priority) {
+#pragma HLS inline
+#pragma HLS protocol floating
+  switch (priority & 1) {
+    case 0:
+      return valid[0] ? 0 : 1;
+    case 1:
+      return valid[1] ? 1 : 0;
+  }
+  return 0;
+}
 
 #endif  // TLP_APPS_PAGE_RANK_KERNEL_H_

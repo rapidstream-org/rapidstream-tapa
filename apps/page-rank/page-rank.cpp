@@ -106,8 +106,17 @@ bulk_steps:
                     eid_offsets[pid_send],
                     0.f,
                     false};
-        if (task_req_q0.try_write(req) || task_req_q1.try_write(req)) {
-          ++pid_send;
+        switch (pid_send & 1) {
+          case 0:
+            if (task_req_q0.try_write(req) || task_req_q1.try_write(req)) {
+              ++pid_send;
+            }
+            break;
+          case 1:
+            if (task_req_q1.try_write(req) || task_req_q0.try_write(req)) {
+              ++pid_send;
+            }
+            break;
         }
       }
       TaskResp resp;
@@ -179,8 +188,17 @@ bulk_steps:
                     eid_offsets[pid_send],
                     (1.f - kDampingFactor) / total_num_vertices,
                     false};
-        if (task_req_q0.try_write(req) || task_req_q1.try_write(req)) {
-          ++pid_send;
+        switch (pid_send & 1) {
+          case 0:
+            if (task_req_q0.try_write(req) || task_req_q1.try_write(req)) {
+              ++pid_send;
+            }
+            break;
+          case 1:
+            if (task_req_q1.try_write(req) || task_req_q0.try_write(req)) {
+              ++pid_send;
+            }
+            break;
         }
       }
 
@@ -263,6 +281,7 @@ void EdgeMem(tlp::istream<Eid>& edge_req_q0, tlp::istream<Eid>& edge_req_q1,
 #pragma HLS array_partition complete variable = leftover
   tlp::vec_t<Edge, kEdgeVecLen> edge_v[2];
 #pragma HLS array_partition complete variable = edge_v
+  uint8_t priority = 0;
   for (;;) {
     const auto dst_rd_copy = dst_rd;
     const uint8_t dst_wr_next = dst_wr == kMaxOutstanding - 1 ? 0 : dst_wr + 1;
@@ -276,18 +295,23 @@ void EdgeMem(tlp::istream<Eid>& edge_req_q0, tlp::istream<Eid>& edge_req_q1,
 
     // If outstanding pool is not full, send new requests.
     if (dst_rd_copy != dst_wr_next) {
-      bool valid_0 = false;
-      bool valid_1 = false;
-      auto eid_0 = edge_req_q0.peek(valid_0);
-      auto eid_1 = edge_req_q1.peek(valid_1);
-      auto eid = valid_0 ? eid_0 : eid_1;
-      if ((valid_0 || valid_1) && edges.read_addr_try_write(eid)) {
-        if (valid_0) {
-          edge_req_q0.read(nullptr);
-        } else {
-          edge_req_q1.read(nullptr);
+      bool valid[2] = {};
+      const Eid eid[] = {
+          edge_req_q0.peek(valid[0]),
+          edge_req_q1.peek(valid[1]),
+      };
+      const auto idx = Arbitrate(valid, priority >> 2);
+      if (Any(valid) && edges.read_addr_try_write(eid[idx])) {
+        switch (idx) {
+          case 0:
+            edge_req_q0.read(nullptr);
+            break;
+          case 1:
+            edge_req_q1.read(nullptr);
+            break;
         }
-        dst[dst_wr] = valid_0 ? 0 : 1;
+        ++priority;
+        dst[dst_wr] = idx;
         dst_wr = dst_wr_next;
       }
     }
@@ -322,6 +346,8 @@ void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
   // dst is full if dst_rd == dst_wr + 1 (mod kMaxOutstanding)
   bool update_valid = false;
   tlp::vec_t<Update, kUpdateVecLen> update_v;
+  uint8_t priority_rd = 0;
+  uint8_t priority_wr = 0;
   for (;;) {
     const auto dst_rd_copy = dst_rd;
     const uint8_t dst_wr_next = dst_wr == kMaxOutstanding - 1 ? 0 : dst_wr + 1;
@@ -346,44 +372,58 @@ void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
 
     // Handle read addr.
     if (dst_rd_copy != dst_wr_next) {
-      bool valid_0 = false;
-      bool valid_1 = false;
-      auto addr_0 = read_addr_q0.peek(valid_0);
-      auto addr_1 = read_addr_q1.peek(valid_1);
-      auto addr = valid_0 ? addr_0 : addr_1;
-      if ((valid_0 || valid_1) && updates.read_addr_try_write(addr)) {
-        if (valid_0) {
-          read_addr_q0.read(nullptr);
-        } else {
-          read_addr_q1.read(nullptr);
+      bool valid[2] = {};
+      const uint64_t addr[] = {
+          read_addr_q0.peek(valid[0]),
+          read_addr_q1.peek(valid[1]),
+      };
+      const auto idx = Arbitrate(valid, priority_rd >> 2);
+      if (Any(valid) && updates.read_addr_try_write(addr[idx])) {
+        switch (idx) {
+          case 0:
+            read_addr_q0.read(nullptr);
+            break;
+          case 1:
+            read_addr_q1.read(nullptr);
+            break;
         }
-        dst[dst_wr] = valid_0 ? 0 : 1;
+        ++priority_rd;
+        dst[dst_wr] = idx;
         dst_wr = dst_wr_next;
       }
     }
 
     // Handle write addr and data.
-    bool addr_valid_0 = false;
-    bool addr_valid_1 = false;
-    bool data_valid_0 = false;
-    bool data_valid_1 = false;
-    auto addr_0 = write_addr_q0.peek(addr_valid_0);
-    auto addr_1 = write_addr_q1.peek(addr_valid_1);
-    auto data_0 = write_data_q0.peek(data_valid_0);
-    auto data_1 = write_data_q1.peek(data_valid_1);
-    const auto valid_0 = addr_valid_0 && data_valid_0;
-    const auto valid_1 = addr_valid_1 && data_valid_1;
-    auto addr = valid_0 ? addr_0 : addr_1;
-    auto data = valid_0 ? data_0 : data_1;
-    if ((valid_0 || valid_1) && updates.write_addr_try_write(addr)) {
-      if (valid_0) {
-        write_addr_q0.read(nullptr);
-        write_data_q0.read(nullptr);
-      } else {
-        write_addr_q1.read(nullptr);
-        write_data_q1.read(nullptr);
+    bool addr_valid[2] = {};
+    bool data_valid[2] = {};
+    const uint64_t addr[] = {
+        write_addr_q0.peek(addr_valid[0]),
+        write_addr_q1.peek(addr_valid[1]),
+    };
+    const tlp::vec_t<Update, kUpdateVecLen> data[] = {
+        write_data_q0.peek(data_valid[0]),
+        write_data_q1.peek(data_valid[1]),
+    };
+
+    // Adding const confuses HLS.
+    bool valid[] = {
+        addr_valid[0] && data_valid[0],
+        addr_valid[1] && data_valid[1],
+    };
+    const auto idx = Arbitrate(valid, priority_wr >> 2);
+    if (Any(valid) && updates.write_addr_try_write(addr[idx])) {
+      switch (idx) {
+        case 0:
+          write_addr_q0.read(nullptr);
+          write_data_q0.read(nullptr);
+          break;
+        case 1:
+          write_addr_q1.read(nullptr);
+          write_data_q1.read(nullptr);
+          break;
       }
-      updates.write_data_write(data);
+      ++priority_wr;
+      updates.write_data_write(data[idx]);
     }
   }
 }
@@ -451,7 +491,6 @@ void UpdateHandler(
 
   // Memory offsets of each update partition.
   Eid update_offsets[kMaxNumPartitions];
-#pragma HLS resource variable = update_offsets latency = 4
   // Number of updates of each update partition in memory.
   Eid num_updates[kMaxNumPartitions];
 
@@ -615,24 +654,24 @@ update_phases:
 
 void UpdateReorderer(tlp::istream<Update>& update_in_q,
                      tlp::ostream<Update>& update_out_q) {
-  for (;;) {
-    constexpr int kWindowSize = 5;
-    constexpr int kBufferSize = 2;
-    Update window[kWindowSize];
-    Update buffer[kBufferSize];
+  constexpr int kWindowSize = 5;
+  constexpr int kBufferSize = 2;
+  Update window[kWindowSize];
+  Update buffer[kBufferSize];
 #pragma HLS array_partition variable = window complete
 #pragma HLS array_partition variable = buffer complete
 #pragma HLS data_pack variable = window
 #pragma HLS data_pack variable = buffer
-    for (int i = 0; i < kWindowSize; ++i) {
+  for (int i = 0; i < kWindowSize; ++i) {
 #pragma HLS unroll
-      window[i] = {};
-    }
-    for (int i = 0; i < kBufferSize; ++i) {
+    window[i] = {};
+  }
+  for (int i = 0; i < kBufferSize; ++i) {
 #pragma HLS unroll
-      buffer[i] = {};
-    }
+    buffer[i] = {};
+  }
 
+  for (;;) {
   update_reads:
     TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
@@ -683,17 +722,17 @@ void UpdateReorderer(tlp::istream<Update>& update_in_q,
       } else {
         auto update = buffer[i];
         if (!HasConflict(window, update)) {
+          buffer[i] = {};
           ++i;
         } else {
-          update = {0, 0.f};
+          update = {};
           LOG(WARNING) << "bubble inserted";
         }
 
         Shift(window, update);
-        if (update.dst != 0) {
-          update_out_q.write(update);
-          VLOG_F(5, send) << "Update: " << update;
-        }
+
+        update_out_q.write(update);
+        VLOG_F(5, send) << "Update: " << update;
       }
     }
     update_out_q.close();
@@ -772,7 +811,7 @@ task_requests:
       update_reads:
         TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
-#pragma HLS dependence false variable = vertices_local
+#pragma HLS dependence variable = vertices_local inter true distance = 5
           auto update = update_in_q.read(nullptr);
           if (update.dst != 0) {
             VLOG_F(5, recv) << "Update: " << update;
