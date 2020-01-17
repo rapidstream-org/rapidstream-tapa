@@ -435,6 +435,8 @@ void UpdateRouter(tlp::istream<UpdateWithPid>& update_in_q0,
                   tlp::ostream<UpdateWithPid>& update_out_q0,
                   tlp::ostream<UpdateWithPid>& update_out_q1) {
   constexpr auto bit = 0;
+
+  uint8_t priority = 0;
   for (bool eos_0, eos_1, valid_0, valid_1;;) {
     auto update_0 = update_in_q0.peek(valid_0, eos_0);
     auto update_1 = update_in_q1.peek(valid_1, eos_1);
@@ -444,28 +446,43 @@ void UpdateRouter(tlp::istream<UpdateWithPid>& update_in_q0,
       update_in_q0.try_open();
       update_in_q1.try_open();
     } else {
-      const bool fwd_0_0 = valid_0 && !eos_0 && (update_0.pid & 1 << bit) == 0;
-      const bool fwd_0_1 = valid_0 && !eos_0 && (update_0.pid & 1 << bit) != 0;
-      const bool fwd_1_0 = valid_1 && !eos_1 && (update_1.pid & 1 << bit) == 0;
-      const bool fwd_1_1 = valid_1 && !eos_1 && (update_1.pid & 1 << bit) != 0;
+      bool fwd_0_0 = valid_0 && !eos_0 && (update_0.pid & 1 << bit) == 0;
+      bool fwd_0_1 = valid_0 && !eos_0 && (update_0.pid & 1 << bit) != 0;
+      bool fwd_1_0 = valid_1 && !eos_1 && (update_1.pid & 1 << bit) == 0;
+      bool fwd_1_1 = valid_1 && !eos_1 && (update_1.pid & 1 << bit) != 0;
 
-      if (fwd_0_0 || (fwd_0_1 && !fwd_1_1)) {
-        update_0 = update_in_q0.read(nullptr);
-      }
-      if (fwd_1_1 || (fwd_1_0 && !fwd_0_0)) {
-        update_1 = update_in_q1.read(nullptr);
-      }
+      bool conflict = (valid_0 && !eos_0) && (valid_1 && !eos_1) &&
+                      fwd_0_0 == fwd_1_0 && fwd_0_1 == fwd_1_1;
+      bool prioritize_1 = priority & 4;
+
+      bool read_0 = !((!fwd_0_0 && !fwd_0_1) || (prioritize_1 && conflict));
+      bool read_1 = !((!fwd_1_0 && !fwd_1_1) || (!prioritize_1 && conflict));
+      bool write_0 = fwd_0_0 || fwd_1_0;
+      bool write_1 = fwd_1_1 || fwd_0_1;
+      bool write_0_0 = fwd_0_0 && (!fwd_1_0 || !prioritize_1);
+      bool write_1_1 = fwd_1_1 && (!fwd_0_1 || prioritize_1);
 
       // if can forward through (0->0 or 1->1), do it
       // otherwise, check for conflict
-      const bool write_0 = fwd_0_0 || (fwd_1_0 && !fwd_1_1);
-      const bool write_1 = fwd_1_1 || (fwd_0_1 && !fwd_0_0);
+      bool written_0 = false;
+      bool written_1 = false;
       if (write_0) {
-        update_out_q0.write(fwd_0_0 ? update_0 : update_1);
+        written_0 = update_out_q0.try_write(write_0_0 ? update_0 : update_1);
       }
       if (write_1) {
-        update_out_q1.write(fwd_1_1 ? update_1 : update_0);
+        written_1 = update_out_q1.try_write(write_1_1 ? update_1 : update_0);
       }
+
+      // if can forward through (0->0 or 1->1), do it
+      // otherwise, round robin priority of both inputs every 4 cycles
+      if (read_0 && (write_0_0 ? written_0 : written_1)) {
+        update_0 = update_in_q0.read(nullptr);
+      }
+      if (read_1 && (write_1_1 ? written_1 : written_0)) {
+        update_1 = update_in_q1.read(nullptr);
+      }
+
+      if (conflict) ++priority;
     }
   }
 }
