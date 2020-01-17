@@ -27,6 +27,8 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
              tlp::istream<TaskResp>& task_resp_q0,
              tlp::istream<TaskResp>& task_resp_q1) {
   // HLS crashes without this...
+  update_config_q0.close();
+  update_config_q1.close();
   update_phase_q0.close();
   update_phase_q1.close();
   task_req_q0.close();
@@ -485,9 +487,16 @@ void UpdateHandler(
     tlp::ostream<uint64_t>& updates_write_addr_q,
     tlp::ostream<tlp::vec_t<Update, kUpdateVecLen>>& updates_write_data_q) {
   // HLS crashes without this...
+  update_config_q.open();
   update_phase_q.open();
-  if (update_config_q.eos(nullptr)) update_config_q.open();
-  if (update_in_q.eos(nullptr)) update_in_q.open();
+#ifdef __SYNTHESIS__
+  ap_wait();
+#endif  // __SYNTEHSIS__
+  update_in_q.open();
+#ifdef __SYNTHESIS__
+  ap_wait();
+#endif  // __SYNTEHSIS__
+  update_out_q.close();
 
   // Memory offsets of each update partition.
   Eid update_offsets[kMaxNumPartitions];
@@ -759,7 +768,14 @@ void ProcElem(
     tlp::ostream<UpdateWithPid>& update_out_q) {
   // HLS crashes without this...
   task_req_q.open();
-  if (update_in_q.eos(nullptr)) update_in_q.open();
+#ifdef __SYNTHESIS__
+  ap_wait();
+#endif  // __SYNTEHSIS__
+  update_out_q.close();
+#ifdef __SYNTHESIS__
+  ap_wait();
+#endif  // __SYNTEHSIS__
+  update_in_q.open();
 
   VertexAttr vertices_local[kMaxPartitionSize];
 
