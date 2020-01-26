@@ -25,11 +25,12 @@ using vector = std::vector<T, boost::alignment::aligned_allocator<T, 4096>>;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
-void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-              tlp::mmap<const Eid> num_edges,
-              tlp::mmap<VertexAttrAligned> vertices,
-              tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
-              tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates);
+void PageRank(
+    Pid num_partitions, tlp::mmap<const Vid> num_vertices,
+    tlp::mmap<const Eid> num_edges,
+    tlp::async_mmap<tlp::vec_t<VertexAttrAligned, kVertexVecLen>> vertices,
+    tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
+    tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates);
 
 // Ground truth implementation of page rank.
 //
@@ -78,7 +79,8 @@ void PageRank(Vid base_vid, vector<VertexAttrAligned>& vertices,
 }
 
 int main(int argc, char* argv[]) {
-  const size_t partition_size = argc > 2 ? atoi(argv[2]) : 1024;
+  const size_t partition_size =
+      argc > 2 ? RoundUp<kVertexVecLen>(atoi(argv[2])) : 1024;
 
   // load and partition the graph using libnxgraph
   auto partitions =
@@ -144,7 +146,8 @@ int main(int argc, char* argv[]) {
     edges.insert(edges.end(), num_edges[i] - partitions[i].num_edges, {});
   }
 
-  vector<VertexAttrAligned> vertices_baseline(total_num_vertices);
+  vector<VertexAttrAligned> vertices_baseline(
+      RoundUp<kVertexVecLen>(total_num_vertices));
   // initialize vertex attributes
   for (auto& v : vertices_baseline) {
     v.out_degree = 0;
@@ -182,7 +185,8 @@ int main(int argc, char* argv[]) {
     VLOG(10) << "updates: " << updates.size();
   }
   PageRank(base_vid, vertices_baseline, edges);
-  PageRank(num_partitions, num_vertices, num_edges, vertices,
+  PageRank(num_partitions, num_vertices, num_edges,
+           tlp::async_mmap_from_vec<VertexAttrAligned, kVertexVecLen>(vertices),
            tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges),
            tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates));
 
