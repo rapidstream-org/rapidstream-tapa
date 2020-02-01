@@ -1,10 +1,14 @@
 #include <cmath>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
+#include <deque>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 #include <boost/align.hpp>
@@ -15,22 +19,24 @@
 
 #include "page-rank.h"
 
+using std::array;
 using std::clog;
+using std::deque;
 using std::endl;
 using std::numeric_limits;
 using std::ostream;
 using std::runtime_error;
+using std::unordered_map;
 template <typename T>
 using vector = std::vector<T, boost::alignment::aligned_allocator<T, 4096>>;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
-void PageRank(
-    Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-    tlp::mmap<const Eid> num_edges,
-    tlp::async_mmap<tlp::vec_t<VertexAttrAligned, kVertexVecLen>> vertices,
-    tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
-    tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates);
+void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
+              tlp::mmap<const Eid> num_edges,
+              tlp::async_mmap<VertexAttrAlignedVec> vertices,
+              tlp::async_mmap<EdgeVec> edges,
+              tlp::async_mmap<UpdateVec> updates);
 
 // Ground truth implementation of page rank.
 //
@@ -80,7 +86,7 @@ void PageRank(Vid base_vid, vector<VertexAttrAligned>& vertices,
 
 int main(int argc, char* argv[]) {
   const size_t partition_size =
-      argc > 2 ? RoundUp<kVertexVecLen>(atoi(argv[2])) : 1024;
+      RoundUp<kVertexPartitionFactor>(argc > 2 ? atoi(argv[2]) : 1024);
 
   // load and partition the graph using libnxgraph
   auto partitions =
@@ -109,41 +115,95 @@ int main(int argc, char* argv[]) {
     total_num_edges += num_edges[i];
   }
 
-  // calculate the update offsets
+  // [src_pid][dst_pid][src_bank][dst_bank]
+  unordered_map<
+      Pid,
+      unordered_map<Pid, array<array<deque<Edge>, kEdgeVecLen>, kEdgeVecLen>>>
+      edge_table;
+
   for (size_t i = 0; i < num_partitions; ++i) {
-    for (auto* ptr = partitions[i].shard.get();
-         ptr < partitions[i].shard.get() + partitions[i].num_edges; ++ptr) {
-      ++num_in_edges[(ptr->dst - base_vid) / partition_size];
+    for (size_t j = 0; j < partitions[i].num_edges; ++j) {
+      const auto& edge = partitions[i].shard.get()[j];
+      const Pid src_pid = (edge.src - base_vid) / partition_size;
+      const Pid dst_pid = (edge.dst - base_vid) / partition_size;
+      const auto src_bank = edge.src % kEdgeVecLen;
+      const auto dst_bank = edge.dst % kEdgeVecLen;
+      edge_table[src_pid][dst_pid][src_bank][dst_bank].push_back(
+          reinterpret_cast<const Edge&>(edge));
     }
-  }
-  Eid total_num_updates = 0;
-  for (size_t i = 1; i < num_partitions + 1; ++i) {
-    Eid delta = num_in_edges[i - 1] * kUpdateVecLen;
-    if (i < num_partitions)
-      num_edges[num_partitions + i] = num_edges[num_partitions + i - 1] + delta;
-    total_num_updates += delta;
-    VLOG(5) << "update offset #" << i << ": " << num_edges[num_partitions + i];
   }
 
   vector<Edge> edges;
-  edges.reserve(total_num_edges);
+  edges.reserve(total_num_edges * 1.5);
   static_assert(sizeof(Edge) == sizeof(nxgraph::Edge<Vid>),
                 "inconsistent Edge type");
 
-  for (size_t i = 0; i < num_partitions; ++i) {
-    auto partition_begin = edges.end();
-    auto edge_ptr = reinterpret_cast<Edge*>(partitions[i].shard.get());
-    edges.insert(edges.end(), edge_ptr, edge_ptr + partitions[i].num_edges);
+  for (Pid src_pid = 0; src_pid < num_partitions; ++src_pid) {
+    num_edges[src_pid] = 0;
+    vector<size_t> num_edges_partition_i(num_partitions);
 
-    // increase burst length of update writes
-    std::sort(partition_begin, edges.end(),
-              [&](const Edge& lhs, const Edge& rhs) -> bool {
-                return (lhs.dst - base_vid) / partition_size <
-                       (rhs.dst - base_vid) / partition_size;
-              });
+    for (Pid dst_pid = 0; dst_pid < num_partitions; ++dst_pid) {
+      // there are kEdgeVecLen x kEdgeVecLen edge bins
+      // we select edges along diagonal directions until the bins are empty
+
+      for (int src_bank = 0; src_bank < kEdgeVecLen; ++src_bank) {
+        for (int dst_bank = 0; dst_bank < kEdgeVecLen; ++dst_bank) {
+          auto& q = edge_table[src_pid][dst_pid][src_bank][dst_bank];
+          // std::random_shuffle(q.begin(), q.end());
+        }
+      }
+
+      for (bool done = false; !done;) {
+        done = true;
+        for (int i = 0; i < kEdgeVecLen; ++i) {
+          bool active = false;
+          Edge edge_v[kEdgeVecLen] = {};
+          for (int j = 0; j < kEdgeVecLen; ++j) {
+            auto& bin =
+                edge_table[src_pid][dst_pid][(base_vid + j) % kEdgeVecLen]
+                          [(i + j) % kEdgeVecLen];
+            if (!bin.empty()) {
+              edge_v[j] = bin.back();
+              bin.pop_back();
+              active = true;
+            }
+          }
+          if (!active) continue;
+          done = false;
+          for (int j = 0; j < kEdgeVecLen; ++j) {
+            edges.push_back(edge_v[j]);
+          }
+          num_edges[src_pid] += kEdgeVecLen;
+          num_edges_partition_i[dst_pid] += kEdgeVecLen;
+          num_in_edges[dst_pid] += kEdgeVecLen;
+        }
+      }
+    }
 
     // align to kEdgeVecLen
-    edges.insert(edges.end(), num_edges[i] - partitions[i].num_edges, {});
+    LOG(INFO) << "num edges in partition[" << src_pid
+              << "]: " << num_edges[src_pid];
+    for (Pid dst_pid = 0; dst_pid < num_partitions; ++dst_pid) {
+      VLOG(5) << "num edges in partition[" << src_pid << "][" << dst_pid
+              << "]: " << num_edges_partition_i[dst_pid];
+    }
+  }
+
+  LOG(INFO) << "total num edges: " << edges.size() << " (+" << std::fixed
+            << std::setprecision(2)
+            << 100. * (edges.size() - total_num_edges) / total_num_edges
+            << "% over " << total_num_edges << ")";
+
+  edges.shrink_to_fit();
+
+  Eid total_num_updates = 0;
+  for (size_t i = 0; i < num_partitions; ++i) {
+    Eid delta = num_in_edges[i];
+    total_num_updates += delta;
+    if (i < num_partitions - 1) {
+      num_edges[num_partitions + i + 1] = num_edges[num_partitions + i] + delta;
+    }
+    VLOG(5) << "update offset #" << i << ": " << num_edges[num_partitions + i];
   }
 
   vector<VertexAttrAligned> vertices_baseline(
@@ -162,6 +222,7 @@ int main(int argc, char* argv[]) {
     v.tmp = v.ranking / v.out_degree;
   }
   vector<VertexAttrAligned> vertices = vertices_baseline;
+  vertices_baseline.resize(total_num_vertices);
 
   vector<Update> updates(total_num_updates);
 
@@ -180,7 +241,7 @@ int main(int argc, char* argv[]) {
     }
     VLOG(10) << "edges: ";
     for (auto e : edges) {
-      VLOG(10) << e.src << " -> " << e.dst;
+      if (e.src != 0) VLOG(10) << e.src << " -> " << e.dst;
     }
     VLOG(10) << "updates: " << updates.size();
   }

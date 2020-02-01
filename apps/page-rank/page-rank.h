@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include <tlp.h>
+
 // Some utility functions.
 
 // Round n up to a multiple of N.
@@ -62,6 +64,10 @@ struct Edge {
   Vid dst;
 };
 
+inline std::ostream& operator<<(std::ostream& os, const Edge& obj) {
+  return os << "{" << obj.src << " -> " << obj.dst << "}";
+}
+
 constexpr uint64_t kEdgeVecLen = kVecLenBytes / sizeof(Edge);
 static_assert(IsPowerOf2<sizeof(Edge)>(),
               "Edge is not aligned to a power of 2");
@@ -78,5 +84,32 @@ inline std::ostream& operator<<(std::ostream& os, const Update& obj) {
 constexpr uint64_t kUpdateVecLen = kVecLenBytes / sizeof(Update);
 static_assert(IsPowerOf2<sizeof(Update)>(),
               "Update is not aligned to a power of 2");
+
+constexpr uint64_t kVertexPartitionFactor =
+    kEdgeVecLen > kVertexVecLen
+        ? kEdgeVecLen > kUpdateVecLen ? kEdgeVecLen : kUpdateVecLen
+        : kVertexVecLen > kUpdateVecLen ? kVertexVecLen : kUpdateVecLen;
+
+// Alias for vec types.
+using VertexAttrVec = tlp::vec_t<VertexAttr, kVertexVecLen>;
+using VertexAttrAlignedVec = tlp::vec_t<VertexAttrAligned, kVertexVecLen>;
+using EdgeVec = tlp::vec_t<Edge, kEdgeVecLen>;
+using UpdateVec = tlp::vec_t<Update, kUpdateVecLen>;
+
+inline std::ostream& operator<<(std::ostream& os, const UpdateVec& obj) {
+  os << "{";
+  bool first = true;
+  for (int i = 0; i < UpdateVec::length; ++i) {
+    if (obj[i].dst != 0) {
+      if (!first) {
+        os << ", ";
+      } else {
+        first = false;
+      }
+      os << "[" << i << "]: " << obj[i];
+    }
+  }
+  return os << "}";
+}
 
 #endif  // TLP_APPS_PAGE_RANK_H_

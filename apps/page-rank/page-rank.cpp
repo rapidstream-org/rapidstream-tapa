@@ -8,7 +8,7 @@
 #include "page-rank-kernel.h"
 
 constexpr int kMaxNumPartitions = 2048;
-constexpr int kMaxPartitionSize = 1024 * 32;
+constexpr int kMaxPartitionSize = 1024 * 256;
 
 void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
              tlp::mmap<const Eid> num_edges,
@@ -227,14 +227,13 @@ bulk_steps:
   task_req_q1.close();
 }
 
-void VertexMem(
-    tlp::istream<VertexReq>& vertex_req_q0,
-    tlp::istream<VertexReq>& vertex_req_q1,
-    tlp::istream<tlp::vec_t<VertexAttr, kVertexVecLen>>& vertex_in_q0,
-    tlp::istream<tlp::vec_t<VertexAttr, kVertexVecLen>>& vertex_in_q1,
-    tlp::ostream<tlp::vec_t<VertexAttr, kVertexVecLen>>& vertex_out_q0,
-    tlp::ostream<tlp::vec_t<VertexAttr, kVertexVecLen>>& vertex_out_q1,
-    tlp::async_mmap<tlp::vec_t<VertexAttrAligned, kVertexVecLen>> vertices) {
+void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
+               tlp::istream<VertexReq>& vertex_req_q1,
+               tlp::istream<VertexAttrVec>& vertex_in_q0,
+               tlp::istream<VertexAttrVec>& vertex_in_q1,
+               tlp::ostream<VertexAttrVec>& vertex_out_q0,
+               tlp::ostream<VertexAttrVec>& vertex_out_q1,
+               tlp::async_mmap<VertexAttrAlignedVec> vertices) {
   for (;;) {
     VertexReq req;
     if (vertex_req_q0.try_read(req)) {
@@ -248,7 +247,7 @@ void VertexMem(
             i_req += kVertexVecLen;
           }
           // Handle responses.
-          tlp::vec_t<VertexAttrAligned, kVertexVecLen> resp;
+          VertexAttrAlignedVec resp;
           if (vertices.read_data_try_read(resp)) {
             i_resp += kVertexVecLen;
             vertex_out_q0.write(resp);
@@ -258,7 +257,7 @@ void VertexMem(
         // Write vertices to DRAM.
       write_vertices_0:
         for (Vid i = 0; i < req.length;) {
-          tlp::vec_t<VertexAttr, kVertexVecLen> v;
+          VertexAttrVec v;
           if (vertex_in_q0.try_read(v)) {
             vertices.write_addr_write((req.offset + i) / kVertexVecLen);
             vertices.write_data_write(v);
@@ -277,7 +276,7 @@ void VertexMem(
             i_req += kVertexVecLen;
           }
           // Handle responses.
-          tlp::vec_t<VertexAttrAligned, kVertexVecLen> resp;
+          VertexAttrAlignedVec resp;
           if (vertices.read_data_try_read(resp)) {
             i_resp += kVertexVecLen;
             vertex_out_q1.write(resp);
@@ -287,7 +286,7 @@ void VertexMem(
         // Write vertices to DRAM.
       write_vertices_1:
         for (Vid i = 0; i < req.length;) {
-          tlp::vec_t<VertexAttr, kVertexVecLen> v;
+          VertexAttrVec v;
           if (vertex_in_q1.try_read(v)) {
             vertices.write_addr_write((req.offset + i) / kVertexVecLen);
             vertices.write_data_write(v);
@@ -301,8 +300,9 @@ void VertexMem(
 
 // Handles edge read requests.
 void EdgeMem(tlp::istream<Eid>& edge_req_q0, tlp::istream<Eid>& edge_req_q1,
-             tlp::ostream<Edge>& edge_resp_q0, tlp::ostream<Edge>& edge_resp_q1,
-             tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges) {
+             tlp::ostream<EdgeVec>& edge_resp_q0,
+             tlp::ostream<EdgeVec>& edge_resp_q1,
+             tlp::async_mmap<EdgeVec> edges) {
   constexpr int kMaxOutstanding = 256;
   constexpr int kFanOut = 2;
   uint8_t num_outstanding[kFanOut] = {};
@@ -313,9 +313,9 @@ void EdgeMem(tlp::istream<Eid>& edge_req_q0, tlp::istream<Eid>& edge_req_q1,
   uint8_t dst_wr = 0;
   // dst is empty if dst_rd == dst_wr
   // dst is full if dst_rd == dst_wr + 1 (mod kMaxOutstanding)
-  uint8_t leftover[2] = {};
+  bool leftover[2] = {};
 #pragma HLS array_partition complete variable = leftover
-  tlp::vec_t<Edge, kEdgeVecLen> edge_v[2];
+  EdgeVec edge_v[2] = {};
 #pragma HLS array_partition complete variable = edge_v
   uint8_t priority = 0;
   for (;;) {
@@ -334,10 +334,10 @@ void EdgeMem(tlp::istream<Eid>& edge_req_q0, tlp::istream<Eid>& edge_req_q1,
 
     // Try to read from memory.
     const uint8_t dst_id = dst[dst_rd_copy];
-    if (leftover[dst_id] == 0 && edges.read_data_try_read(edge_v[dst_id])) {
+    if (!leftover[dst_id] && edges.read_data_try_read(edge_v[dst_id])) {
       --num_outstanding_next[dst_id];
       dst_rd = dst_rd == kMaxOutstanding - 1 ? 0 : dst_rd + 1;
-      leftover[dst_id] = kEdgeVecLen;
+      leftover[dst_id] = true;
     }
 
     // If outstanding pool is not full, send new requests.
@@ -370,26 +370,24 @@ void EdgeMem(tlp::istream<Eid>& edge_req_q0, tlp::istream<Eid>& edge_req_q1,
     memcpy(num_outstanding, num_outstanding_next, kFanOut);
 
     // Flush leftovers.
-    if (leftover[0] != 0 &&
-        edge_resp_q0.try_write(edge_v[0][kEdgeVecLen - leftover[0]])) {
-      --leftover[0];
+    if (leftover[0] && edge_resp_q0.try_write(edge_v[0])) {
+      leftover[0] = false;
     }
-    if (leftover[1] != 0 &&
-        edge_resp_q1.try_write(edge_v[1][kEdgeVecLen - leftover[1]])) {
-      --leftover[1];
+    if (leftover[1] && edge_resp_q1.try_write(edge_v[1])) {
+      leftover[1] = false;
     }
   }
 }
 
 void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
                tlp::istream<uint64_t>& read_addr_q1,
-               tlp::ostream<tlp::vec_t<Update, kUpdateVecLen>>& read_data_q0,
-               tlp::ostream<tlp::vec_t<Update, kUpdateVecLen>>& read_data_q1,
+               tlp::ostream<UpdateVec>& read_data_q0,
+               tlp::ostream<UpdateVec>& read_data_q1,
                tlp::istream<uint64_t>& write_addr_q0,
                tlp::istream<uint64_t>& write_addr_q1,
-               tlp::istream<tlp::vec_t<Update, kUpdateVecLen>>& write_data_q0,
-               tlp::istream<tlp::vec_t<Update, kUpdateVecLen>>& write_data_q1,
-               tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
+               tlp::istream<UpdateVec>& write_data_q0,
+               tlp::istream<UpdateVec>& write_data_q1,
+               tlp::async_mmap<UpdateVec> updates) {
   constexpr int kMaxOutstanding = 256;
   constexpr int kFanOut = 2;
   uint8_t num_outstanding[kFanOut] = {};
@@ -401,7 +399,7 @@ void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
   // dst is empty if dst_rd == dst_wr
   // dst is full if dst_rd == dst_wr + 1 (mod kMaxOutstanding)
   bool update_valid = false;
-  tlp::vec_t<Update, kUpdateVecLen> update_v;
+  UpdateVec update_v;
   uint8_t priority_rd = 0;
   uint8_t priority_wr = 0;
   for (;;) {
@@ -421,6 +419,7 @@ void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
     // Handle read data.
     if (!update_valid) update_valid = updates.read_data_try_read(update_v);
     if (update_valid) {
+      VLOG_F(5, send) << "read data: " << update_v;
       bool read = false;
       const auto dst_id = dst[dst_rd];
       switch (dst_id) {
@@ -451,6 +450,7 @@ void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
       }
       const auto idx = Arbitrate(valid, priority_rd >> 2);
       if (Any(valid) && updates.read_addr_try_write(addr[idx])) {
+        VLOG_F(5, send) << "read addr: " << addr[idx];
         switch (idx) {
           case 0:
             read_addr_q0.read(nullptr);
@@ -474,7 +474,7 @@ void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
         write_addr_q0.peek(addr_valid[0]),
         write_addr_q1.peek(addr_valid[1]),
     };
-    const tlp::vec_t<Update, kUpdateVecLen> data[] = {
+    const UpdateVec data[] = {
         write_data_q0.peek(data_valid[0]),
         write_data_q1.peek(data_valid[1]),
     };
@@ -486,6 +486,7 @@ void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
     };
     const auto idx = Arbitrate(valid, priority_wr >> 2);
     if (Any(valid) && updates.write_addr_try_write(addr[idx])) {
+      VLOG_F(5, send) << "write addr: " << addr[idx];
       switch (idx) {
         case 0:
           write_addr_q0.read(nullptr);
@@ -498,14 +499,15 @@ void UpdateMem(tlp::istream<uint64_t>& read_addr_q0,
       }
       ++priority_wr;
       updates.write_data_write(data[idx]);
+      VLOG_F(5, send) << "write data: " << data[idx];
     }
   }
 }
 
-void UpdateRouter(tlp::istream<UpdateWithPid>& update_in_q0,
-                  tlp::istream<UpdateWithPid>& update_in_q1,
-                  tlp::ostream<UpdateWithPid>& update_out_q0,
-                  tlp::ostream<UpdateWithPid>& update_out_q1) {
+void UpdateRouter(tlp::istream<UpdateVecWithPid>& update_in_q0,
+                  tlp::istream<UpdateVecWithPid>& update_in_q1,
+                  tlp::ostream<UpdateVecWithPid>& update_out_q0,
+                  tlp::ostream<UpdateVecWithPid>& update_out_q1) {
   constexpr auto bit = 0;
 
   uint8_t priority = 0;
@@ -559,22 +561,22 @@ void UpdateRouter(tlp::istream<UpdateWithPid>& update_in_q0,
   }
 }
 
-void UpdateHandler(
-    Pid num_partitions,
-    // from Control
-    tlp::istream<Eid>& update_config_q, tlp::istream<bool>& update_phase_q,
-    // to Control
-    tlp::ostream<NumUpdates>& num_updates_out_q,
-    // from ProcElem via UpdateRouter
-    tlp::istream<UpdateReq>& update_req_q,
-    tlp::istream<UpdateWithPid>& update_in_q,
-    // to ProcElem via UpdateReorderer
-    tlp::ostream<Update>& update_out_q,
-    // to and from UpdateMem
-    tlp::ostream<uint64_t>& updates_read_addr_q,
-    tlp::istream<tlp::vec_t<Update, kUpdateVecLen>>& updates_read_data_q,
-    tlp::ostream<uint64_t>& updates_write_addr_q,
-    tlp::ostream<tlp::vec_t<Update, kUpdateVecLen>>& updates_write_data_q) {
+void UpdateHandler(Pid num_partitions,
+                   // from Control
+                   tlp::istream<Eid>& update_config_q,
+                   tlp::istream<bool>& update_phase_q,
+                   // to Control
+                   tlp::ostream<NumUpdates>& num_updates_out_q,
+                   // from ProcElem via UpdateRouter
+                   tlp::istream<UpdateReq>& update_req_q,
+                   tlp::istream<UpdateVecWithPid>& update_in_q,
+                   // to ProcElem via UpdateReorderer
+                   tlp::ostream<UpdateVec>& update_out_q,
+                   // to and from UpdateMem
+                   tlp::ostream<uint64_t>& updates_read_addr_q,
+                   tlp::istream<UpdateVec>& updates_read_data_q,
+                   tlp::ostream<uint64_t>& updates_write_addr_q,
+                   tlp::ostream<UpdateVec>& updates_write_data_q) {
   // HLS crashes without this...
   update_config_q.open();
   update_phase_q.open();
@@ -618,8 +620,6 @@ update_phases:
       Pid last_last_pid = 0xffffffff;
       Pid last_pid = 0xffffffff;
       Eid last_update_idx = 0xffffffff;
-      tlp::vec_t<Update, kUpdateVecLen> update_v{0};
-      uint8_t update_v_i = 0;
     update_writes:
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
@@ -631,8 +631,8 @@ update_phases:
         } else {
           const auto update_with_pid = update_in_q.read(nullptr);
           VLOG_F(5, recv) << "UpdateWithPid: " << update_with_pid;
-          const Update update{update_with_pid.dst, update_with_pid.delta};
           const Pid pid = update_with_pid.pid;
+          const UpdateVec& update_v = update_with_pid.updates;
 
           // number of updates already written to current partition, not
           // including the current update
@@ -647,53 +647,17 @@ update_phases:
             update_idx = last_update_idx;
           }
 
-          // flush because we are switching partitions
-          const bool flush = last_pid != pid && last_pid != 0xffffffff;
-          // send old update_v with preivous update_idx and pid
-          const Eid output_update_idx = flush ? last_update_idx : update_idx;
-          const Pid output_pid = flush ? last_pid : pid;
-
           // set for next iteration
           last_last_pid = last_pid;
           last_pid = pid;
-          last_update_idx = update_idx + 1;
+          last_update_idx = update_idx + kUpdateVecLen;
 
-          tlp::vec_t<Update, kUpdateVecLen> output_update_v = update_v;
-          const bool write_enable = flush || update_v_i == kUpdateVecLen - 1;
-          // update_v_i is the number of updates in update_v
-          if (write_enable) {
-            if (flush) {
-              // send old update_v
-              // new update_v contains current update
-              update_v = {0};
-              update_v.set(0, update);
-              update_v_i = 1;
-            } else {
-              // send old update_v with current update written
-              // new update_v is empty
-              output_update_v.set(kUpdateVecLen - 1, update);
-              update_v = {0};
-              update_v_i = 0;
-            }
-          } else {
-            // write update to update_v
-            update_v.set(update_v_i, update);
-            update_v_i += 1;
-          }
-
-          if (write_enable) {
-            Eid update_offset = update_offsets[output_pid] + output_update_idx;
-            updates_write_addr_q.write(update_offset / kUpdateVecLen);
-            updates_write_data_q.write(output_update_v);
-          }
-        }
-      }
-      if (last_pid != 0xffffffff) {
-        if (update_v_i > 0) {
-          Eid update_offset = update_offsets[last_pid] + last_update_idx - 1;
+          Eid update_offset = update_offsets[pid] + update_idx;
           updates_write_addr_q.write(update_offset / kUpdateVecLen);
           updates_write_data_q.write(update_v);
         }
+      }
+      if (last_pid != 0xffffffff) {
         num_updates[last_pid] = RoundUp<kUpdateVecLen>(last_update_idx);
       }
       update_in_q.open();
@@ -716,31 +680,25 @@ update_phases:
           const auto num_updates_pid = update_req.num_updates;
           VLOG_F(5, recv) << "UpdateReq: " << update_req;
 
-          // update vec
-          tlp::vec_t<Update, kUpdateVecLen> update_v{0};
-          uint8_t update_v_i = kUpdateVecLen;
-
+          bool update_valid = false;
+          UpdateVec update_v;
         update_reads:
           for (Eid i_rd = 0, i_wr = 0; i_rd < num_updates_pid;) {
             auto read_addr = update_offsets[pid] + i_wr;
             if (i_wr < num_updates_pid &&
-                (i_wr % kUpdateVecLen != 0 ||
-                 updates_read_addr_q.try_write(read_addr / kUpdateVecLen))) {
-              ++i_wr;
+                updates_read_addr_q.try_write(read_addr / kUpdateVecLen)) {
+              VLOG_F(5, req)
+                  << "UpdateVec[" << read_addr / kUpdateVecLen << "]";
+              i_wr += kUpdateVecLen;
             }
 
-            // update_v_i has the number of updates already written
-            if (update_v_i >= kUpdateVecLen &&
-                updates_read_data_q.try_read(update_v)) {
-              update_v_i = 0;
-            }
-
-            if (update_v_i < kUpdateVecLen &&
-                (update_v[update_v_i].dst == 0 ||
-                 update_out_q.try_write(update_v[update_v_i]))) {
-              VLOG_F(5, send) << "Update: " << update_v[update_v_i];
-              update_v_i += 1;
-              ++i_rd;
+            if (update_valid ||
+                (update_valid = updates_read_data_q.try_read(update_v))) {
+              if (update_out_q.try_write(update_v)) {
+                VLOG_F(5, send) << "Update: " << update_v;
+                i_rd += kUpdateVecLen;
+                update_valid = false;
+              }
             }
           }
           update_out_q.close();
@@ -752,37 +710,54 @@ update_phases:
   update_phase_q.open();
 }
 
-void UpdateReorderer(tlp::istream<Update>& update_in_q,
-                     tlp::ostream<Update>& update_out_q) {
+void UpdateReorderer(tlp::istream<UpdateVec>& update_in_q,
+                     tlp::ostream<UpdateVec>& update_out_q) {
   constexpr int kWindowSize = 5;
   constexpr int kBufferSize = 2;
-  Update window[kWindowSize];
-  Update buffer[kBufferSize];
+  UpdateVec window[kWindowSize];
+  UpdateVec buffer[kBufferSize];
+  bool window_valid[kWindowSize] = {};
+  bool buffer_valid[kBufferSize] = {};
 #pragma HLS array_partition variable = window complete
 #pragma HLS array_partition variable = buffer complete
+#pragma HLS array_partition variable = window_valid complete
+#pragma HLS array_partition variable = buffer_valid complete
 #pragma HLS data_pack variable = window
 #pragma HLS data_pack variable = buffer
-  for (int i = 0; i < kWindowSize; ++i) {
-#pragma HLS unroll
-    window[i] = {};
-  }
-  for (int i = 0; i < kBufferSize; ++i) {
-#pragma HLS unroll
-    buffer[i] = {};
-  }
 
+  unsigned num_bubble = 0;
+
+bulk_steps:
   for (;;) {
   update_reads:
     TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
-      int idx_without_conflict = FindFirstWithoutConflict(buffer, window);
-      int idx_empty = FindFirstEmpty(buffer);
+      bool idx_without_conflict_valid;
+      const int idx_without_conflict =
+          FindFirstWithoutConflict(buffer, buffer_valid, window, window_valid,
+                                   idx_without_conflict_valid);
+      const auto update_from_buffer = buffer[idx_without_conflict];
+      bool idx_empty_valid;
+      const int idx_empty = FindFirstEmpty(buffer_valid, idx_empty_valid);
       bool input_has_conflict = true;
       bool input_empty = update_in_q.empty();
-      Update input_update{};
-      if (idx_without_conflict == -1 && idx_empty != -1 && !input_empty) {
+      UpdateVec input_update{};
+      if (!idx_without_conflict_valid && idx_empty_valid && !input_empty) {
         input_update = update_in_q.read(nullptr);
-        input_has_conflict = HasConflict(window, input_update);
+        VLOG_F(5, recv) << "Update: " << input_update;
+        input_has_conflict = HasConflict(window, window_valid, input_update);
+      }
+
+      // possible buffer actions:
+      // 1. remove an update
+      // 2. do nothing
+      // 3. put input in buffer (if not full)
+
+      if (idx_without_conflict_valid) {
+        buffer_valid[idx_without_conflict] = false;
+      } else if (idx_empty_valid && !input_empty && input_has_conflict) {
+        buffer_valid[idx_empty] = true;
+        buffer[idx_empty] = input_update;
       }
 
       // possible write actions:
@@ -791,45 +766,44 @@ void UpdateReorderer(tlp::istream<Update>& update_in_q,
       // 3. write a bubble
 
       auto output_update =
-          idx_without_conflict != -1
-              ? buffer[idx_without_conflict]
-              : !input_has_conflict ? input_update : decltype(input_update)({});
-
-      // possible buffer actions:
-      // 1. remove an update
-      // 2. do nothing
-      // 3. put input in buffer (if not full)
-
-      if (idx_without_conflict != -1) {
-        buffer[idx_without_conflict] = {0, 0.f};
-      } else if (idx_empty != -1 && !input_empty && input_has_conflict) {
-        buffer[idx_empty] = input_update;
-      }
+          idx_without_conflict_valid
+              ? update_from_buffer
+              : Reg(!input_has_conflict ? input_update
+                                        : decltype(input_update)({}));
+      const bool output_valid =
+          idx_without_conflict_valid || !input_has_conflict;
 
       // update the window
-      Shift(window, output_update);
+      Shift(window, window_valid, output_update, output_valid);
 
       // write the output
       update_out_q.write(output_update);
       VLOG_F(5, send) << "Update: " << output_update;
+      if (!output_valid) {
+        VLOG(10) << "bubble inserted";
+        ++num_bubble;
+      }
     }
 
     // after the loop, flush the reorder buffer
   update_read_cleanup:
     for (int i = 0; i < kBufferSize;) {
-      if (buffer[i].dst == 0) {
+      if (!buffer_valid[i]) {
         ++i;
       } else {
         auto update = buffer[i];
-        if (!HasConflict(window, update)) {
-          buffer[i] = {};
+        bool update_valid = true;
+        if (!HasConflict(window, window_valid, update)) {
+          buffer_valid[i] = false;
           ++i;
         } else {
           update = {};
-          LOG(WARNING) << "bubble inserted";
+          update_valid = false;
+          VLOG(10) << "bubble inserted";
+          ++num_bubble;
         }
 
-        Shift(window, update);
+        Shift(window, window_valid, update, update_valid);
 
         update_out_q.write(update);
         VLOG_F(5, send) << "Update: " << update;
@@ -847,16 +821,16 @@ void ProcElem(
     tlp::ostream<TaskResp>& task_resp_q,
     // to and from VertexMem
     tlp::ostream<VertexReq>& vertex_req_q,
-    tlp::istream<tlp::vec_t<VertexAttr, kVertexVecLen>>& vertex_in_q,
-    tlp::ostream<tlp::vec_t<VertexAttr, kVertexVecLen>>& vertex_out_q,
+    tlp::istream<VertexAttrVec>& vertex_in_q,
+    tlp::ostream<VertexAttrVec>& vertex_out_q,
     // to and from EdgeMem
-    tlp::ostream<Eid>& edge_req_q, tlp::istream<Edge>& edge_resp_q,
+    tlp::ostream<Eid>& edge_req_q, tlp::istream<EdgeVec>& edge_resp_q,
     // to UpdateHandler
     tlp::ostream<UpdateReq>& update_req_q,
     // from UpdateHandler via UpdateReorderer
-    tlp::istream<Update>& update_in_q,
+    tlp::istream<UpdateVec>& update_in_q,
     // to UpdateHandler via UpdateRouter
-    tlp::ostream<UpdateWithPid>& update_out_q) {
+    tlp::ostream<UpdateVecWithPid>& update_out_q) {
   // HLS crashes without this...
   task_req_q.open();
 #ifdef __SYNTHESIS__
@@ -870,7 +844,8 @@ void ProcElem(
 
   VertexAttr vertices_local[kMaxPartitionSize];
 #pragma HLS array_partition variable = vertices_local cyclic factor = \
-    kVertexVecLen
+    kVertexPartitionFactor
+#pragma HLS resource variable = vertices_local core = RAM_S2P_URAM
 
 task_requests:
   TLP_WHILE_NOT_EOS(task_req_q) {
@@ -883,49 +858,58 @@ task_requests:
       bool active = false;
       if (req.phase == TaskReq::kScatter) {
       vertex_reads:
-        for (Vid i = 0; i < req.num_vertices; i += kVertexVecLen) {
+        for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
           auto vertex_vec = vertex_in_q.read();
-          for (uint64_t j = 0; j < kVertexVecLen && i + j < req.num_vertices;
-               ++j) {
+          for (uint64_t j = 0; j < kVertexVecLen; ++j) {
 #pragma HLS unroll
-            vertices_local[i + j] = vertex_vec[j];
+            vertices_local[i * kVertexVecLen + j] = vertex_vec[j];
           }
         }
 
       edge_reads:
         for (Eid eid_rd = 0, eid_wr = 0; eid_rd < req.num_edges;) {
-          if (eid_wr < req.num_edges) {
-            if (eid_wr % kEdgeVecLen != 0 ||
-                edge_req_q.try_write(req.eid_offset / kEdgeVecLen +
-                                     eid_wr / kEdgeVecLen)) {
-              ++eid_wr;
-            }
+#pragma HLS pipeline II = 1
+          if (eid_wr < req.num_edges &&
+              edge_req_q.try_write(req.eid_offset / kEdgeVecLen +
+                                   eid_wr / kEdgeVecLen)) {
+            eid_wr += kEdgeVecLen;
           }
-          Edge edge;
-          if (edge_resp_q.try_read(edge)) {
-            if (edge.src != 0) {
-              auto src = vertices_local[edge.src - req.base_vid];
-              // pre-compute pid for routing
-              auto pid = (edge.dst - req.overall_base_vid) / req.partition_size;
-              // use pre-computed src.tmp = src.ranking / src.out_degree
-              UpdateWithPid update{edge.dst, src.tmp, pid};
-              VLOG_F(5, send) << "Update: " << update;
-              update_out_q.write(update);
+          EdgeVec edge_v;
+          if (edge_resp_q.try_read(edge_v)) {
+            VLOG_F(10, recv) << "Edge: " << edge_v;
+            UpdateVecWithPid update_v = {};
+            for (int i = 0; i < kEdgeVecLen; ++i) {
+#pragma HLS unroll
+              const auto& edge = edge_v[i];
+              if (edge.src != 0) {
+                auto addr = edge.src - req.base_vid;
+                LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                    << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
+                addr /= kEdgeVecLen;
+                auto src = vertices_local[addr * kEdgeVecLen + i];
+                // pre-compute pid for routing
+                update_v.pid =
+                    (edge.dst - req.overall_base_vid) / req.partition_size;
+                // use pre-computed src.tmp = src.ranking / src.out_degree
+                update_v.updates.set((edge.dst - req.base_vid) % kEdgeVecLen,
+                                     {edge.dst, src.tmp});
+              }
             }
-            ++eid_rd;
+            update_out_q.write(update_v);
+            VLOG_F(5, send) << "Update: " << update_v;
+            eid_rd += kEdgeVecLen;
           }
         }
       } else {
       vertex_resets:
-        for (Vid i = 0; i < req.num_vertices; i += kVertexVecLen) {
+        for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
           auto vertex_vec = vertex_in_q.read();
-          for (uint64_t j = 0; j < kVertexVecLen && i + j < req.num_vertices;
-               ++j) {
+          for (uint64_t j = 0; j < kVertexVecLen; ++j) {
 #pragma HLS unroll
-            vertices_local[i + j] = vertex_vec[j];
-            vertices_local[i + j].tmp = 0.f;
+            vertices_local[i * kVertexVecLen + j] = vertex_vec[j];
+            vertices_local[i * kVertexVecLen + j].tmp = 0.f;
           }
         }
 
@@ -934,11 +918,18 @@ task_requests:
         TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
 #pragma HLS dependence variable = vertices_local inter true distance = 5
-          auto update = update_in_q.read(nullptr);
-          if (update.dst != 0) {
-            VLOG_F(5, recv) << "Update: " << update;
+          auto update_v = update_in_q.read(nullptr);
+          VLOG_F(5, recv) << "Update: " << update_v;
+          for (int i = 0; i < kUpdateVecLen; ++i) {
+            auto update = update_v[i];
+            if (update.dst != 0) {
+              auto addr = update.dst - req.base_vid;
+              LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                  << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
 #pragma HLS latency max = 4
-            vertices_local[update.dst - req.base_vid].tmp += update.delta;
+              addr /= kEdgeVecLen;
+              vertices_local[addr * kEdgeVecLen + i].tmp += update.delta;
+            }
           }
         }
         update_in_q.open();
@@ -949,21 +940,23 @@ task_requests:
         float max_delta = 0.f;
 
       vertex_writes:
-        for (Vid i = 0; i < req.num_vertices; i += kVertexVecLen) {
+        for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
-          tlp::vec_t<VertexAttr, kVertexVecLen> vertex_vec;
-          for (uint64_t j = 0; j < kVertexVecLen && i + j < req.num_vertices;
-               ++j) {
+          VertexAttrVec vertex_vec = {};
+          float delta[kVertexVecLen];
+#pragma HLS array_partition variable = delta complete
+          for (uint64_t j = 0; j < kVertexVecLen; ++j) {
 #pragma HLS unroll
-            auto vertex = vertices_local[i + j];
+            auto vertex = vertices_local[i * kVertexVecLen + j];
             const float new_ranking = req.init + vertex.tmp * kDampingFactor;
-            const float abs_delta = std::abs(new_ranking - vertex.ranking);
-            max_delta = std::max(max_delta, abs_delta);
+            delta[j] = std::abs(new_ranking - vertex.ranking);
             vertex.ranking = new_ranking;
             // pre-compute vertex.tmp = vertex.ranking / vertex.out_degree
             vertex.tmp = vertex.ranking / vertex.out_degree;
             vertex_vec.set(j, vertex);
+            VLOG_F(5, send) << "VertexAttr[" << j << "]: " << vertex;
           }
+          max_delta = std::max(max_delta, Max(delta));
           vertex_out_q.write(vertex_vec);
         }
         active = max_delta > kConvergenceThreshold;
@@ -975,12 +968,11 @@ task_requests:
   task_req_q.open();
 }
 
-void PageRank(
-    Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-    tlp::mmap<const Eid> num_edges,
-    tlp::async_mmap<tlp::vec_t<VertexAttrAligned, kVertexVecLen>> vertices,
-    tlp::async_mmap<tlp::vec_t<Edge, kEdgeVecLen>> edges,
-    tlp::async_mmap<tlp::vec_t<Update, kUpdateVecLen>> updates) {
+void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
+              tlp::mmap<const Eid> num_edges,
+              tlp::async_mmap<VertexAttrAlignedVec> vertices,
+              tlp::async_mmap<EdgeVec> edges,
+              tlp::async_mmap<UpdateVec> updates) {
   // between Control and ProcElem
   tlp::stream<TaskReq, 2> task_req_0("task_req_0");
   tlp::stream<TaskReq, 2> task_req_1("task_req_1");
@@ -990,20 +982,16 @@ void PageRank(
   // between ProcElem and VertexMem
   tlp::stream<VertexReq, 2> vertex_req_0("vertex_req_0");
   tlp::stream<VertexReq, 2> vertex_req_1("vertex_req_1");
-  tlp::stream<tlp::vec_t<VertexAttr, kVertexVecLen>, 2> vertex_pe2mm_0(
-      "vertex_pe2mm_0");
-  tlp::stream<tlp::vec_t<VertexAttr, kVertexVecLen>, 2> vertex_pe2mm_1(
-      "vertex_pe2mm_1");
-  tlp::stream<tlp::vec_t<VertexAttr, kVertexVecLen>, 2> vertex_mm2pe_0(
-      "vertex_mm2pe_0");
-  tlp::stream<tlp::vec_t<VertexAttr, kVertexVecLen>, 2> vertex_mm2pe_1(
-      "vertex_mm2pe_1");
+  tlp::stream<VertexAttrVec, 2> vertex_pe2mm_0("vertex_pe2mm_0");
+  tlp::stream<VertexAttrVec, 2> vertex_pe2mm_1("vertex_pe2mm_1");
+  tlp::stream<VertexAttrVec, 2> vertex_mm2pe_0("vertex_mm2pe_0");
+  tlp::stream<VertexAttrVec, 2> vertex_mm2pe_1("vertex_mm2pe_1");
 
   // between ProcElem and EdgeMem
-  tlp::stream<Eid, 512> edge_req_0("edge_req_0");
-  tlp::stream<Eid, 512> edge_req_1("edge_req_1");
-  tlp::stream<Edge, 256> edge_resp_0("edge_resp_0");
-  tlp::stream<Edge, 256> edge_resp_1("edge_resp_1");
+  tlp::stream<Eid, 8> edge_req_0("edge_req_0");
+  tlp::stream<Eid, 8> edge_req_1("edge_req_1");
+  tlp::stream<EdgeVec, 8> edge_resp_0("edge_resp_0");
+  tlp::stream<EdgeVec, 8> edge_resp_1("edge_resp_1");
 
   // between Control and UpdateHandler
   tlp::stream<Eid, 2> update_config_0("update_config_0");
@@ -1018,25 +1006,21 @@ void PageRank(
   // between UpdateHandler and UpdateMem
   tlp::stream<uint64_t, 8> update_read_addr_0("update_read_addr_0");
   tlp::stream<uint64_t, 8> update_read_addr_1("update_read_addr_1");
-  tlp::stream<tlp::vec_t<Update, kUpdateVecLen>, 8> update_read_data_0(
-      "update_read_data_0");
-  tlp::stream<tlp::vec_t<Update, kUpdateVecLen>, 8> update_read_data_1(
-      "update_read_data_1");
+  tlp::stream<UpdateVec, 8> update_read_data_0("update_read_data_0");
+  tlp::stream<UpdateVec, 8> update_read_data_1("update_read_data_1");
   tlp::stream<uint64_t, 8> update_write_addr_0("update_write_addr_0");
   tlp::stream<uint64_t, 8> update_write_addr_1("update_write_addr_1");
-  tlp::stream<tlp::vec_t<Update, kUpdateVecLen>, 8> update_write_data_0(
-      "update_write_data_0");
-  tlp::stream<tlp::vec_t<Update, kUpdateVecLen>, 8> update_write_data_1(
-      "update_write_data_1");
+  tlp::stream<UpdateVec, 8> update_write_data_0("update_write_data_0");
+  tlp::stream<UpdateVec, 8> update_write_data_1("update_write_data_1");
 
-  tlp::stream<UpdateWithPid, 128> update_pe2ro_0("update_pe2router_0");
-  tlp::stream<UpdateWithPid, 128> update_pe2ro_1("update_pe2router_1");
-  tlp::stream<UpdateWithPid, 8> update_ro2mm_0("update_router2handler_0");
-  tlp::stream<UpdateWithPid, 8> update_ro2mm_1("update_router2handler_1");
-  tlp::stream<Update, 8> update_ro2pe_0("update_reorderer2pe_0");
-  tlp::stream<Update, 8> update_ro2pe_1("update_reorderer2pe_1");
-  tlp::stream<Update, 8> update_mm2ro_0("update_mm2ro_0");
-  tlp::stream<Update, 8> update_mm2ro_1("update_mm2ro_1");
+  tlp::stream<UpdateVecWithPid, 8> update_pe2ro_0("update_pe2router_0");
+  tlp::stream<UpdateVecWithPid, 8> update_pe2ro_1("update_pe2router_1");
+  tlp::stream<UpdateVecWithPid, 8> update_ro2mm_0("update_router2handler_0");
+  tlp::stream<UpdateVecWithPid, 8> update_ro2mm_1("update_router2handler_1");
+  tlp::stream<UpdateVec, 8> update_ro2pe_0("update_reorderer2pe_0");
+  tlp::stream<UpdateVec, 8> update_ro2pe_1("update_reorderer2pe_1");
+  tlp::stream<UpdateVec, 8> update_mm2ro_0("update_mm2ro_0");
+  tlp::stream<UpdateVec, 8> update_mm2ro_1("update_mm2ro_1");
 
   tlp::stream<NumUpdates, 2> num_updates_0("num_updates_0");
   tlp::stream<NumUpdates, 2> num_updates_1("num_updates_1");
