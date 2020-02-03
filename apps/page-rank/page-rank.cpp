@@ -974,12 +974,10 @@ task_requests:
         }
       } else {
       vertex_resets:
-        for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
+        for (Vid i = 0; i < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
-          for (uint64_t j = 0; j < kVertexVecLen; ++j) {
-#pragma HLS unroll
-            vertices_local[i * kVertexVecLen + j] = 0.f;
-          }
+#pragma HLS unroll factor = kEdgeVecLen
+          vertices_local[i] = 0.f;
         }
 
         update_req_q.write({req.phase, req.pid, req.num_edges});
