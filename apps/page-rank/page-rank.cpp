@@ -239,7 +239,7 @@ void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
     if (vertex_req_q0.try_read(req)) {
       if (req.phase == TaskReq::kScatter) {
         // Read vertices from DRAM.
-      read_vertices_0:
+      scatter_vertices_0:
         for (Vid i_req = 0, i_resp = 0; i_resp < req.length;) {
           // Send requests.
           if (i_req < req.length && vertices.read_addr_try_write(
@@ -254,9 +254,22 @@ void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
           }
         }
       } else {
-        // Write vertices to DRAM.
-      write_vertices_0:
-        for (Vid i = 0; i < req.length;) {
+      gather_vertices_0:
+        for (Vid i = 0, i_req = 0, i_resp = 0; i < req.length;) {
+          // Read vertices from DRAM.
+          // Send requests.
+          if (i_req < req.length && vertices.read_addr_try_write(
+                                        (req.offset + i_req) / kVertexVecLen)) {
+            i_req += kVertexVecLen;
+          }
+          // Handle responses.
+          VertexAttrAlignedVec resp;
+          if (vertices.read_data_try_read(resp)) {
+            i_resp += kVertexVecLen;
+            vertex_out_q0.write(resp);
+          }
+
+          // Write vertices to DRAM.
           VertexAttrVec v;
           if (vertex_in_q0.try_read(v)) {
             vertices.write_addr_write((req.offset + i) / kVertexVecLen);
@@ -268,7 +281,7 @@ void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
     } else if (vertex_req_q1.try_read(req)) {
       if (req.phase == TaskReq::kScatter) {
         // Read vertices from DRAM.
-      read_vertices_1:
+      scatter_vertices_1:
         for (Vid i_req = 0, i_resp = 0; i_resp < req.length;) {
           // Send requests.
           if (i_req < req.length && vertices.read_addr_try_write(
@@ -284,8 +297,22 @@ void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
         }
       } else {
         // Write vertices to DRAM.
-      write_vertices_1:
-        for (Vid i = 0; i < req.length;) {
+      gather_vertices_1:
+        for (Vid i = 0, i_req = 0, i_resp = 0; i < req.length;) {
+          // Read vertices from DRAM.
+          // Send requests.
+          if (i_req < req.length && vertices.read_addr_try_write(
+                                        (req.offset + i_req) / kVertexVecLen)) {
+            i_req += kVertexVecLen;
+          }
+          // Handle responses.
+          VertexAttrAlignedVec resp;
+          if (vertices.read_data_try_read(resp)) {
+            i_resp += kVertexVecLen;
+            vertex_out_q1.write(resp);
+          }
+
+          // Write vertices to DRAM.
           VertexAttrVec v;
           if (vertex_in_q1.try_read(v)) {
             vertices.write_addr_write((req.offset + i) / kVertexVecLen);
@@ -710,54 +737,37 @@ update_phases:
   update_phase_q.open();
 }
 
-void UpdateReorderer(tlp::istream<UpdateVec>& update_in_q,
-                     tlp::ostream<UpdateVec>& update_out_q) {
+void UpdateReorderer(tlp::istream<Update>& update_in_q,
+                     tlp::ostream<Update>& update_out_q) {
   constexpr int kWindowSize = 5;
   constexpr int kBufferSize = 2;
-  UpdateVec window[kWindowSize];
-  UpdateVec buffer[kBufferSize];
-  bool window_valid[kWindowSize] = {};
-  bool buffer_valid[kBufferSize] = {};
+  Update window[kWindowSize];
+  Update buffer[kBufferSize];
 #pragma HLS array_partition variable = window complete
 #pragma HLS array_partition variable = buffer complete
-#pragma HLS array_partition variable = window_valid complete
-#pragma HLS array_partition variable = buffer_valid complete
 #pragma HLS data_pack variable = window
 #pragma HLS data_pack variable = buffer
+  for (int i = 0; i < kWindowSize; ++i) {
+#pragma HLS unroll
+    window[i] = {};
+  }
+  for (int i = 0; i < kBufferSize; ++i) {
+#pragma HLS unroll
+    buffer[i] = {};
+  }
 
-  unsigned num_bubble = 0;
-
-bulk_steps:
   for (;;) {
   update_reads:
     TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
-      bool idx_without_conflict_valid;
-      const int idx_without_conflict =
-          FindFirstWithoutConflict(buffer, buffer_valid, window, window_valid,
-                                   idx_without_conflict_valid);
-      const auto update_from_buffer = buffer[idx_without_conflict];
-      bool idx_empty_valid;
-      const int idx_empty = FindFirstEmpty(buffer_valid, idx_empty_valid);
+      int idx_without_conflict = FindFirstWithoutConflict(buffer, window);
+      int idx_empty = FindFirstEmpty(buffer);
       bool input_has_conflict = true;
       bool input_empty = update_in_q.empty();
-      UpdateVec input_update{};
-      if (!idx_without_conflict_valid && idx_empty_valid && !input_empty) {
+      Update input_update{};
+      if (idx_without_conflict == -1 && idx_empty != -1 && !input_empty) {
         input_update = update_in_q.read(nullptr);
-        VLOG_F(5, recv) << "Update: " << input_update;
-        input_has_conflict = HasConflict(window, window_valid, input_update);
-      }
-
-      // possible buffer actions:
-      // 1. remove an update
-      // 2. do nothing
-      // 3. put input in buffer (if not full)
-
-      if (idx_without_conflict_valid) {
-        buffer_valid[idx_without_conflict] = false;
-      } else if (idx_empty_valid && !input_empty && input_has_conflict) {
-        buffer_valid[idx_empty] = true;
-        buffer[idx_empty] = input_update;
+        input_has_conflict = HasConflict(window, input_update);
       }
 
       // possible write actions:
@@ -766,44 +776,45 @@ bulk_steps:
       // 3. write a bubble
 
       auto output_update =
-          idx_without_conflict_valid
-              ? update_from_buffer
-              : Reg(!input_has_conflict ? input_update
-                                        : decltype(input_update)({}));
-      const bool output_valid =
-          idx_without_conflict_valid || !input_has_conflict;
+          idx_without_conflict != -1
+              ? buffer[idx_without_conflict]
+              : !input_has_conflict ? input_update : decltype(input_update)({});
+
+      // possible buffer actions:
+      // 1. remove an update
+      // 2. do nothing
+      // 3. put input in buffer (if not full)
+
+      if (idx_without_conflict != -1) {
+        buffer[idx_without_conflict] = {0, 0.f};
+      } else if (idx_empty != -1 && !input_empty && input_has_conflict) {
+        buffer[idx_empty] = input_update;
+      }
 
       // update the window
-      Shift(window, window_valid, output_update, output_valid);
+      Shift(window, output_update);
 
       // write the output
       update_out_q.write(output_update);
       VLOG_F(5, send) << "Update: " << output_update;
-      if (!output_valid) {
-        VLOG(10) << "bubble inserted";
-        ++num_bubble;
-      }
     }
 
     // after the loop, flush the reorder buffer
   update_read_cleanup:
     for (int i = 0; i < kBufferSize;) {
-      if (!buffer_valid[i]) {
+      if (buffer[i].dst == 0) {
         ++i;
       } else {
         auto update = buffer[i];
-        bool update_valid = true;
-        if (!HasConflict(window, window_valid, update)) {
-          buffer_valid[i] = false;
+        if (!HasConflict(window, update)) {
+          buffer[i] = {};
           ++i;
         } else {
           update = {};
-          update_valid = false;
-          VLOG(10) << "bubble inserted";
-          ++num_bubble;
+          LOG(WARNING) << "bubble inserted";
         }
 
-        Shift(window, window_valid, update, update_valid);
+        Shift(window, update);
 
         update_out_q.write(update);
         VLOG_F(5, send) << "Update: " << update;
@@ -811,6 +822,55 @@ bulk_steps:
     }
     update_out_q.close();
     update_in_q.open();
+  }
+}
+
+void Scatter(
+    // input vector
+    tlp::istream<UpdateVec>& in_q,
+    // outputs
+    tlp::ostream<Update>& out_q0, tlp::ostream<Update>& out_q1,
+    tlp::ostream<Update>& out_q2, tlp::ostream<Update>& out_q3,
+    tlp::ostream<Update>& out_q4, tlp::ostream<Update>& out_q5,
+    tlp::ostream<Update>& out_q6, tlp::ostream<Update>& out_q7) {
+  // HLS crashes without this...
+  out_q0.close();
+  out_q1.close();
+  out_q2.close();
+  out_q3.close();
+  out_q4.close();
+  out_q5.close();
+  out_q6.close();
+  out_q7.close();
+#ifdef __SYNTHESIS__
+  ap_wait();
+#endif  // __SYNTEHSIS__
+  in_q.open();
+
+bulk_step:
+  for (;;) {
+  update_scatter:
+    TLP_WHILE_NOT_EOS(in_q) {
+#pragma HLS pipeline II = 1
+      auto update_v = in_q.read(nullptr);
+      out_q0.write(update_v[0]);
+      out_q1.write(update_v[1]);
+      out_q2.write(update_v[2]);
+      out_q3.write(update_v[3]);
+      out_q4.write(update_v[4]);
+      out_q5.write(update_v[5]);
+      out_q6.write(update_v[6]);
+      out_q7.write(update_v[7]);
+    }
+    out_q0.close();
+    out_q1.close();
+    out_q2.close();
+    out_q3.close();
+    out_q4.close();
+    out_q5.close();
+    out_q6.close();
+    out_q7.close();
+    in_q.open();
   }
 }
 
@@ -828,7 +888,10 @@ void ProcElem(
     // to UpdateHandler
     tlp::ostream<UpdateReq>& update_req_q,
     // from UpdateHandler via UpdateReorderer
-    tlp::istream<UpdateVec>& update_in_q,
+    tlp::istream<Update>& update_in_q0, tlp::istream<Update>& update_in_q1,
+    tlp::istream<Update>& update_in_q2, tlp::istream<Update>& update_in_q3,
+    tlp::istream<Update>& update_in_q4, tlp::istream<Update>& update_in_q5,
+    tlp::istream<Update>& update_in_q6, tlp::istream<Update>& update_in_q7,
     // to UpdateHandler via UpdateRouter
     tlp::ostream<UpdateVecWithPid>& update_out_q) {
   // HLS crashes without this...
@@ -840,9 +903,16 @@ void ProcElem(
 #ifdef __SYNTHESIS__
   ap_wait();
 #endif  // __SYNTEHSIS__
-  update_in_q.open();
+  update_in_q0.open();
+  update_in_q1.open();
+  update_in_q2.open();
+  update_in_q3.open();
+  update_in_q4.open();
+  update_in_q5.open();
+  update_in_q6.open();
+  update_in_q7.open();
 
-  VertexAttr vertices_local[kMaxPartitionSize];
+  decltype(VertexAttr::tmp) vertices_local[kMaxPartitionSize];
 #pragma HLS array_partition variable = vertices_local cyclic factor = \
     kVertexPartitionFactor
 #pragma HLS resource variable = vertices_local core = RAM_S2P_URAM
@@ -854,16 +924,17 @@ task_requests:
     if (req.scatter_done) {
       update_out_q.close();
     } else {
-      vertex_req_q.write({TaskReq::kScatter, req.vid_offset, req.num_vertices});
       bool active = false;
       if (req.phase == TaskReq::kScatter) {
+        vertex_req_q.write(
+            {TaskReq::kScatter, req.vid_offset, req.num_vertices});
       vertex_reads:
         for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
           auto vertex_vec = vertex_in_q.read();
           for (uint64_t j = 0; j < kVertexVecLen; ++j) {
 #pragma HLS unroll
-            vertices_local[i * kVertexVecLen + j] = vertex_vec[j];
+            vertices_local[i * kVertexVecLen + j] = vertex_vec[j].tmp;
           }
         }
 
@@ -887,13 +958,13 @@ task_requests:
                 LOG_IF(ERROR, addr % kEdgeVecLen != i)
                     << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
                 addr /= kEdgeVecLen;
-                auto src = vertices_local[addr * kEdgeVecLen + i];
                 // pre-compute pid for routing
                 update_v.pid =
                     (edge.dst - req.overall_base_vid) / req.partition_size;
                 // use pre-computed src.tmp = src.ranking / src.out_degree
-                update_v.updates.set((edge.dst - req.base_vid) % kEdgeVecLen,
-                                     {edge.dst, src.tmp});
+                update_v.updates.set(
+                    (edge.dst - req.base_vid) % kEdgeVecLen,
+                    {edge.dst, vertices_local[addr * kEdgeVecLen + i]});
               }
             }
             update_out_q.write(update_v);
@@ -905,34 +976,144 @@ task_requests:
       vertex_resets:
         for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
-          auto vertex_vec = vertex_in_q.read();
           for (uint64_t j = 0; j < kVertexVecLen; ++j) {
 #pragma HLS unroll
-            vertices_local[i * kVertexVecLen + j] = vertex_vec[j];
-            vertices_local[i * kVertexVecLen + j].tmp = 0.f;
+            vertices_local[i * kVertexVecLen + j] = 0.f;
           }
         }
 
         update_req_q.write({req.phase, req.pid, req.num_edges});
       update_reads:
-        TLP_WHILE_NOT_EOS(update_in_q) {
+        for (bool update_in_valid[kUpdateVecLen], update_in_eos[kUpdateVecLen];
+             ;) {
+          update_in_eos[0] = update_in_q0.eos(update_in_valid[0]);
+          update_in_eos[1] = update_in_q1.eos(update_in_valid[1]);
+          update_in_eos[2] = update_in_q2.eos(update_in_valid[2]);
+          update_in_eos[3] = update_in_q3.eos(update_in_valid[3]);
+          update_in_eos[4] = update_in_q4.eos(update_in_valid[4]);
+          update_in_eos[5] = update_in_q5.eos(update_in_valid[5]);
+          update_in_eos[6] = update_in_q6.eos(update_in_valid[6]);
+          update_in_eos[7] = update_in_q7.eos(update_in_valid[7]);
+          if (update_in_eos[0] && update_in_eos[1] && update_in_eos[2] &&
+              update_in_eos[3] && update_in_eos[4] && update_in_eos[5] &&
+              update_in_eos[6] && update_in_eos[7]) {
+            break;
+          }
 #pragma HLS pipeline II = 1
 #pragma HLS dependence variable = vertices_local inter true distance = 5
-          auto update_v = update_in_q.read(nullptr);
-          VLOG_F(5, recv) << "Update: " << update_v;
-          for (int i = 0; i < kUpdateVecLen; ++i) {
-            auto update = update_v[i];
+          if (update_in_valid[0] && !update_in_eos[0]) {
+            constexpr int i = 0;
+            auto update = update_in_q0.read(nullptr);
+            VLOG_F(5, recv) << "Update: " << update;
             if (update.dst != 0) {
               auto addr = update.dst - req.base_vid;
               LOG_IF(ERROR, addr % kEdgeVecLen != i)
                   << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
 #pragma HLS latency max = 4
               addr /= kEdgeVecLen;
-              vertices_local[addr * kEdgeVecLen + i].tmp += update.delta;
+              vertices_local[addr * kEdgeVecLen + i] += update.delta;
+            }
+          }
+          if (update_in_valid[1] && !update_in_eos[1]) {
+            constexpr int i = 1;
+            auto update = update_in_q1.read(nullptr);
+            VLOG_F(5, recv) << "Update: " << update;
+            if (update.dst != 0) {
+              auto addr = update.dst - req.base_vid;
+              LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                  << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
+#pragma HLS latency max = 4
+              addr /= kEdgeVecLen;
+              vertices_local[addr * kEdgeVecLen + i] += update.delta;
+            }
+          }
+          if (update_in_valid[2] && !update_in_eos[2]) {
+            constexpr int i = 2;
+            auto update = update_in_q2.read(nullptr);
+            VLOG_F(5, recv) << "Update: " << update;
+            if (update.dst != 0) {
+              auto addr = update.dst - req.base_vid;
+              LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                  << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
+#pragma HLS latency max = 4
+              addr /= kEdgeVecLen;
+              vertices_local[addr * kEdgeVecLen + i] += update.delta;
+            }
+          }
+          if (update_in_valid[3] && !update_in_eos[3]) {
+            constexpr int i = 3;
+            auto update = update_in_q3.read(nullptr);
+            VLOG_F(5, recv) << "Update: " << update;
+            if (update.dst != 0) {
+              auto addr = update.dst - req.base_vid;
+              LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                  << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
+#pragma HLS latency max = 4
+              addr /= kEdgeVecLen;
+              vertices_local[addr * kEdgeVecLen + i] += update.delta;
+            }
+          }
+          if (update_in_valid[4] && !update_in_eos[4]) {
+            constexpr int i = 4;
+            auto update = update_in_q4.read(nullptr);
+            VLOG_F(5, recv) << "Update: " << update;
+            if (update.dst != 0) {
+              auto addr = update.dst - req.base_vid;
+              LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                  << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
+#pragma HLS latency max = 4
+              addr /= kEdgeVecLen;
+              vertices_local[addr * kEdgeVecLen + i] += update.delta;
+            }
+          }
+          if (update_in_valid[5] && !update_in_eos[5]) {
+            constexpr int i = 5;
+            auto update = update_in_q5.read(nullptr);
+            VLOG_F(5, recv) << "Update: " << update;
+            if (update.dst != 0) {
+              auto addr = update.dst - req.base_vid;
+              LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                  << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
+#pragma HLS latency max = 4
+              addr /= kEdgeVecLen;
+              vertices_local[addr * kEdgeVecLen + i] += update.delta;
+            }
+          }
+          if (update_in_valid[6] && !update_in_eos[6]) {
+            constexpr int i = 6;
+            auto update = update_in_q6.read(nullptr);
+            VLOG_F(5, recv) << "Update: " << update;
+            if (update.dst != 0) {
+              auto addr = update.dst - req.base_vid;
+              LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                  << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
+#pragma HLS latency max = 4
+              addr /= kEdgeVecLen;
+              vertices_local[addr * kEdgeVecLen + i] += update.delta;
+            }
+          }
+          if (update_in_valid[7] && !update_in_eos[7]) {
+            constexpr int i = 7;
+            auto update = update_in_q7.read(nullptr);
+            VLOG_F(5, recv) << "Update: " << update;
+            if (update.dst != 0) {
+              auto addr = update.dst - req.base_vid;
+              LOG_IF(ERROR, addr % kEdgeVecLen != i)
+                  << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
+#pragma HLS latency max = 4
+              addr /= kEdgeVecLen;
+              vertices_local[addr * kEdgeVecLen + i] += update.delta;
             }
           }
         }
-        update_in_q.open();
+        update_in_q0.open();
+        update_in_q1.open();
+        update_in_q2.open();
+        update_in_q3.open();
+        update_in_q4.open();
+        update_in_q5.open();
+        update_in_q6.open();
+        update_in_q7.open();
 
         vertex_req_q.write(
             {TaskReq::kGather, req.vid_offset, req.num_vertices});
@@ -942,13 +1123,14 @@ task_requests:
       vertex_writes:
         for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
-          VertexAttrVec vertex_vec = {};
+          VertexAttrVec vertex_vec = vertex_in_q.read();
           float delta[kVertexVecLen];
 #pragma HLS array_partition variable = delta complete
           for (uint64_t j = 0; j < kVertexVecLen; ++j) {
 #pragma HLS unroll
-            auto vertex = vertices_local[i * kVertexVecLen + j];
-            const float new_ranking = req.init + vertex.tmp * kDampingFactor;
+            auto vertex = vertex_vec[j];
+            auto tmp = vertices_local[i * kVertexVecLen + j];
+            const float new_ranking = req.init + tmp * kDampingFactor;
             delta[j] = std::abs(new_ranking - vertex.ranking);
             vertex.ranking = new_ranking;
             // pre-compute vertex.tmp = vertex.ranking / vertex.out_degree
@@ -1017,10 +1199,40 @@ void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
   tlp::stream<UpdateVecWithPid, 8> update_pe2ro_1("update_pe2router_1");
   tlp::stream<UpdateVecWithPid, 8> update_ro2mm_0("update_router2handler_0");
   tlp::stream<UpdateVecWithPid, 8> update_ro2mm_1("update_router2handler_1");
-  tlp::stream<UpdateVec, 8> update_ro2pe_0("update_reorderer2pe_0");
-  tlp::stream<UpdateVec, 8> update_ro2pe_1("update_reorderer2pe_1");
-  tlp::stream<UpdateVec, 8> update_mm2ro_0("update_mm2ro_0");
-  tlp::stream<UpdateVec, 8> update_mm2ro_1("update_mm2ro_1");
+  tlp::stream<Update, 16> update_ro2pe_0_0("update_reorderer2pe_0_0");
+  tlp::stream<Update, 16> update_ro2pe_0_1("update_reorderer2pe_0_1");
+  tlp::stream<Update, 16> update_ro2pe_0_2("update_reorderer2pe_0_2");
+  tlp::stream<Update, 16> update_ro2pe_0_3("update_reorderer2pe_0_3");
+  tlp::stream<Update, 16> update_ro2pe_0_4("update_reorderer2pe_0_4");
+  tlp::stream<Update, 16> update_ro2pe_0_5("update_reorderer2pe_0_5");
+  tlp::stream<Update, 16> update_ro2pe_0_6("update_reorderer2pe_0_6");
+  tlp::stream<Update, 16> update_ro2pe_0_7("update_reorderer2pe_0_7");
+  tlp::stream<Update, 16> update_ro2pe_1_0("update_reorderer2pe_1_0");
+  tlp::stream<Update, 16> update_ro2pe_1_1("update_reorderer2pe_1_1");
+  tlp::stream<Update, 16> update_ro2pe_1_2("update_reorderer2pe_1_2");
+  tlp::stream<Update, 16> update_ro2pe_1_3("update_reorderer2pe_1_3");
+  tlp::stream<Update, 16> update_ro2pe_1_4("update_reorderer2pe_1_4");
+  tlp::stream<Update, 16> update_ro2pe_1_5("update_reorderer2pe_1_5");
+  tlp::stream<Update, 16> update_ro2pe_1_6("update_reorderer2pe_1_6");
+  tlp::stream<Update, 16> update_ro2pe_1_7("update_reorderer2pe_1_7");
+  tlp::stream<UpdateVec, 8> update_mm2scatter_0("update_mm2scatter_0");
+  tlp::stream<UpdateVec, 8> update_mm2scatter_1("update_mm2scatter_1");
+  tlp::stream<Update, 16> update_scatter2ro_0_0("update_scatter2ro_0_0");
+  tlp::stream<Update, 16> update_scatter2ro_0_1("update_scatter2ro_0_1");
+  tlp::stream<Update, 16> update_scatter2ro_0_2("update_scatter2ro_0_2");
+  tlp::stream<Update, 16> update_scatter2ro_0_3("update_scatter2ro_0_3");
+  tlp::stream<Update, 16> update_scatter2ro_0_4("update_scatter2ro_0_4");
+  tlp::stream<Update, 16> update_scatter2ro_0_5("update_scatter2ro_0_5");
+  tlp::stream<Update, 16> update_scatter2ro_0_6("update_scatter2ro_0_6");
+  tlp::stream<Update, 16> update_scatter2ro_0_7("update_scatter2ro_0_7");
+  tlp::stream<Update, 16> update_scatter2ro_1_0("update_scatter2ro_1_0");
+  tlp::stream<Update, 16> update_scatter2ro_1_1("update_scatter2ro_1_1");
+  tlp::stream<Update, 16> update_scatter2ro_1_2("update_scatter2ro_1_2");
+  tlp::stream<Update, 16> update_scatter2ro_1_3("update_scatter2ro_1_3");
+  tlp::stream<Update, 16> update_scatter2ro_1_4("update_scatter2ro_1_4");
+  tlp::stream<Update, 16> update_scatter2ro_1_5("update_scatter2ro_1_5");
+  tlp::stream<Update, 16> update_scatter2ro_1_6("update_scatter2ro_1_6");
+  tlp::stream<Update, 16> update_scatter2ro_1_7("update_scatter2ro_1_7");
 
   tlp::stream<NumUpdates, 2> num_updates_0("num_updates_0");
   tlp::stream<NumUpdates, 2> num_updates_1("num_updates_1");
@@ -1033,30 +1245,74 @@ void PageRank(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
                   vertex_mm2pe_1, vertices)
       .invoke<-1>(EdgeMem, "EdgeMem", edge_req_0, edge_req_1, edge_resp_0,
                   edge_resp_1, edges)
-      .invoke<-1>(UpdateReorderer, "UpdateReorder_0", update_mm2ro_0,
-                  update_ro2pe_0)
-      .invoke<-1>(UpdateReorderer, "UpdateReorder_1", update_mm2ro_1,
-                  update_ro2pe_1)
+      .invoke<-1>(Scatter, "Scatter_0", update_mm2scatter_0,
+                  update_scatter2ro_0_0, update_scatter2ro_0_1,
+                  update_scatter2ro_0_2, update_scatter2ro_0_3,
+                  update_scatter2ro_0_4, update_scatter2ro_0_5,
+                  update_scatter2ro_0_6, update_scatter2ro_0_7)
+      .invoke<-1>(Scatter, "Scatter_1", update_mm2scatter_1,
+                  update_scatter2ro_1_0, update_scatter2ro_1_1,
+                  update_scatter2ro_1_2, update_scatter2ro_1_3,
+                  update_scatter2ro_1_4, update_scatter2ro_1_5,
+                  update_scatter2ro_1_6, update_scatter2ro_1_7)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_0_0", update_scatter2ro_0_0,
+                  update_ro2pe_0_0)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_0_1", update_scatter2ro_0_1,
+                  update_ro2pe_0_1)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_0_2", update_scatter2ro_0_2,
+                  update_ro2pe_0_2)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_0_3", update_scatter2ro_0_3,
+                  update_ro2pe_0_3)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_0_4", update_scatter2ro_0_4,
+                  update_ro2pe_0_4)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_0_5", update_scatter2ro_0_5,
+                  update_ro2pe_0_5)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_0_6", update_scatter2ro_0_6,
+                  update_ro2pe_0_6)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_0_7", update_scatter2ro_0_7,
+                  update_ro2pe_0_7)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_1_0", update_scatter2ro_1_0,
+                  update_ro2pe_1_0)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_1_1", update_scatter2ro_1_1,
+                  update_ro2pe_1_1)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_1_2", update_scatter2ro_1_2,
+                  update_ro2pe_1_2)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_1_3", update_scatter2ro_1_3,
+                  update_ro2pe_1_3)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_1_4", update_scatter2ro_1_4,
+                  update_ro2pe_1_4)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_1_5", update_scatter2ro_1_5,
+                  update_ro2pe_1_5)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_1_6", update_scatter2ro_1_6,
+                  update_ro2pe_1_6)
+      .invoke<-1>(UpdateReorderer, "UpdateReorderer_1_7", update_scatter2ro_1_7,
+                  update_ro2pe_1_7)
       .invoke<-1>(UpdateMem, "UpdateMem", update_read_addr_0,
                   update_read_addr_1, update_read_data_0, update_read_data_1,
                   update_write_addr_0, update_write_addr_1, update_write_data_0,
                   update_write_data_1, updates)
       .invoke<0>(ProcElem, "ProcElem_0", task_req_0, task_resp_0, vertex_req_0,
                  vertex_mm2pe_0, vertex_pe2mm_0, edge_req_0, edge_resp_0,
-                 update_req_0, update_ro2pe_0, update_pe2ro_0)
+                 update_req_0, update_ro2pe_0_0, update_ro2pe_0_1,
+                 update_ro2pe_0_2, update_ro2pe_0_3, update_ro2pe_0_4,
+                 update_ro2pe_0_5, update_ro2pe_0_6, update_ro2pe_0_7,
+                 update_pe2ro_0)
       .invoke<0>(ProcElem, "ProcElem_1", task_req_1, task_resp_1, vertex_req_1,
                  vertex_mm2pe_1, vertex_pe2mm_1, edge_req_1, edge_resp_1,
-                 update_req_1, update_ro2pe_1, update_pe2ro_1)
+                 update_req_1, update_ro2pe_1_0, update_ro2pe_1_1,
+                 update_ro2pe_1_2, update_ro2pe_1_3, update_ro2pe_1_4,
+                 update_ro2pe_1_5, update_ro2pe_1_6, update_ro2pe_1_7,
+                 update_pe2ro_1)
       .invoke<0>(Control, "Control", num_partitions, num_vertices, num_edges,
                  update_config_0, update_config_1, update_phase_0,
                  update_phase_1, num_updates_0, num_updates_1, task_req_0,
                  task_req_1, task_resp_0, task_resp_1)
       .invoke<0>(UpdateHandler, "UpdateHandler_0", num_partitions,
                  update_config_0, update_phase_0, num_updates_0, update_req_0,
-                 update_ro2mm_0, update_mm2ro_0, update_read_addr_0,
+                 update_ro2mm_0, update_mm2scatter_0, update_read_addr_0,
                  update_read_data_0, update_write_addr_0, update_write_data_0)
       .invoke<0>(UpdateHandler, "UpdateHandler_1", num_partitions,
                  update_config_1, update_phase_1, num_updates_1, update_req_1,
-                 update_ro2mm_1, update_mm2ro_1, update_read_addr_1,
+                 update_ro2mm_1, update_mm2scatter_1, update_read_addr_1,
                  update_read_data_1, update_write_addr_1, update_write_data_1);
 }
