@@ -13,6 +13,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt install python-pip libboost-dev libgoogle-glog-dev -y
+        sudo -H python -m pip install --upgrade pip
         sudo -H python -m pip install cmake
     - name: Configure myself
       run: cmake -S . -B build
