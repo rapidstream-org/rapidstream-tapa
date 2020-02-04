@@ -180,8 +180,12 @@ std::vector<Partition<Vid, Eid, VertexAttr, EdgeAttr>> LoadEdgeList(
   }
   for (const auto& edge : edges) {
     VLOG(10) << "src: " << edge.src << " dst: " << edge.dst;
-    const size_t partition_id = (edge.src - min_vid) / partition_size;
-    shards[partition_id]->push_back(edge);
+    const size_t pid = (edge.src - min_vid) % num_partitions;
+    auto map = [&](Vid vid) -> Vid {
+      return min_vid + (vid - min_vid) % num_partitions * partition_size +
+             (vid - min_vid) / num_partitions;
+    };
+    shards[pid]->push_back({map(edge.src), map(edge.dst)});
   }
 
   std::vector<PartitionType> partitions;
@@ -191,11 +195,10 @@ std::vector<Partition<Vid, Eid, VertexAttr, EdgeAttr>> LoadEdgeList(
     auto shard = shards[i];
     auto shard_ptr = shards[i]->data();
     auto shard_deleter = [shard](EdgeType*) { delete shard; };
-    partitions.push_back(
-        {base_vid,
-         Vid(std::min(partition_size, num_vertices + min_vid - base_vid)),
-         Eid(shards[i]->size()),
-         {shard_ptr, shard_deleter}});
+    partitions.push_back({base_vid,
+                          Vid(partition_size),
+                          Eid(shards[i]->size()),
+                          {shard_ptr, shard_deleter}});
   }
 
   if (munmap(mmap_ptr, mmap_length) != 0) {
