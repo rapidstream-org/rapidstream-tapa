@@ -182,7 +182,9 @@ std::vector<Partition<Vid, Eid, VertexAttr, EdgeAttr>> LoadEdgeList(
     VLOG(10) << "src: " << edge.src << " dst: " << edge.dst;
     const size_t pid = (edge.src - min_vid) % num_partitions;
     auto map = [&](Vid vid) -> Vid {
-      return min_vid + (vid - min_vid) % num_partitions * partition_size +
+      // do not use 0 as vid
+      return std::max(Vid(1), min_vid) +
+             (vid - min_vid) % num_partitions * partition_size +
              (vid - min_vid) / num_partitions;
     };
     shards[pid]->push_back({map(edge.src), map(edge.dst)});
