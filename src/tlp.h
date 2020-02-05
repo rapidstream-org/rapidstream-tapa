@@ -8,6 +8,7 @@
 #include <array>
 #include <atomic>
 #include <future>
+#include <iostream>
 #include <queue>
 #include <string>
 #include <unordered_map>
@@ -548,6 +549,14 @@ inline constexpr uint64_t widthof() {
 template <typename T, uint64_t N>
 struct vec_t {
   T data[N];
+  template <typename U>
+  operator vec_t<U, N>() {
+    vec_t<U, N> result;
+    for (uint64_t i = 0; i < N; ++i) {
+      result.data[i] = static_cast<U>(data[i]);
+    }
+    return result;
+  }
   // T& operator[](uint64_t idx) { return data[idx]; }
   void set(uint64_t idx, const T& val) { data[idx] = val; }
   T get(uint64_t idx) const { return data[idx]; }
@@ -556,6 +565,16 @@ struct vec_t {
   static constexpr uint64_t bytes = length * sizeof(T);
   static constexpr uint64_t bits = bytes * CHAR_BIT;
 };
+
+template <typename T, uint64_t N>
+inline std::ostream& operator<<(std::ostream& os, const vec_t<T, N>& obj) {
+  os << "{";
+  for (uint64_t i = 0; i < N; ++i) {
+    if (i > 0) os << ", ";
+    os << "[" << i << "]: " << obj[i];
+  }
+  return os << "}";
+}
 
 template <typename T, uint64_t N, typename Allocator>
 inline async_mmap<vec_t<T, N>> async_mmap_from_vec(
