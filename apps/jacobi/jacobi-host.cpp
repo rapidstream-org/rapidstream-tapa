@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
   }
 
   auto start = high_resolution_clock::now();
-  Jacobi(t0_vec.data(), t1_vec.data(), height * width / 2);
+  Jacobi(t0_vec, t1_vec, height * width / 2);
   auto stop = high_resolution_clock::now();
   duration<double> elapsed = stop - start;
   clog << "elapsed time: " << elapsed.count() << " s" << endl;

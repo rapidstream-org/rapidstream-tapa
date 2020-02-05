@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     c[i] = 0.f;
   }
   auto start = high_resolution_clock::now();
-  VecAdd(a.data(), b.data(), c.data(), n);
+  VecAdd(a, b, c, n);
   auto stop = high_resolution_clock::now();
   duration<double> elapsed = stop - start;
   clog << "elapsed time: " << elapsed.count() << " s" << endl;
