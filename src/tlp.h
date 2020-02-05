@@ -515,10 +515,7 @@ struct task {
 
   void wait_for(int step) {
     for (auto& t : threads[step]) {
-      t.join();
-      thread_name_mtx.lock();
-      thread_name_table.erase(t.get_id());
-      thread_name_mtx.unlock();
+      if (t.joinable()) t.join();
     }
   }
 
