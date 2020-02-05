@@ -342,11 +342,13 @@ class Module:
     self._increment_idx(len(param_tuple), 'param')
     return self
 
-  def add_instance(self,
-                   module_name: str,
-                   instance_name: str,
-                   ports: Iterable[ast.ParamArg],
-                   params: Iterable[ast.ParamArg] = ()) -> 'Module':
+  def add_instance(
+      self,
+      module_name: str,
+      instance_name: str,
+      ports: Iterable[ast.ParamArg],
+      params: Iterable[ast.ParamArg] = ()
+  ) -> 'Module':
     self._module_def.items = (
         self._module_def.items[:self._last_instance_idx + 1] +
         (ast.InstanceList(module=module_name,
@@ -497,7 +499,9 @@ class Module:
         return port_name
     return None
 
-  def add_m_axi(self, name: str, data_width: int,
+  def add_m_axi(self,
+                name: str,
+                data_width: int,
                 addr_width: int = 64) -> 'Module':
     for channel, ports in M_AXI_PORTS.items():
       io_ports = []
@@ -639,9 +643,9 @@ def async_mmap_width(tag: str, suffix: str,
   return None
 
 
-def generate_async_mmap_ports(tag: str, port: str, arg: str,
-                              instance: tlp.instance.Instance
-                             ) -> Iterator[ast.PortArg]:
+def generate_async_mmap_ports(
+    tag: str, port: str, arg: str,
+    instance: tlp.instance.Instance) -> Iterator[ast.PortArg]:
   prefix = 'tlp_' + port + '_' + tag + '_V_'
   for suffix in async_mmap_suffixes(tag):
     port_name = instance.task.module.find_port(prefix=prefix, suffix=suffix)
