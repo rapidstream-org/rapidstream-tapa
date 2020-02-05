@@ -550,8 +550,8 @@ struct vec_t {
   T data[N];
   // T& operator[](uint64_t idx) { return data[idx]; }
   void set(uint64_t idx, const T& val) { data[idx] = val; }
-  const T& get(uint64_t idx) const { return data[idx]; }
-  const T& operator[](uint64_t idx) const { return get(idx); }
+  T get(uint64_t idx) const { return data[idx]; }
+  T operator[](uint64_t idx) const { return get(idx); }
   static constexpr uint64_t length = N;
   static constexpr uint64_t bytes = length * sizeof(T);
   static constexpr uint64_t bits = bytes * CHAR_BIT;
