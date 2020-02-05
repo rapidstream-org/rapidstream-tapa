@@ -357,8 +357,16 @@ class mmap {
   operator T*() { return ptr_; }
 
   // Dereference.
-  T& operator[](std::size_t idx) { return ptr_[idx]; }
-  const T& operator[](std::size_t idx) const { return ptr_[idx]; }
+  T& operator[](std::size_t idx) {
+    CHECK_GE(idx, 0);
+    CHECK_LT(idx, size_);
+    return ptr_[idx];
+  }
+  const T& operator[](std::size_t idx) const {
+    CHECK_GE(idx, 0);
+    CHECK_LT(idx, size_);
+    return ptr_[idx];
+  }
   T& operator*() { return *ptr_; }
   const T& operator*() const { return *ptr_; }
 
@@ -399,7 +407,11 @@ class async_mmap : public mmap<T> {
       : super(vec) {}
 
   // Read operations.
-  void read_addr_write(uint64_t addr) { read_addr_q_.push(addr); }
+  void read_addr_write(uint64_t addr) {
+    CHECK_GE(addr, 0);
+    CHECK_LT(addr, super::size_);
+    read_addr_q_.push(addr);
+  }
   bool read_addr_try_write(uint64_t addr) {
     read_addr_write(addr);
     return true;
@@ -416,6 +428,8 @@ class async_mmap : public mmap<T> {
 
   // Write operations.
   void write_addr_write(uint64_t addr) {
+    CHECK_GE(addr, 0);
+    CHECK_LT(addr, super::size_);
     if (write_data_q_.empty()) {
       write_addr_q_.push(addr);
     } else {
