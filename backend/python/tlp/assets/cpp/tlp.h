@@ -41,6 +41,18 @@ struct dummy {
 #define CHECK_EQ(lhs, rhs) \
   assert((lhs) != (rhs));  \
   dummy()
+#define CHECK_GE(lhs, rhs) \
+  assert((lhs) >= (rhs));  \
+  dummy()
+#define CHECK_GT(lhs, rhs) \
+  assert((lhs) > (rhs));   \
+  dummy()
+#define CHECK_LE(lhs, rhs) \
+  assert((lhs) <= (rhs));  \
+  dummy()
+#define CHECK_LT(lhs, rhs) \
+  assert((lhs) < (rhs));   \
+  dummy()
 #define CHECK_NOTNULL(ptr) (ptr)
 #define CHECK_STREQ(lhs, rhs) dummy()
 #define CHECK_STRNE(lhs, rhs) dummy()
@@ -254,7 +266,9 @@ inline void close(hls::stream<data_t<T>>& fifo) {
 #pragma HLS inline
 //#pragma HLS latency max = 1
 #pragma HLS protocol
-  fifo.write({{}, true});
+  data_t<T> tmp = {};
+  tmp.eos = true;
+  fifo.write(tmp);
 }
 
 template <typename T>
@@ -264,21 +278,35 @@ inline constexpr uint64_t widthof() {
 
 template <typename T, uint64_t N>
 struct vec_t {
+  template <typename U>
+  operator vec_t<U, N>() {
+#pragma HLS inline
+    vec_t<U, N> result;
+    for (uint64_t i = 0; i < N; ++i) {
+      result.set(i, static_cast<U>(get(i)));
+    }
+    return result;
+  }
   static constexpr uint64_t length = N;
   static constexpr uint64_t bytes = length * sizeof(T);
   static constexpr uint64_t bits = bytes * CHAR_BIT;
-  ap_uint<bits> data;
+  ap_uint<bits> data = 0;
   // T& operator[](uint64_t idx) { return *(reinterpret_cast<T*>(&data) + idx);
   // }
   void set(uint64_t idx, const T& val) {
+#pragma HLS inline
     data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>()) =
         reinterpret_cast<const ap_uint<widthof<T>()>&>(val);
   }
   T get(uint64_t idx) const {
+#pragma HLS inline
     return reinterpret_cast<T&&>(static_cast<ap_uint<widthof<T>()>>(
         data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>())));
   }
-  T operator[](uint64_t idx) const { return get(idx); }
+  T operator[](uint64_t idx) const {
+#pragma HLS inline
+    return get(idx);
+  }
 };
 
 }  // namespace tlp
