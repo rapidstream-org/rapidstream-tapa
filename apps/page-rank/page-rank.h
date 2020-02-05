@@ -36,6 +36,8 @@ using Pid = uint32_t;     // can hold all partitions
 constexpr float kDampingFactor = .85f;
 constexpr float kConvergenceThreshold = 0.0001f;
 
+constexpr int kNumPes = 2;
+
 struct VertexAttr {
   Degree out_degree;
   float ranking;
@@ -89,6 +91,9 @@ constexpr uint64_t kVertexPartitionFactor =
     kEdgeVecLen > kVertexVecLen
         ? kEdgeVecLen > kUpdateVecLen ? kEdgeVecLen : kUpdateVecLen
         : kVertexVecLen > kUpdateVecLen ? kVertexVecLen : kUpdateVecLen;
+
+constexpr int kVertexUpdateLatency = 4;
+constexpr int kVertexUpdateDepDist = kVertexUpdateLatency + 1;
 
 // Alias for vec types.
 using VertexAttrVec = tlp::vec_t<VertexAttr, kVertexVecLen>;
