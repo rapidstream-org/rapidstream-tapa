@@ -220,6 +220,10 @@ def main():
       }
     else:
       hls_kwargs = haoda.backend.xilinx.get_device_info(platform)
+      if args.clock_period is not None:
+        hls_kwargs['clock_period'] = args.clock_period
+      if args.part_num is not None:
+        hls_kwargs['part_num'] = args.part_num
     program.run_hls(**hls_kwargs)
 
   if all_steps or args.extract_rtl is not None:
