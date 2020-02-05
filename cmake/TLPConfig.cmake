@@ -25,11 +25,11 @@ function(add_tlp_target target_name)
   #   gmem0:DDR[0]).
   # * TLPC: Optional, path to the tlpc executable.
   # * TLPCC: Optional, path to the tlpcc executable.
-  cmake_parse_arguments(TLP
-                        ""
-                        "OUTPUT;INPUT;TOP;PLATFORM;TLPC;TLPCC"
-                        "DRAM_MAPPING"
-                        ${ARGN})
+  # * CLOCK_PERIOD: Optional, override the clock period.
+  # * PART_NUM: Optional, override the part number.
+  cmake_parse_arguments(
+    TLP "" "OUTPUT;INPUT;TOP;PLATFORM;TLPC;TLPCC;CLOCK_PERIOD;PART_NUM"
+    "DRAM_MAPPING" ${ARGN})
   if(NOT TLP_INPUT)
     message(FATAL_ERROR "INPUT not specified")
   endif()
@@ -72,22 +72,23 @@ function(add_tlp_target target_name)
   list(APPEND tlpc_cmd --platform ${TLP_PLATFORM})
   list(APPEND tlpc_cmd --output ${TLP_OUTPUT})
   list(APPEND tlpc_cmd --work-dir ${TLP_OUTPUT}.tlp)
+  if(TLP_CLOCK_PERIOD)
+    list(APPEND tlpc_cmd --clock-period ${TLP_CLOCK_PERIOD})
+  endif()
+  if(TLP_PART_NUM)
+    list(APPEND tlpc_cmd --part-num ${TLP_PART_NUM})
+  endif()
 
-  add_custom_command(OUTPUT ${TLP_OUTPUT}
-                     COMMAND ${tlpc_cmd}
-                     DEPENDS ${TLP_INPUT}
-                     VERBATIM)
+  add_custom_command(
+    OUTPUT ${TLP_OUTPUT}
+    COMMAND ${tlpc_cmd}
+    DEPENDS ${TLP_INPUT}
+    VERBATIM)
 
   add_custom_target(${target_name} DEPENDS ${TLP_OUTPUT})
-  set_target_properties(${target_name}
-                        PROPERTIES FILE_NAME
-                                   ${TLP_OUTPUT}
-                                   TARGET
-                                   hw
-                                   KERNEL
-                                   ${TLP_TOP}
-                                   PLATFORM
-                                   ${TLP_PLATFORM}
-                                   DRAM_MAPPING
-                                   "${TLP_DRAM_MAPPING}")
+  set_target_properties(
+    ${target_name}
+    PROPERTIES FILE_NAME ${TLP_OUTPUT} TARGET hw KERNEL ${TLP_TOP}
+
+               PLATFORM ${TLP_PLATFORM} DRAM_MAPPING "${TLP_DRAM_MAPPING}")
 endfunction()

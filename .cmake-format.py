@@ -9,6 +9,8 @@ additional_commands = {
             "PLATFORM": 1,
             "TLPC": 1,
             "TLPCC": 1,
+            "CLOCK_PERIOD": 1,
+            "PART_NUM": 1,
         }
     },
 }
