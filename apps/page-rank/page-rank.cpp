@@ -270,9 +270,9 @@ void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
           }
 
           // Write vertices to DRAM.
-          VertexAttrVec v;
-          if (vertex_in_q0.try_read(v)) {
-            vertices.write_addr_write((req.offset + i) / kVertexVecLen);
+          if (!vertex_in_q0.empty() &&
+              vertices.write_addr_try_write((req.offset + i) / kVertexVecLen)) {
+            auto v = vertex_in_q0.read(nullptr);
             vertices.write_data_write(v);
             i += kVertexVecLen;
           }
@@ -313,9 +313,9 @@ void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
           }
 
           // Write vertices to DRAM.
-          VertexAttrVec v;
-          if (vertex_in_q1.try_read(v)) {
-            vertices.write_addr_write((req.offset + i) / kVertexVecLen);
+          if (!vertex_in_q1.empty() &&
+              vertices.write_addr_try_write((req.offset + i) / kVertexVecLen)) {
+            auto v = vertex_in_q1.read(nullptr);
             vertices.write_data_write(v);
             i += kVertexVecLen;
           }
