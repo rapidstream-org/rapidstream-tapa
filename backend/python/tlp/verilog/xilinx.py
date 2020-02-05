@@ -405,8 +405,8 @@ class Module:
                               data_width: int,
                               addr_width: int = 64,
                               buffer_size: Optional[int] = None,
-                              max_wait_time: Optional[int] = 3,
-                              max_burst_len: Optional[int] = 255) -> 'Module':
+                              max_wait_time: int = 3,
+                              max_burst_len: Optional[int] = None) -> 'Module':
     paramargs = [
         ast.ParamArg(paramname='DataWidth', argname=ast.Constant(data_width)),
         ast.ParamArg(paramname='DataWidthBytesLog',
@@ -424,22 +424,24 @@ class Module:
                         ast.ParamArg(paramname='BufferSizeLog',
                                      argname=ast.Constant(
                                          (buffer_size - 1).bit_length()))))
-    if max_wait_time:
-      paramargs.append(
-          ast.ParamArg(paramname='WaitTimeWidth',
-                       argname=ast.Constant(max_wait_time.bit_length())))
-      portargs.append(
-          ast.make_port_arg(port='max_wait_time',
-                            arg="{}'d{}".format(max_wait_time.bit_length(),
-                                                max_wait_time)))
-    if max_burst_len:
-      paramargs.append(
-          ast.ParamArg(paramname='BurstLenWidth',
-                       argname=ast.Constant(max_burst_len.bit_length())))
-      portargs.append(
-          ast.make_port_arg(port='max_burst_len',
-                            arg="{}'d{}".format(max_burst_len.bit_length(),
-                                                max_burst_len)))
+    max_wait_time = max(1, max_wait_time)
+    paramargs.append(
+        ast.ParamArg(paramname='WaitTimeWidth',
+                     argname=ast.Constant(max_wait_time.bit_length())))
+    portargs.append(
+        ast.make_port_arg(port='max_wait_time',
+                          arg="{}'d{}".format(max_wait_time.bit_length(),
+                                              max_wait_time)))
+    if max_burst_len is None:
+      max_burst_len = max(0, 32768 // data_width - 1)
+    paramargs.append(
+        ast.ParamArg(paramname='BurstLenWidth',
+                     argname=ast.Constant(max(1, max_burst_len.bit_length()))))
+    portargs.append(
+        ast.make_port_arg(port='max_burst_len',
+                          arg="{}'d{}".format(
+                              max(1, max_burst_len.bit_length()),
+                              max_burst_len)))
 
     for channel, ports in M_AXI_PORTS.items():
       for port, direction in ports:
