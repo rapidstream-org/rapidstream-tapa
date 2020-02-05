@@ -1119,28 +1119,25 @@ task_requests:
         float max_delta = 0.f;
 
       vertex_writes:
-        for (Vid i = 0; i * kVertexVecLen < req.num_vertices;) {
+        for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
 #pragma HLS pipeline II = 1
-          if (!vertex_in_q.empty()) {
-            VertexAttrVec vertex_vec = vertex_in_q.read(nullptr);
-            float delta[kVertexVecLen];
+          VertexAttrVec vertex_vec = vertex_in_q.read();
+          float delta[kVertexVecLen];
 #pragma HLS array_partition variable = delta complete
-            for (uint64_t j = 0; j < kVertexVecLen; ++j) {
+          for (uint64_t j = 0; j < kVertexVecLen; ++j) {
 #pragma HLS unroll
-              auto vertex = vertex_vec[j];
-              auto tmp = vertices_local[i * kVertexVecLen + j];
-              const float new_ranking = req.init + tmp * kDampingFactor;
-              delta[j] = std::abs(new_ranking - vertex.ranking);
-              vertex.ranking = new_ranking;
-              // pre-compute vertex.tmp = vertex.ranking / vertex.out_degree
-              vertex.tmp = vertex.ranking / vertex.out_degree;
-              vertex_vec.set(j, vertex);
-              VLOG_F(5, send) << "VertexAttr[" << j << "]: " << vertex;
-            }
-            max_delta = std::max(max_delta, Max(delta));
-            vertex_out_q.write(vertex_vec);
-            ++i;
+            auto vertex = vertex_vec[j];
+            auto tmp = vertices_local[i * kVertexVecLen + j];
+            const float new_ranking = req.init + tmp * kDampingFactor;
+            delta[j] = std::abs(new_ranking - vertex.ranking);
+            vertex.ranking = new_ranking;
+            // pre-compute vertex.tmp = vertex.ranking / vertex.out_degree
+            vertex.tmp = vertex.ranking / vertex.out_degree;
+            vertex_vec.set(j, vertex);
+            VLOG_F(5, send) << "VertexAttr[" << j << "]: " << vertex;
           }
+          max_delta = std::max(max_delta, Max(delta));
+          vertex_out_q.write(vertex_vec);
         }
         active = max_delta > kConvergenceThreshold;
       }
