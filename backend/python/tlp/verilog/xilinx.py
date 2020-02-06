@@ -721,7 +721,7 @@ def print_kernel_xml(top_name: str, ports: Iterable[tlp.instance.Port],
     ports: Iterable of tlp.instance.Port.
     kernel_xml: file object to write to.
   """
-  m_axi_ports = ''
+  axi_ports = haoda.backend.xilinx.S_AXI_PORT
   args = ''
   offset = 0x10
   for arg_id, port in enumerate(ports):
@@ -736,7 +736,7 @@ def print_kernel_xml(top_name: str, ports: Iterable[tlp.instance.Port],
       size = host_size = 8  # m_axi interface must have 64-bit addresses
       rtl_port_name = M_AXI_PREFIX + port.name
       addr_qualifier = 1
-      m_axi_ports += haoda.backend.xilinx.M_AXI_PORT_TEMPLATE.format(
+      axi_ports += haoda.backend.xilinx.M_AXI_PORT_TEMPLATE.format(
           name=port.name, width=port.width).rstrip('\n')
     args += haoda.backend.xilinx.ARG_TEMPLATE.format(
         name=port.name,
@@ -750,7 +750,7 @@ def print_kernel_xml(top_name: str, ports: Iterable[tlp.instance.Port],
     offset += size + 4
   kernel_xml.write(
       haoda.backend.xilinx.KERNEL_XML_TEMPLATE.format(top_name=top_name,
-                                                      ports=m_axi_ports,
+                                                      ports=axi_ports,
                                                       args=args))
   kernel_xml.flush()
 
