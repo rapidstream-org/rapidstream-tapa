@@ -17,8 +17,8 @@ from typing import (IO, BinaryIO, Dict, Iterable, Iterator, Optional, Tuple,
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
 
-import haoda.backend.xilinx
 import tlp.instance
+from haoda.backend import xilinx as backend
 from tlp.verilog import ast
 
 # const strings
@@ -94,7 +94,7 @@ M_AXI_PORTS = collections.OrderedDict(
     ),
 )  # type: Dict[str, Tuple[Tuple[str, str], ...]]
 
-M_AXI_PREFIX = 'm_axi_'
+M_AXI_PREFIX = backend.M_AXI_PREFIX
 
 M_AXI_SUFFIXES = (
     '_ARADDR',
@@ -460,11 +460,8 @@ class Module:
         if width is not None:
           width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
         portargs.append(
-            ast.make_port_arg(
-                port='m_axi_{channel}{port}'.format(channel=channel, port=port),
-                arg='m_axi_{name}_{channel}{port}'.format(name=name,
-                                                          channel=channel,
-                                                          port=port)))
+            ast.make_port_arg(port=f'{M_AXI_PREFIX}{channel}{port}',
+                              arg=f'{M_AXI_PREFIX}{name}_{channel}{port}'))
 
     tags = set(tags)
     for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
@@ -519,10 +516,7 @@ class Module:
         if width is not None:
           width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
         io_ports.append((ast.Input if direction == 'input' else ast.Output)(
-            name='m_axi_{name}_{channel}{port}'.format(name=name,
-                                                       channel=channel,
-                                                       port=port),
-            width=width))
+            name=f'{M_AXI_PREFIX}{name}_{channel}{port}', width=width))
 
       self.add_ports(io_ports)
     return self
@@ -688,10 +682,9 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.instance.Port],
   with tempfile.NamedTemporaryFile(mode='w+',
                                    prefix='tlp_' + top_name + '_',
                                    suffix='_kernel.xml') as kernel_xml_obj:
-    print_kernel_xml(top_name=top_name,
-                     ports=port_tuple,
-                     kernel_xml=kernel_xml_obj)
-    with haoda.backend.xilinx.PackageXo(
+    print_kernel_xml(name=top_name, ports=port_tuple, kernel_xml=kernel_xml_obj)
+    kernel_xml_obj.flush()
+    with backend.PackageXo(
         xo_file=xo_file,
         top_name=top_name,
         kernel_xml=kernel_xml_obj.name,
@@ -712,63 +705,56 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.instance.Port],
     os.remove(xo_file)
 
 
-def print_kernel_xml(top_name: str, ports: Iterable[tlp.instance.Port],
+def print_kernel_xml(name: str, ports: Iterable[tlp.instance.Port],
                      kernel_xml: IO[str]) -> None:
   """Generate kernel.xml file.
 
   Args:
-    top_name: name of the top-level kernel function.
+    name: name of the kernel.
     ports: Iterable of tlp.instance.Port.
     kernel_xml: file object to write to.
   """
-  axi_ports = haoda.backend.xilinx.S_AXI_PORT
-  args = ''
-  offset = 0x10
-  for arg_id, port in enumerate(ports):
-    host_size = port.width // 8
-    size = max(4, host_size)
-    rtl_port_name = 's_axi_control'
-    addr_qualifier = 0
-    if port.cat in {
+  args = []
+  for port in ports:
+    port_name = backend.S_AXI_NAME
+    if port.cat == tlp.instance.Instance.Arg.Cat.SCALAR:
+      cat = backend.Cat.SCALAR
+    elif port.cat in {
         tlp.instance.Instance.Arg.Cat.MMAP,
         tlp.instance.Instance.Arg.Cat.ASYNC_MMAP
     }:
-      size = host_size = 8  # m_axi interface must have 64-bit addresses
-      rtl_port_name = M_AXI_PREFIX + port.name
-      addr_qualifier = 1
-      axi_ports += haoda.backend.xilinx.M_AXI_PORT_TEMPLATE.format(
-          name=port.name, width=port.width).rstrip('\n')
-    args += haoda.backend.xilinx.ARG_TEMPLATE.format(
-        name=port.name,
-        addr_qualifier=addr_qualifier,
-        arg_id=arg_id,
-        port_name=rtl_port_name,
-        c_type=port.ctype,
-        size=size,
-        offset=offset,
-        host_size=host_size).rstrip('\n')
-    offset += size + 4
-  kernel_xml.write(
-      haoda.backend.xilinx.KERNEL_XML_TEMPLATE.format(top_name=top_name,
-                                                      ports=axi_ports,
-                                                      args=args))
-  kernel_xml.flush()
+      cat = backend.Cat.MMAP
+      port_name = M_AXI_PREFIX + port.name
+    elif port.cat == tlp.instance.Instance.Arg.Cat.ISTREAM:
+      cat = backend.Cat.ISTREAM
+    elif port.cat == tlp.instance.Instance.Arg.Cat.OSTREAM:
+      cat = backend.Cat.OSTREAM
+    else:
+      raise ValueError(f'unexpected port.cat: {port.cat}')
+
+    args.append(
+        backend.Arg(cat=cat,
+                         name=port.name,
+                         port=port_name,
+                         ctype=port.ctype,
+                         width=port.width))
+  backend.print_kernel_xml(name, args, kernel_xml)
 
 
 OTHER_MODULES = {
     'fifo_bram':
-        haoda.backend.xilinx.BRAM_FIFO_TEMPLATE.format(
+        backend.BRAM_FIFO_TEMPLATE.format(
             name='fifo_bram',
             width=32,
             depth=32,
             addr_width=(32 - 1).bit_length()),
     'fifo_srl':
-        haoda.backend.xilinx.SRL_FIFO_TEMPLATE.format(
+        backend.SRL_FIFO_TEMPLATE.format(
             name='fifo_srl',
             width=32,
             depth=32,
             addr_width=(32 - 1).bit_length()),
     'fifo':
-        haoda.backend.xilinx.AUTO_FIFO_TEMPLATE.format(
+        backend.AUTO_FIFO_TEMPLATE.format(
             name='fifo', width=32, depth=32, addr_width=(32 - 1).bit_length()),
 }
