@@ -11,7 +11,7 @@ if(FRT_FOUND)
   add_tlp_target(jacobi-hw-xo
                  INPUT jacobi.cpp
                  TOP Jacobi
-                 PLATFORM xilinx_u200_qdma_201910_1
+                 PLATFORM xilinx_u250_xdma_201830_2
                  TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
                  TLPCC $<TARGET_FILE:tlpcc>)
 

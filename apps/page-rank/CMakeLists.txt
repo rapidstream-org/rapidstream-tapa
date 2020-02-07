@@ -23,7 +23,7 @@ if(Boost_FOUND)
       page-rank-hw-xo
       INPUT page-rank.cpp
       TOP PageRank
-      PLATFORM xilinx_u200_qdma_201910_1
+      PLATFORM xilinx_u250_xdma_201830_2
       TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
       TLPCC $<TARGET_FILE:tlpcc>
       CLOCK_PERIOD 4.000)
@@ -34,13 +34,13 @@ if(Boost_FOUND)
       HW_EMU_XCLBIN hw_emu_xclbin_target
       HW_XCLBIN hw_xclbin_target
                 --sp
-                PageRank.m_axi_edges_0:DDR[1]
+                PageRank.m_axi_edges_0:DDR[0]
                 --sp
-                PageRank.m_axi_edges_1:DDR[2]
+                PageRank.m_axi_edges_1:DDR[1]
                 --sp
-                PageRank.m_axi_updates_0:DDR[1]
+                PageRank.m_axi_updates_0:DDR[2]
                 --sp
-                PageRank.m_axi_updates_1:DDR[2]
+                PageRank.m_axi_updates_1:DDR[3]
                 --dk
                 chipscope:PageRank:m_axi_vertices
                 --dk

@@ -22,7 +22,7 @@ if(FRT_FOUND)
   add_tlp_target(graph-hw-xo
                  INPUT graph.cpp
                  TOP Graph
-                 PLATFORM xilinx_u200_qdma_201910_1
+                 PLATFORM xilinx_u250_xdma_201830_2
                  TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
                  TLPCC $<TARGET_FILE:tlpcc>)
 
