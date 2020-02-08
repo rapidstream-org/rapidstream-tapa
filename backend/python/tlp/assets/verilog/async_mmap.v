@@ -20,7 +20,7 @@ module async_mmap #(
   output wire                 m_axi_AWVALID,
   input  wire                 m_axi_AWREADY,
   output wire [AddrWidth-1:0] m_axi_AWADDR,
-  output wire                 m_axi_AWID,
+  output wire [0:0]           m_axi_AWID,
   output wire [7:0]           m_axi_AWLEN,
   output wire [2:0]           m_axi_AWSIZE,
   output wire [1:0]           m_axi_AWBURST,
@@ -37,21 +37,21 @@ module async_mmap #(
   output wire [DataWidth-1:0]   m_axi_WDATA,
   output wire [DataWidth/8-1:0] m_axi_WSTRB,
   output wire                   m_axi_WLAST,
-  output wire                   m_axi_WID,
+  output wire [0:0]             m_axi_WID,
   output wire                   m_axi_WUSER,
 
   // axi write acknowledge channel
   input  wire       m_axi_BVALID,
   output wire       m_axi_BREADY,
   input  wire [1:0] m_axi_BRESP,
-  input  wire       m_axi_BID,
+  input  wire [0:0]  m_axi_BID,
   input  wire       m_axi_BUSER,
 
   // axi read addr channel
   output wire                 m_axi_ARVALID,
   input  wire                 m_axi_ARREADY,
   output wire [AddrWidth-1:0] m_axi_ARADDR,
-  output wire                 m_axi_ARID,
+  output wire [0:0]           m_axi_ARID,
   output wire [7:0]           m_axi_ARLEN,
   output wire [2:0]           m_axi_ARSIZE,
   output wire [1:0]           m_axi_ARBURST,
@@ -67,7 +67,7 @@ module async_mmap #(
   output wire                 m_axi_RREADY,
   input  wire [DataWidth-1:0] m_axi_RDATA,
   input  wire                 m_axi_RLAST,
-  input  wire                 m_axi_RID,
+  input  wire [0:0]           m_axi_RID,
   input  wire                 m_axi_RUSER,
   input  wire [1:0]           m_axi_RRESP,
 

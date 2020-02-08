@@ -455,7 +455,7 @@ class Module:
             width = data_width
           elif port == 'STRB':
             width = data_width // 8
-        elif width == 1:
+        elif width == 1 and port != 'ID':
           width = None
         if width is not None:
           width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
@@ -511,7 +511,7 @@ class Module:
             width = data_width
           elif port == 'STRB':
             width = data_width // 8
-        elif width == 1:
+        elif width == 1 and port != 'ID':
           width = None
         if width is not None:
           width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
