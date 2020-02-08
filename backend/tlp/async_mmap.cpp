@@ -28,6 +28,9 @@ AsyncMmapOpEnum GetAsyncMmapOp(const CXXMemberCallExpr* call_expr) {
   if (callee == "write_addr_write") {
     return AsyncMmapOpEnum::kWriteAddrWrite;
   }
+  if (callee == "write_data_try_write") {
+    return AsyncMmapOpEnum::kWriteDataTryWrite;
+  }
   if (callee == "write_data_write") {
     return AsyncMmapOpEnum::kWriteDataWrite;
   }

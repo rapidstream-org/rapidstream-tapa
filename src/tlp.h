@@ -450,6 +450,10 @@ class async_mmap : public mmap<T> {
       write_addr_q_.pop();
     }
   }
+  bool write_data_try_write(const T& data) {
+    write_data_write(data);
+    return true;
+  }
 
   // Waits until no operations are pending or on-going.
   void fence() {}

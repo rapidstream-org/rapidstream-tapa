@@ -554,6 +554,10 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
           rewritten_text =
               async_mmap.WriteAddrVar() + ".write(" + args[0] + ")";
           break;
+        case AsyncMmapOpEnum::kWriteDataTryWrite:
+          rewritten_text =
+              async_mmap.WriteDataVar() + ".write_nb(" + args[0] + ")";
+          break;
         case AsyncMmapOpEnum::kWriteDataWrite:
           rewritten_text =
               async_mmap.WriteDataVar() + ".write(" + args[0] + ")";
