@@ -694,7 +694,7 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.instance.Port],
             tlp.instance.Instance.Arg.Cat.ASYNC_MMAP
         })) as proc:
       stdout, stderr = proc.communicate()
-    if proc.returncode == 0:
+    if proc.returncode == 0 and os.path.exists(xo_file):
       if not isinstance(output_file, str):
         with open(xo_file, 'rb') as xo_obj:
           shutil.copyfileobj(xo_obj, output_file)
