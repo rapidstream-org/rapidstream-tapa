@@ -227,6 +227,13 @@ void UpdateHandler(Pid num_partitions,
                    tlp::istream<Update>& update_in_q,
                    tlp::ostream<Update>& update_out_q,
                    tlp::mmap<Update> updates) {
+  // HLS crashes without this...
+  update_out_q.close();
+#ifdef __SYNTHESIS__
+  ap_wait();
+#endif  // __SYNTEHSIS__
+  update_in_q.open();
+
   // Base vid of all vertices; used to determine dst partition id.
   Vid base_vid = 0;
   // Used to determine dst partition id.
@@ -300,6 +307,13 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
               tlp::istream<Update>& update_in_q,
               tlp::ostream<Update>& update_out_q,
               tlp::mmap<VertexAttr> vertices, tlp::mmap<const Edge> edges) {
+  // HLS crashes without this...
+  update_in_q.open();
+#ifdef __SYNTHESIS__
+  ap_wait();
+#endif  // __SYNTEHSIS__
+  update_out_q.close();
+
   VertexAttr vertices_local[kMaxPartitionSize];
   TLP_WHILE_NOT_EOS(req_q) {
     const TaskReq req = req_q.read();
