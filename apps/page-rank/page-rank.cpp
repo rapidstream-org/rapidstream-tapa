@@ -241,87 +241,72 @@ void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
   for (;;) {
     VertexReq req;
     if (vertex_req_q0.try_read(req)) {
-      if (req.phase == TaskReq::kScatter) {
+      VertexAttrAlignedVec resp;
+      bool valid = false;
+    vertices_0:
+      for (Vid i_wr = 0, i_rd_req = 0, i_rd_resp = 0;
+           req.phase == TaskReq::kScatter ? i_rd_resp < req.length
+                                          : i_wr < req.length;) {
         // Read vertices from DRAM.
-      scatter_vertices_0:
-        for (Vid i_req = 0, i_resp = 0; i_resp < req.length;) {
-          // Send requests.
-          if (i_req < req.length && vertices.read_addr_try_write(
-                                        (req.offset + i_req) / kVertexVecLen)) {
-            i_req += kVertexVecLen;
-          }
-          // Handle responses.
-          VertexAttrAlignedVec resp;
-          if (vertices.read_data_try_read(resp)) {
-            i_resp += kVertexVecLen;
-            vertex_out_q0.write(resp);
+        // Send requests.
+        if (i_rd_req < req.length &&
+            (req.phase == TaskReq::kScatter ||
+             i_rd_req < i_wr + kEstimatedLatency * kVertexVecLen) &&
+            vertices.read_addr_try_write((req.offset + i_rd_req) /
+                                         kVertexVecLen)) {
+          i_rd_req += kVertexVecLen;
+        }
+        // Handle responses.
+        if (i_rd_resp < req.length) {
+          if (!valid) valid = vertices.read_data_try_read(resp);
+          if (valid && vertex_out_q0.try_write(resp)) {
+            i_rd_resp += kVertexVecLen;
+            valid = false;
           }
         }
-      } else {
-      gather_vertices_0:
-        for (Vid i = 0, i_req = 0, i_resp = 0; i < req.length;) {
-          // Read vertices from DRAM.
-          // Send requests.
-          if (i_req < req.length && vertices.read_addr_try_write(
-                                        (req.offset + i_req) / kVertexVecLen)) {
-            i_req += kVertexVecLen;
-          }
-          // Handle responses.
-          VertexAttrAlignedVec resp;
-          if (vertices.read_data_try_read(resp)) {
-            i_resp += kVertexVecLen;
-            vertex_out_q0.write(resp);
-          }
 
-          // Write vertices to DRAM.
-          if (!vertex_in_q0.empty() &&
-              vertices.write_addr_try_write((req.offset + i) / kVertexVecLen)) {
-            auto v = vertex_in_q0.read(nullptr);
-            vertices.write_data_write(v);
-            i += kVertexVecLen;
+        // Write vertices to DRAM.
+        if (req.phase == TaskReq::kGather && !vertex_in_q0.empty()) {
+          auto v = vertex_in_q0.peek(nullptr);
+          if (vertices.write_data_try_write(v)) {
+            vertex_in_q0.read(nullptr);
+            vertices.write_addr_write((req.offset + i_wr) / kVertexVecLen);
+            i_wr += kVertexVecLen;
           }
         }
       }
     } else if (vertex_req_q1.try_read(req)) {
-      if (req.phase == TaskReq::kScatter) {
+      VertexAttrAlignedVec resp;
+      bool valid = false;
+    vertices_1:
+      for (Vid i_wr = 0, i_rd_req = 0, i_rd_resp = 0;
+           req.phase == TaskReq::kScatter ? i_rd_resp < req.length
+                                          : i_wr < req.length;) {
         // Read vertices from DRAM.
-      scatter_vertices_1:
-        for (Vid i_req = 0, i_resp = 0; i_resp < req.length;) {
-          // Send requests.
-          if (i_req < req.length && vertices.read_addr_try_write(
-                                        (req.offset + i_req) / kVertexVecLen)) {
-            i_req += kVertexVecLen;
-          }
-          // Handle responses.
-          VertexAttrAlignedVec resp;
-          if (vertices.read_data_try_read(resp)) {
-            i_resp += kVertexVecLen;
-            vertex_out_q1.write(resp);
+        // Send requests.
+        if (i_rd_req < req.length &&
+            (req.phase == TaskReq::kScatter ||
+             i_rd_req < i_wr + kEstimatedLatency * kVertexVecLen) &&
+            vertices.read_addr_try_write((req.offset + i_rd_req) /
+                                         kVertexVecLen)) {
+          i_rd_req += kVertexVecLen;
+        }
+        // Handle responses.
+        if (i_rd_resp < req.length) {
+          if (!valid) valid = vertices.read_data_try_read(resp);
+          if (valid && vertex_out_q1.try_write(resp)) {
+            i_rd_resp += kVertexVecLen;
+            valid = false;
           }
         }
-      } else {
-        // Write vertices to DRAM.
-      gather_vertices_1:
-        for (Vid i = 0, i_req = 0, i_resp = 0; i < req.length;) {
-          // Read vertices from DRAM.
-          // Send requests.
-          if (i_req < req.length && vertices.read_addr_try_write(
-                                        (req.offset + i_req) / kVertexVecLen)) {
-            i_req += kVertexVecLen;
-          }
-          // Handle responses.
-          VertexAttrAlignedVec resp;
-          if (vertices.read_data_try_read(resp)) {
-            i_resp += kVertexVecLen;
-            vertex_out_q1.write(resp);
-          }
 
-          // Write vertices to DRAM.
-          if (!vertex_in_q1.empty() &&
-              vertices.write_addr_try_write((req.offset + i) / kVertexVecLen)) {
-            auto v = vertex_in_q1.read(nullptr);
-            vertices.write_data_write(v);
-            i += kVertexVecLen;
+        // Write vertices to DRAM.
+        if (req.phase == TaskReq::kGather && !vertex_in_q1.empty()) {
+          auto v = vertex_in_q1.peek(nullptr);
+          if (vertices.write_data_try_write(v)) {
+            vertex_in_q1.read(nullptr);
+            vertices.write_addr_write((req.offset + i_wr) / kVertexVecLen);
+            i_wr += kVertexVecLen;
           }
         }
       }
