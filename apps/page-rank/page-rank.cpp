@@ -9,6 +9,7 @@
 
 constexpr int kMaxNumPartitions = 2048;
 constexpr int kMaxPartitionSize = 1024 * 256;
+constexpr int kEstimatedLatency = 50;
 
 void Control(Pid num_partitions, tlp::mmap<uint64_t> metadata,
              // to UpdateHandler
@@ -580,12 +581,13 @@ task_requests:
         }
 
       edge_reads:
-        for (Eid eid_rd = 0, eid_wr = 0; eid_rd < req.num_edges;) {
+        for (Eid eid_resp = 0, eid_req = 0; eid_resp < req.num_edges;) {
 #pragma HLS pipeline II = 1
-          if (eid_wr < req.num_edges &&
+          if (eid_req < req.num_edges &&
+              eid_resp < eid_req + kEstimatedLatency * kEdgeVecLen &&
               edge_req_q.try_write(req.eid_offset / kEdgeVecLen +
-                                   eid_wr / kEdgeVecLen)) {
-            eid_wr += kEdgeVecLen;
+                                   eid_req / kEdgeVecLen)) {
+            eid_req += kEdgeVecLen;
           }
           EdgeVec edge_v;
           // empty edge is indicated by src == 0
@@ -612,7 +614,7 @@ task_requests:
             }
             update_out_q.write(update_v);
             VLOG_F(5, send) << "Update: " << update_v;
-            eid_rd += kEdgeVecLen;
+            eid_resp += kEdgeVecLen;
           }
         }
       } else {
