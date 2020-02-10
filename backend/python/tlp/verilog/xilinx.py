@@ -34,7 +34,7 @@ M_AXI_PORT_WIDTHS = dict(
     ID=1,
     LAST=1,
     LEN=8,
-    LOCK=2,
+    LOCK=1,
     PROT=3,
     QOS=4,
     READY=1,
@@ -734,27 +734,27 @@ def print_kernel_xml(name: str, ports: Iterable[tlp.instance.Port],
 
     args.append(
         backend.Arg(cat=cat,
-                         name=port.name,
-                         port=port_name,
-                         ctype=port.ctype,
-                         width=port.width))
+                    name=port.name,
+                    port=port_name,
+                    ctype=port.ctype,
+                    width=port.width))
   backend.print_kernel_xml(name, args, kernel_xml)
 
 
 OTHER_MODULES = {
     'fifo_bram':
-        backend.BRAM_FIFO_TEMPLATE.format(
-            name='fifo_bram',
-            width=32,
-            depth=32,
-            addr_width=(32 - 1).bit_length()),
+        backend.BRAM_FIFO_TEMPLATE.format(name='fifo_bram',
+                                          width=32,
+                                          depth=32,
+                                          addr_width=(32 - 1).bit_length()),
     'fifo_srl':
-        backend.SRL_FIFO_TEMPLATE.format(
-            name='fifo_srl',
-            width=32,
-            depth=32,
-            addr_width=(32 - 1).bit_length()),
+        backend.SRL_FIFO_TEMPLATE.format(name='fifo_srl',
+                                         width=32,
+                                         depth=32,
+                                         addr_width=(32 - 1).bit_length()),
     'fifo':
-        backend.AUTO_FIFO_TEMPLATE.format(
-            name='fifo', width=32, depth=32, addr_width=(32 - 1).bit_length()),
+        backend.AUTO_FIFO_TEMPLATE.format(name='fifo',
+                                          width=32,
+                                          depth=32,
+                                          addr_width=(32 - 1).bit_length()),
 }
