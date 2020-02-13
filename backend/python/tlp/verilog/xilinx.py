@@ -64,7 +64,7 @@ M_AXI_ADDR_PORTS = (
 )
 
 # {channel: [(name, direction), ...]}
-M_AXI_PORTS = collections.OrderedDict(
+M_AXI_PORTS: Dict[str, Tuple[Tuple[str, str], ...]] = collections.OrderedDict(
     AR=M_AXI_ADDR_PORTS,
     AW=M_AXI_ADDR_PORTS,
     B=(
@@ -92,7 +92,7 @@ M_AXI_PORTS = collections.OrderedDict(
         ('USER', 'output'),
         ('VALID', 'output'),
     ),
-)  # type: Dict[str, Tuple[Tuple[str, str], ...]]
+)
 
 M_AXI_PREFIX = backend.M_AXI_PREFIX
 
@@ -243,9 +243,12 @@ class Module:
 
   def __init__(self, files: Iterable[str]):
     """Construct a Module from files. """
-    self.ast, self.directives = parser.parse(
-        files)  # type: ast.Source,  Tuple[Directive, ...]
-    self._handshake_output_ports = {}  # type: Dict[str, ast.Assign]
+    if not files:
+      return
+    self.ast: ast.Source
+    self.directives: Tuple[Directive, ...]
+    self.ast, self.directives = parser.parse(files)
+    self._handshake_output_ports: Dict[str, ast.Assign] = {}
     for idx, item in enumerate(self._module_def.items):
       if isinstance(item, ast.Decl):
         if any(
@@ -447,7 +450,7 @@ class Module:
 
     for channel, ports in M_AXI_PORTS.items():
       for port, direction in ports:
-        width = M_AXI_PORT_WIDTHS[port]  # type: Optional[int]
+        width: Optional[int] = M_AXI_PORT_WIDTHS[port]
         if width == 0:
           if port == 'ADDR':
             width = addr_width
@@ -503,7 +506,7 @@ class Module:
     for channel, ports in M_AXI_PORTS.items():
       io_ports = []
       for port, direction in ports:
-        width = M_AXI_PORT_WIDTHS[port]  # type: Optional[int]
+        width: Optional[int] = M_AXI_PORT_WIDTHS[port]
         if width == 0:
           if port == 'ADDR':
             width = addr_width

@@ -1,5 +1,8 @@
 import collections
 import enum
+from typing import Union
+
+import tlp.verilog.xilinx
 
 
 class Task:
@@ -23,7 +26,7 @@ class Task:
     UPPER = 1
 
   def __init__(self, **kwargs):
-    level = kwargs.pop('level')  # type: Union[Task.Level, str]
+    level: Union[Task.Level, str] = kwargs.pop('level')
     if isinstance(level, str):
       if level == 'lower':
         level = Task.Level.LOWER
@@ -32,8 +35,8 @@ class Task:
     if not isinstance(level, Task.Level):
       raise TypeError('unexpected `level`: ' + level)
     self.level = level
-    self.name = kwargs.pop('name')  # type: str
-    self.code = kwargs.pop('code')  # type: str
+    self.name: str = kwargs.pop('name')
+    self.code: str = kwargs.pop('code')
     self.tasks = collections.OrderedDict()
     self.fifos = collections.OrderedDict()
     if self.is_upper:
@@ -43,7 +46,7 @@ class Task:
       self.fifos = collections.OrderedDict(
           sorted((item for item in kwargs.pop('fifos').items()),
                  key=lambda x: x[0]))
-    self.module = None  # type: Optional[tlp.verilog.xilinx.Module]
+    self.module = tlp.verilog.xilinx.Module('')
 
   @property
   def is_upper(self) -> bool:

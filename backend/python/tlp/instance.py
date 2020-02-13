@@ -56,8 +56,9 @@ class Instance:
     self.task = task
     self.instance_id = instance_id
     self.step = kwargs.pop('step')
-    self.args = {k: Instance.Arg(**v) for k, v in kwargs.pop('args').items()
-                }  # type: Dict[str, Instance.Arg]
+    self.args: Dict[str, Instance.Arg] = {
+        k: Instance.Arg(**v) for k, v in kwargs.pop('args').items()
+    }
 
   @property
   def name(self) -> str:

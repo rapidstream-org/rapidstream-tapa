@@ -41,9 +41,9 @@ class Program:
           one will be created.
     """
     obj = json.load(fp)
-    self.top = obj['top']  # type: str
+    self.top: str = obj['top']
     self.cflags = cflags
-    self.headers = obj.get('headers', {})  # type: Dict[str, str]
+    self.headers: Dict[str, str] = obj.get('headers', {})
     if work_dir is None:
       self.work_dir = tempfile.mkdtemp(prefix='tlp-')
       self.is_temp = True
@@ -219,14 +219,13 @@ class Program:
         reset_else_branch = []
         is_done_assignments = []
         start_assignments = []
-        handshake_output_signals = {
+        handshake_output_signals: Dict[str, List[ast.Identifier]] = {
             'done': [],
             'idle': [],
             'ready': []
-        }  # type: Dict[str, List[ast.Identifier]]
+        }
 
-        async_mmap_args = collections.OrderedDict(
-        )  # type: Dict[str, List[str]]
+        async_mmap_args: Dict[str, List[str]] = collections.OrderedDict()
 
         # iterate over all sub-tasks
         for task_name, instance_objs in task.tasks.items():

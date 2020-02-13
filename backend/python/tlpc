@@ -146,15 +146,15 @@ def main():
     # Use -MM to find all user headers
     input_file_basename = os.path.basename(args.input_file)
     input_file_dirname = os.path.dirname(args.input_file)
-    deps = subprocess.check_output([
+    deps: str = subprocess.check_output([
         'clang++-' + clang_version,
         '-MM',
         input_file_basename,
         '-I',
         tlp_include_dir,
     ],
-                                   cwd=input_file_dirname,
-                                   universal_newlines=True)  # type: str
+                                        cwd=input_file_dirname,
+                                        universal_newlines=True)
     # partition -MM output at '.o: '
     deps = deps.rstrip('\n').partition('.o: ')[-1].replace('\\\n', ' ')
     # split at non-escaped space and replace escaped spaces with spaces
