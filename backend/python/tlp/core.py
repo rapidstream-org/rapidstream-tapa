@@ -352,10 +352,11 @@ class Program:
               elif arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
                 for tag in async_mmap_args[arg_name]:
                   portargs.extend(
-                      rtl.generate_async_mmap_ports(tag=tag,
-                                                    port=port_name,
-                                                    arg=arg_name,
-                                                    instance=instance))
+                      rtl.generate_async_mmap_ports(
+                          tag=tag,
+                          port=instance_obj['args'][arg_name]['port'],
+                          arg=arg_name,
+                          instance=instance))
 
             task.module.add_instance(module_name=child.name,
                                      instance_name=instance.name,
