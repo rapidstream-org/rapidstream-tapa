@@ -183,7 +183,11 @@ def main():
         output_fp.write(tlp_program_json_str)
     tlp_program_json = lambda: io.StringIO(tlp_program_json_str)
   else:
-    tlp_program_json = lambda: open(args.input_file)
+    if args.input_file.endswith('.json') or args.work_dir is None:
+      tlp_program_json = lambda: open(args.input_file)
+    else:
+      tlp_program_json = lambda: open(
+          os.path.join(args.work_dir, 'program.json'))
 
   cflags = ' -I' + os.path.join(
       os.path.dirname(tlp.__file__),
