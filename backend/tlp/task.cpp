@@ -275,6 +275,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   // tasks: {task_name: [{step, {args: var_name: {var_type, port_name}}}]}
   // fifos: {fifo_name: {depth, produced_by, consumed_by}}
   auto& metadata = GetMetadata();
+  metadata["fifos"] = json::object();
 
   if (*top_name == func->getNameAsString()) {
     for (const auto param : func->parameters()) {
