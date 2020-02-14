@@ -45,6 +45,7 @@ include(CPack)
 
 include(cmake/TLPConfig.cmake)
 enable_testing()
+add_subdirectory(apps/bandwidth)
 add_subdirectory(apps/cannon)
 add_subdirectory(apps/graph)
 add_subdirectory(apps/jacobi)
