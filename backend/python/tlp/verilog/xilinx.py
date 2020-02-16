@@ -438,7 +438,7 @@ class Module:
                           arg="{}'d{}".format(max_wait_time.bit_length(),
                                               max_wait_time)))
     if max_burst_len is None:
-      max_burst_len = max(0, 8192 // data_width - 1)
+      max_burst_len = max(0, 4096 // data_width - 1)
     paramargs.append(
         ast.ParamArg(paramname='BurstLenWidth',
                      argname=ast.Constant(max(1, max_burst_len.bit_length()))))
