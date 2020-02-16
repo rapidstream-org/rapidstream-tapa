@@ -52,7 +52,7 @@ class Program:
       os.makedirs(self.work_dir, exist_ok=True)
       self.is_temp = False
     self.ports = tuple(map(Port, obj['tasks'][self.top]['ports']))
-    self._tasks = collections.OrderedDict(
+    self._tasks: Dict[str, Task] = collections.OrderedDict(
         (name, Task(name=name, **task))
         for name, task in sorted(obj['tasks'].items(), key=lambda x: x[0]))
 
@@ -143,6 +143,7 @@ class Program:
     # instrument the upper-level RTL
     for task in self._tasks.values():
       if task.is_upper:
+        task.module.cleanup()
         # instantiate FIFOs
         for fifo_name, fifo in task.fifos.items():
           task_name, task_idx = fifo['consumed_by']
@@ -215,15 +216,7 @@ class Program:
           task.module.add_logics(debugging_blocks)
 
         # instantiate children tasks
-        reset_if_branch = []
-        reset_else_branch = []
-        is_done_assignments = []
-        start_assignments = []
-        handshake_output_signals: Dict[str, List[ast.Identifier]] = {
-            'done': [],
-            'idle': [],
-            'ready': []
-        }
+        is_done_signals: List[ast.Identifier] = []
 
         async_mmap_args: Dict[str, List[str]] = collections.OrderedDict()
 
@@ -276,52 +269,79 @@ class Program:
                           data_width=width_table[arg_name]))
 
             if instance.is_autorun:
-              reset_start = None
+              task.module.add_logics([
+                  ast.Assign(
+                      left=instance.start,
+                      right=rtl.TRUE,
+                  ),
+              ])
             else:
-              # set up done reg
-              reset_if_branch.append(
-                  ast.NonblockingSubstitution(left=instance.done_reg,
-                                              right=rtl.FALSE))
-              reset_else_branch.append(
-                  ast.NonblockingSubstitution(left=instance.done_reg,
-                                              right=ast.Lor(
-                                                  left=instance.done_reg,
-                                                  right=instance.done_pulse)))
-              # assign done signal
-              is_done_assignments.append(
-                  ast.Assign(left=instance.done,
-                             right=ast.Lor(left=instance.done_pulse,
-                                           right=instance.done_reg)))
+              # set up state
+              state00 = ast.IntConst("2'b00")
+              state01 = ast.IntConst("2'b01")
+              state11 = ast.IntConst("2'b11")
+              state10 = ast.IntConst("2'b10")
 
-              # set up start signal
-              reset_start = ast.IfStatement(cond=ast.Eq(left=instance.ready,
-                                                        right=rtl.TRUE),
-                                            true_statement=ast.make_block(
-                                                ast.NonblockingSubstitution(
-                                                    left=instance.start,
-                                                    right=rtl.FALSE)),
-                                            false_statement=None)
-            start_assignments.append(
-                ast.Always(
-                    sens_list=rtl.CLK_SENS_LIST,
-                    statement=ast.make_block(
-                        ast.IfStatement(cond=rtl.RESET_COND,
-                                        true_statement=ast.make_block(
-                                            ast.NonblockingSubstitution(
-                                                left=instance.start,
-                                                right=rtl.FALSE)),
-                                        false_statement=ast.IfStatement(
-                                            cond=ast.Eq(left=rtl.START,
-                                                        right=rtl.TRUE),
-                                            true_statement=ast.make_block(
-                                                ast.NonblockingSubstitution(
-                                                    left=instance.start,
-                                                    right=rtl.TRUE)),
-                                            false_statement=reset_start)))))
+              if_branch = (instance.set_state(state00))
+              else_branch = ((
+                  ast.make_if_with_block(
+                      cond=instance.is_state(state00),
+                      true=ast.make_if_with_block(
+                          cond=rtl.START,
+                          true=instance.set_state(state01),
+                      ),
+                  ),
+                  ast.make_if_with_block(
+                      cond=instance.is_state(state01),
+                      true=ast.make_if_with_block(
+                          cond=instance.ready,
+                          true=ast.make_if_with_block(
+                              cond=instance.done,
+                              true=instance.set_state(state10),
+                              false=instance.set_state(state11),
+                          )),
+                  ),
+                  ast.make_if_with_block(
+                      cond=instance.is_state(state11),
+                      true=ast.make_if_with_block(
+                          cond=instance.done,
+                          true=instance.set_state(state10),
+                      ),
+                  ),
+                  ast.make_if_with_block(
+                      cond=instance.is_state(state10),
+                      true=ast.make_if_with_block(
+                          cond=rtl.DONE,
+                          true=instance.set_state(state00),
+                      ),
+                  ),
+              ))
+              task.module.add_logics([
+                  ast.Always(
+                      sens_list=rtl.CLK_SENS_LIST,
+                      statement=ast.make_block(
+                          ast.make_if_with_block(
+                              cond=rtl.RESET_COND,
+                              true=if_branch,
+                              false=else_branch,
+                          )),
+                  ),
+                  ast.Assign(
+                      left=instance.start,
+                      right=instance.is_state(state01),
+                  ),
+                  ast.Assign(
+                      left=instance.is_done,
+                      right=ast.Unot(
+                          ast.Pointer(
+                              var=instance.state,
+                              ptr=ast.IntConst('0'),
+                          )),
+                  ),
+              ])
 
             if not instance.is_autorun:
-              for signal, signals in handshake_output_signals.items():
-                signals.append(instance.get_signal(signal))
+              is_done_signals.append(instance.is_done)
 
             # insert handshake signals
             task.module.add_signals(instance.handshake_signals)
@@ -371,18 +391,55 @@ class Program:
                 tags=async_mmap_args[arg_name],
                 data_width=width_table[arg_name])
 
-        task.module.add_logics((ast.Always(
-            sens_list=rtl.CLK_SENS_LIST,
-            statement=ast.make_block(
-                ast.IfStatement(
-                    cond=ast.Lor(left=rtl.RESET_COND, right=rtl.START),
-                    true_statement=ast.make_block(reset_if_branch),
-                    false_statement=ast.make_block(reset_else_branch)),)),
-                                *is_done_assignments, *start_assignments))
-        for signal, signals in handshake_output_signals.items():
-          task.module.replace_assign(signal=signal,
-                                     content=ast.make_operation(
-                                         ast.Land, reversed(signals)))
+        state00 = ast.IntConst("2'b00")
+        state01 = ast.IntConst("2'b01")
+        state10 = ast.IntConst("2'b10")
+
+        def is_state(state: ast.IntConst) -> ast.Eq:
+          return ast.Eq(left=rtl.STATE, right=state)
+
+        def set_state(state: ast.IntConst) -> ast.NonblockingSubstitution:
+          return ast.NonblockingSubstitution(left=rtl.STATE, right=state)
+
+        task.module.add_signals(
+            [ast.Reg(rtl.STATE.name, width=ast.make_width(2))])
+        task.module.add_logics([
+            ast.Always(
+                sens_list=rtl.CLK_SENS_LIST,
+                statement=ast.make_block(
+                    ast.make_if_with_block(
+                        cond=rtl.RESET_COND,
+                        true=set_state(state00),
+                        false=ast.make_block([
+                            ast.make_if_with_block(
+                                cond=is_state(state00),
+                                true=ast.make_if_with_block(
+                                    cond=rtl.START,
+                                    true=set_state(state01),
+                                ),
+                            ),
+                            ast.make_if_with_block(
+                                cond=is_state(state01),
+                                true=ast.make_if_with_block(
+                                    cond=ast.make_operation(
+                                        operator=ast.Land,
+                                        nodes=reversed(is_done_signals)),
+                                    true=set_state(state10),
+                                ),
+                            ),
+                            ast.make_if_with_block(
+                                cond=is_state(state10),
+                                true=set_state(state00),
+                            ),
+                        ]),
+                    )),
+            ),
+            ast.Assign(left=rtl.DONE,
+                       right=ast.Pointer(var=rtl.STATE, ptr=ast.IntConst(1))),
+            ast.Assign(left=rtl.READY, right=rtl.DONE),
+            ast.Assign(left=rtl.IDLE, right=is_state(state00)),
+        ])
+
         with open(self.get_rtl(task.name), 'w') as rtl_code:
           rtl_code.write(task.module.code)
       for name, content in rtl.OTHER_MODULES.items():

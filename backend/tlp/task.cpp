@@ -213,8 +213,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     if (IsMmap(param) || IsAsyncMmap(param)) {
       GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "\n#ifdef COSIM\n" + GetMmapElemType(param) +
-              "*\n#else  // COSIM\nuint64_t\n#endif  // COSIM\n");
+          "uint64_t");
     }
   }
 
@@ -226,44 +225,21 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   }
   replaced_body +=
       "#pragma HLS interface s_axilite port = return bundle = control\n\n";
-  for (const auto param : func->parameters()) {
-    if (IsMmap(param) || IsAsyncMmap(param)) {
-      replaced_body +=
-          "#pragma HLS data_pack variable = " + param->getNameAsString() + "\n";
-    }
-  }
 
-  replaced_body += "\n#ifdef COSIM\n";
   for (const auto param : func->parameters()) {
-    const bool is_mmap = IsMmap(param) || IsAsyncMmap(param);
-    replaced_body += "{ auto val = ";
-    if (is_mmap) {
-      replaced_body += "*";
-    }
-    replaced_body += "reinterpret_cast<volatile ";
+    replaced_body += "{ auto val = reinterpret_cast<volatile ";
     if (IsStreamInterface(param)) {
       // TODO (maybe?)
     } else {
       auto elem_type = param->getType();
-      if (is_mmap) {
-        elem_type = elem_type->getAs<clang::TemplateSpecializationType>()
-                        ->getArg(0)
-                        .getAsType();
-      }
       const bool is_const = elem_type.isConstQualified();
       const auto param_name = param->getNameAsString();
       if (is_const) {
         replaced_body += "const ";
       }
-      replaced_body += "uint8_t";
-      replaced_body += is_mmap ? "*" : "&";
-      replaced_body += ">(" + param_name + "); }\n";
-      if (is_mmap && !is_const) {
-        replaced_body += param_name + "[1] = {};\n";
-      }
+      replaced_body += "uint8_t&>(" + param_name + "); }\n";
     }
   }
-  replaced_body += "#endif  // COSIM\n";
 
   replaced_body += "}\n";
 

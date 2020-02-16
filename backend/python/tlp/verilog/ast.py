@@ -166,3 +166,16 @@ def make_port_arg(port: str, arg: str) -> PortArg:
       PortArg: `.port(arg)` in Verilog.
   """
   return PortArg(portname=port, argname=Identifier(name=arg))
+
+
+def make_if_with_block(
+    cond: Node,
+    true: Union[Iterable[Node], Node],
+    false: Union[Iterable[Node], Node, None] = None) -> IfStatement:
+  return IfStatement(cond=cond,
+                     true_statement=make_block(true),
+                     false_statement=false and make_block(false))
+
+
+def make_width(width: int) -> Width:
+  return Width(msb=IntConst(width - 1), lsb=IntConst(0))

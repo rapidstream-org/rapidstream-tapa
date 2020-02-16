@@ -68,6 +68,90 @@ class Instance:
   def is_autorun(self) -> bool:
     return self.step < 0
 
+  # # lower-level state machine
+  #
+  # ## inputs
+  # + start_upper: start signal of the upper-level module
+  # + done_upper: done signal of the upper-level module
+  # + done: done signal of the lower-level module
+  # + ready: ready signal of the lower-level module
+  #
+  # ## outputs:
+  # + start: start signal of the lower-level module
+  # + is_done: used for the upper-level module to determine its done state
+  #
+  # ## states
+  # + 00: waiting for start_upper
+  #   + start: 0
+  #   + is_done: 1
+  # + 01: waiting for ready
+  #   + start: 1
+  #   + is_done: 0
+  # + 11: waiting for done
+  #   + start: 0
+  #   + is_done: 0
+  # + 10: waiting for done_upper
+  #   + start: 0
+  #   + is_done: 1
+  #
+  # start <- state == 01
+  # is_done <- ~state[0]
+  #
+  # ## state transitions
+  # +    -> 00: if reset
+  # + 00 -> 00: if start_upper == 0
+  # + 00 -> 01: if start_upper == 1
+  # + 01 -> 01: if ready == 0
+  # + 01 -> 11: if ready == 1 && done == 0
+  # + 01 -> 10: if ready == 1 && done == 1
+  # + 11 -> 11: if done == 0
+  # + 11 -> 10: if done == 1
+  # + 10 -> 10: if done_upper == 0
+  # + 10 -> 00: if done_upper == 1
+
+  # # upper-level state machine
+  #
+  # ## inputs
+  # + start: start signal of the upper-level module
+  # + xxx_is_done: whether lower-level modules are done
+  #
+  # ## outputs:
+  # + done: done / ready signal of the upper-level module
+  # + idle: idle signal of the upper-level module
+  #
+  # ## states
+  # + 00: waiting for start
+  #   + done: 0
+  #   + idle: 1
+  # + 01: waiting for xxx_is_done
+  #   + done: 0
+  #   + idle: 0
+  # + 10: sending done
+  #   + done: 1
+  #   + idle: 0
+  #
+  # done <- state[1]
+  # idle <- state == 00
+  #
+  # ## state transititions
+  # +    -> 00: if reset
+  # + 00 -> 00: if start == 0
+  # + 00 -> 01: if start == 1
+  # + 01 -> 01: if all(*is_done) == 0
+  # + 01 -> 10: if all(*is_done) == 1
+  # + 10 -> 00
+
+  @property
+  def state(self) -> ast.Identifier:
+    """State of this instance."""
+    return ast.Identifier(self.name + '_state')
+
+  def set_state(self, new_state: ast.Node) -> ast.NonblockingSubstitution:
+    return ast.NonblockingSubstitution(left=self.state, right=new_state)
+
+  def is_state(self, state: ast.Node) -> ast.Eq:
+    return ast.Eq(left=self.state, right=state)
+
   @property
   def start(self) -> ast.Identifier:
     """The handshake start signal.
@@ -81,7 +165,7 @@ class Instance:
     return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_START)
 
   @property
-  def done_pulse(self) -> ast.Identifier:
+  def done(self) -> ast.Identifier:
     """The handshake done signal.
 
     This signal is asserted for 1 cycle when the instance of task finishes.
@@ -92,27 +176,8 @@ class Instance:
     return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_DONE)
 
   @property
-  def done_reg(self) -> ast.Identifier:
-    """Registered handshake done signal.
-
-    This signal is asserted 1 cycle after the instance of task finishes and is
-    kept until reset or next time start signal is asserted.
-
-    Returns:
-      The ast.Identifier node of this signal.
-    """
-    return ast.Identifier(self.done_pulse.name + '_reg')
-
-  @property
-  def done(self) -> ast.Identifier:
-    """Whether this instance has done.
-
-    This signal is asserted as soon as the instance finishes and is kept until
-    reset.
-
-    Returns:
-      The ast.Identifier node of this signal.
-    """
+  def is_done(self) -> ast.Identifier:
+    """Signal used to determine the upper-level state."""
     return ast.Identifier(self.name + '_is_done')
 
   @property
@@ -138,12 +203,12 @@ class Instance:
     Yields:
       Union[ast.Wire, ast.Reg] of signals.
     """
-    yield ast.Reg(name=self.start.name, width=None)
+    yield ast.Wire(name=self.start.name, width=None)
     if not self.is_autorun:
+      yield ast.Reg(name=self.state.name, width=ast.make_width(2))
       yield from (ast.Wire(name=self.name + '_' + suffix, width=None)
                   for suffix in self.verilog.HANDSHAKE_OUTPUT_PORTS)
-      yield ast.Wire(name=self.done.name, width=None)
-      yield ast.Reg(name=self.done_reg.name, width=None)
+      yield ast.Wire(name=self.is_done.name, width=None)
 
 
 class Port:

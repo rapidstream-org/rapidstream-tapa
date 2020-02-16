@@ -11,8 +11,8 @@ import os
 import shutil
 import sys
 import tempfile
-from typing import (IO, BinaryIO, Dict, Iterable, Iterator, Optional, Tuple,
-                    Union)
+from typing import (IO, BinaryIO, Callable, Dict, Iterable, Iterator, Optional,
+                    Tuple, Union)
 
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
@@ -190,6 +190,7 @@ FIFO_WRITE_PORTS = (
 )
 
 HANDSHAKE_CLK = 'ap_clk'
+HANDSHAKE_RST = 'ap_rst_n_inv'
 HANDSHAKE_RST_N = 'ap_rst_n'
 HANDSHAKE_START = 'ap_start'
 HANDSHAKE_DONE = 'ap_done'
@@ -211,19 +212,25 @@ HANDSHAKE_OUTPUT_PORTS = (
 
 START = ast.Identifier(HANDSHAKE_START)
 DONE = ast.Identifier(HANDSHAKE_DONE)
+IDLE = ast.Identifier(HANDSHAKE_IDLE)
+READY = ast.Identifier(HANDSHAKE_READY)
 TRUE = ast.Identifier("1'b1")
 FALSE = ast.Identifier("1'b0")
 SENS_TYPE = 'posedge'
 CLK = ast.Identifier(HANDSHAKE_CLK)
+RST = ast.Identifier(HANDSHAKE_RST)
+RST_N = ast.Identifier(HANDSHAKE_RST_N)
 CLK_SENS_LIST = ast.SensList((ast.Sens(CLK, type=SENS_TYPE),))
+ALL_SENS_LIST = ast.SensList((ast.Sens(None, type='all'),))
 RESET_COND = ast.Eq(left=ast.Identifier(HANDSHAKE_RST_N), right=FALSE)
+STATE = ast.Identifier('tlp_state')
 
 # type aliases
 
 Directive = Tuple[int, str]
 IOPort = Union[ast.Input, ast.Output, ast.Inout]
 Signal = Union[ast.Reg, ast.Wire]
-Logic = Union[ast.Assign, ast.Always]
+Logic = Union[ast.Assign, ast.Always, ast.Initial]
 
 
 class Module:
@@ -249,6 +256,9 @@ class Module:
     self.directives: Tuple[Directive, ...]
     self.ast, self.directives = parser.parse(files)
     self._handshake_output_ports: Dict[str, ast.Assign] = {}
+    self._calculate_indices()
+
+  def _calculate_indices(self) -> None:
     for idx, item in enumerate(self._module_def.items):
       if isinstance(item, ast.Decl):
         if any(
@@ -318,6 +328,10 @@ class Module:
         setattr(self, attr, getattr(self, attr) + length)
     setattr(self, idx, getattr(self, idx) + length)
 
+  def _filter(self, func: Callable[[ast.Node], bool], target: str) -> None:
+    self._module_def.items = tuple(filter(func, self._module_def.items))
+    self._calculate_indices()
+
   def add_ports(self, ports: Iterable[IOPort]) -> 'Module':
     port_tuple = tuple(ports)
     self._module_def.portlist.ports += tuple(
@@ -337,13 +351,39 @@ class Module:
     self._increment_idx(len(signal_tuple), 'signal')
     return self
 
-  def add_params(self, params: Iterable[Signal]) -> 'Module':
+  def del_signals(self, prefix: str = '', suffix: str = '') -> None:
+
+    def func(item: ast.Node) -> bool:
+      if isinstance(item, ast.Decl):
+        item = item.list[0]
+        if isinstance(item, (ast.Reg, ast.Wire)):
+          name: str = item.name
+          if name.startswith(prefix) and name.endswith(suffix):
+            return False
+      return True
+
+    self._filter(func, 'signal')
+
+  def add_params(self, params: Iterable[ast.Parameter]) -> 'Module':
     param_tuple = tuple(params)
     self._module_def.items = (
         self._module_def.items[:self._last_param_idx + 1] + param_tuple +
         self._module_def.items[self._last_param_idx + 1:])
     self._increment_idx(len(param_tuple), 'param')
     return self
+
+  def del_params(self, prefix: str = '', suffix: str = '') -> None:
+
+    def func(item: ast.Node) -> bool:
+      if isinstance(item, ast.Decl):
+        item = item.list[0]
+        if isinstance(item, ast.Parameter):
+          name: str = item.name
+          if name.startswith(prefix) and name.endswith(suffix):
+            return False
+      return True
+
+    self._filter(func, 'param')
 
   def add_instance(
       self,
@@ -372,6 +412,25 @@ class Module:
     self._increment_idx(len(logic_tuple), 'logic')
     return self
 
+  def del_logics(self) -> None:
+
+    def func(item: ast.Node) -> bool:
+      if isinstance(item, (ast.Assign, ast.Always, ast.Initial)):
+        return False
+      return True
+
+    self._filter(func, 'param')
+
+  def del_pragmas(self, pragma: Iterable[str]) -> None:
+
+    def func(item: ast.Node) -> bool:
+      if isinstance(item, ast.Pragma):
+        if item.entry.name == pragma or item.entry.name in pragma:
+          return False
+      return True
+
+    self._filter(func, 'signal')
+
   def add_fifo_instance(
       self,
       name: str,
@@ -380,8 +439,8 @@ class Module:
   ) -> 'Module':
 
     def ports() -> Iterator[ast.PortArg]:
-      yield ast.make_port_arg(port='clk', arg='ap_clk')
-      yield ast.make_port_arg(port='reset', arg='ap_rst_n_inv')
+      yield ast.make_port_arg(port='clk', arg=HANDSHAKE_CLK)
+      yield ast.make_port_arg(port='reset', arg=HANDSHAKE_RST)
       yield from (
           ast.make_port_arg(port=port_name, arg=name + arg_suffix)
           for port_name, arg_suffix in zip(FIFO_READ_PORTS, ISTREAM_SUFFIXES))
@@ -524,13 +583,20 @@ class Module:
       self.add_ports(io_ports)
     return self
 
-  def replace_assign(self, signal: str, content: ast.Node) -> 'Module':
-    signal = 'ap_' + signal
-    if signal not in self._handshake_output_ports:
-      raise ValueError('signal has to be one of {}, got {}'.format(
-          tuple(self._handshake_output_ports), signal))
-    self._handshake_output_ports[signal].right = content
-    return self
+  def cleanup(self) -> None:
+    self.del_params(prefix='ap_ST_fsm_state')
+    self.del_signals(prefix='ap_CS_fsm')
+    self.del_signals(prefix='ap_NS_fsm')
+    self.del_signals(HANDSHAKE_RST)
+    self.del_signals(HANDSHAKE_DONE)
+    self.del_signals(HANDSHAKE_IDLE)
+    self.del_signals(HANDSHAKE_READY)
+    self.del_logics()
+    self.del_pragmas('fsm_encoding')
+    self.add_signals(
+        map(ast.Wire,
+            (HANDSHAKE_RST, HANDSHAKE_DONE, HANDSHAKE_IDLE, HANDSHAKE_READY)))
+    self.add_logics([ast.Assign(left=RST, right=ast.Unot(RST_N))])
 
 
 def is_data_port(port: str) -> bool:
