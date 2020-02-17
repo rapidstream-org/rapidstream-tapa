@@ -232,6 +232,34 @@ IOPort = Union[ast.Input, ast.Output, ast.Inout]
 Signal = Union[ast.Reg, ast.Wire]
 Logic = Union[ast.Assign, ast.Always, ast.Initial]
 
+# registered ast nodes
+
+REGISTER_LEVEL = 3
+
+
+class RegMeta:
+
+  def __init__(self, name: str, width: Optional[int] = None):
+    self._ids = tuple(
+        ast.Identifier(f'{name}_q%d' % i) for i in range(REGISTER_LEVEL + 1))
+    self._width: Optional[ast.Width] = width and ast.make_width(width)
+
+  def __getitem__(self, idx) -> ast.Identifier:
+    return self._ids[idx]
+
+  def __iter__(self) -> Iterator[ast.Identifier]:
+    return iter(self._ids)
+
+  @property
+  def signals(self) -> Iterator[Signal]:
+    yield ast.Wire(name=self[0].name, width=self._width)
+    yield from (ast.Reg(name=x.name, width=self._width) for x in self[1:])
+
+
+START_Q = RegMeta(START.name)
+DONE_Q = RegMeta(DONE.name)
+IDLE_Q = RegMeta(IDLE.name)
+
 
 class Module:
   """AST and helpers for a verilog module.
@@ -463,14 +491,17 @@ class Module:
                                               argname=ast.Constant(depth)),
                              ))
 
-  def add_async_mmap_instance(self,
-                              name: str,
-                              tags: Iterable[str],
-                              data_width: int,
-                              addr_width: int = 64,
-                              buffer_size: Optional[int] = None,
-                              max_wait_time: int = 3,
-                              max_burst_len: Optional[int] = None) -> 'Module':
+  def add_async_mmap_instance(
+      self,
+      name: str,
+      tags: Iterable[str],
+      data_width: int,
+      addr_width: int = 64,
+      buffer_size: Optional[int] = None,
+      max_wait_time: int = 3,
+      max_burst_len: Optional[int] = None,
+      reg_name: str = '',
+  ) -> 'Module':
     paramargs = [
         ast.ParamArg(paramname='DataWidth', argname=ast.Constant(data_width)),
         ast.ParamArg(paramname='DataWidthBytesLog',
@@ -536,7 +567,7 @@ class Module:
                 addr_width - elem_size_bytes_m1.bit_length() - 1,
                 elem_size_bytes_m1.bit_length(),
                 arg=arg,
-                name=name)
+                name=reg_name or name)
         else:
           if suffix.endswith('_read') or suffix.endswith('_write'):
             arg = "1'b0"
@@ -667,11 +698,15 @@ def generate_handshake_ports(name: str,
     yield ast.make_port_arg(port=port, arg="" if autorun else name + '_' + port)
 
 
-def generate_m_axi_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
+def generate_m_axi_ports(
+    port: str,
+    arg: str,
+    arg_reg: str = '',
+) -> Iterator[ast.PortArg]:
   for suffix in M_AXI_SUFFIXES:
     yield ast.make_port_arg(port=M_AXI_PREFIX + port + suffix,
                             arg=M_AXI_PREFIX + arg + suffix)
-  yield ast.make_port_arg(port=port + '_offset', arg=arg)
+  yield ast.make_port_arg(port=port + '_offset', arg=arg_reg or arg)
 
 
 def generate_istream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
