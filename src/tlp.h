@@ -4,6 +4,7 @@
 #include <climits>
 #include <cstdarg>
 #include <cstdint>
+#include <cstdlib>
 
 #include <array>
 #include <atomic>
@@ -589,6 +590,23 @@ inline async_mmap<vec_t<T, N>> async_mmap_from_vec(
   return async_mmap<vec_t<T, N>>(reinterpret_cast<vec_t<T, N>*>(vec.data()),
                                  vec.size() / N);
 }
+
+template <typename T>
+struct aligned_allocator {
+  using value_type = T;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+  T* allocate(size_t count) {
+    constexpr std::size_t N = 4096;
+    auto round_up = [](std::size_t n) -> std::size_t {
+      return ((n - 1) / N + 1) * N;
+    };
+    void* ptr = aligned_alloc(N, round_up(count * sizeof(T)));
+    if (ptr == nullptr) throw std::bad_alloc();
+    return reinterpret_cast<T*>(ptr);
+  }
+  void deallocate(T* ptr, std::size_t count) { free(ptr); }
+};
 
 }  // namespace tlp
 
