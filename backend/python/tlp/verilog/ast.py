@@ -4,8 +4,7 @@ This module is designed as a drop-in replacement for `pyverilog.vparser.ast`
 with convenient utilities.
 """
 
-from collections import abc
-from typing import Iterable, Type, Union
+from typing import Iterable, Optional, Type, Union
 
 # pylint: disable=unused-import
 from pyverilog.vparser.ast import (
@@ -129,9 +128,9 @@ from pyverilog.vparser.ast import (
 
 
 def make_block(statements: Union[Iterable[Node], Node], **kwargs) -> Block:
-  if not isinstance(statements, abc.Iterable):
+  if isinstance(statements, Node):
     statements = (statements,)
-  return Block(statements=statements, **kwargs)
+  return Block(statements=tuple(statements), **kwargs)
 
 
 def make_operation(operator: Type[Operator], nodes: Iterable[Node]) -> Operator:
@@ -177,5 +176,11 @@ def make_if_with_block(
                      false_statement=false and make_block(false))
 
 
-def make_width(width: int) -> Width:
-  return Width(msb=IntConst(width - 1), lsb=IntConst(0))
+def make_width(width: int) -> Optional[Width]:
+  if width > 0:
+    return Width(msb=IntConst(width - 1), lsb=IntConst(0))
+  return None
+
+
+def make_int(value: int, width: int = 0) -> IntConst:
+  return IntConst(f"{width or value.bit_length() or 1}'d{value}")

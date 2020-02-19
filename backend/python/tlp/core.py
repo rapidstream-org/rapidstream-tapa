@@ -244,7 +244,7 @@ class Program:
       task: Task,
       width_table: Dict[str, int],
   ) -> Tuple[List[ast.Identifier], Dict[str, rtl.RegMeta]]:
-    is_done_signals: List[ast.Identifier] = []
+    is_done_signals: List[rtl.RegMeta] = []
     args: Dict[str, rtl.RegMeta] = {}
     async_mmap_args: Dict[str, List[str]] = collections.OrderedDict()
 
@@ -316,6 +316,9 @@ class Program:
           state11 = ast.IntConst("2'b11")
           state10 = ast.IntConst("2'b10")
 
+          is_done_meta = rtl.RegMeta(instance.is_done.name)
+          task.module.add_signals(is_done_meta.signals)
+
           if_branch = (instance.set_state(state00))
           else_branch = ((
               ast.make_if_with_block(
@@ -365,17 +368,20 @@ class Program:
                   right=instance.is_state(state01),
               ),
               ast.Assign(
-                  left=instance.is_done,
-                  right=ast.Unot(
-                      ast.Pointer(
-                          var=instance.state,
-                          ptr=ast.IntConst(0),
-                      )),
+                  left=is_done_meta[0],
+                  right=instance.is_state(state10),
+              ),
+              ast.Always(
+                  sens_list=rtl.CLK_SENS_LIST,
+                  statement=ast.make_block(
+                      ast.NonblockingSubstitution(
+                          left=is_done_meta[i + 1],
+                          right=is_done_meta[i],
+                      ) for i in range(rtl.REGISTER_LEVEL)),
               ),
           ])
 
-        if not instance.is_autorun:
-          is_done_signals.append(instance.is_done)
+          is_done_signals.append(is_done_meta)
 
         # insert handshake signals
         task.module.add_signals(instance.handshake_signals)
@@ -431,13 +437,14 @@ class Program:
   def _add_global_control(
       self,
       task: Task,
-      is_done_signals: List[ast.Identifier],
+      is_done_signals: List[rtl.RegMeta],
       args: Dict[str, rtl.RegMeta],
   ) -> None:
     # global state machine
     state00 = ast.IntConst("2'b00")
     state01 = ast.IntConst("2'b01")
     state10 = ast.IntConst("2'b10")
+    state11 = ast.IntConst("2'b11")
 
     def is_state(state: ast.IntConst) -> ast.Eq:
       return ast.Eq(left=rtl.STATE, right=state)
@@ -445,13 +452,64 @@ class Program:
     def set_state(state: ast.IntConst) -> ast.NonblockingSubstitution:
       return ast.NonblockingSubstitution(left=rtl.STATE, right=state)
 
+    countdown = ast.Identifier('countdown')
+    countdown_width = (rtl.REGISTER_LEVEL - 1).bit_length()
+
     task.module.add_signals([
         ast.Reg(rtl.STATE.name, width=ast.make_width(2)),
+        ast.Reg(countdown.name, width=ast.make_width(countdown_width)),
         *rtl.START_Q.signals,
         *rtl.DONE_Q.signals,
-        *rtl.IDLE_Q.signals,
         *(y for x in args.values() for y in x.signals),
     ])
+
+    global_fsm = [
+        ast.make_if_with_block(
+            cond=is_state(state00),
+            true=ast.make_if_with_block(
+                cond=rtl.START_Q[-1],
+                true=set_state(state01),
+            ),
+        ),
+        ast.make_if_with_block(
+            cond=is_state(state01),
+            true=ast.make_if_with_block(
+                cond=ast.make_operation(
+                    operator=ast.Land,
+                    nodes=(x[-1] for x in reversed(is_done_signals)),
+                ),
+                true=set_state(state10),
+            ),
+        ),
+        ast.make_if_with_block(
+            cond=is_state(state10),
+            true=ast.make_block([
+                set_state(state11 if rtl.REGISTER_LEVEL else state00),
+                ast.NonblockingSubstitution(
+                    left=countdown,
+                    right=ast.make_int(max(0, rtl.REGISTER_LEVEL - 1)),
+                ),
+            ]),
+        ),
+        ast.make_if_with_block(
+            cond=is_state(state11),
+            true=ast.make_if_with_block(
+                cond=ast.Eq(
+                    left=countdown,
+                    right=ast.make_int(0, width=countdown_width),
+                ),
+                true=set_state(state00),
+                false=ast.NonblockingSubstitution(
+                    left=countdown,
+                    right=ast.Minus(
+                        left=countdown,
+                        right=ast.make_int(1, width=countdown_width),
+                    ),
+                ),
+            ),
+        ),
+    ]
+
     task.module.add_logics([
         ast.Always(
             sens_list=rtl.CLK_SENS_LIST,
@@ -459,46 +517,24 @@ class Program:
                 ast.make_if_with_block(
                     cond=rtl.RESET_COND,
                     true=set_state(state00),
-                    false=ast.make_block([
-                        ast.make_if_with_block(
-                            cond=is_state(state00),
-                            true=ast.make_if_with_block(
-                                cond=rtl.START_Q[-1],
-                                true=set_state(state01),
-                            ),
-                        ),
-                        ast.make_if_with_block(
-                            cond=is_state(state01),
-                            true=ast.make_if_with_block(
-                                cond=ast.make_operation(
-                                    operator=ast.Land,
-                                    nodes=reversed(is_done_signals)),
-                                true=set_state(state10),
-                            ),
-                        ),
-                        ast.make_if_with_block(
-                            cond=is_state(state10),
-                            true=set_state(state00),
-                        ),
-                    ]),
+                    false=ast.make_block(global_fsm),
                 )),
         ),
         ast.Always(
             sens_list=rtl.CLK_SENS_LIST,
             statement=ast.make_block(
                 ast.NonblockingSubstitution(left=q[i + 1], right=q[i])
-                for q in (rtl.START_Q, rtl.DONE_Q, rtl.IDLE_Q)
+                for q in (rtl.START_Q, rtl.DONE_Q)
                 for i in range(rtl.REGISTER_LEVEL)),
         ),
         ast.Assign(left=rtl.START_Q[0], right=rtl.START),
         ast.Assign(
             left=rtl.DONE_Q[0],
-            right=ast.Pointer(var=rtl.STATE, ptr=ast.IntConst(1)),
+            right=is_state(state10),
         ),
-        ast.Assign(left=rtl.IDLE_Q[0], right=is_state(state00)),
+        ast.Assign(left=rtl.IDLE, right=is_state(state00)),
         ast.Assign(left=rtl.DONE, right=rtl.DONE_Q[-1]),
-        ast.Assign(left=rtl.READY, right=rtl.DONE),
-        ast.Assign(left=rtl.IDLE, right=rtl.IDLE_Q[-1]),
+        ast.Assign(left=rtl.READY, right=rtl.DONE_Q[0]),
         ast.Always(
             sens_list=rtl.CLK_SENS_LIST,
             statement=ast.make_block(

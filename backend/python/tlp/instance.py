@@ -83,7 +83,7 @@ class Instance:
   # ## states
   # + 00: waiting for start_upper
   #   + start: 0
-  #   + is_done: 1
+  #   + is_done: 0
   # + 01: waiting for ready
   #   + start: 1
   #   + is_done: 0
@@ -95,7 +95,7 @@ class Instance:
   #   + is_done: 1
   #
   # start <- state == 01
-  # is_done <- ~state[0]
+  # is_done <- state == 10
   #
   # ## state transitions
   # +    -> 00: if reset
@@ -129,6 +129,9 @@ class Instance:
   # + 10: sending done
   #   + done: 1
   #   + idle: 0
+  # + 11: register delay for sending done signal
+  #   + done: 1
+  #   + idle: 0
   #
   # done <- state[1]
   # idle <- state == 00
@@ -139,7 +142,10 @@ class Instance:
   # + 00 -> 01: if start == 1
   # + 01 -> 01: if all(*is_done) == 0
   # + 01 -> 10: if all(*is_done) == 1
-  # + 10 -> 00
+  # + 10 -> 00: if REGISTER_LEVEL == 0; countdown <- REGISTER_LEVEL
+  # + 10 -> 11: if REGISTER_LEVEL > 0; countdown <- REGISTER_LEVEL
+  # + 11 -> 11: if countdown > 1; countdown <- countdown - 1
+  # + 11 -> 00: if countdown == 1
 
   @property
   def state(self) -> ast.Identifier:
