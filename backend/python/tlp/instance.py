@@ -214,7 +214,13 @@ class Instance:
       yield ast.Reg(name=self.state.name, width=ast.make_width(2))
       yield from (ast.Wire(name=self.name + '_' + suffix, width=None)
                   for suffix in self.verilog.HANDSHAKE_OUTPUT_PORTS)
-      yield ast.Wire(name=self.is_done.name, width=None)
+
+  def get_instance_arg(self, arg: str) -> str:
+    return f'{self.name}___{arg}'
+
+  @staticmethod
+  def get_arg(instance_arg: str) -> str:
+    return instance_arg.split('___')[-1]
 
 
 class Port:

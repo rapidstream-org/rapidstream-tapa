@@ -229,7 +229,7 @@ STATE = ast.Identifier('tlp_state')
 
 Directive = Tuple[int, str]
 IOPort = Union[ast.Input, ast.Output, ast.Inout]
-Signal = Union[ast.Reg, ast.Wire]
+Signal = Union[ast.Reg, ast.Wire, ast.Pragma]
 Logic = Union[ast.Assign, ast.Always, ast.Initial]
 
 # registered ast nodes
@@ -253,7 +253,9 @@ class RegMeta:
   @property
   def signals(self) -> Iterator[Signal]:
     yield ast.Wire(name=self[0].name, width=self._width)
-    yield from (ast.Reg(name=x.name, width=self._width) for x in self[1:])
+    for x in self[1:]:
+      yield ast.Pragma(ast.PragmaEntry('dont_touch = "yes"'))
+      yield ast.Reg(name=x.name, width=self._width)
 
 
 START_Q = RegMeta(START.name)
@@ -509,7 +511,7 @@ class Module:
     ]
     portargs = [
         ast.make_port_arg(port='clk', arg=HANDSHAKE_CLK),
-        ast.make_port_arg(port='rst', arg=HANDSHAKE_RST_N + '_inv'),
+        ast.make_port_arg(port='rst', arg=HANDSHAKE_RST),
     ]
     paramargs.append(
         ast.ParamArg(paramname='AddrWidth', argname=ast.Constant(addr_width)))

@@ -269,7 +269,12 @@ class Program:
             width = 64  # 64-bit address
             if arg.cat == Instance.Arg.Cat.SCALAR:
               width = width_table[arg_name]
-            args.setdefault(arg_name, rtl.RegMeta(name=arg_name, width=width))
+              args.setdefault(
+                  instance.get_instance_arg(arg_name),
+                  rtl.RegMeta(name=instance.get_instance_arg(arg_name),
+                              width=width))
+            else:
+              args.setdefault(arg_name, rtl.RegMeta(name=arg_name, width=width))
           # arg_name is the upper-level name
           # port_name is the lower-level name
           port_name = instance_obj['args'][arg_name]['port']
@@ -393,7 +398,9 @@ class Program:
                                     key=lambda x: x[0]):
           if arg.cat == Instance.Arg.Cat.SCALAR:
             portargs.append(
-                ast.PortArg(portname=arg.port, argname=args[arg_name][-1]))
+                ast.PortArg(
+                    portname=arg.port,
+                    argname=args[instance.get_instance_arg(arg_name)][-1]))
           elif arg.cat == Instance.Arg.Cat.ISTREAM:
             portargs.extend(
                 rtl.generate_istream_ports(port=arg.port, arg=arg_name))
@@ -542,6 +549,6 @@ class Program:
                 for q in args.values()
                 for i in range(rtl.REGISTER_LEVEL)),
         ),
-        *(ast.Assign(left=meta[0], right=ast.Identifier(name))
+        *(ast.Assign(left=meta[0], right=ast.Identifier(Instance.get_arg(name)))
           for name, meta in args.items()),
     ])
