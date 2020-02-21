@@ -169,6 +169,14 @@ class Program:
              output_file=output_file)
     return self
 
+  def _generate_child_instances(self, task: Task) -> Iterator[Instance]:
+    for task_name, instance_objs in task.tasks.items():
+      for instance_idx, instance_obj in enumerate(instance_objs):
+        yield Instance(self.get_task(task_name),
+                       verilog=rtl,
+                       instance_id=instance_idx,
+                       **instance_obj)
+
   def _instantiate_fifos(self, task: Task) -> None:
     for fifo_name, fifo in task.fifos.items():
       task_name, task_idx = fifo['consumed_by']
@@ -249,180 +257,177 @@ class Program:
     arg_table: Dict[str, rtl.Pipeline] = {}
     async_mmap_args: Dict[str, List[str]] = collections.OrderedDict()
 
-    # iterate over all sub-tasks
-    for task_name, instance_objs in task.tasks.items():
-      child = self.get_task(task_name)
-      child_port_set = set(child.module.ports)
+    for instance in self._generate_child_instances(task):
+      child_port_set = set(instance.task.module.ports)
 
-      # iterate over all instances of sub-tasks
-      for instance_idx, instance_obj in enumerate(instance_objs):
-        instance = Instance(child,
-                            verilog=rtl,
-                            instance_id=instance_idx,
-                            **instance_obj)
 
-        for arg_name, arg in sorted((item for item in instance.args.items()),
-                                    key=lambda x: x[0]):
-          if arg.cat not in {
-              Instance.Arg.Cat.ISTREAM,
-              Instance.Arg.Cat.OSTREAM,
-          }:
-            width = 64  # 64-bit address
-            if arg.cat == Instance.Arg.Cat.SCALAR:
-              width = width_table[arg_name]
-              meta = rtl.Pipeline(name=instance.get_instance_arg(arg_name),
-                                  width=width)
-              arg_table[instance.get_instance_arg(arg_name)] = meta
-            else:
-              meta = rtl.Pipeline(name=arg_name, width=width)
-              arg_table[arg_name] = meta
-            task.module.add_pipeline(meta, init=ast.Identifier(arg_name))
-          # arg_name is the upper-level name
-          # port_name is the lower-level name
-          port_name = instance_obj['args'][arg_name]['port']
-
-          # check which ports are used for async_mmap
-          if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-            for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
-              if set(x.portname for x in rtl.generate_async_mmap_ports(
-                  tag=tag,
-                  port=port_name,
-                  arg=arg_name,
-                  instance=instance,
-              )) & child_port_set:
-                async_mmap_args.setdefault(arg_name, []).append(tag)
-
-          # add m_axi ports to the upper task
-          if arg.cat == Instance.Arg.Cat.MMAP or (
-              arg.cat == Instance.Arg.Cat.ASYNC_MMAP and task.name == self.top):
-            task.module.add_m_axi(name=arg_name,
-                                  data_width=width_table[arg_name])
-
-          # declare wires or forward async_mmap ports
-          for tag in async_mmap_args.get(arg_name, []):
-            if task.name == self.top:
-              task.module.add_signals(
-                  rtl.generate_async_mmap_signals(
-                      tag=tag, arg=arg_name, data_width=width_table[arg_name]))
-            else:
-              task.module.add_ports(
-                  rtl.generate_async_mmap_ioports(
-                      tag=tag, arg=arg_name, data_width=width_table[arg_name]))
-
-        # add reset registers
-        rst_q = rtl.Pipeline(instance.rst_n)
-        task.module.add_pipeline(rst_q, init=rtl.RST_N)
-
-        if instance.is_autorun:
-          task.module.add_logics([
-              ast.Assign(
-                  left=instance.start,
-                  right=rtl.TRUE,
-              ),
-          ])
-        else:
-          # set up state
-          state00 = ast.IntConst("2'b00")
-          state01 = ast.IntConst("2'b01")
-          state11 = ast.IntConst("2'b11")
-          state10 = ast.IntConst("2'b10")
-
-          is_done_q = rtl.Pipeline(f'{instance.is_done.name}_fsm')
-          start_q = rtl.Pipeline(f'{instance.start.name}_fsm')
-          task.module.add_pipeline(is_done_q, instance.is_state(state10))
-          task.module.add_pipeline(start_q, rtl.START)
-
-          if_branch = (instance.set_state(state00))
-          else_branch = ((
-              ast.make_if_with_block(
-                  cond=instance.is_state(state00),
-                  true=ast.make_if_with_block(
-                      cond=start_q[-1],
-                      true=instance.set_state(state01),
-                  ),
-              ),
-              ast.make_if_with_block(
-                  cond=instance.is_state(state01),
-                  true=ast.make_if_with_block(
-                      cond=instance.ready,
-                      true=ast.make_if_with_block(
-                          cond=instance.done,
-                          true=instance.set_state(state10),
-                          false=instance.set_state(state11),
-                      )),
-              ),
-              ast.make_if_with_block(
-                  cond=instance.is_state(state11),
-                  true=ast.make_if_with_block(
-                      cond=instance.done,
-                      true=instance.set_state(state10),
-                  ),
-              ),
-              ast.make_if_with_block(
-                  cond=instance.is_state(state10),
-                  true=ast.make_if_with_block(
-                      cond=rtl.DONE,
-                      true=instance.set_state(state00),
-                  ),
-              ),
-          ))
-          task.module.add_logics([
-              ast.Always(
-                  sens_list=rtl.CLK_SENS_LIST,
-                  statement=ast.make_block(
-                      ast.make_if_with_block(
-                          cond=ast.Unot(rst_q[-1]),
-                          true=if_branch,
-                          false=else_branch,
-                      )),
-              ),
-              ast.Assign(
-                  left=instance.start,
-                  right=instance.is_state(state01),
-              ),
-          ])
-
-          is_done_signals.append(is_done_q)
-
-        # insert handshake signals
-        task.module.add_signals(instance.handshake_signals)
-
-        # add task module instances
-        portargs = list(rtl.generate_handshake_ports(instance, rst_q))
-        for arg_name, arg in sorted((item for item in instance.args.items()),
-                                    key=lambda x: x[0]):
+      # add signal delcarations
+      for arg_name, arg in sorted((item for item in instance.args.items()),
+                                  key=lambda x: x[0]):
+        if arg.cat not in {
+            Instance.Arg.Cat.ISTREAM,
+            Instance.Arg.Cat.OSTREAM,
+        }:
+          width = 64  # 64-bit address
           if arg.cat == Instance.Arg.Cat.SCALAR:
-            portargs.append(
-                ast.PortArg(
-                    portname=arg.port,
-                    argname=arg_table[instance.get_instance_arg(arg_name)][-1]))
-          elif arg.cat == Instance.Arg.Cat.ISTREAM:
-            portargs.extend(
-                rtl.generate_istream_ports(port=arg.port, arg=arg_name))
-            portargs.extend(portarg for portarg in rtl.generate_peek_ports(
-                rtl, port=arg.port, arg=arg_name)
-                            if portarg.portname in child_port_set)
+            width = width_table[arg_name]
+            q = rtl.Pipeline(name=instance.get_instance_arg(arg_name),
+                             width=width)
+            arg_table[instance.get_instance_arg(arg_name)] = q
+          else:
+            q = rtl.Pipeline(name=arg_name, width=width)
+            arg_table[arg_name] = q
+          task.module.add_pipeline(q, init=ast.Identifier(arg_name))
 
-          elif arg.cat == Instance.Arg.Cat.OSTREAM:
-            portargs.extend(
-                rtl.generate_ostream_ports(port=arg.port, arg=arg_name))
-          elif arg.cat == Instance.Arg.Cat.MMAP:
-            portargs.extend(
-                rtl.generate_m_axi_ports(port=arg.port,
-                                         arg=arg_name,
-                                         arg_reg=arg_table[arg_name][-1].name))
-          elif arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-            for tag in async_mmap_args[arg_name]:
-              portargs.extend(
-                  rtl.generate_async_mmap_ports(
-                      tag=tag,
-                      port=instance_obj['args'][arg_name]['port'],
-                      arg=arg_name,
-                      instance=instance))
+        # arg_name is the upper-level name
+        # arg.port is the lower-level name
 
-        task.module.add_instance(module_name=child.name,
-                                 instance_name=instance.name,
-                                 ports=portargs)
+        # check which ports are used for async_mmap
+        if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+          for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
+            if set(x.portname for x in rtl.generate_async_mmap_ports(
+                tag=tag,
+                port=arg.port,
+                arg=arg_name,
+                instance=instance,
+            )) & child_port_set:
+              async_mmap_args.setdefault(arg_name, []).append(tag)
+
+        # add m_axi ports to the upper task
+        if arg.cat == Instance.Arg.Cat.MMAP or (
+            arg.cat == Instance.Arg.Cat.ASYNC_MMAP and task.name == self.top):
+          task.module.add_m_axi(name=arg_name, data_width=width_table[arg_name])
+
+        # declare wires or forward async_mmap ports
+        for tag in async_mmap_args.get(arg_name, []):
+          if task.name == self.top:
+            task.module.add_signals(
+                rtl.generate_async_mmap_signals(
+                    tag=tag, arg=arg_name, data_width=width_table[arg_name]))
+          else:
+            task.module.add_ports(
+                rtl.generate_async_mmap_ioports(
+                    tag=tag, arg=arg_name, data_width=width_table[arg_name]))
+
+      # add reset registers
+      rst_q = rtl.Pipeline(instance.rst_n)
+      task.module.add_pipeline(rst_q, init=rtl.RST_N)
+
+      if instance.is_autorun:
+        task.module.add_logics([
+            ast.Assign(
+                left=instance.start,
+                right=rtl.TRUE,
+            ),
+        ])
+      else:
+        # set up state
+        state00 = ast.IntConst("2'b00")
+        state01 = ast.IntConst("2'b01")
+        state11 = ast.IntConst("2'b11")
+        state10 = ast.IntConst("2'b10")
+
+        is_done_q = rtl.Pipeline(f'{instance.is_done.name}_fsm')
+        start_q = rtl.Pipeline(f'{instance.start.name}_fsm')
+        task.module.add_pipeline(is_done_q, instance.is_state(state10))
+        task.module.add_pipeline(start_q, rtl.START)
+
+        if_branch = (instance.set_state(state00))
+        else_branch = ((
+            ast.make_if_with_block(
+                cond=instance.is_state(state00),
+                true=ast.make_if_with_block(
+                    cond=start_q[-1],
+                    true=instance.set_state(state01),
+                ),
+            ),
+            ast.make_if_with_block(
+                cond=instance.is_state(state01),
+                true=ast.make_if_with_block(
+                    cond=instance.ready,
+                    true=ast.make_if_with_block(
+                        cond=instance.done,
+                        true=instance.set_state(state10),
+                        false=instance.set_state(state11),
+                    )),
+            ),
+            ast.make_if_with_block(
+                cond=instance.is_state(state11),
+                true=ast.make_if_with_block(
+                    cond=instance.done,
+                    true=instance.set_state(state10),
+                ),
+            ),
+            ast.make_if_with_block(
+                cond=instance.is_state(state10),
+                true=ast.make_if_with_block(
+                    cond=rtl.DONE,
+                    true=instance.set_state(state00),
+                ),
+            ),
+        ))
+        task.module.add_logics([
+            ast.Always(
+                sens_list=rtl.CLK_SENS_LIST,
+                statement=ast.make_block(
+                    ast.make_if_with_block(
+                        cond=ast.Unot(rst_q[-1]),
+                        true=if_branch,
+                        false=else_branch,
+                    )),
+            ),
+            ast.Assign(
+                left=instance.start,
+                right=instance.is_state(state01),
+            ),
+        ])
+
+        is_done_signals.append(is_done_q)
+
+      # insert handshake signals
+      task.module.add_signals(instance.handshake_signals)
+
+      # add task module instances
+      portargs = list(rtl.generate_handshake_ports(instance, rst_q))
+      for arg_name, arg in sorted((item for item in instance.args.items()),
+                                  key=lambda x: x[0]):
+        if arg.cat == Instance.Arg.Cat.SCALAR:
+          portargs.append(
+              ast.PortArg(
+                  portname=arg.port,
+                  argname=arg_table[instance.get_instance_arg(arg_name)][-1]))
+        elif arg.cat == Instance.Arg.Cat.ISTREAM:
+          portargs.extend(
+              rtl.generate_istream_ports(port=arg.port, arg=arg_name))
+          portargs.extend(portarg for portarg in rtl.generate_peek_ports(
+              rtl, port=arg.port, arg=arg_name)
+                          if portarg.portname in child_port_set)
+
+        elif arg.cat == Instance.Arg.Cat.OSTREAM:
+          portargs.extend(
+              rtl.generate_ostream_ports(port=arg.port, arg=arg_name))
+        elif arg.cat == Instance.Arg.Cat.MMAP:
+          portargs.extend(
+              rtl.generate_m_axi_ports(
+                  port=arg.port,
+                  arg=arg_name,
+                  arg_reg=arg_table[arg_name][-1].name,
+              ))
+        elif arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+          for tag in async_mmap_args[arg_name]:
+            portargs.extend(
+                rtl.generate_async_mmap_ports(
+                    tag=tag,
+                    port=arg.port,
+                    arg=arg_name,
+                    instance=instance,
+                ))
+
+      task.module.add_instance(
+          module_name=instance.task.name,
+          instance_name=instance.name,
+          ports=portargs,
+      )
 
     # instantiate async_mmap module in the top module
     if task.name == self.top:
