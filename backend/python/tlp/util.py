@@ -1,8 +1,6 @@
 import shutil
 import subprocess
-from typing import Iterator, Tuple
-
-from tlp.verilog import ast
+from typing import Tuple
 
 
 def clang_format(code: str, *args: str) -> str:
@@ -22,11 +20,6 @@ def clang_format(code: str, *args: str) -> str:
     proc.check_returncode()
     return proc.stdout
   return code
-
-
-def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
-  for suffix in verilog.ISTREAM_SUFFIXES[:1]:
-    yield ast.make_port_arg(port='tlp_' + port + '_peek', arg=arg + suffix)
 
 
 def get_instance_name(item: Tuple[str, int]) -> str:

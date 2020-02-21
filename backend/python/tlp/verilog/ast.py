@@ -154,17 +154,18 @@ def make_operation(operator: Type[Operator], nodes: Iterable[Node]) -> Operator:
     return node
 
 
-def make_port_arg(port: str, arg: str) -> PortArg:
+def make_port_arg(port: str, arg: Union[str, Node]) -> PortArg:
   """Make PortArg from port and arg names.
 
   Args:
       port: Port name.
-      arg: Arg name, will be used to construct an Identifier.
+      arg: Arg name (will be used to construct an Identifier) or Node.
 
   Returns:
       PortArg: `.port(arg)` in Verilog.
   """
-  return PortArg(portname=port, argname=Identifier(name=arg))
+  return PortArg(portname=port,
+                 argname=arg if isinstance(arg, Node) else Identifier(arg))
 
 
 def make_if_with_block(

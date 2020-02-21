@@ -21,6 +21,9 @@ import tlp.instance
 from haoda.backend import xilinx as backend
 from tlp.verilog import ast
 
+# pylint: disable=unused-import
+from .util import REGISTER_LEVEL, Pipeline, generate_peek_ports
+
 # const strings
 
 RTL_SUFFIX = '.v'
@@ -214,15 +217,14 @@ START = ast.Identifier(HANDSHAKE_START)
 DONE = ast.Identifier(HANDSHAKE_DONE)
 IDLE = ast.Identifier(HANDSHAKE_IDLE)
 READY = ast.Identifier(HANDSHAKE_READY)
-TRUE = ast.Identifier("1'b1")
-FALSE = ast.Identifier("1'b0")
+TRUE = ast.IntConst("1'b1")
+FALSE = ast.IntConst("1'b0")
 SENS_TYPE = 'posedge'
 CLK = ast.Identifier(HANDSHAKE_CLK)
 RST = ast.Identifier(HANDSHAKE_RST)
 RST_N = ast.Identifier(HANDSHAKE_RST_N)
 CLK_SENS_LIST = ast.SensList((ast.Sens(CLK, type=SENS_TYPE),))
 ALL_SENS_LIST = ast.SensList((ast.Sens(None, type='all'),))
-RESET_COND = ast.Eq(left=ast.Identifier(HANDSHAKE_RST_N), right=FALSE)
 STATE = ast.Identifier('tlp_state')
 
 # type aliases
@@ -234,33 +236,10 @@ Logic = Union[ast.Assign, ast.Always, ast.Initial]
 
 # registered ast nodes
 
-REGISTER_LEVEL = 3
-
-
-class RegMeta:
-
-  def __init__(self, name: str, width: Optional[int] = None):
-    self._ids = tuple(
-        ast.Identifier(f'{name}_q%d' % i) for i in range(REGISTER_LEVEL + 1))
-    self._width: Optional[ast.Width] = width and ast.make_width(width)
-
-  def __getitem__(self, idx) -> ast.Identifier:
-    return self._ids[idx]
-
-  def __iter__(self) -> Iterator[ast.Identifier]:
-    return iter(self._ids)
-
-  @property
-  def signals(self) -> Iterator[Signal]:
-    yield ast.Wire(name=self[0].name, width=self._width)
-    for x in self[1:]:
-      yield ast.Pragma(ast.PragmaEntry('dont_touch = "yes"'))
-      yield ast.Reg(name=x.name, width=self._width)
-
-
-START_Q = RegMeta(START.name)
-DONE_Q = RegMeta(DONE.name)
-IDLE_Q = RegMeta(IDLE.name)
+START_Q = Pipeline(START.name)
+DONE_Q = Pipeline(DONE.name)
+IDLE_Q = Pipeline(IDLE.name)
+RST_N_Q = Pipeline(RST_N.name)
 
 
 class Module:
@@ -381,6 +360,24 @@ class Module:
     self._increment_idx(len(signal_tuple), 'signal')
     return self
 
+  def add_pipeline(self, q: Pipeline, init: ast.Node) -> None:
+    """Add registered signals and logics for q initialized by init.
+
+    Args:
+        q (Pipeline): The pipelined variable.
+        init (ast.Node): Value used to drive the first stage of the pipeline.
+    """
+    self.add_signals(q.signals)
+    self.add_logics((
+        ast.Always(
+            sens_list=CLK_SENS_LIST,
+            statement=ast.make_block(
+                ast.NonblockingSubstitution(left=q[i + 1], right=q[i])
+                for i in range(REGISTER_LEVEL)),
+        ),
+        ast.Assign(left=q[0], right=init),
+    ))
+
   def del_signals(self, prefix: str = '', suffix: str = '') -> None:
 
     def func(item: ast.Node) -> bool:
@@ -467,18 +464,20 @@ class Module:
       width: int,
       depth: int,
   ) -> 'Module':
+    rst_q = Pipeline(f'{name}_rst')
+    self.add_pipeline(rst_q, init=ast.Unot(RST_N))
 
     def ports() -> Iterator[ast.PortArg]:
-      yield ast.make_port_arg(port='clk', arg=HANDSHAKE_CLK)
-      yield ast.make_port_arg(port='reset', arg=HANDSHAKE_RST)
+      yield ast.make_port_arg(port='clk', arg=CLK)
+      yield ast.make_port_arg(port='reset', arg=rst_q[-1])
       yield from (
           ast.make_port_arg(port=port_name, arg=name + arg_suffix)
           for port_name, arg_suffix in zip(FIFO_READ_PORTS, ISTREAM_SUFFIXES))
-      yield ast.make_port_arg(port=FIFO_READ_PORTS[-1], arg="1'b1")
+      yield ast.make_port_arg(port=FIFO_READ_PORTS[-1], arg=TRUE)
       yield from (
           ast.make_port_arg(port=port_name, arg=name + arg_suffix)
           for port_name, arg_suffix in zip(FIFO_WRITE_PORTS, OSTREAM_SUFFIXES))
-      yield ast.make_port_arg(port=FIFO_WRITE_PORTS[-1], arg="1'b1")
+      yield ast.make_port_arg(port=FIFO_WRITE_PORTS[-1], arg=TRUE)
 
     return self.add_instance(module_name='fifo',
                              instance_name=name,
@@ -504,14 +503,17 @@ class Module:
       max_burst_len: Optional[int] = None,
       reg_name: str = '',
   ) -> 'Module':
+    rst_q = Pipeline(f'{name}_rst')
+    self.add_pipeline(rst_q, init=ast.Unot(RST_N))
+
     paramargs = [
         ast.ParamArg(paramname='DataWidth', argname=ast.Constant(data_width)),
         ast.ParamArg(paramname='DataWidthBytesLog',
                      argname=ast.Constant((data_width // 8 - 1).bit_length())),
     ]
     portargs = [
-        ast.make_port_arg(port='clk', arg=HANDSHAKE_CLK),
-        ast.make_port_arg(port='rst', arg=HANDSHAKE_RST),
+        ast.make_port_arg(port='clk', arg=CLK),
+        ast.make_port_arg(port='rst', arg=rst_q[-1]),
     ]
     paramargs.append(
         ast.ParamArg(paramname='AddrWidth', argname=ast.Constant(addr_width)))
@@ -629,7 +631,8 @@ class Module:
     self.add_signals(
         map(ast.Wire,
             (HANDSHAKE_RST, HANDSHAKE_DONE, HANDSHAKE_IDLE, HANDSHAKE_READY)))
-    self.add_logics([ast.Assign(left=RST, right=ast.Unot(RST_N))])
+    self.add_pipeline(RST_N_Q, init=RST_N)
+    self.add_logics([ast.Assign(left=RST, right=ast.Unot(RST_N_Q[-1]))])
 
 
 def is_data_port(port: str) -> bool:
@@ -690,14 +693,18 @@ def rename_m_axi_param(mapping: Dict[str, str],
   return new_param
 
 
-def generate_handshake_ports(name: str,
-                             autorun: bool = False) -> Iterator[ast.PortArg]:
-  for port in HANDSHAKE_CLK, HANDSHAKE_RST_N:
-    yield ast.make_port_arg(port=port, arg=port)
-  yield ast.make_port_arg(port=HANDSHAKE_START,
-                          arg=name + '_' + HANDSHAKE_START)
+def generate_handshake_ports(
+    instance: tlp.instance.Instance,
+    rst_q: Pipeline,
+) -> Iterator[ast.PortArg]:
+  yield ast.make_port_arg(port=HANDSHAKE_CLK, arg=CLK)
+  yield ast.make_port_arg(port=HANDSHAKE_RST_N, arg=rst_q[-1])
+  yield ast.make_port_arg(port=HANDSHAKE_START, arg=instance.start)
   for port in HANDSHAKE_OUTPUT_PORTS:
-    yield ast.make_port_arg(port=port, arg="" if autorun else name + '_' + port)
+    yield ast.make_port_arg(
+        port=port,
+        arg="" if instance.is_autorun else instance.name + '_' + port,
+    )
 
 
 def generate_m_axi_ports(

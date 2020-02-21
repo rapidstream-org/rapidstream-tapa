@@ -159,6 +159,11 @@ class Instance:
     return ast.Eq(left=self.state, right=state)
 
   @property
+  def rst_n(self) -> ast.Identifier:
+    """The handshake synchronous active-low reset signal."""
+    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_RST_N)
+
+  @property
   def start(self) -> ast.Identifier:
     """The handshake start signal.
 
@@ -217,10 +222,6 @@ class Instance:
 
   def get_instance_arg(self, arg: str) -> str:
     return f'{self.name}___{arg}'
-
-  @staticmethod
-  def get_arg(instance_arg: str) -> str:
-    return instance_arg.split('___')[-1]
 
 
 class Port:
