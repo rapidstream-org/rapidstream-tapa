@@ -265,7 +265,6 @@ class Program:
     for instance in self._generate_child_instances(task):
       child_port_set = set(instance.task.module.ports)
 
-
       # add signal delcarations
       for arg_name, arg in sorted((item for item in instance.args.items()),
                                   key=lambda x: x[0]):
@@ -327,10 +326,12 @@ class Program:
         ])
       else:
         # set up state
-        is_done_q = rtl.Pipeline(f'{instance.is_done.name}_fsm')
-        start_q = rtl.Pipeline(f'{instance.start.name}_fsm')
+        is_done_q = rtl.Pipeline(f'{instance.is_done.name}')
+        start_q = rtl.Pipeline(f'{instance.start.name}_global')
+        done_q = rtl.Pipeline(f'{instance.done.name}_global')
         task.module.add_pipeline(is_done_q, instance.is_state(STATE10))
-        task.module.add_pipeline(start_q, rtl.START)
+        task.module.add_pipeline(start_q, rtl.START_Q[0])
+        task.module.add_pipeline(done_q, rtl.DONE_Q[0])
 
         if_branch = (instance.set_state(STATE00))
         else_branch = ((
@@ -361,7 +362,7 @@ class Program:
             ast.make_if_with_block(
                 cond=instance.is_state(STATE10),
                 true=ast.make_if_with_block(
-                    cond=rtl.DONE,
+                    cond=done_q[-1],
                     true=instance.set_state(STATE00),
                 ),
             ),
