@@ -16,6 +16,11 @@ from tlp.verilog import xilinx as rtl
 from .instance import Instance, Port
 from .task import Task
 
+STATE00 = ast.IntConst("2'b00")
+STATE01 = ast.IntConst("2'b01")
+STATE11 = ast.IntConst("2'b11")
+STATE10 = ast.IntConst("2'b10")
+
 
 class Program:
   """Describes a TLP self.
@@ -322,47 +327,42 @@ class Program:
         ])
       else:
         # set up state
-        state00 = ast.IntConst("2'b00")
-        state01 = ast.IntConst("2'b01")
-        state11 = ast.IntConst("2'b11")
-        state10 = ast.IntConst("2'b10")
-
         is_done_q = rtl.Pipeline(f'{instance.is_done.name}_fsm')
         start_q = rtl.Pipeline(f'{instance.start.name}_fsm')
-        task.module.add_pipeline(is_done_q, instance.is_state(state10))
+        task.module.add_pipeline(is_done_q, instance.is_state(STATE10))
         task.module.add_pipeline(start_q, rtl.START)
 
-        if_branch = (instance.set_state(state00))
+        if_branch = (instance.set_state(STATE00))
         else_branch = ((
             ast.make_if_with_block(
-                cond=instance.is_state(state00),
+                cond=instance.is_state(STATE00),
                 true=ast.make_if_with_block(
                     cond=start_q[-1],
-                    true=instance.set_state(state01),
+                    true=instance.set_state(STATE01),
                 ),
             ),
             ast.make_if_with_block(
-                cond=instance.is_state(state01),
+                cond=instance.is_state(STATE01),
                 true=ast.make_if_with_block(
                     cond=instance.ready,
                     true=ast.make_if_with_block(
                         cond=instance.done,
-                        true=instance.set_state(state10),
-                        false=instance.set_state(state11),
+                        true=instance.set_state(STATE10),
+                        false=instance.set_state(STATE11),
                     )),
             ),
             ast.make_if_with_block(
-                cond=instance.is_state(state11),
+                cond=instance.is_state(STATE11),
                 true=ast.make_if_with_block(
                     cond=instance.done,
-                    true=instance.set_state(state10),
+                    true=instance.set_state(STATE10),
                 ),
             ),
             ast.make_if_with_block(
-                cond=instance.is_state(state10),
+                cond=instance.is_state(STATE10),
                 true=ast.make_if_with_block(
                     cond=rtl.DONE,
-                    true=instance.set_state(state00),
+                    true=instance.set_state(STATE00),
                 ),
             ),
         ))
@@ -378,7 +378,7 @@ class Program:
             ),
             ast.Assign(
                 left=instance.start,
-                right=instance.is_state(state01),
+                right=instance.is_state(STATE01),
             ),
         ])
 
@@ -447,10 +447,6 @@ class Program:
       is_done_signals: List[rtl.Pipeline],
   ) -> None:
     # global state machine
-    state00 = ast.IntConst("2'b00")
-    state01 = ast.IntConst("2'b01")
-    state10 = ast.IntConst("2'b10")
-    state11 = ast.IntConst("2'b11")
 
     def is_state(state: ast.IntConst) -> ast.Eq:
       return ast.Eq(left=rtl.STATE, right=state)
@@ -468,26 +464,26 @@ class Program:
 
     global_fsm = [
         ast.make_if_with_block(
-            cond=is_state(state00),
+            cond=is_state(STATE00),
             true=ast.make_if_with_block(
                 cond=rtl.START_Q[-1],
-                true=set_state(state01),
+                true=set_state(STATE01),
             ),
         ),
         ast.make_if_with_block(
-            cond=is_state(state01),
+            cond=is_state(STATE01),
             true=ast.make_if_with_block(
                 cond=ast.make_operation(
                     operator=ast.Land,
                     nodes=(x[-1] for x in reversed(is_done_signals)),
                 ),
-                true=set_state(state10),
+                true=set_state(STATE10),
             ),
         ),
         ast.make_if_with_block(
-            cond=is_state(state10),
+            cond=is_state(STATE10),
             true=ast.make_block([
-                set_state(state11 if rtl.REGISTER_LEVEL else state00),
+                set_state(STATE11 if rtl.REGISTER_LEVEL else STATE00),
                 ast.NonblockingSubstitution(
                     left=countdown,
                     right=ast.make_int(max(0, rtl.REGISTER_LEVEL - 1)),
@@ -495,13 +491,13 @@ class Program:
             ]),
         ),
         ast.make_if_with_block(
-            cond=is_state(state11),
+            cond=is_state(STATE11),
             true=ast.make_if_with_block(
                 cond=ast.Eq(
                     left=countdown,
                     right=ast.make_int(0, width=countdown_width),
                 ),
-                true=set_state(state00),
+                true=set_state(STATE00),
                 false=ast.NonblockingSubstitution(
                     left=countdown,
                     right=ast.Minus(
@@ -519,14 +515,14 @@ class Program:
             statement=ast.make_block(
                 ast.make_if_with_block(
                     cond=rtl.RST,
-                    true=set_state(state00),
+                    true=set_state(STATE00),
                     false=ast.make_block(global_fsm),
                 )),
         ),
-        ast.Assign(left=rtl.IDLE, right=is_state(state00)),
+        ast.Assign(left=rtl.IDLE, right=is_state(STATE00)),
         ast.Assign(left=rtl.DONE, right=rtl.DONE_Q[-1]),
         ast.Assign(left=rtl.READY, right=rtl.DONE_Q[0]),
     ])
 
     task.module.add_pipeline(rtl.START_Q, init=rtl.START)
-    task.module.add_pipeline(rtl.DONE_Q, init=is_state(state10))
+    task.module.add_pipeline(rtl.DONE_Q, init=is_state(STATE10))
