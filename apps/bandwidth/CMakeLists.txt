@@ -29,6 +29,8 @@ if(FRT_FOUND)
       --sp
       Bandwidth.m_axi_chan3:DDR[3]
       --vivado.prop
+      run.impl_1.STRATEGY=Performance_EarlyBlockPlacement
+      --vivado.prop
       run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=${CMAKE_CURRENT_SOURCE_DIR}/slr.tcl)
 
   add_executable(bandwidth-frt)
