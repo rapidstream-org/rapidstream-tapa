@@ -1,0 +1,2 @@
+include tlp/assets/cpp/tlp.h
+include tlp/assets/verilog/*.v
