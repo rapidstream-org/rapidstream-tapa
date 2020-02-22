@@ -689,10 +689,10 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   tlp::stream<VertexAttrVec, 2> vertex_mm2pe_1("vertex_mm2pe_1");
 
   // between ProcElem and EdgeMem
-  tlp::stream<Eid, 8> edge_req_0("edge_req_0");
-  tlp::stream<Eid, 8> edge_req_1("edge_req_1");
-  tlp::stream<EdgeVec, 8> edge_resp_0("edge_resp_0");
-  tlp::stream<EdgeVec, 8> edge_resp_1("edge_resp_1");
+  tlp::stream<Eid, 2> edge_req_0("edge_req_0");
+  tlp::stream<Eid, 2> edge_req_1("edge_req_1");
+  tlp::stream<EdgeVec, 2> edge_resp_0("edge_resp_0");
+  tlp::stream<EdgeVec, 2> edge_resp_1("edge_resp_1");
 
   // between Control and UpdateHandler
   tlp::stream<Eid, 2> update_config_0("update_config_0");
@@ -705,14 +705,14 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   tlp::stream<UpdateReq, 2> update_req_1("update_req_1");
 
   // between UpdateHandler and UpdateMem
-  tlp::stream<uint64_t, 8> update_read_addr_0("update_read_addr_0");
-  tlp::stream<uint64_t, 8> update_read_addr_1("update_read_addr_1");
-  tlp::stream<UpdateVec, 8> update_read_data_0("update_read_data_0");
-  tlp::stream<UpdateVec, 8> update_read_data_1("update_read_data_1");
-  tlp::stream<uint64_t, 8> update_write_addr_0("update_write_addr_0");
-  tlp::stream<uint64_t, 8> update_write_addr_1("update_write_addr_1");
-  tlp::stream<UpdateVec, 8> update_write_data_0("update_write_data_0");
-  tlp::stream<UpdateVec, 8> update_write_data_1("update_write_data_1");
+  tlp::stream<uint64_t, 2> update_read_addr_0("update_read_addr_0");
+  tlp::stream<uint64_t, 2> update_read_addr_1("update_read_addr_1");
+  tlp::stream<UpdateVec, 2> update_read_data_0("update_read_data_0");
+  tlp::stream<UpdateVec, 2> update_read_data_1("update_read_data_1");
+  tlp::stream<uint64_t, 2> update_write_addr_0("update_write_addr_0");
+  tlp::stream<uint64_t, 2> update_write_addr_1("update_write_addr_1");
+  tlp::stream<UpdateVec, 2> update_write_data_0("update_write_data_0");
+  tlp::stream<UpdateVec, 2> update_write_data_1("update_write_data_1");
 
   tlp::stream<UpdateVecWithPid, 2> update_pe2mm_0("update_pe2mm_0");
   tlp::stream<UpdateVecWithPid, 2> update_pe2mm_1("update_pe2mm_1");
