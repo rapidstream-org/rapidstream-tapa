@@ -89,8 +89,10 @@ class Program:
     os.makedirs(os.path.join(self.work_dir, 'tar'), exist_ok=True)
     return os.path.join(self.work_dir, 'tar', name + '.tar')
 
-  def get_rtl(self, name: str) -> str:
-    return os.path.join(self.rtl_dir, name + rtl.RTL_SUFFIX)
+  def get_rtl(self, name: str, prefix: bool = True) -> str:
+    return os.path.join(self.rtl_dir,
+                        (util.get_module_name(name) if prefix else name) +
+                        rtl.RTL_SUFFIX)
 
   def extract_cpp(self) -> 'Program':
     """Extract HLS C++ files."""
@@ -110,11 +112,14 @@ class Program:
 
     def worker(task: Task) -> Iterator[None]:
       with open(self.get_tar(task.name), 'wb') as tarfileobj:
-        with hls.RunHls(tarfileobj,
-                        kernel_files=[(self.get_cpp(task.name), self.cflags)],
-                        top_name=task.name,
-                        clock_period=clock_period,
-                        part_num=part_num) as proc:
+        with hls.RunHls(
+            tarfileobj,
+            kernel_files=[(self.get_cpp(task.name), self.cflags)],
+            top_name=task.name,
+            clock_period=clock_period,
+            part_num=part_num,
+            auto_prefix=True,
+        ) as proc:
           yield
           stdout, stderr = proc.communicate()
         if proc.returncode != 0:
@@ -153,11 +158,14 @@ class Program:
         is_done_signals = self._instantiate_children_tasks(task, width_table)
         self._instantiate_global_fsm(task, is_done_signals)
 
+        if task.name == self.top:
+          task.module.name = task.name
+
         with open(self.get_rtl(task.name), 'w') as rtl_code:
           rtl_code.write(task.module.code)
 
       for name, content in rtl.OTHER_MODULES.items():
-        with open(self.get_rtl(name), 'w') as rtl_code:
+        with open(self.get_rtl(name, prefix=False), 'w') as rtl_code:
           rtl_code.write(content)
 
       for file_name in 'async_mmap.v', 'detect_burst.v', 'generate_last.v':
@@ -425,7 +433,7 @@ class Program:
                 ))
 
       task.module.add_instance(
-          module_name=instance.task.name,
+          module_name=util.get_module_name(instance.task.name),
           instance_name=instance.name,
           ports=portargs,
       )

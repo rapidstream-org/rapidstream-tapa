@@ -300,6 +300,10 @@ class Module:
   def name(self) -> str:
     return self._module_def.name
 
+  @name.setter
+  def name(self, name: str) -> None:
+    self._module_def.name = name
+
   @property
   def ports(self) -> Dict[str, IOPort]:
     port_lists = (

@@ -24,3 +24,7 @@ def clang_format(code: str, *args: str) -> str:
 
 def get_instance_name(item: Tuple[str, int]) -> str:
   return '_'.join(map(str, item))
+
+
+def get_module_name(module: str) -> str:
+  return f'{module}_{module}'
