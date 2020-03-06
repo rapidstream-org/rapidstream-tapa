@@ -76,6 +76,13 @@ struct dummy {
 namespace tlp {
 
 template <typename T>
+T reg(T x) {
+#pragma HLS inline self off
+#pragma HLS interface ap_none register port = return
+  return x;
+}
+
+template <typename T>
 struct data_t {
   T val;
   bool eos;
@@ -248,7 +255,7 @@ inline void write(hls::stream<data_t<T>>& fifo, const T& value) {
 #pragma HLS inline
 //#pragma HLS latency max = 1
 #pragma HLS protocol
-  fifo.write({value, false});
+  fifo.write(reg(data_t<T>{value, false}));
 }
 
 // tlp::stream<T>::try_write(const T&)
@@ -257,7 +264,7 @@ inline bool try_write(hls::stream<data_t<T>>& fifo, const T& value) {
 #pragma HLS inline
 //#pragma HLS latency max = 1
 #pragma HLS protocol
-  return fifo.write_nb({value, false});
+  return fifo.write_nb(reg(data_t<T>{value, false}));
 }
 
 // tlp::stream<T>::close()
@@ -268,7 +275,7 @@ inline void close(hls::stream<data_t<T>>& fifo) {
 #pragma HLS protocol
   data_t<T> tmp = {};
   tmp.eos = true;
-  fifo.write(tmp);
+  fifo.write(reg(tmp));
 }
 
 template <typename T>

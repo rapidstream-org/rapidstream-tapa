@@ -28,6 +28,11 @@
 
 namespace tlp {
 
+template <typename T>
+T reg(T x) {
+  return x;
+}
+
 extern thread_local uint64_t last_signal_timestamp;
 constexpr uint64_t kSignalThreshold = 500000000;
 inline uint64_t get_time_ns() {
