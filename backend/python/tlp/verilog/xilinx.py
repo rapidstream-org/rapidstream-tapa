@@ -425,15 +425,14 @@ class Module:
   ) -> 'Module':
     self._module_def.items = (
         self._module_def.items[:self._last_instance_idx + 1] +
-        (ast.Pragma(ast.PragmaEntry('dont_touch = "yes"')),
-         ast.InstanceList(module=module_name,
+        (ast.InstanceList(module=module_name,
                           parameterlist=params,
                           instances=(ast.Instance(module=None,
                                                   name=instance_name,
                                                   parameterlist=None,
-                                                  portlist=ports),))) +
+                                                  portlist=ports),)),) +
         self._module_def.items[self._last_instance_idx + 1:])
-    self._increment_idx(2, 'instance')
+    self._increment_idx(1, 'instance')
     return self
 
   def add_logics(self, logics: Iterable[Logic]) -> 'Module':
