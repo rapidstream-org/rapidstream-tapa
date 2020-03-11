@@ -31,18 +31,28 @@ if(Boost_FOUND)
     add_xocc_hw_link_targets(
       ${CMAKE_CURRENT_BINARY_DIR}
       --sp=PageRank.m_axi_edges_0:DDR[0]
-      --sp=PageRank.m_axi_updates_0:DDR[1]
+      --sp=PageRank.m_axi_edges_1:DDR[1]
+      --sp=PageRank.m_axi_edges_2:DDR[2]
+      --sp=PageRank.m_axi_edges_3:DDR[3]
+      --sp=PageRank.m_axi_updates_0:DDR[0]
+      --sp=PageRank.m_axi_updates_1:DDR[1]
+      --sp=PageRank.m_axi_updates_2:DDR[2]
+      --sp=PageRank.m_axi_updates_3:DDR[3]
       --sp=PageRank.m_axi_metadata:DDR[1]
-      --sp=PageRank.m_axi_updates_1:DDR[2]
       --sp=PageRank.m_axi_vertices:DDR[2]
-      --sp=PageRank.m_axi_edges_1:DDR[3]
-      --dk=chipscope:PageRank:m_axi_vertices
-      --dk=chipscope:PageRank:m_axi_edges_0
-      --dk=chipscope:PageRank:m_axi_edges_1
-      --dk=chipscope:PageRank:m_axi_updates_0
-      --dk=chipscope:PageRank:m_axi_updates_1
+      # --dk=chipscope:PageRank:m_axi_vertices
+      # --dk=chipscope:PageRank:m_axi_edges_0
+      # --dk=chipscope:PageRank:m_axi_edges_1
+      # --dk=chipscope:PageRank:m_axi_edges_2
+      # --dk=chipscope:PageRank:m_axi_edges_3
+      # --dk=chipscope:PageRank:m_axi_updates_0
+      # --dk=chipscope:PageRank:m_axi_updates_1
+      # --dk=chipscope:PageRank:m_axi_updates_2
+      # --dk=chipscope:PageRank:m_axi_updates_3
+      # --profile_kernel=data:all:all:all --profile_kernel=stall:all:all:all
+      --remote_ip_cache=$ENV{HOME}/.remote_ip_cache
       --kernel_frequency=250
-      --vivado.prop=run.impl_1.STRATEGY=Congestion_SpreadLogic_high
+      --vivado.prop=run.impl_1.STRATEGY=Congestion_SpreadLogic_High
       --vivado.prop
       run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=${CMAKE_CURRENT_SOURCE_DIR}/slr.tcl
       INPUT page-rank-hw-xo
@@ -56,16 +66,18 @@ if(Boost_FOUND)
 
     add_custom_target(
       page-rank-cosim
-      COMMAND BITSTREAM=$<TARGET_PROPERTY:${hw_emu_xclbin_target},FILE_NAME>
-              $<TARGET_FILE:page-rank-frt>
-              ${CMAKE_CURRENT_SOURCE_DIR}/../graph/graph.txt
+      COMMAND
+        BITSTREAM=$<TARGET_PROPERTY:${hw_emu_xclbin_target},FILE_NAME>
+        $<TARGET_FILE:page-rank-frt>
+        ${CMAKE_CURRENT_SOURCE_DIR}/../graph/graph.txt
       DEPENDS page-rank-frt ${hw_emu_xclbin_target}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     add_custom_target(
       page-rank-hw
-      COMMAND BITSTREAM=$<TARGET_PROPERTY:${hw_xclbin_target},FILE_NAME>
-              $<TARGET_FILE:page-rank-frt>
-              ${CMAKE_CURRENT_BINARY_DIR}/../graph/facebook.txt
+      COMMAND
+        BITSTREAM=$<TARGET_PROPERTY:${hw_xclbin_target},FILE_NAME>
+        $<TARGET_FILE:page-rank-frt>
+        ${CMAKE_CURRENT_BINARY_DIR}/../graph/facebook.txt
       DEPENDS page-rank-frt ${hw_xclbin_target}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 

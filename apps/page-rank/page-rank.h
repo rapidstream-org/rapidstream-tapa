@@ -36,7 +36,7 @@ using Pid = uint32_t;     // can hold all partitions
 constexpr float kDampingFactor = .85f;
 constexpr float kConvergenceThreshold = 0.0001f;
 
-constexpr int kNumPes = 2;
+constexpr int kNumPes = 4;
 
 struct VertexAttr {
   Degree out_degree;

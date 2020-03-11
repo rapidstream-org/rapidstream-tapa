@@ -47,8 +47,12 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
               tlp::async_mmap<VertexAttrAlignedVec> vertices,
               tlp::async_mmap<EdgeVec> edges_0,
               tlp::async_mmap<EdgeVec> edges_1,
+              tlp::async_mmap<EdgeVec> edges_2,
+              tlp::async_mmap<EdgeVec> edges_3,
               tlp::async_mmap<UpdateVec> updates_0,
-              tlp::async_mmap<UpdateVec> updates_1);
+              tlp::async_mmap<UpdateVec> updates_1,
+              tlp::async_mmap<UpdateVec> updates_2,
+              tlp::async_mmap<UpdateVec> updates_3);
 
 // Ground truth implementation of page rank.
 //
@@ -310,8 +314,12 @@ int main(int argc, char* argv[]) {
            tlp::async_mmap_from_vec<VertexAttrAligned, kVertexVecLen>(vertices),
            tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges[0]),
            tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges[1]),
+           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges[2]),
+           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges[3]),
            tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[0]),
-           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[1]));
+           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[1]),
+           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[2]),
+           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[3]));
 
   LOG(INFO) << "device code finished after " << *metadata.rbegin()
             << " iterations";
