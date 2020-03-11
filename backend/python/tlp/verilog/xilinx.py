@@ -483,18 +483,18 @@ class Module:
           for port_name, arg_suffix in zip(FIFO_WRITE_PORTS, OSTREAM_SUFFIXES))
       yield ast.make_port_arg(port=FIFO_WRITE_PORTS[-1], arg=TRUE)
 
-    return self.add_instance(module_name='fifo',
-                             instance_name=name,
-                             ports=ports(),
-                             params=(
-                                 ast.ParamArg(paramname='DATA_WIDTH',
-                                              argname=ast.Constant(width)),
-                                 ast.ParamArg(paramname='ADDR_WIDTH',
-                                              argname=ast.Constant(
-                                                  (depth - 1).bit_length())),
-                                 ast.ParamArg(paramname='DEPTH',
-                                              argname=ast.Constant(depth)),
-                             ))
+    return self.add_instance(
+        module_name='relay_station',
+        instance_name=name,
+        ports=ports(),
+        params=(
+            ast.ParamArg(paramname='DATA_WIDTH', argname=ast.Constant(width)),
+            ast.ParamArg(paramname='ADDR_WIDTH',
+                         argname=ast.Constant((depth - 1).bit_length())),
+            ast.ParamArg(paramname='DEPTH', argname=ast.Constant(depth)),
+            ast.ParamArg(paramname='LEVEL',
+                         argname=ast.Constant(REGISTER_LEVEL + 1)),
+        ))
 
   def add_async_mmap_instance(
       self,
