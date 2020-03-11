@@ -24,7 +24,7 @@ module async_mmap #(
   output wire [7:0]           m_axi_AWLEN,
   output wire [2:0]           m_axi_AWSIZE,
   output wire [1:0]           m_axi_AWBURST,
-  output wire                 m_axi_AWLOCK,
+  output wire [0:0]           m_axi_AWLOCK,
   output wire [3:0]           m_axi_AWCACHE,
   output wire [2:0]           m_axi_AWPROT,
   output wire [3:0]           m_axi_AWQOS,
@@ -44,7 +44,7 @@ module async_mmap #(
   input  wire       m_axi_BVALID,
   output wire       m_axi_BREADY,
   input  wire [1:0] m_axi_BRESP,
-  input  wire [0:0]  m_axi_BID,
+  input  wire [0:0] m_axi_BID,
   input  wire       m_axi_BUSER,
 
   // axi read addr channel
@@ -55,7 +55,7 @@ module async_mmap #(
   output wire [7:0]           m_axi_ARLEN,
   output wire [2:0]           m_axi_ARSIZE,
   output wire [1:0]           m_axi_ARBURST,
-  output wire                 m_axi_ARLOCK,
+  output wire [0:0]           m_axi_ARLOCK,
   output wire [3:0]           m_axi_ARCACHE,
   output wire [2:0]           m_axi_ARPROT,
   output wire [3:0]           m_axi_ARQOS,
@@ -407,24 +407,24 @@ module async_mmap #(
   );
 
   // AR channel
-  assign burst_read_addr_read     = m_axi_ARREADY;
-  assign m_axi_ARVALID  = burst_read_addr_empty_n;
-  assign m_axi_ARADDR   = burst_read_addr_dout_addr;
-  assign m_axi_ARID     = 0;
-  assign m_axi_ARLEN    = burst_read_addr_dout_burst_len;
-  assign m_axi_ARSIZE   = DataWidthBytesLog;
-  assign m_axi_ARBURST  = 1;        // INCR mode
-  assign m_axi_ARLOCK   = 0;        // Xilinx only supports 0
-  assign m_axi_ARCACHE  = 4'b0011;  // Xilinx only supports 4'b0011
-  assign m_axi_ARPROT   = 0;
-  assign m_axi_ARQOS    = 0;
-  assign m_axi_ARREGION = 0;
-  assign m_axi_ARUSER   = 0;
+  assign burst_read_addr_read = m_axi_ARREADY;
+  assign m_axi_ARVALID        = burst_read_addr_empty_n;
+  assign m_axi_ARADDR         = burst_read_addr_dout_addr;
+  assign m_axi_ARID           = 0;
+  assign m_axi_ARLEN          = burst_read_addr_dout_burst_len;
+  assign m_axi_ARSIZE         = DataWidthBytesLog;
+  assign m_axi_ARBURST        = 1;        // INCR mode
+  assign m_axi_ARLOCK         = 0;        // Xilinx only supports 0
+  assign m_axi_ARCACHE        = 4'b0011;  // Xilinx only supports 4'b0011
+  assign m_axi_ARPROT         = 0;
+  assign m_axi_ARQOS          = 0;
+  assign m_axi_ARREGION       = 0;
+  assign m_axi_ARUSER         = 0;
 
   // R channel
-  assign m_axi_RREADY = read_data_full_n;
-  assign read_data_write        = m_axi_RVALID;
-  assign read_data_din          = m_axi_RDATA;
+  assign m_axi_RREADY    = read_data_full_n;
+  assign read_data_write = m_axi_RVALID;
+  assign read_data_din   = m_axi_RDATA;
 
   // unused input signals
   wire _unused = &{1'b0,
