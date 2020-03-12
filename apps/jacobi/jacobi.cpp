@@ -1,30 +1,25 @@
 #include <tlp.h>
 
-template <typename T, uint64_t N>
-struct coalesce_t {
-  T data[N];
-  T& operator[](uint64_t idx) { return data[idx]; }
-  const T& operator[](uint64_t idx) const { return data[idx]; }
-};
-
 void Mmap2Stream(tlp::mmap<const float> mmap, uint64_t n,
-                 tlp::ostream<coalesce_t<float, 2>>& stream) {
+                 tlp::ostream<tlp::vec_t<float, 2>>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
 #pragma HLS pipeline II = 2
-    stream.write({mmap[i * 2], mmap[i * 2 + 1]});
+    tlp::vec_t<float, 2> tmp;
+    tmp.set(0, mmap[i * 2]);
+    tmp.set(1, mmap[i * 2 + 1]);
+    stream.write(tmp);
   }
   stream.close();
 }
 
-void Stream2Mmap(tlp::istream<coalesce_t<float, 2>>& stream,
+void Stream2Mmap(tlp::istream<tlp::vec_t<float, 2>>& stream,
                  tlp::mmap<float> mmap) {
   for (uint64_t i = 0;;) {
     bool eos;
     if (stream.try_eos(eos)) {
       if (eos) break;
 #pragma HLS pipeline II = 2
-      bool succeed;
-      auto packed = stream.read(succeed);
+      auto packed = stream.read(nullptr);
       mmap[i * 2] = packed[0];
       mmap[i * 2 + 1] = packed[1];
       ++i;
@@ -33,14 +28,13 @@ void Stream2Mmap(tlp::istream<coalesce_t<float, 2>>& stream,
 }
 
 void Module0Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
-                 tlp::istream<coalesce_t<float, 2>>& dram_t1_bank_0_fifo) {
+                 tlp::istream<tlp::vec_t<float, 2>>& dram_t1_bank_0_fifo) {
 module_0_epoch:
   for (;;) {
     bool eos;
     if (dram_t1_bank_0_fifo.try_eos(eos)) {
       if (eos) break;
-      bool succeed;
-      auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read(succeed);
+      auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read(nullptr);
       fifo_st_0.write(dram_t1_bank_0_buf[1]);
       fifo_st_1.write(dram_t1_bank_0_buf[0]);
     }
@@ -56,8 +50,7 @@ module_1_epoch:
     bool eos;
     if (fifo_ld_0.try_eos(eos)) {
       if (eos) break;
-      bool succeed;
-      auto fifo_ref_0 = fifo_ld_0.read(succeed);
+      auto fifo_ref_0 = fifo_ld_0.read(nullptr);
       fifo_st_0.write(fifo_ref_0);
       fifo_st_1.write(fifo_ref_0);
     }
@@ -77,14 +70,12 @@ module_3_1_epoch:
     bool eos_1;
     if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
       if (eos_0 || eos_1) break;
-      bool succeed_0;
-      bool succeed_1;
       float fifo_ref_0;
       bool do_ld_0 = count >= delay_0;
       if (do_ld_0) {
-        fifo_ref_0 = fifo_ld_0.read(succeed_0);
+        fifo_ref_0 = fifo_ld_0.read(nullptr);
       }
-      float fifo_ref_1 = fifo_ld_1.read(succeed_1);
+      float fifo_ref_1 = fifo_ld_1.read(nullptr);
       fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
       if (!do_ld_0) {
         ++count;
@@ -105,14 +96,12 @@ module_3_2_epoch:
     bool eos_1;
     if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
       if (eos_0 || eos_1) break;
-      bool succeed_0;
-      bool succeed_1;
       float fifo_ref_0;
       bool do_ld_0 = count >= delay_0;
       if (do_ld_0) {
-        fifo_ref_0 = fifo_ld_0.read(succeed_0);
+        fifo_ref_0 = fifo_ld_0.read(nullptr);
       }
-      float fifo_ref_1 = fifo_ld_1.read(succeed_1);
+      float fifo_ref_1 = fifo_ld_1.read(nullptr);
       fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
       if (!do_ld_0) {
         ++count;
@@ -137,19 +126,16 @@ module_6_1_epoch:
     if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1) &&
         fifo_ld_2.try_eos(eos_2)) {
       if (eos_0 || eos_1 || eos_2) break;
-      bool succeed_0;
-      bool succeed_1;
-      bool succeed_2;
       float fifo_ref_0;
       bool do_ld_0 = count >= delay_0;
       if (do_ld_0) {
-        fifo_ref_0 = fifo_ld_0.read(succeed_0);
+        fifo_ref_0 = fifo_ld_0.read(nullptr);
       }
-      auto fifo_ref_1 = fifo_ld_1.read(succeed_1);
+      auto fifo_ref_1 = fifo_ld_1.read(nullptr);
       float fifo_ref_2;
       bool do_ld_2 = count >= delay_2;
       if (do_ld_2) {
-        fifo_ref_2 = fifo_ld_2.read(succeed_2);
+        fifo_ref_2 = fifo_ld_2.read(nullptr);
       }
       fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
       if (!do_ld_0 || !do_ld_2) {
@@ -174,19 +160,16 @@ module_6_2_epoch:
     if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1) &&
         fifo_ld_2.try_eos(eos_2)) {
       if (eos_0 || eos_1 || eos_2) break;
-      bool succeed_0;
-      bool succeed_1;
-      bool succeed_2;
       float fifo_ref_0;
       bool do_ld_0 = count >= delay_0;
       if (do_ld_0) {
-        fifo_ref_0 = fifo_ld_0.read(succeed_0);
+        fifo_ref_0 = fifo_ld_0.read(nullptr);
       }
-      auto fifo_ref_1 = fifo_ld_1.read(succeed_1);
+      auto fifo_ref_1 = fifo_ld_1.read(nullptr);
       float fifo_ref_2;
       bool do_ld_2 = count >= delay_2;
       if (do_ld_2) {
-        fifo_ref_2 = fifo_ld_2.read(succeed_2);
+        fifo_ref_2 = fifo_ld_2.read(nullptr);
       }
       fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
       if (!do_ld_0 || !do_ld_2) {
@@ -197,7 +180,7 @@ module_6_2_epoch:
   fifo_st_0.close();
 }
 
-void Module8Func(tlp::ostream<coalesce_t<float, 2>>& dram_t0_bank_0_fifo,
+void Module8Func(tlp::ostream<tlp::vec_t<float, 2>>& dram_t0_bank_0_fifo,
                  tlp::istream<float>& fifo_ld_0,
                  tlp::istream<float>& fifo_ld_1) {
 module_8_epoch:
@@ -206,10 +189,10 @@ module_8_epoch:
     bool eos_1;
     if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
       if (eos_0 || eos_1) break;
-      bool succeed_0;
-      bool succeed_1;
-      dram_t0_bank_0_fifo.write(
-          {fifo_ld_0.read(succeed_0), fifo_ld_1.read(succeed_1)});
+      tlp::vec_t<float, 2> tmp;
+      tmp.set(0, fifo_ld_0.read(nullptr));
+      tmp.set(1, fifo_ld_1.read(nullptr));
+      dram_t0_bank_0_fifo.write(tmp);
     }
   }
   dram_t0_bank_0_fifo.close();
@@ -217,8 +200,8 @@ module_8_epoch:
 
 void Jacobi(tlp::mmap<float> bank_0_t0, tlp::mmap<const float> bank_0_t1,
             uint64_t coalesced_data_num) {
-  tlp::stream<coalesce_t<float, 2>, 32> bank_0_t1_buf("bank_0_t1_buf");
-  tlp::stream<coalesce_t<float, 2>, 32> bank_0_t0_buf("bank_0_t0_buf");
+  tlp::stream<tlp::vec_t<float, 2>, 32> bank_0_t1_buf("bank_0_t1_buf");
+  tlp::stream<tlp::vec_t<float, 2>, 32> bank_0_t0_buf("bank_0_t0_buf");
   tlp::stream<float, 2> from_super_source_to_t1_offset_0(
       "from_super_source_to_t1_offset_0");
   tlp::stream<float, 2> from_super_source_to_t1_offset_1(
