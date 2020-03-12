@@ -30,14 +30,11 @@ void Stream2Mmap(tlp::istream<tlp::vec_t<float, 2>>& stream,
 void Module0Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
                  tlp::istream<tlp::vec_t<float, 2>>& dram_t1_bank_0_fifo) {
 module_0_epoch:
-  for (;;) {
-    bool eos;
-    if (dram_t1_bank_0_fifo.try_eos(eos)) {
-      if (eos) break;
-      auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read(nullptr);
-      fifo_st_0.write(dram_t1_bank_0_buf[1]);
-      fifo_st_1.write(dram_t1_bank_0_buf[0]);
-    }
+  TLP_WHILE_NOT_EOS(dram_t1_bank_0_fifo) {
+#pragma HLS pipeline II = 1
+    auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read(nullptr);
+    fifo_st_0.write(dram_t1_bank_0_buf[1]);
+    fifo_st_1.write(dram_t1_bank_0_buf[0]);
   }
   fifo_st_0.close();
   fifo_st_1.close();
@@ -46,14 +43,11 @@ module_0_epoch:
 void Module1Func(tlp::ostream<float>& fifo_st_0, tlp::ostream<float>& fifo_st_1,
                  tlp::istream<float>& fifo_ld_0) {
 module_1_epoch:
-  for (;;) {
-    bool eos;
-    if (fifo_ld_0.try_eos(eos)) {
-      if (eos) break;
-      auto fifo_ref_0 = fifo_ld_0.read(nullptr);
-      fifo_st_0.write(fifo_ref_0);
-      fifo_st_1.write(fifo_ref_0);
-    }
+  TLP_WHILE_NOT_EOS(fifo_ld_0) {
+#pragma HLS pipeline II = 1
+    auto fifo_ref_0 = fifo_ld_0.read(nullptr);
+    fifo_st_0.write(fifo_ref_0);
+    fifo_st_1.write(fifo_ref_0);
   }
   fifo_st_0.close();
   fifo_st_1.close();
@@ -65,21 +59,17 @@ void Module3Func1(tlp::ostream<float>& fifo_st_0,
   const int delay_0 = 50;
   int count = 0;
 module_3_1_epoch:
-  for (;;) {
-    bool eos_0;
-    bool eos_1;
-    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
-      if (eos_0 || eos_1) break;
-      float fifo_ref_0;
-      bool do_ld_0 = count >= delay_0;
-      if (do_ld_0) {
-        fifo_ref_0 = fifo_ld_0.read(nullptr);
-      }
-      float fifo_ref_1 = fifo_ld_1.read(nullptr);
-      fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
-      if (!do_ld_0) {
-        ++count;
-      }
+  TLP_WHILE_NEITHER_EOS(fifo_ld_0, fifo_ld_1) {
+#pragma HLS pipeline II = 1
+    float fifo_ref_0;
+    bool do_ld_0 = count >= delay_0;
+    if (do_ld_0) {
+      fifo_ref_0 = fifo_ld_0.read(nullptr);
+    }
+    float fifo_ref_1 = fifo_ld_1.read(nullptr);
+    fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
+    if (!do_ld_0) {
+      ++count;
     }
   }
   fifo_st_0.close();
@@ -91,21 +81,17 @@ void Module3Func2(tlp::ostream<float>& fifo_st_0,
   const int delay_0 = 51;
   int count = 0;
 module_3_2_epoch:
-  for (;;) {
-    bool eos_0;
-    bool eos_1;
-    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
-      if (eos_0 || eos_1) break;
-      float fifo_ref_0;
-      bool do_ld_0 = count >= delay_0;
-      if (do_ld_0) {
-        fifo_ref_0 = fifo_ld_0.read(nullptr);
-      }
-      float fifo_ref_1 = fifo_ld_1.read(nullptr);
-      fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
-      if (!do_ld_0) {
-        ++count;
-      }
+  TLP_WHILE_NEITHER_EOS(fifo_ld_0, fifo_ld_1) {
+#pragma HLS pipeline II = 1
+    float fifo_ref_0;
+    bool do_ld_0 = count >= delay_0;
+    if (do_ld_0) {
+      fifo_ref_0 = fifo_ld_0.read(nullptr);
+    }
+    float fifo_ref_1 = fifo_ld_1.read(nullptr);
+    fifo_st_0.write(fifo_ref_0 + fifo_ref_1);
+    if (!do_ld_0) {
+      ++count;
     }
   }
   fifo_st_0.close();
@@ -119,28 +105,22 @@ void Module6Func1(tlp::ostream<float>& fifo_st_0,
   const int delay_2 = 50;
   int count = 0;
 module_6_1_epoch:
-  for (;;) {
-    bool eos_0;
-    bool eos_1;
-    bool eos_2;
-    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1) &&
-        fifo_ld_2.try_eos(eos_2)) {
-      if (eos_0 || eos_1 || eos_2) break;
-      float fifo_ref_0;
-      bool do_ld_0 = count >= delay_0;
-      if (do_ld_0) {
-        fifo_ref_0 = fifo_ld_0.read(nullptr);
-      }
-      auto fifo_ref_1 = fifo_ld_1.read(nullptr);
-      float fifo_ref_2;
-      bool do_ld_2 = count >= delay_2;
-      if (do_ld_2) {
-        fifo_ref_2 = fifo_ld_2.read(nullptr);
-      }
-      fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
-      if (!do_ld_0 || !do_ld_2) {
-        ++count;
-      }
+  TLP_WHILE_NONE_EOS(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
+#pragma HLS pipeline II = 1
+    float fifo_ref_0;
+    bool do_ld_0 = count >= delay_0;
+    if (do_ld_0) {
+      fifo_ref_0 = fifo_ld_0.read(nullptr);
+    }
+    auto fifo_ref_1 = fifo_ld_1.read(nullptr);
+    float fifo_ref_2;
+    bool do_ld_2 = count >= delay_2;
+    if (do_ld_2) {
+      fifo_ref_2 = fifo_ld_2.read(nullptr);
+    }
+    fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
+    if (!do_ld_0 || !do_ld_2) {
+      ++count;
     }
   }
   fifo_st_0.close();
@@ -153,28 +133,22 @@ void Module6Func2(tlp::ostream<float>& fifo_st_0,
   const int delay_2 = 50;
   int count = 0;
 module_6_2_epoch:
-  for (;;) {
-    bool eos_0;
-    bool eos_1;
-    bool eos_2;
-    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1) &&
-        fifo_ld_2.try_eos(eos_2)) {
-      if (eos_0 || eos_1 || eos_2) break;
-      float fifo_ref_0;
-      bool do_ld_0 = count >= delay_0;
-      if (do_ld_0) {
-        fifo_ref_0 = fifo_ld_0.read(nullptr);
-      }
-      auto fifo_ref_1 = fifo_ld_1.read(nullptr);
-      float fifo_ref_2;
-      bool do_ld_2 = count >= delay_2;
-      if (do_ld_2) {
-        fifo_ref_2 = fifo_ld_2.read(nullptr);
-      }
-      fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
-      if (!do_ld_0 || !do_ld_2) {
-        ++count;
-      }
+  TLP_WHILE_NONE_EOS(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
+#pragma HLS pipeline II = 1
+    float fifo_ref_0;
+    bool do_ld_0 = count >= delay_0;
+    if (do_ld_0) {
+      fifo_ref_0 = fifo_ld_0.read(nullptr);
+    }
+    auto fifo_ref_1 = fifo_ld_1.read(nullptr);
+    float fifo_ref_2;
+    bool do_ld_2 = count >= delay_2;
+    if (do_ld_2) {
+      fifo_ref_2 = fifo_ld_2.read(nullptr);
+    }
+    fifo_st_0.write((fifo_ref_0 + fifo_ref_1 + fifo_ref_2) * 0.2f);
+    if (!do_ld_0 || !do_ld_2) {
+      ++count;
     }
   }
   fifo_st_0.close();
@@ -184,16 +158,12 @@ void Module8Func(tlp::ostream<tlp::vec_t<float, 2>>& dram_t0_bank_0_fifo,
                  tlp::istream<float>& fifo_ld_0,
                  tlp::istream<float>& fifo_ld_1) {
 module_8_epoch:
-  for (;;) {
-    bool eos_0;
-    bool eos_1;
-    if (fifo_ld_0.try_eos(eos_0) && fifo_ld_1.try_eos(eos_1)) {
-      if (eos_0 || eos_1) break;
-      tlp::vec_t<float, 2> tmp;
-      tmp.set(0, fifo_ld_0.read(nullptr));
-      tmp.set(1, fifo_ld_1.read(nullptr));
-      dram_t0_bank_0_fifo.write(tmp);
-    }
+  TLP_WHILE_NEITHER_EOS(fifo_ld_0, fifo_ld_1) {
+#pragma HLS pipeline II = 1
+    tlp::vec_t<float, 2> tmp;
+    tmp.set(0, fifo_ld_0.read(nullptr));
+    tmp.set(1, fifo_ld_1.read(nullptr));
+    dram_t0_bank_0_fifo.write(tmp);
   }
   dram_t0_bank_0_fifo.close();
 }
