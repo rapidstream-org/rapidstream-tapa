@@ -13,8 +13,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <boost/align.hpp>
-
 #include <tlp.h>
 
 #include "nxgraph.hpp"
@@ -30,7 +28,7 @@ using std::ostream;
 using std::runtime_error;
 using std::unordered_map;
 template <typename T>
-using vector = std::vector<T, boost::alignment::aligned_allocator<T, 4096>>;
+using vector = std::vector<T, tlp::aligned_allocator<T>>;
 using std::memcpy;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
