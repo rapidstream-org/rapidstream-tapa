@@ -63,9 +63,8 @@ struct StreamInfo : public ObjectInfo {
   bool need_peeking{false};
   bool need_eos{false};
 
-  std::string PeekVar() const { return "tlp_" + name + "_peek"; }
-  std::string ValueVar() const { return "tlp_" + name + "_value"; }
-  std::string ValidVar() const { return "tlp_" + name + "_valid"; }
+  std::string PeekVar() const { return name + ".peek_val"; }
+  std::string FifoVar() const { return name + ".fifo"; }
   static std::string ProceedVar() { return "tlp_proceed"; }
 };
 

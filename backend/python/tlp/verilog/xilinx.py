@@ -22,7 +22,7 @@ from haoda.backend import xilinx as backend
 from tlp.verilog import ast
 
 # pylint: disable=unused-import
-from .util import REGISTER_LEVEL, Pipeline, generate_peek_ports
+from .util import REGISTER_LEVEL, Pipeline
 
 # const strings
 
@@ -722,14 +722,32 @@ def generate_m_axi_ports(
   yield ast.make_port_arg(port=port + '_offset', arg=arg_reg or arg)
 
 
+def fifo_port_name(fifo: str, suffix: str) -> str:
+  """Return the port name of the fifo generated via HLS.
+
+  Args:
+      fifo (str): Name of the fifo.
+      suffix (str): One of the suffixes in ISTREAM_SUFFIXES or OSTREAM_SUFFIXES.
+
+  Returns:
+      str: Port name of the fifo generated via HLS.
+  """
+  return f'{fifo}_fifo{suffix}'
+
+
 def generate_istream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in ISTREAM_SUFFIXES:
-    yield ast.make_port_arg(port=port + suffix, arg=arg + suffix)
+    yield ast.make_port_arg(port=fifo_port_name(port, suffix), arg=arg + suffix)
 
 
 def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in OSTREAM_SUFFIXES:
-    yield ast.make_port_arg(port=port + suffix, arg=arg + suffix)
+    yield ast.make_port_arg(port=fifo_port_name(port, suffix), arg=arg + suffix)
+
+
+def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
+  for suffix in verilog.ISTREAM_SUFFIXES[:1]:
+    yield ast.make_port_arg(port=f'{port}_peek_val', arg=arg + suffix)
 
 
 def async_mmap_suffixes(tag: str) -> Tuple[str, str, str]:
@@ -757,7 +775,9 @@ def async_mmap_width(tag: str, suffix: str,
 def generate_async_mmap_ports(
     tag: str, port: str, arg: str,
     instance: tlp.instance.Instance) -> Iterator[ast.PortArg]:
-  prefix = 'tlp_' + port + '_' + tag + '_V_'
+  prefix = port + '_' + tag + '_V_'
+  if tag.endswith('_data'):
+    prefix += 'data_V_'
   for suffix in async_mmap_suffixes(tag):
     port_name = instance.task.module.find_port(prefix=prefix, suffix=suffix)
     if port_name is not None:

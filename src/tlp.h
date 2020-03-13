@@ -568,7 +568,7 @@ struct vec_t {
     return result;
   }
   // T& operator[](uint64_t idx) { return data[idx]; }
-  void set(uint64_t idx, const T& val) { data[idx] = val; }
+  void set(uint64_t idx, T val) { data[idx] = val; }
   T get(uint64_t idx) const { return data[idx]; }
   T operator[](uint64_t idx) const { return get(idx); }
   static constexpr uint64_t length = N;

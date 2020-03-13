@@ -83,206 +83,229 @@ T reg(T x) {
 }
 
 template <typename T>
-struct data_t {
+struct elem_t {
   T val;
   bool eos;
 };
 
-// tlp::stream<T>::try_eos(bool&)
 template <typename T>
-inline bool try_eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
-                    bool& eos) {
+class istream {
+ public:
+  bool empty() const {
 #pragma HLS inline
 #pragma HLS protocol
-  return fifo.empty() ? false : (eos = peek_val.eos, true);
-}
+    return fifo.empty();
+  }
 
-// tlp::stream<T>::eos(bool&)
-template <typename T>
-inline bool eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val, bool& valid) {
+  bool try_eos(bool& eos) const {
 #pragma HLS inline
 #pragma HLS protocol
-  return (valid = !fifo.empty()) && peek_val.eos;
-}
+    return empty() ? false : (eos = peek_val.eos, true);
+  }
 
-// tlp::stream<T>::eos(std::nullptr_t)
-template <typename T>
-inline bool eos(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
-                std::nullptr_t) {
+  bool eos(bool& succeeded) const {
 #pragma HLS inline
 #pragma HLS protocol
-  return !fifo.empty() && peek_val.eos;
-}
+    return (succeeded = !empty()) && peek_val.eos;
+  }
 
-// tlp::stream<T>::try_peek(T&)
-template <typename T>
-inline bool try_peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val, T& val) {
+  bool eos(std::nullptr_t) const {
 #pragma HLS inline
 #pragma HLS protocol
-  return fifo.empty() ? false : (val = peek_val.val, true);
-}
+    return !empty() && peek_val.eos;
+  }
 
-// tlp::stream<T>::peek(bool&)
-template <typename T>
-inline T peek(hls::stream<T>& fifo, T peek_val, bool& succeeded) {
+  bool try_peek(T& val) const {
 #pragma HLS inline
 #pragma HLS protocol
-  T tmp;
-  (succeeded = !fifo.empty()) && (tmp = peek_val, true);
-  return tmp;
-}
-template <typename T>
-inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
-              bool& succeeded) {
-#pragma HLS inline
-#pragma HLS protocol
-  data_t<T> tmp;
-  (succeeded = !fifo.empty()) && (tmp = peek_val, true);
-  return tmp.val;
-}
+    return empty() ? false : (val = peek_val.val, true);
+  }
 
-// tlp::stream<T>::peek(std::nullptr_t)
-template <typename T>
-inline T peek(hls::stream<T>& fifo, T peek_val, std::nullptr_t) {
+  T peek(bool& succeeded) const {
 #pragma HLS inline
 #pragma HLS protocol
-  return peek_val;
-}
-template <typename T>
-inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val,
-              std::nullptr_t) {
-#pragma HLS inline
-#pragma HLS protocol
-  return peek_val.val;
-}
+    elem_t<T> elem;
+    (succeeded = !empty()) && (elem = peek_val, true);
+    return elem.val;
+  }
 
-// tlp::stream<T>::peek(bool&, bool&)
-template <typename T>
-inline T peek(hls::stream<data_t<T>>& fifo, data_t<T> peek_val, bool& succeeded,
-              bool& is_eos) {
+  T peek(std::nullptr_t) const {
 #pragma HLS inline
 #pragma HLS protocol
-  succeeded = !fifo.empty();
-  is_eos = peek_val.eos && succeeded;
-  return peek_val.val;
-}
+    return peek_val.val;
+  }
 
-// tlp::stream<T>::try_read(T&)
-template <typename T>
-inline bool try_read(hls::stream<T>& fifo, T& value) {
+  T peek(bool& succeeded, bool& is_eos) const {
 #pragma HLS inline
 #pragma HLS protocol
-  return fifo.read_nb(value);
-}
-template <typename T>
-inline bool try_read(hls::stream<data_t<T>>& fifo, T& value) {
-#pragma HLS inline
-#pragma HLS protocol
-  data_t<T> tmp;
-  return fifo.read_nb(tmp) && (value = tmp.val, true);
-}
+    succeeded = !empty();
+    is_eos = peek_val.eos && succeeded;
+    return peek_val.val;
+  }
 
-// tlp::stream<T>::read()
-template <typename T>
-inline T read(hls::stream<T>& fifo) {
+  bool try_read(T& val) {
+#pragma HLS inline
+#pragma HLS protocol
+    elem_t<T> elem;
+    return fifo.read_nb(elem) && (val = elem.val, true);
+  }
+
+  T read() {
 #pragma HLS inline
 #pragma HLS latency max = 1
-  return fifo.read();
-}
-template <typename T>
-inline T read(hls::stream<data_t<T>>& fifo) {
-#pragma HLS inline
-#pragma HLS latency max = 1
-  return fifo.read().val;
-}
+    return fifo.read().val;
+  }
 
-// tlp::stream<T>::read(bool&)
-template <typename T>
-inline T read(hls::stream<T>& fifo, bool& succeeded) {
+  T read(bool& succeeded) {
 #pragma HLS inline
 #pragma HLS latency max = 1
-  T value;
-  succeeded = fifo.read_nb(value);
-  return value;
-}
-template <typename T>
-inline T read(hls::stream<data_t<T>>& fifo, bool& succeeded) {
-#pragma HLS inline
-#pragma HLS latency max = 1
-  data_t<T> value;
-  succeeded = fifo.read_nb(value);
-  return value.val;
-}
+    elem_t<T> elem;
+    succeeded = fifo.read_nb(elem);
+    return elem.val;
+  }
 
-// tlp::stream<T>::read(std::nullptr_t)
-template <typename T>
-inline T read(hls::stream<T>& fifo, std::nullptr_t) {
+  T read(std::nullptr_t) {
 #pragma HLS inline
 #pragma HLS latency max = 1
-  T value;
-  fifo.read_nb(value);
-  return value;
-}
-template <typename T>
-inline T read(hls::stream<data_t<T>>& fifo, std::nullptr_t) {
-#pragma HLS inline
-#pragma HLS latency max = 1
-  data_t<T> value;
-  fifo.read_nb(value);
-  return value.val;
-}
+    elem_t<T> elem;
+    fifo.read_nb(elem);
+    return elem.val;
+  }
 
-// tlp::stream<T>::try_open()
-template <typename T>
-inline void try_open(hls::stream<data_t<T>>& fifo) {
+  T read(bool* succeeded_ret, const T& default_val) {
 #pragma HLS inline
 #pragma HLS latency max = 1
-  data_t<T> tmp;
-  assert(!fifo.read_nb(tmp) || tmp.eos);
-}
+    elem_t<T> elem;
+    bool succeeded = fifo.read_nb(elem);
+    if (succeeded_ret != nullptr) *succeeded_ret = succeeded;
+    return succeeded ? elem.val : default_val;
+  }
 
-// tlp::stream<T>::open()
-template <typename T>
-inline void open(hls::stream<data_t<T>>& fifo) {
+  void try_open() {
 #pragma HLS inline
 #pragma HLS latency max = 1
-  assert(fifo.read().eos);
-}
+    elem_t<T> elem;
+    assert(!fifo.read_nb(elem) || elem.eos);
+  }
 
-// tlp::stream<T>::write(const T&)
-template <typename T>
-inline void write(hls::stream<data_t<T>>& fifo, const T& value) {
+  void open() {
 #pragma HLS inline
-//#pragma HLS latency max = 1
+#pragma HLS latency max = 1
+    assert(fifo.read().eos);
+  }
+
+  hls::stream<elem_t<T>> fifo;
+  elem_t<T> peek_val;
+};
+
+template <typename T>
+class ostream {
+ public:
+  bool full() const {
+#pragma HLS inline
 #pragma HLS protocol
-  fifo.write(reg(data_t<T>{value, false}));
-}
+    return fifo.full();
+  }
 
-// tlp::stream<T>::try_write(const T&)
-template <typename T>
-inline bool try_write(hls::stream<data_t<T>>& fifo, const T& value) {
+  bool try_write(const T& val) {
 #pragma HLS inline
-//#pragma HLS latency max = 1
 #pragma HLS protocol
-  return fifo.write_nb(reg(data_t<T>{value, false}));
-}
+    return fifo.write_nb({val, false});
+  }
 
-// tlp::stream<T>::close()
-template <typename T>
-inline void close(hls::stream<data_t<T>>& fifo) {
+  void write(const T& val) {
 #pragma HLS inline
-//#pragma HLS latency max = 1
 #pragma HLS protocol
-  data_t<T> tmp = {};
-  tmp.eos = true;
-  fifo.write(reg(tmp));
-}
+    fifo.write({val, false});
+  }
+
+  bool try_close() {
+#pragma HLS inline
+#pragma HLS protocol
+    elem_t<T> elem = {};
+    elem.eos = true;
+    return fifo.write_nb(elem);
+  }
+
+  void close() {
+#pragma HLS inline
+#pragma HLS protocol
+    elem_t<T> elem = {};
+    elem.eos = true;
+    fifo.write(elem);
+  }
+
+  hls::stream<elem_t<T>> fifo;
+};
+
+template <typename T>
+using mmap = T*;
+
+template <typename T>
+struct async_mmap {
+  using addr_t = uint64_t;
+
+  // Read operations.
+  void read_addr_write(addr_t addr) {
+#pragma HLS inline
+#pragma HLS protocol
+    read_addr.write(addr);
+  }
+  bool read_addr_try_write(addr_t addr) {
+#pragma HLS inline
+#pragma HLS protocol
+    return read_addr.write_nb(addr);
+  }
+  bool read_data_empty() {
+#pragma HLS inline
+#pragma HLS protocol
+    return read_data.empty();
+  }
+  bool read_data_try_read(T& resp) {
+#pragma HLS inline
+#pragma HLS latency max = 1
+    return read_data.read_nb(resp);
+  };
+
+  // Write operations.
+  void write_addr_write(addr_t addr) {
+#pragma HLS inline
+#pragma HLS protocol
+    write_addr.write(addr);
+  }
+  bool write_addr_try_write(addr_t addr) {
+#pragma HLS inline
+#pragma HLS protocol
+    return write_addr.write_nb(addr);
+  }
+  void write_data_write(const T& data) {
+#pragma HLS inline
+#pragma HLS protocol
+    write_data.write(data);
+  }
+  bool write_data_try_write(const T& data) {
+#pragma HLS inline
+#pragma HLS protocol
+    return write_data.write_nb(data);
+  }
+
+  // Waits until no operations are pending or on-going.
+  void fence() {
+#pragma HLS inline
+    ap_wait_n(80);
+  }
+
+  hls::stream<addr_t> read_addr;  // write-only
+  hls::stream<T> read_data;       // read-only
+  T read_peek;
+  hls::stream<addr_t> write_addr;  // write-only
+  hls::stream<T> write_data;       // write-only
+};
 
 template <typename T>
 inline constexpr uint64_t widthof() {
   return sizeof(T) * CHAR_BIT;
 }
-
 template <typename T, uint64_t N>
 struct vec_t {
   template <typename U>
@@ -300,10 +323,10 @@ struct vec_t {
   ap_uint<bits> data = 0;
   // T& operator[](uint64_t idx) { return *(reinterpret_cast<T*>(&data) + idx);
   // }
-  void set(uint64_t idx, const T& val) {
+  void set(uint64_t idx, T val) {
 #pragma HLS inline
     data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>()) =
-        reinterpret_cast<const ap_uint<widthof<T>()>&>(val);
+        reinterpret_cast<ap_uint<widthof<T>()>&>(val);
   }
   T get(uint64_t idx) const {
 #pragma HLS inline
@@ -318,28 +341,22 @@ struct vec_t {
 
 }  // namespace tlp
 
-#define TLP_WHILE_NOT_EOS(fifo)                                  \
-  for (bool tlp_##fifo##_valid;                                  \
-       !tlp::eos(fifo, tlp_##fifo##_peek, tlp_##fifo##_valid) || \
-       !tlp_##fifo##_valid;)                                     \
+#define TLP_WHILE_NOT_EOS(fifo)                               \
+  for (bool tlp_##fifo##_valid;                               \
+       !fifo.eos(tlp_##fifo##_valid) || !tlp_##fifo##_valid;) \
     if (tlp_##fifo##_valid)
 
-#define TLP_WHILE_NEITHER_EOS(fifo1, fifo2)                          \
-  for (bool tlp_##fifo1##_valid, tlp_##fifo2##_valid;                \
-       (!tlp::eos(fifo1, tlp_##fifo1##_peek, tlp_##fifo1##_valid) || \
-        !tlp_##fifo1##_valid) &&                                     \
-       (!tlp::eos(fifo2, tlp_##fifo2##_peek, tlp_##fifo2##_valid) || \
-        !tlp_##fifo2##_valid);)                                      \
+#define TLP_WHILE_NEITHER_EOS(fifo1, fifo2)                         \
+  for (bool tlp_##fifo1##_valid, tlp_##fifo2##_valid;               \
+       (!fifo1.eos(tlp_##fifo1##_valid) || !tlp_##fifo1##_valid) && \
+       (!fifo2.eos(tlp_##fifo2##_valid) || !tlp_##fifo2##_valid);)  \
     if (tlp_##fifo1##_valid && tlp_##fifo2##_valid)
 
 #define TLP_WHILE_NONE_EOS(fifo1, fifo2, fifo3)                            \
   for (bool tlp_##fifo1##_valid, tlp_##fifo2##_valid, tlp_##fifo3##_valid; \
-       (!tlp::eos(fifo1, tlp_##fifo1##_peek, tlp_##fifo1##_valid) ||       \
-        !tlp_##fifo1##_valid) &&                                           \
-       (!tlp::eos(fifo2, tlp_##fifo2##_peek, tlp_##fifo2##_valid) ||       \
-        !tlp_##fifo2##_valid) &&                                           \
-       (!tlp::eos(fifo3, tlp_##fifo3##_peek, tlp_##fifo3##_valid) ||       \
-        !tlp_##fifo3##_valid);)                                            \
+       (!fifo1.eos(tlp_##fifo1##_valid) || !tlp_##fifo1##_valid) &&        \
+       (!fifo2.eos(tlp_##fifo2##_valid) || !tlp_##fifo2##_valid) &&        \
+       (!fifo3.eos(tlp_##fifo3##_valid) || !tlp_##fifo3##_valid);)         \
     if (tlp_##fifo1##_valid && tlp_##fifo2##_valid && tlp_##fifo3##_valid)
 
 #endif  // TASK_LEVEL_PARALLELIZATION_H_

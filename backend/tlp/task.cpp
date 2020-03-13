@@ -376,42 +376,6 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     }
   }
 
-  /*
-  for (auto invoke : invokes) {
-    int step = -1;
-    if (const auto method = dyn_cast<MemberExpr>(invoke->getCallee())) {
-      if (method->getNumTemplateArgs() != 1) {
-        ReportError(method->getMemberLoc(),
-                    "exactly 1 template argument expected")
-            .AddSourceRange(CharSourceRange::getCharRange(
-                method->getMemberLoc(),
-                method->getEndLoc().getLocWithOffset(1)));
-      }
-      step = stoi(GetRewriter().getRewrittenText(
-          method->getTemplateArgs()[0].getSourceRange()));
-    } else {
-      ReportError(invoke->getBeginLoc(), "unexpected invocation: %0")
-          .AddString(invoke->getStmtClassName());
-    }
-    invokes_str += "// step " + to_string(step) + "\n";
-    invokes_str += "threads.emplace_back(";
-    for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
-      const auto arg = invoke->getArg(i);
-      if (const auto decl_ref = dyn_cast<DeclRefExpr>(arg)) {
-        string arg_name =
-            GetRewriter().getRewrittenText(decl_ref->getSourceRange());
-        if (IsStreamInstance(arg->getType())) {
-          arg_name = "std::ref(" + arg_name + ")";
-        }
-        invokes_str += arg_name + ", ";
-      } else {
-        ReportError(arg->getBeginLoc(), "unexpected argument: %0")
-            .AddString(arg->getStmtClassName());
-      }
-    }
-  }
-  */
-
   // SDAccel only works with extern C kernels.
   GetRewriter().InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
   GetRewriter().InsertTextAfterToken(func->getEndLoc(),
@@ -428,21 +392,13 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     if (IsStreamInterface(param)) {
       auto elem_type = GetStreamElemType(param);
       streams.emplace_back(param->getNameAsString(), elem_type);
-      GetRewriter().ReplaceText(
-          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "hls::stream<tlp::data_t<" + elem_type + ">>&");
     } else if (IsMmap(param)) {
       auto elem_type = GetMmapElemType(param);
       mmaps.emplace_back(param->getNameAsString(), elem_type);
-      GetRewriter().ReplaceText(
-          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          elem_type + "*");
     } else if (IsAsyncMmap(param)) {
       auto elem_type = GetMmapElemType(param);
       AsyncMmapInfo async_mmap(param->getNameAsString(), elem_type);
       async_mmap.GetAsyncMmapInfo(func->getBody(), context_.getDiagnostics());
-      GetRewriter().ReplaceText(param->getSourceRange(),
-                                async_mmap.GetReplacedText());
       async_mmaps.push_back(async_mmap);
     }
   }
@@ -450,17 +406,6 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Retrieve stream information.
   const auto func_body = func->getBody();
   GetStreamInfo(func_body, streams, context_.getDiagnostics());
-
-  string new_params{};
-  for (auto stream : streams) {
-    if (stream.need_peeking) {
-      new_params += ", tlp::data_t<" + stream.type + "> " + stream.PeekVar();
-    }
-  }
-  if (!new_params.empty()) {
-    auto end_loc = func->getParamDecl(func->getNumParams() - 1)->getEndLoc();
-    GetRewriter().InsertText(GetEndOfLoc(end_loc), new_params);
-  }
 
   // Insert interface pragmas.
   for (const auto& mmap : mmaps) {
@@ -474,12 +419,10 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   // Before the original function body, insert data_pack pragmas.
   for (const auto& stream : streams) {
     InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                    {{"variable", stream.name}});
-    if (stream.need_peeking) {
+                    {{"variable", stream.FifoVar()}});
+    if (stream.is_consumer) {
       InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
                       {{"variable", stream.PeekVar()}});
-      InsertHlsPragma(func_body->getBeginLoc(), "interface",
-                      {{"ap_stable", {}}, {"port", stream.PeekVar()}});
     }
   }
   for (const auto& mmap : mmaps) {
@@ -507,59 +450,6 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   for (const auto& stream : streams) {
     for (auto call_expr : stream.call_exprs) {
       stream_table[call_expr] = &stream;
-    }
-  }
-  RewriteStreams(func_body, stream_table);
-
-  for (const auto& async_mmap : async_mmaps) {
-    for (size_t i = 0; i < async_mmap.ops.size(); ++i) {
-      auto call_expr = async_mmap.call_exprs[i];
-      vector<string> args;
-      for (auto arg : call_expr->arguments()) {
-        args.push_back(GetRewriter().getRewrittenText(arg->getSourceRange()));
-      }
-      string rewritten_text;
-      switch (async_mmap.ops[i]) {
-        case AsyncMmapOpEnum::kFence:
-          rewritten_text = "ap_wait_n(80)";
-          break;
-        case AsyncMmapOpEnum::kWriteAddrTryWrite:
-          rewritten_text =
-              async_mmap.WriteAddrVar() + ".write_nb(" + args[0] + ")";
-          break;
-        case AsyncMmapOpEnum::kWriteAddrWrite:
-          rewritten_text =
-              async_mmap.WriteAddrVar() + ".write(" + args[0] + ")";
-          break;
-        case AsyncMmapOpEnum::kWriteDataTryWrite:
-          rewritten_text =
-              async_mmap.WriteDataVar() + ".write_nb(" + args[0] + ")";
-          break;
-        case AsyncMmapOpEnum::kWriteDataWrite:
-          rewritten_text =
-              async_mmap.WriteDataVar() + ".write(" + args[0] + ")";
-          break;
-        case AsyncMmapOpEnum::kReadAddrTryWrite:
-          rewritten_text =
-              async_mmap.ReadAddrVar() + ".write_nb(" + args[0] + ")";
-          break;
-        case AsyncMmapOpEnum::kReadDataEmpty:
-          rewritten_text = async_mmap.ReadDataVar() + ".empty()";
-          break;
-        case AsyncMmapOpEnum::kReadDataTryRead:
-          rewritten_text =
-              async_mmap.ReadDataVar() + ".read_nb(" + args[0] + ")";
-          break;
-        default: {
-          auto callee = dyn_cast<MemberExpr>(call_expr->getCallee());
-          auto diagnostics_builder = ReportError(
-              callee->getMemberLoc(), "'%0' has not yet been implemented");
-          diagnostics_builder.AddSourceRange(GetCharSourceRange(callee));
-          diagnostics_builder.AddString(GetSignature(call_expr));
-          rewritten_text = "NOT_IMPLEMENTED";
-        }
-      }
-      GetRewriter().ReplaceText(call_expr->getSourceRange(), rewritten_text);
     }
   }
 
@@ -658,123 +548,11 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
         if (!loop_preamble.empty()) {
           loop_preamble += " && ";
         }
-        if (stream.need_peeking) {
-          loop_preamble += stream.ValidVar();
-        } else {
-          loop_preamble += "!" + stream.name + ".empty()";
-        }
+        loop_preamble += "!" + stream.name + ".empty()";
       }
     }
   }
 }  // namespace internal
-
-void Visitor::RewriteStreams(
-    const Stmt* stmt,
-    unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table) {
-  for (auto child : stmt->children()) {
-    if (child != nullptr) {
-      RewriteStreams(child, stream_table);
-    }
-  }
-  if (const auto call_expr = dyn_cast<CXXMemberCallExpr>(stmt)) {
-    auto stream = stream_table.find(call_expr);
-    if (stream != stream_table.end()) {
-      RewriteStream(stream->first, *stream->second);
-    }
-  }
-}
-
-// Given the CXXMemberCallExpr and the corresponding StreamInfo, rewrite the
-// code.
-void Visitor::RewriteStream(const CXXMemberCallExpr* call_expr,
-                            const StreamInfo& stream) {
-  string rewritten_text{};
-  vector<string> args;
-  for (auto arg : call_expr->arguments()) {
-    args.push_back(GetRewriter().getRewrittenText(arg->getSourceRange()));
-  }
-  switch (GetStreamOp(call_expr)) {
-    case StreamOpEnum::kTestEmpty: {
-      rewritten_text = stream.name + ".empty()";
-      break;
-    }
-    case StreamOpEnum::kTryEos: {
-      rewritten_text = "tlp::try_eos(" + stream.name + ", " + stream.PeekVar() +
-                       ", " + args[0] + ")";
-      break;
-    }
-    case StreamOpEnum::kBlockingEos: {
-      rewritten_text = "tlp::eos(" + stream.PeekVar() + ")";
-      break;
-    }
-    case StreamOpEnum::kNonBlockingEos: {
-      rewritten_text = "tlp::eos(" + stream.name + ", " + stream.PeekVar() +
-                       ", " + args[0] + ")";
-      break;
-    }
-    case StreamOpEnum::kNonBlockingPeek: {
-      rewritten_text = "tlp::peek(" + stream.name + ", " + stream.PeekVar() +
-                       ", " + args[0] + ")";
-      break;
-    }
-    case StreamOpEnum::kNonBlockingPeekWithEos: {
-      rewritten_text = "tlp::peek(" + stream.name + ", " + stream.PeekVar() +
-                       ", " + args[0] + ", " + args[1] + ")";
-      break;
-    }
-    case StreamOpEnum::kTryRead: {
-      rewritten_text = "tlp::try_read(" + stream.name + ", " + args[0] + ")";
-      break;
-    }
-    case StreamOpEnum::kBlockingRead: {
-      rewritten_text = "tlp::read(" + stream.name + ")";
-      break;
-    }
-    case StreamOpEnum::kNonBlockingRead: {
-      rewritten_text = "tlp::read(" + stream.name + ", " + args[0] + ")";
-      break;
-    }
-    case StreamOpEnum::kTryOpen: {
-      rewritten_text = "tlp::try_open(" + stream.name + ")";
-      break;
-    }
-    case StreamOpEnum::kOpen: {
-      rewritten_text = "tlp::open(" + stream.name + ")";
-      break;
-    }
-    case StreamOpEnum::kTestFull: {
-      rewritten_text = stream.name + ".full()";
-      break;
-    }
-    case StreamOpEnum::kWrite: {
-      rewritten_text = "tlp::write(" + stream.name + ", " + stream.type + "(" +
-                       args[0] + "))";
-      break;
-    }
-    case StreamOpEnum::kTryWrite: {
-      rewritten_text = "tlp::try_write(" + stream.name + ", " + stream.type +
-                       "(" + args[0] + "))";
-      break;
-    }
-    case StreamOpEnum::kClose: {
-      rewritten_text = "tlp::close(" + stream.name + ")";
-      break;
-    }
-    default: {
-      auto callee = dyn_cast<MemberExpr>(call_expr->getCallee());
-      auto diagnostics_builder = ReportError(
-          callee->getMemberLoc(), "'%0' has not yet been implemented");
-      diagnostics_builder.AddSourceRange(CharSourceRange::getCharRange(
-          callee->getMemberLoc(),
-          callee->getMemberLoc().getLocWithOffset(
-              callee->getMemberNameInfo().getAsString().size())));
-      diagnostics_builder.AddString(GetSignature(call_expr));
-      rewritten_text = "NOT_IMPLEMENTED";
-    }
-  }
-
-  GetRewriter().ReplaceText(call_expr->getSourceRange(), rewritten_text);
-}
 
 SourceLocation Visitor::GetEndOfLoc(SourceLocation loc) {
   return loc.getLocWithOffset(Lexer::MeasureTokenLength(

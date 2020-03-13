@@ -46,10 +46,11 @@ struct AsyncMmapInfo : public ObjectInfo {
   bool is_addr = false;
   bool is_data = false;
 
-  std::string ReadAddrVar() const { return "tlp_" + name + "_read_addr"; }
-  std::string ReadDataVar() const { return "tlp_" + name + "_read_data"; }
-  std::string WriteAddrVar() const { return "tlp_" + name + "_write_addr"; }
-  std::string WriteDataVar() const { return "tlp_" + name + "_write_data"; }
+  std::string ReadAddrVar() const { return name + ".read_addr"; }
+  std::string ReadDataVar() const { return name + ".read_data"; }
+  std::string ReadDataPeekVar() const { return name + ".read_peek"; }
+  std::string WriteAddrVar() const { return name + ".write_addr"; }
+  std::string WriteDataVar() const { return name + ".write_data"; }
 
   void GetAsyncMmapInfo(const clang::Stmt* root,
                         clang::DiagnosticsEngine& diagnostics_engine);

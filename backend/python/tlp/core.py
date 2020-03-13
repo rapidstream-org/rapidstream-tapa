@@ -200,7 +200,8 @@ class Program:
       # declare wires for FIFOs
       task.module.add_signals(
           ast.Wire(name=fifo_name + suffix,
-                   width=child_ports[fifo_port + suffix].width)
+                   width=child_ports[rtl.fifo_port_name(fifo_port,
+                                                        suffix)].width)
           for suffix in rtl.ISTREAM_SUFFIXES)
 
       task_name, task_idx = fifo['produced_by']
@@ -210,11 +211,13 @@ class Program:
       # declare wires for FIFOs
       task.module.add_signals(
           ast.Wire(name=fifo_name + suffix,
-                   width=child_ports[fifo_port + suffix].width)
+                   width=child_ports[rtl.fifo_port_name(fifo_port,
+                                                        suffix)].width)
           for suffix in rtl.OSTREAM_SUFFIXES)
 
       # add FIFO instances
-      width = child_ports[fifo_port + rtl.OSTREAM_SUFFIXES[0]].width
+      width = child_ports[rtl.fifo_port_name(fifo_port,
+                                             rtl.OSTREAM_SUFFIXES[0])].width
       # TODO: err properly if not integer literals
       fifo_width = int(width.msb.value) - int(width.lsb.value) + 1
       task.module.add_fifo_instance(

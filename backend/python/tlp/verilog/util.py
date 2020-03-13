@@ -24,8 +24,3 @@ class Pipeline:
     for x in self[1:]:
       yield ast.Pragma(ast.PragmaEntry('dont_touch = "yes"'))
       yield ast.Reg(name=x.name, width=self._width)
-
-
-def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
-  for suffix in verilog.ISTREAM_SUFFIXES[:1]:
-    yield ast.make_port_arg(port='tlp_' + port + '_peek', arg=arg + suffix)
