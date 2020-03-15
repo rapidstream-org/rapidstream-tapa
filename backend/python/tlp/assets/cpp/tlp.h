@@ -238,6 +238,20 @@ class ostream {
   hls::stream<elem_t<T>> fifo;
 };
 
+template <typename T, uint64_t S>
+class istreams {
+ public:
+  istream<T>& operator[](int idx) { return _[idx]; }
+  istream<T> _[S];
+};
+
+template <typename T, uint64_t S>
+class ostreams {
+ public:
+  ostream<T>& operator[](int idx) { return _[idx]; }
+  ostream<T> _[S];
+};
+
 template <typename T>
 using mmap = T*;
 

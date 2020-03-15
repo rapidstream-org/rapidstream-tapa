@@ -199,7 +199,7 @@ class Program:
 
       # declare wires for FIFOs
       task.module.add_signals(
-          ast.Wire(name=fifo_name + suffix,
+          ast.Wire(name=rtl.wire_name(fifo_name, suffix),
                    width=child_ports[rtl.fifo_port_name(fifo_port,
                                                         suffix)].width)
           for suffix in rtl.ISTREAM_SUFFIXES)
@@ -210,7 +210,7 @@ class Program:
 
       # declare wires for FIFOs
       task.module.add_signals(
-          ast.Wire(name=fifo_name + suffix,
+          ast.Wire(name=rtl.wire_name(fifo_name, suffix),
                    width=child_ports[rtl.fifo_port_name(fifo_port,
                                                         suffix)].width)
           for suffix in rtl.OSTREAM_SUFFIXES)
@@ -252,13 +252,14 @@ class Program:
                                  fifo=fifo_name,
                                  task=(util.get_instance_name(fifo[fifo_tag])),
                                  **fmtargs)),
-                  ast.Identifier(name=fifo_name + suffixes[0]))))
+                  ast.Identifier(name=rtl.wire_name(fifo_name, suffixes[0])))))
         debugging_blocks.append(
             ast.Always(
                 sens_list=rtl.CLK_SENS_LIST,
                 statement=ast.make_block(
                     ast.IfStatement(cond=ast.Eq(
-                        left=ast.Identifier(name=fifo_name + suffixes[-1]),
+                        left=ast.Identifier(
+                            name=rtl.wire_name(fifo_name, suffixes[-1])),
                         right=rtl.TRUE,
                     ),
                                     true_statement=ast.make_block(display),

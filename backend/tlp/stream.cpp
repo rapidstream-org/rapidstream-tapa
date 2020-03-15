@@ -1,6 +1,7 @@
 #include "stream.h"
 
 #include <memory>
+#include <regex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -8,6 +9,8 @@
 #include "clang/AST/AST.h"
 
 using std::make_shared;
+using std::regex;
+using std::regex_match;
 using std::shared_ptr;
 using std::string;
 using std::unordered_map;
@@ -21,6 +24,7 @@ using clang::DiagnosticsEngine;
 using clang::Expr;
 using clang::MemberExpr;
 using clang::QualType;
+using clang::RecordDecl;
 using clang::Stmt;
 using clang::Type;
 
@@ -263,4 +267,28 @@ const ClassTemplateSpecializationDecl* GetTlpStreamDecl(
     const QualType& qual_type) {
   return GetTlpStreamDecl(
       qual_type.getUnqualifiedType().getCanonicalType().getTypePtr());
+}
+
+const ClassTemplateSpecializationDecl* GetTlpStreamsDecl(const Type* type) {
+  if (type != nullptr) {
+    if (const auto record = type->getAsRecordDecl()) {
+      if (const auto decl = dyn_cast<ClassTemplateSpecializationDecl>(record)) {
+        if (IsTlpType(decl, "(i|o)?streams")) {
+          return decl;
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+const ClassTemplateSpecializationDecl* GetTlpStreamsDecl(
+    const QualType& qual_type) {
+  return GetTlpStreamsDecl(
+      qual_type.getUnqualifiedType().getCanonicalType().getTypePtr());
+}
+
+bool IsTlpType(const RecordDecl* decl, const string& type_name) {
+  return decl != nullptr && regex_match(decl->getQualifiedNameAsString(),
+                                        regex{"tlp::" + type_name});
 }

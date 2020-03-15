@@ -150,7 +150,10 @@ class stream : public istream<T>, public ostream<T> {
   // must call APIs from tlp::istream or tlp::ostream; calling from tlp::stream
   // directly is not allowed
  private:
-  const std::string name;
+  template <typename U, uint64_t S, uint64_t M>
+  friend class streams;
+
+  std::string name;
   constexpr static uint64_t depth{N};
   const char* get_name() const override { return name.c_str(); }
   uint64_t get_depth() const override { return depth; }
@@ -349,6 +352,43 @@ class stream : public istream<T>, public ostream<T> {
     }
     std::this_thread::yield();
   }
+};
+
+template <typename T, uint64_t S>
+class istreams {
+ public:
+  virtual istream<T>& operator[](int idx) = 0;
+};
+
+template <typename T, uint64_t S>
+class ostreams {
+ public:
+  virtual ostream<T>& operator[](int idx) = 0;
+};
+
+template <typename T, uint64_t S, uint64_t N = 1>
+class streams : public istreams<T, S>, public ostreams<T, S> {
+  stream<T, N> streams_[S];
+
+ public:
+  // constructors
+  streams() {}
+  template <size_t SS>
+  streams(const char (&name)[SS]) {
+    for (int i = 0; i < S; ++i) {
+      streams_[i].name = std::string(name) + "[" + std::to_string(i) + "]";
+    }
+  }
+  // deleted copy constructor
+  streams(const streams&) = delete;
+  // default move constructor
+  streams(streams&&) = default;
+  // deleted copy assignment operator
+  streams& operator=(const streams&) = delete;
+  // default move assignment operator
+  streams& operator=(streams&&) = default;
+
+  stream<T, N>& operator[](int idx) { return streams_[idx]; };
 };
 
 template <typename T>

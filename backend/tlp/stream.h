@@ -77,6 +77,10 @@ const clang::ClassTemplateSpecializationDecl* GetTlpStreamDecl(
     const clang::Type* type);
 const clang::ClassTemplateSpecializationDecl* GetTlpStreamDecl(
     const clang::QualType& qual_type);
+const clang::ClassTemplateSpecializationDecl* GetTlpStreamsDecl(
+    const clang::Type* type);
+const clang::ClassTemplateSpecializationDecl* GetTlpStreamsDecl(
+    const clang::QualType& qual_type);
 std::vector<const clang::CXXMemberCallExpr*> GetTlpStreamOps(
     const clang::Stmt* stmt);
 
@@ -126,55 +130,19 @@ class RecursiveInnermostLoopsVisitor
   bool has_fifo_{false};
 };
 
-inline bool IsInputStream(const clang::RecordDecl* decl) {
-  return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::istream";
+template <typename T>
+inline bool IsStreamInterface(T obj) {
+  return IsTlpType(obj, "(i|o)stream");
 }
-inline bool IsOutputStream(const clang::RecordDecl* decl) {
-  return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::ostream";
+template <typename T>
+inline bool IsStreamInstance(T obj) {
+  return IsTlpType(obj, "stream");
 }
-inline bool IsStreamInstance(const clang::RecordDecl* decl) {
-  return decl != nullptr && decl->getQualifiedNameAsString() == "tlp::stream";
-}
-inline bool IsStreamInterface(const clang::RecordDecl* decl) {
-  return IsInputStream(decl) || IsOutputStream(decl);
-}
-inline bool IsStream(const clang::RecordDecl* decl) {
-  return IsStreamInterface(decl) || IsStreamInstance(decl);
+template <typename T>
+inline bool IsStream(T obj) {
+  return IsTlpType(obj, "(i|o)?stream");
 }
 
-inline bool IsStreamInstance(clang::QualType type) {
-  return IsStreamInstance(type->getAsRecordDecl());
-}
-inline bool IsStreamInterface(const clang::LValueReferenceType* type) {
-  return type != nullptr &&
-         IsStreamInterface(type->getPointeeType()->getAsRecordDecl());
-}
-inline bool IsStreamInterface(clang::QualType type) {
-  return IsStreamInterface(type->getAs<clang::LValueReferenceType>());
-}
-inline bool IsStreamInterface(const clang::ParmVarDecl* param) {
-  return IsStreamInterface(param->getType());
-}
-inline bool IsInputStream(const clang::LValueReferenceType* type) {
-  return type != nullptr &&
-         IsInputStream(type->getPointeeType()->getAsRecordDecl());
-}
-inline bool IsInputStream(clang::QualType type) {
-  return IsInputStream(type->getAs<clang::LValueReferenceType>());
-}
-inline bool IsInputStream(const clang::ParmVarDecl* param) {
-  return IsInputStream(param->getType());
-}
-inline bool IsOutputStream(const clang::LValueReferenceType* type) {
-  return type != nullptr &&
-         IsOutputStream(type->getPointeeType()->getAsRecordDecl());
-}
-inline bool IsOutputStream(clang::QualType type) {
-  return IsOutputStream(type->getAs<clang::LValueReferenceType>());
-}
-inline bool IsOutputStream(const clang::ParmVarDecl* param) {
-  return IsOutputStream(param->getType());
-}
 inline std::string GetStreamElemType(const clang::ParmVarDecl* param) {
   if (IsStreamInterface(param->getType())) {
     return GetTemplateArgName(param->getType()
@@ -184,6 +152,22 @@ inline std::string GetStreamElemType(const clang::ParmVarDecl* param) {
                                   ->getArg(0));
   }
   return "";
+}
+
+inline std::string StreamNameAt(const std::string& array_name, int idx) {
+  return array_name + "[" + std::to_string(idx) + "]";
+}
+
+inline uint64_t GetNumStreams(
+    const clang::ClassTemplateSpecializationDecl* decl) {
+  return *decl->getTemplateArgs()[1].getAsIntegral().getRawData();
+}
+inline uint64_t GetNumStreams(const clang::ParmVarDecl* param) {
+  return GetNumStreams(clang::dyn_cast<clang::ClassTemplateSpecializationDecl>(
+      param->getType()
+          ->getAs<clang::LValueReferenceType>()
+          ->getPointeeType()
+          ->getAsRecordDecl()));
 }
 
 #endif  // TLP_STREAM_H_

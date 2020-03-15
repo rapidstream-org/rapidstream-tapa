@@ -31,6 +31,7 @@ using std::vector;
 using clang::CharSourceRange;
 using clang::CXXMemberCallExpr;
 using clang::CXXMethodDecl;
+using clang::CXXOperatorCallExpr;
 using clang::DeclGroupRef;
 using clang::DeclRefExpr;
 using clang::DeclStmt;
@@ -41,6 +42,7 @@ using clang::ExprWithCleanups;
 using clang::ForStmt;
 using clang::FunctionDecl;
 using clang::FunctionProtoType;
+using clang::IntegerLiteral;
 using clang::Lexer;
 using clang::LValueReferenceType;
 using clang::MemberExpr;
@@ -290,6 +292,15 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           const uint64_t fifo_depth{*args[1].getAsIntegral().getRawData()};
           const string var_name{var_decl->getNameAsString()};
           metadata["fifos"][var_name]["depth"] = fifo_depth;
+        } else if (auto decl = GetTlpStreamsDecl(var_decl->getType())) {
+          const auto args = decl->getTemplateArgs().asArray();
+          const string elem_type = GetTemplateArgName(args[0]);
+          const uint64_t fifo_depth = *args[2].getAsIntegral().getRawData();
+          for (int i = 0; i < GetNumStreams(decl); ++i) {
+            const string var_name =
+                StreamNameAt(var_decl->getNameAsString(), i);
+            metadata["fifos"][var_name]["depth"] = fifo_depth;
+          }
         }
       }
     }
@@ -317,8 +328,23 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     string task_name;
     for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
       const auto arg = invoke->getArg(i);
-      if (const auto decl_ref = dyn_cast<DeclRefExpr>(arg)) {
-        const auto arg_name = decl_ref->getNameInfo().getName().getAsString();
+      const auto decl_ref = dyn_cast<DeclRefExpr>(arg);
+      const auto op_call = dyn_cast<CXXOperatorCallExpr>(arg);
+      if (decl_ref || op_call) {
+        string arg_name;
+        if (decl_ref)
+          arg_name = decl_ref->getNameInfo().getName().getAsString();
+        if (op_call) {
+          const auto array_name = dyn_cast<DeclRefExpr>(op_call->getArg(0))
+                                      ->getNameInfo()
+                                      .getName()
+                                      .getAsString();
+          // probably only work with little endian
+          const auto array_idx = *dyn_cast<IntegerLiteral>(op_call->getArg(1))
+                                      ->getValue()
+                                      .getRawData();
+          arg_name = StreamNameAt(array_name, array_idx);
+        }
         if (i == 0) {
           task_name = arg_name;
           metadata["tasks"][task_name].push_back({{"step", step}});
@@ -327,39 +353,74 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           assert(task != nullptr);
           auto param = task->getParamDecl(has_name ? i - 2 : i - 1);
           string param_cat;
-          if (IsMmap(param)) {
-            param_cat = "mmap";
-          } else if (IsAsyncMmap(param)) {
-            param_cat = "async_mmap";
-          } else if (IsInputStream(param)) {
-            param_cat = "istream";
-            if (metadata["fifos"][arg_name].contains("consumed_by")) {
+
+          // register this argument to this task
+          auto register_arg = [&](string arg = "", string port = "") {
+            if (arg.empty()) arg = arg_name;  // use global arg_name by default
+            if (port.empty()) port = param->getNameAsString();
+            (*metadata["tasks"][task_name].rbegin())["args"][arg] = {
+                {"cat", param_cat}, {"port", port}};
+          };
+
+          // regsiter stream info to
+          auto register_consumer = [&](string arg = "") {
+            if (arg.empty()) arg = arg_name;  // use global arg_name by default
+            if (metadata["fifos"][arg].contains("consumed_by")) {
               auto diagnostics_builder =
                   ReportError(param->getLocation(),
                               "tlp::stream '%0' consumed more than once");
-              diagnostics_builder.AddString(arg_name);
+              diagnostics_builder.AddString(arg);
               diagnostics_builder.AddSourceRange(
                   CharSourceRange::getCharRange(param->getSourceRange()));
             }
-            metadata["fifos"][arg_name]["consumed_by"] = {
+            metadata["fifos"][arg]["consumed_by"] = {
                 task_name, metadata["tasks"][task_name].size() - 1};
-          } else if (IsOutputStream(param)) {
-            param_cat = "ostream";
-            if (metadata["fifos"][arg_name].contains("produced_by")) {
+          };
+          auto register_producer = [&](string arg = "") {
+            if (arg.empty()) arg = arg_name;  // use global arg_name by default
+            if (metadata["fifos"][arg].contains("produced_by")) {
               auto diagnostics_builder =
                   ReportError(param->getLocation(),
                               "tlp::stream '%0' produced more than once");
-              diagnostics_builder.AddString(arg_name);
+              diagnostics_builder.AddString(arg);
               diagnostics_builder.AddSourceRange(
                   CharSourceRange::getCharRange(param->getSourceRange()));
             }
-            metadata["fifos"][arg_name]["produced_by"] = {
+            metadata["fifos"][arg]["produced_by"] = {
                 task_name, metadata["tasks"][task_name].size() - 1};
+          };
+          if (IsMmap(param)) {
+            param_cat = "mmap";
+            register_arg();
+          } else if (IsAsyncMmap(param)) {
+            param_cat = "async_mmap";
+            register_arg();
+          } else if (IsTlpType(param, "istream")) {
+            param_cat = "istream";
+            register_consumer();
+            register_arg();
+          } else if (IsTlpType(param, "ostream")) {
+            param_cat = "ostream";
+            register_producer();
+            register_arg();
+          } else if (IsTlpType(param, "istreams")) {
+            param_cat = "istream";
+            for (int i = 0; i < GetNumStreams(param); ++i) {
+              auto arg = StreamNameAt(arg_name, i);
+              register_consumer(arg);
+              register_arg(arg, StreamNameAt(param->getNameAsString(), i));
+            }
+          } else if (IsTlpType(param, "ostreams")) {
+            param_cat = "ostream";
+            for (int i = 0; i < GetNumStreams(param); ++i) {
+              auto arg = StreamNameAt(arg_name, i);
+              register_producer(arg);
+              register_arg(arg, StreamNameAt(param->getNameAsString(), i));
+            }
           } else {
             param_cat = "scalar";
+            register_arg();
           }
-          (*metadata["tasks"][task_name].rbegin())["args"][arg_name] = {
-              {"cat", param_cat}, {"port", param->getNameAsString()}};
         }
         continue;
       } else if (const auto string_literal = dyn_cast<StringLiteral>(arg)) {
@@ -400,6 +461,18 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       AsyncMmapInfo async_mmap(param->getNameAsString(), elem_type);
       async_mmap.GetAsyncMmapInfo(func->getBody(), context_.getDiagnostics());
       async_mmaps.push_back(async_mmap);
+    } else if (IsTlpType(param, "(i|o)streams")) {
+      InsertHlsPragma(func->getBody()->getBeginLoc(), "data_pack",
+                      {{"variable", param->getNameAsString() + "._[0].fifo"}});
+      if (IsTlpType(param, "istreams")) {
+        InsertHlsPragma(
+            func->getBody()->getBeginLoc(), "data_pack",
+            {{"variable", param->getNameAsString() + "._[0].peek_val"}});
+        InsertHlsPragma(
+            func->getBody()->getBeginLoc(), "array_partition",
+            {{"variable", param->getNameAsString() + "._[0].peek_val"},
+             {"complete", ""}});
+      }
     }
   }
 

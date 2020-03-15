@@ -7,6 +7,21 @@
 
 #include "clang/AST/AST.h"
 
+bool IsTlpType(const clang::RecordDecl* decl, const std::string& type_name);
+inline bool IsTlpType(const clang::LValueReferenceType* type,
+                      const std::string& type_name) {
+  return type != nullptr &&
+         IsTlpType(type->getPointeeType()->getAsRecordDecl(), type_name);
+}
+inline bool IsTlpType(clang::QualType type, const std::string& type_name) {
+  return IsTlpType(type->getAsRecordDecl(), type_name) ||
+         IsTlpType(type->getAs<clang::LValueReferenceType>(), type_name);
+}
+inline bool IsTlpType(const clang::ParmVarDecl* param,
+                      const std::string& type_name) {
+  return IsTlpType(param->getType(), type_name);
+}
+
 inline std::string GetTemplateArgName(const clang::TemplateArgument& arg) {
   std::string name;
   llvm::raw_string_ostream oss{name};

@@ -150,7 +150,7 @@ class Instance:
   @property
   def state(self) -> ast.Identifier:
     """State of this instance."""
-    return ast.Identifier(self.name + '_state')
+    return ast.Identifier(f'{self.name}__state')
 
   def set_state(self, new_state: ast.Node) -> ast.NonblockingSubstitution:
     return ast.NonblockingSubstitution(left=self.state, right=new_state)
@@ -161,7 +161,7 @@ class Instance:
   @property
   def rst_n(self) -> ast.Identifier:
     """The handshake synchronous active-low reset signal."""
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_RST_N)
+    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_RST_N}')
 
   @property
   def start(self) -> ast.Identifier:
@@ -173,7 +173,7 @@ class Instance:
     Returns:
       The ast.Identifier node of this signal.
     """
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_START)
+    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_START}')
 
   @property
   def done(self) -> ast.Identifier:
@@ -184,22 +184,22 @@ class Instance:
     Returns:
       The ast.Identifier node of this signal.
     """
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_DONE)
+    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_DONE}')
 
   @property
   def is_done(self) -> ast.Identifier:
     """Signal used to determine the upper-level state."""
-    return ast.Identifier(self.name + '_is_done')
+    return ast.Identifier(f'{self.name}__is_done')
 
   @property
   def idle(self) -> ast.Identifier:
     """Whether this isntance is idle."""
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_IDLE)
+    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_IDLE}')
 
   @property
   def ready(self) -> ast.Identifier:
     """Whether this isntance is ready to take new input."""
-    return ast.Identifier(self.name + '_' + self.verilog.HANDSHAKE_READY)
+    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_READY}')
 
   def get_signal(self, signal: str) -> ast.Identifier:
     if signal not in {'done', 'idle', 'ready'}:
@@ -217,7 +217,8 @@ class Instance:
     yield ast.Wire(name=self.start.name, width=None)
     if not self.is_autorun:
       yield ast.Reg(name=self.state.name, width=ast.make_width(2))
-      yield from (ast.Wire(name=self.name + '_' + suffix, width=None)
+      yield from (ast.Wire(name=self.verilog.wire_name(self.name, suffix),
+                           width=None)
                   for suffix in self.verilog.HANDSHAKE_OUTPUT_PORTS)
 
   def get_instance_arg(self, arg: str) -> str:
