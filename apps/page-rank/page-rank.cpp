@@ -11,38 +11,23 @@ constexpr int kMaxNumPartitions = 2048;
 constexpr int kMaxPartitionSize = 1024 * 256;
 constexpr int kEstimatedLatency = 50;
 
-void Control(
-    Pid num_partitions, tlp::mmap<uint64_t> metadata,
-    // to UpdateHandler
-    tlp::ostream<Eid>& update_config_q0, tlp::ostream<Eid>& update_config_q1,
-    tlp::ostream<Eid>& update_config_q2, tlp::ostream<Eid>& update_config_q3,
-    tlp::ostream<bool>& update_phase_q0, tlp::ostream<bool>& update_phase_q1,
-    tlp::ostream<bool>& update_phase_q2, tlp::ostream<bool>& update_phase_q3,
-    // from UpdateHandler
-    tlp::istream<NumUpdates>& num_updates_q0,
-    tlp::istream<NumUpdates>& num_updates_q1,
-    tlp::istream<NumUpdates>& num_updates_q2,
-    tlp::istream<NumUpdates>& num_updates_q3,
-    // to ProcElem
-    tlp::ostream<TaskReq>& task_req_q0, tlp::ostream<TaskReq>& task_req_q1,
-    tlp::ostream<TaskReq>& task_req_q2, tlp::ostream<TaskReq>& task_req_q3,
-    // from ProcElem
-    tlp::istream<TaskResp>& task_resp_q0, tlp::istream<TaskResp>& task_resp_q1,
-    tlp::istream<TaskResp>& task_resp_q2,
-    tlp::istream<TaskResp>& task_resp_q3) {
+void Control(Pid num_partitions, tlp::mmap<uint64_t> metadata,
+             // to UpdateHandler
+             tlp::ostreams<Eid, kNumPes>& update_config_q,
+             tlp::ostreams<bool, kNumPes>& update_phase_q,
+             // from UpdateHandler
+             tlp::istreams<NumUpdates, kNumPes>& num_updates_q,
+             // to ProcElem
+             tlp::ostreams<TaskReq, kNumPes>& task_req_q,
+             // from ProcElem
+             tlp::istreams<TaskResp, kNumPes>& task_resp_q) {
   // HLS crashes without this...
-  update_config_q0.close();
-  update_config_q1.close();
-  update_config_q2.close();
-  update_config_q3.close();
-  update_phase_q0.close();
-  update_phase_q1.close();
-  update_phase_q2.close();
-  update_phase_q3.close();
-  task_req_q0.close();
-  task_req_q1.close();
-  task_req_q2.close();
-  task_req_q3.close();
+  for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+    update_config_q[pe].close();
+    update_phase_q[pe].close();
+    task_req_q[pe].close();
+  }
 
   // Keeps track of all partitions.
   // Vid of the 0-th vertex in each partition.
@@ -77,26 +62,13 @@ config_update_offsets:
   for (Pid pid = 0; pid < num_partitions; ++pid) {
     auto update_offset = metadata[2 + num_partitions * kNumPes + pid];
     VLOG_F(8, info) << "update offset[" << pid << "]: " << update_offset;
-    switch (pid % kNumPes) {
-      case 0:
-        update_config_q0.write(update_offset);
-        break;
-      case 1:
-        update_config_q1.write(update_offset);
-        break;
-      case 2:
-        update_config_q2.write(update_offset);
-        break;
-      case 3:
-        update_config_q3.write(update_offset);
-        break;
-    }
+    update_config_q[pid % kNumPes].write(update_offset);
   }
   // Tells UpdateHandler start to wait for phase requests.
-  update_config_q0.close();
-  update_config_q1.close();
-  update_config_q2.close();
-  update_config_q3.close();
+  for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+    update_config_q[pe].close();
+  }
 
   bool all_done = false;
   int iter = 0;
@@ -107,10 +79,10 @@ bulk_steps:
     // Do the scatter phase for each partition, if active.
     // Wait until all PEs are done with the scatter phase.
     VLOG_F(5, info) << "Phase: " << TaskReq::kScatter;
-    update_phase_q0.write(false);
-    update_phase_q1.write(false);
-    update_phase_q2.write(false);
-    update_phase_q3.write(false);
+    for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+      update_phase_q[pe].write(false);
+    }
 
   scatter:
     for (Pid pid_send[kNumPes] = {}, pid_recv = 0;
@@ -130,55 +102,33 @@ bulk_steps:
                       eid_offsets[pid_send[pe]][pe],
                       0.f,
                       false};
-          switch (pe) {
-            case 0:
-              if (task_req_q0.try_write(req)) ++pid_send[pe];
-              break;
-            case 1:
-              if (task_req_q1.try_write(req)) ++pid_send[pe];
-              break;
-            case 2:
-              if (task_req_q2.try_write(req)) ++pid_send[pe];
-              break;
-            case 3:
-              if (task_req_q3.try_write(req)) ++pid_send[pe];
-              break;
-          }
+          if (task_req_q[pe].try_write(req)) ++pid_send[pe];
         }
       }
       TaskResp resp;
-      if (task_resp_q0.try_read(resp)) {
-        assert(resp.phase == TaskReq::kScatter);
-        ++pid_recv;
-      }
-      if (task_resp_q1.try_read(resp)) {
-        assert(resp.phase == TaskReq::kScatter);
-        ++pid_recv;
-      }
-      if (task_resp_q2.try_read(resp)) {
-        assert(resp.phase == TaskReq::kScatter);
-        ++pid_recv;
-      }
-      if (task_resp_q3.try_read(resp)) {
-        assert(resp.phase == TaskReq::kScatter);
-        ++pid_recv;
+      for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+        if (task_resp_q[pe].try_read(resp)) {
+          assert(resp.phase == TaskReq::kScatter);
+          ++pid_recv;
+        }
       }
     }
 
     // Tell PEs to tell UpdateHandlers that the scatter phase is done.
     TaskReq req = {};
     req.scatter_done = true;
-    task_req_q0.write(req);
-    task_req_q1.write(req);
-    task_req_q2.write(req);
-    task_req_q3.write(req);
+    for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+      task_req_q[pe].write(req);
+    }
 
     // Get prepared for the gather phase.
     VLOG_F(5, info) << "Phase: " << TaskReq::kGather;
-    update_phase_q0.write(true);
-    update_phase_q1.write(true);
-    update_phase_q2.write(true);
-    update_phase_q3.write(true);
+    for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+      update_phase_q[pe].write(true);
+    }
 
   reset_num_updates:
     for (Pid pid = 0; pid < num_partitions; ++pid) {
@@ -188,36 +138,22 @@ bulk_steps:
 
   collect_num_updates:
     for (Pid pid_recv = 0; pid_recv < RoundUp<kNumPes>(num_partitions);) {
+#pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = num_updates_local
       NumUpdates num_updates;
-      if (num_updates_q0.try_read(num_updates)) {
-        Pid pid = num_updates.pid * kNumPes + 0;
-        if (pid < num_partitions) {
-          VLOG_F(5, recv) << "num_updates: " << num_updates;
-          num_updates_local[pid] += num_updates.num_updates;
+      bool done = false;
+      Pid pid;
+      for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+        if (!done && num_updates_q[pe].try_read(num_updates)) {
+          done |= true;
+          pid = num_updates.pid * kNumPes + pe;
+          ++pid_recv;
         }
-        ++pid_recv;
-      } else if (num_updates_q1.try_read(num_updates)) {
-        Pid pid = num_updates.pid * kNumPes + 1;
-        if (pid < num_partitions) {
-          VLOG_F(5, recv) << "num_updates: " << num_updates;
-          num_updates_local[pid] += num_updates.num_updates;
-        }
-        ++pid_recv;
-      } else if (num_updates_q2.try_read(num_updates)) {
-        Pid pid = num_updates.pid * kNumPes + 2;
-        if (pid < num_partitions) {
-          VLOG_F(5, recv) << "num_updates: " << num_updates;
-          num_updates_local[pid] += num_updates.num_updates;
-        }
-        ++pid_recv;
-      } else if (num_updates_q3.try_read(num_updates)) {
-        Pid pid = num_updates.pid * kNumPes + 3;
-        if (pid < num_partitions) {
-          VLOG_F(5, recv) << "num_updates: " << num_updates;
-          num_updates_local[pid] += num_updates.num_updates;
-        }
-        ++pid_recv;
+      }
+      if (done && pid < num_partitions) {
+        VLOG_F(5, recv) << "num_updates: " << num_updates;
+        num_updates_local[pid] += num_updates.num_updates;
       }
     }
 
@@ -246,221 +182,80 @@ bulk_steps:
                       0,  // eid_offset, unused
                       (1.f - kDampingFactor) / total_num_vertices,
                       false};
-          switch (pe) {
-            case 0:
-              if (task_req_q0.try_write(req)) ++pid_send[pe];
-              break;
-            case 1:
-              if (task_req_q1.try_write(req)) ++pid_send[pe];
-              break;
-            case 2:
-              if (task_req_q2.try_write(req)) ++pid_send[pe];
-              break;
-            case 3:
-              if (task_req_q3.try_write(req)) ++pid_send[pe];
-              break;
-          }
+          if (task_req_q[pe].try_write(req)) ++pid_send[pe];
         }
       }
 
       TaskResp resp;
-      if (task_resp_q0.try_read(resp)) {
-        assert(resp.phase == TaskReq::kGather);
-        VLOG_F(3, recv) << resp;
-        if (resp.active) all_done = false;
-        ++pid_recv;
-      }
-      if (task_resp_q1.try_read(resp)) {
-        assert(resp.phase == TaskReq::kGather);
-        VLOG_F(3, recv) << resp;
-        if (resp.active) all_done = false;
-        ++pid_recv;
-      }
-      if (task_resp_q2.try_read(resp)) {
-        assert(resp.phase == TaskReq::kGather);
-        VLOG_F(3, recv) << resp;
-        if (resp.active) all_done = false;
-        ++pid_recv;
-      }
-      if (task_resp_q3.try_read(resp)) {
-        assert(resp.phase == TaskReq::kGather);
-        VLOG_F(3, recv) << resp;
-        if (resp.active) all_done = false;
-        ++pid_recv;
+      for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+        if (task_resp_q[pe].try_read(resp)) {
+          assert(resp.phase == TaskReq::kGather);
+          VLOG_F(3, recv) << resp;
+          if (resp.active) all_done = false;
+          ++pid_recv;
+        }
       }
     }
     VLOG_F(3, info) << (all_done ? "" : "not ") << "all done";
     ++iter;
   }
   // Terminates UpdateHandler.
-  update_phase_q0.close();
-  update_phase_q1.close();
-  update_phase_q2.close();
-  update_phase_q3.close();
-  task_req_q0.close();
-  task_req_q1.close();
-  task_req_q2.close();
-  task_req_q3.close();
+  for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+    update_phase_q[pe].close();
+    task_req_q[pe].close();
+  }
 
   metadata[2 + num_partitions * kNumPes + num_partitions] = iter;
 }
 
-void VertexMem(tlp::istream<VertexReq>& vertex_req_q0,
-               tlp::istream<VertexReq>& vertex_req_q1,
-               tlp::istream<VertexReq>& vertex_req_q2,
-               tlp::istream<VertexReq>& vertex_req_q3,
-               tlp::istream<VertexAttrVec>& vertex_in_q0,
-               tlp::istream<VertexAttrVec>& vertex_in_q1,
-               tlp::istream<VertexAttrVec>& vertex_in_q2,
-               tlp::istream<VertexAttrVec>& vertex_in_q3,
-               tlp::ostream<VertexAttrVec>& vertex_out_q0,
-               tlp::ostream<VertexAttrVec>& vertex_out_q1,
-               tlp::ostream<VertexAttrVec>& vertex_out_q2,
-               tlp::ostream<VertexAttrVec>& vertex_out_q3,
+void VertexMem(tlp::istreams<VertexReq, kNumPes>& vertex_req_q,
+               tlp::istreams<VertexAttrVec, kNumPes>& vertex_in_q,
+               tlp::ostreams<VertexAttrVec, kNumPes>& vertex_out_q,
                tlp::async_mmap<VertexAttrAlignedVec> vertices) {
   for (;;) {
     VertexReq req;
-    if (vertex_req_q0.try_read(req)) {
-      VertexAttrAlignedVec resp;
-      bool valid = false;
-    vertices_0:
-      for (Vid i_wr = 0, i_rd_req = 0, i_rd_resp = 0;
-           req.phase == TaskReq::kScatter ? i_rd_resp < req.length
-                                          : i_wr < req.length;) {
-        // Read vertices from DRAM.
-        // Send requests.
-        if (i_rd_req < req.length &&
-            (req.phase == TaskReq::kScatter ||
-             i_rd_req < i_wr + kEstimatedLatency * kVertexVecLen) &&
-            vertices.read_addr_try_write((req.offset + i_rd_req) /
-                                         kVertexVecLen)) {
-          i_rd_req += kVertexVecLen;
-        }
-        // Handle responses.
-        if (i_rd_resp < req.length) {
-          if (!valid) valid = vertices.read_data_try_read(resp);
-          if (valid && vertex_out_q0.try_write(resp)) {
-            i_rd_resp += kVertexVecLen;
-            valid = false;
+    bool done = false;
+    for (int pe = 0; pe < kNumPes; ++pe)
+#pragma HLS unroll
+      if (!done && vertex_req_q[pe].try_read(req)) {
+        done |= true;
+        VertexAttrAlignedVec resp;
+        bool valid = false;
+      vertices:
+        for (Vid i_wr = 0, i_rd_req = 0, i_rd_resp = 0;
+             req.phase == TaskReq::kScatter ? i_rd_resp < req.length
+                                            : i_wr < req.length;) {
+          // Read vertices from DRAM.
+          // Send requests.
+          if (i_rd_req < req.length &&
+              (req.phase == TaskReq::kScatter ||
+               i_rd_req < i_wr + kEstimatedLatency * kVertexVecLen) &&
+              vertices.read_addr_try_write((req.offset + i_rd_req) /
+                                           kVertexVecLen)) {
+            i_rd_req += kVertexVecLen;
           }
-        }
+          // Handle responses.
+          if (i_rd_resp < req.length) {
+            if (!valid) valid = vertices.read_data_try_read(resp);
+            if (valid && vertex_out_q[pe].try_write(resp)) {
+              i_rd_resp += kVertexVecLen;
+              valid = false;
+            }
+          }
 
-        // Write vertices to DRAM.
-        if (req.phase == TaskReq::kGather && !vertex_in_q0.empty()) {
-          auto v = vertex_in_q0.peek(nullptr);
-          if (vertices.write_data_try_write(v)) {
-            vertex_in_q0.read(nullptr);
-            vertices.write_addr_write((req.offset + i_wr) / kVertexVecLen);
-            i_wr += kVertexVecLen;
+          // Write vertices to DRAM.
+          if (req.phase == TaskReq::kGather && !vertex_in_q[pe].empty()) {
+            auto v = vertex_in_q[pe].peek(nullptr);
+            if (vertices.write_data_try_write(v)) {
+              vertex_in_q[pe].read(nullptr);
+              vertices.write_addr_write((req.offset + i_wr) / kVertexVecLen);
+              i_wr += kVertexVecLen;
+            }
           }
         }
       }
-    } else if (vertex_req_q1.try_read(req)) {
-      VertexAttrAlignedVec resp;
-      bool valid = false;
-    vertices_1:
-      for (Vid i_wr = 0, i_rd_req = 0, i_rd_resp = 0;
-           req.phase == TaskReq::kScatter ? i_rd_resp < req.length
-                                          : i_wr < req.length;) {
-        // Read vertices from DRAM.
-        // Send requests.
-        if (i_rd_req < req.length &&
-            (req.phase == TaskReq::kScatter ||
-             i_rd_req < i_wr + kEstimatedLatency * kVertexVecLen) &&
-            vertices.read_addr_try_write((req.offset + i_rd_req) /
-                                         kVertexVecLen)) {
-          i_rd_req += kVertexVecLen;
-        }
-        // Handle responses.
-        if (i_rd_resp < req.length) {
-          if (!valid) valid = vertices.read_data_try_read(resp);
-          if (valid && vertex_out_q1.try_write(resp)) {
-            i_rd_resp += kVertexVecLen;
-            valid = false;
-          }
-        }
-
-        // Write vertices to DRAM.
-        if (req.phase == TaskReq::kGather && !vertex_in_q1.empty()) {
-          auto v = vertex_in_q1.peek(nullptr);
-          if (vertices.write_data_try_write(v)) {
-            vertex_in_q1.read(nullptr);
-            vertices.write_addr_write((req.offset + i_wr) / kVertexVecLen);
-            i_wr += kVertexVecLen;
-          }
-        }
-      }
-    } else if (vertex_req_q2.try_read(req)) {
-      VertexAttrAlignedVec resp;
-      bool valid = false;
-    vertices_2:
-      for (Vid i_wr = 0, i_rd_req = 0, i_rd_resp = 0;
-           req.phase == TaskReq::kScatter ? i_rd_resp < req.length
-                                          : i_wr < req.length;) {
-        // Read vertices from DRAM.
-        // Send requests.
-        if (i_rd_req < req.length &&
-            (req.phase == TaskReq::kScatter ||
-             i_rd_req < i_wr + kEstimatedLatency * kVertexVecLen) &&
-            vertices.read_addr_try_write((req.offset + i_rd_req) /
-                                         kVertexVecLen)) {
-          i_rd_req += kVertexVecLen;
-        }
-        // Handle responses.
-        if (i_rd_resp < req.length) {
-          if (!valid) valid = vertices.read_data_try_read(resp);
-          if (valid && vertex_out_q2.try_write(resp)) {
-            i_rd_resp += kVertexVecLen;
-            valid = false;
-          }
-        }
-
-        // Write vertices to DRAM.
-        if (req.phase == TaskReq::kGather && !vertex_in_q2.empty()) {
-          auto v = vertex_in_q2.peek(nullptr);
-          if (vertices.write_data_try_write(v)) {
-            vertex_in_q2.read(nullptr);
-            vertices.write_addr_write((req.offset + i_wr) / kVertexVecLen);
-            i_wr += kVertexVecLen;
-          }
-        }
-      }
-    } else if (vertex_req_q3.try_read(req)) {
-      VertexAttrAlignedVec resp;
-      bool valid = false;
-    vertices_3:
-      for (Vid i_wr = 0, i_rd_req = 0, i_rd_resp = 0;
-           req.phase == TaskReq::kScatter ? i_rd_resp < req.length
-                                          : i_wr < req.length;) {
-        // Read vertices from DRAM.
-        // Send requests.
-        if (i_rd_req < req.length &&
-            (req.phase == TaskReq::kScatter ||
-             i_rd_req < i_wr + kEstimatedLatency * kVertexVecLen) &&
-            vertices.read_addr_try_write((req.offset + i_rd_req) /
-                                         kVertexVecLen)) {
-          i_rd_req += kVertexVecLen;
-        }
-        // Handle responses.
-        if (i_rd_resp < req.length) {
-          if (!valid) valid = vertices.read_data_try_read(resp);
-          if (valid && vertex_out_q3.try_write(resp)) {
-            i_rd_resp += kVertexVecLen;
-            valid = false;
-          }
-        }
-
-        // Write vertices to DRAM.
-        if (req.phase == TaskReq::kGather && !vertex_in_q3.empty()) {
-          auto v = vertex_in_q3.peek(nullptr);
-          if (vertices.write_data_try_write(v)) {
-            vertex_in_q3.read(nullptr);
-            vertices.write_addr_write((req.offset + i_wr) / kVertexVecLen);
-            i_wr += kVertexVecLen;
-          }
-        }
-      }
-    }
   }
 }
 
@@ -831,140 +626,87 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
               tlp::async_mmap<UpdateVec> updates_2,
               tlp::async_mmap<UpdateVec> updates_3) {
   // between Control and ProcElem
-  tlp::stream<TaskReq, 2> task_req_0("task_req_0");
-  tlp::stream<TaskReq, 2> task_req_1("task_req_1");
-  tlp::stream<TaskReq, 2> task_req_2("task_req_2");
-  tlp::stream<TaskReq, 2> task_req_3("task_req_3");
-  tlp::stream<TaskResp, 2> task_resp_0("task_resp_0");
-  tlp::stream<TaskResp, 2> task_resp_1("task_resp_1");
-  tlp::stream<TaskResp, 2> task_resp_2("task_resp_2");
-  tlp::stream<TaskResp, 2> task_resp_3("task_resp_3");
+  tlp::streams<TaskReq, kNumPes, 2> task_req("task_req");
+  tlp::streams<TaskResp, kNumPes, 2> task_resp("task_resp");
 
   // between ProcElem and VertexMem
-  tlp::stream<VertexReq, 2> vertex_req_0("vertex_req_0");
-  tlp::stream<VertexReq, 2> vertex_req_1("vertex_req_1");
-  tlp::stream<VertexReq, 2> vertex_req_2("vertex_req_2");
-  tlp::stream<VertexReq, 2> vertex_req_3("vertex_req_3");
-  tlp::stream<VertexAttrVec, 2> vertex_pe2mm_0("vertex_pe2mm_0");
-  tlp::stream<VertexAttrVec, 2> vertex_pe2mm_1("vertex_pe2mm_1");
-  tlp::stream<VertexAttrVec, 2> vertex_pe2mm_2("vertex_pe2mm_2");
-  tlp::stream<VertexAttrVec, 2> vertex_pe2mm_3("vertex_pe2mm_3");
-  tlp::stream<VertexAttrVec, 2> vertex_mm2pe_0("vertex_mm2pe_0");
-  tlp::stream<VertexAttrVec, 2> vertex_mm2pe_1("vertex_mm2pe_1");
-  tlp::stream<VertexAttrVec, 2> vertex_mm2pe_2("vertex_mm2pe_2");
-  tlp::stream<VertexAttrVec, 2> vertex_mm2pe_3("vertex_mm2pe_3");
+  tlp::streams<VertexReq, kNumPes, 2> vertex_req("vertex_req");
+  tlp::streams<VertexAttrVec, kNumPes, 2> vertex_pe2mm("vertex_pe2mm");
+  tlp::streams<VertexAttrVec, kNumPes, 2> vertex_mm2pe("vertex_mm2pe");
 
   // between ProcElem and EdgeMem
-  tlp::stream<Eid, 2> edge_req_0("edge_req_0");
-  tlp::stream<Eid, 2> edge_req_1("edge_req_1");
-  tlp::stream<Eid, 2> edge_req_2("edge_req_2");
-  tlp::stream<Eid, 2> edge_req_3("edge_req_3");
-  tlp::stream<EdgeVec, 2> edge_resp_0("edge_resp_0");
-  tlp::stream<EdgeVec, 2> edge_resp_1("edge_resp_1");
-  tlp::stream<EdgeVec, 2> edge_resp_2("edge_resp_2");
-  tlp::stream<EdgeVec, 2> edge_resp_3("edge_resp_3");
+  tlp::streams<Eid, kNumPes, 2> edge_req("edge_req");
+  tlp::streams<EdgeVec, kNumPes, 2> edge_resp("edge_resp");
 
   // between Control and UpdateHandler
-  tlp::stream<Eid, 2> update_config_0("update_config_0");
-  tlp::stream<Eid, 2> update_config_1("update_config_1");
-  tlp::stream<Eid, 2> update_config_2("update_config_2");
-  tlp::stream<Eid, 2> update_config_3("update_config_3");
-  tlp::stream<bool, 2> update_phase_0("update_phase_0");
-  tlp::stream<bool, 2> update_phase_1("update_phase_1");
-  tlp::stream<bool, 2> update_phase_2("update_phase_2");
-  tlp::stream<bool, 2> update_phase_3("update_phase_3");
+  tlp::streams<Eid, kNumPes, 2> update_config("update_config");
+  tlp::streams<bool, kNumPes, 2> update_phase("update_phase");
 
   // between UpdateHandler and ProcElem
-  tlp::stream<UpdateReq, 2> update_req_0("update_req_0");
-  tlp::stream<UpdateReq, 2> update_req_1("update_req_1");
-  tlp::stream<UpdateReq, 2> update_req_2("update_req_2");
-  tlp::stream<UpdateReq, 2> update_req_3("update_req_3");
+  tlp::streams<UpdateReq, kNumPes, 2> update_req("update_req");
 
   // between UpdateHandler and UpdateMem
-  tlp::stream<uint64_t, 2> update_read_addr_0("update_read_addr_0");
-  tlp::stream<uint64_t, 2> update_read_addr_1("update_read_addr_1");
-  tlp::stream<uint64_t, 2> update_read_addr_2("update_read_addr_2");
-  tlp::stream<uint64_t, 2> update_read_addr_3("update_read_addr_3");
-  tlp::stream<UpdateVec, 2> update_read_data_0("update_read_data_0");
-  tlp::stream<UpdateVec, 2> update_read_data_1("update_read_data_1");
-  tlp::stream<UpdateVec, 2> update_read_data_2("update_read_data_2");
-  tlp::stream<UpdateVec, 2> update_read_data_3("update_read_data_3");
-  tlp::stream<uint64_t, 2> update_write_addr_0("update_write_addr_0");
-  tlp::stream<uint64_t, 2> update_write_addr_1("update_write_addr_1");
-  tlp::stream<uint64_t, 2> update_write_addr_2("update_write_addr_2");
-  tlp::stream<uint64_t, 2> update_write_addr_3("update_write_addr_3");
-  tlp::stream<UpdateVec, 2> update_write_data_0("update_write_data_0");
-  tlp::stream<UpdateVec, 2> update_write_data_1("update_write_data_1");
-  tlp::stream<UpdateVec, 2> update_write_data_2("update_write_data_2");
-  tlp::stream<UpdateVec, 2> update_write_data_3("update_write_data_3");
+  tlp::streams<uint64_t, kNumPes, 2> update_read_addr("update_read_addr");
+  tlp::streams<UpdateVec, kNumPes, 2> update_read_data("update_read_data");
+  tlp::streams<uint64_t, kNumPes, 2> update_write_addr("update_write_addr");
+  tlp::streams<UpdateVec, kNumPes, 2> update_write_data("update_write_data");
 
-  tlp::stream<UpdateVecWithPid, 2> update_pe2mm_0("update_pe2mm_0");
-  tlp::stream<UpdateVecWithPid, 2> update_pe2mm_1("update_pe2mm_1");
-  tlp::stream<UpdateVecWithPid, 2> update_pe2mm_2("update_pe2mm_2");
-  tlp::stream<UpdateVecWithPid, 2> update_pe2mm_3("update_pe2mm_3");
-  tlp::stream<UpdateVec, 2> update_mm2pe_0("update_mm2pe_0");
-  tlp::stream<UpdateVec, 2> update_mm2pe_1("update_mm2pe_1");
-  tlp::stream<UpdateVec, 2> update_mm2pe_2("update_mm2pe_2");
-  tlp::stream<UpdateVec, 2> update_mm2pe_3("update_mm2pe_3");
+  tlp::streams<UpdateVecWithPid, kNumPes, 2> update_pe2mm("update_pe2mm");
+  tlp::streams<UpdateVec, kNumPes, 2> update_mm2pe("update_mm2pe");
 
-  tlp::stream<NumUpdates, 2> num_updates_0("num_updates_0");
-  tlp::stream<NumUpdates, 2> num_updates_1("num_updates_1");
-  tlp::stream<NumUpdates, 2> num_updates_2("num_updates_2");
-  tlp::stream<NumUpdates, 2> num_updates_3("num_updates_3");
+  tlp::streams<NumUpdates, kNumPes, 2> num_updates("num_updates");
 
   tlp::task()
-      .invoke<-1>(VertexMem, "VertexMem", vertex_req_0, vertex_req_1,
-                  vertex_req_2, vertex_req_3, vertex_pe2mm_0, vertex_pe2mm_1,
-                  vertex_pe2mm_2, vertex_pe2mm_3, vertex_mm2pe_0,
-                  vertex_mm2pe_1, vertex_mm2pe_2, vertex_mm2pe_3, vertices)
-      .invoke<-1>(EdgeMem, "EdgeMem_0", edge_req_0, edge_resp_0, edges_0)
-      .invoke<-1>(EdgeMem, "EdgeMem_1", edge_req_1, edge_resp_1, edges_1)
-      .invoke<-1>(EdgeMem, "EdgeMem_2", edge_req_2, edge_resp_2, edges_2)
-      .invoke<-1>(EdgeMem, "EdgeMem_3", edge_req_3, edge_resp_3, edges_3)
-      .invoke<-1>(UpdateMem, "UpdateMem_0", update_read_addr_0,
-                  update_read_data_0, update_write_addr_0, update_write_data_0,
-                  updates_0)
-      .invoke<-1>(UpdateMem, "UpdateMem_1", update_read_addr_1,
-                  update_read_data_1, update_write_addr_1, update_write_data_1,
-                  updates_1)
-      .invoke<-1>(UpdateMem, "UpdateMem_2", update_read_addr_2,
-                  update_read_data_2, update_write_addr_2, update_write_data_2,
-                  updates_2)
-      .invoke<-1>(UpdateMem, "UpdateMem_3", update_read_addr_3,
-                  update_read_data_3, update_write_addr_3, update_write_data_3,
-                  updates_3)
-      .invoke<0>(ProcElem, "ProcElem_0", task_req_0, task_resp_0, vertex_req_0,
-                 vertex_mm2pe_0, vertex_pe2mm_0, edge_req_0, edge_resp_0,
-                 update_req_0, update_mm2pe_0, update_pe2mm_0)
-      .invoke<0>(ProcElem, "ProcElem_1", task_req_1, task_resp_1, vertex_req_1,
-                 vertex_mm2pe_1, vertex_pe2mm_1, edge_req_1, edge_resp_1,
-                 update_req_1, update_mm2pe_1, update_pe2mm_1)
-      .invoke<0>(ProcElem, "ProcElem_2", task_req_2, task_resp_2, vertex_req_2,
-                 vertex_mm2pe_2, vertex_pe2mm_2, edge_req_2, edge_resp_2,
-                 update_req_2, update_mm2pe_2, update_pe2mm_2)
-      .invoke<0>(ProcElem, "ProcElem_3", task_req_3, task_resp_3, vertex_req_3,
-                 vertex_mm2pe_3, vertex_pe2mm_3, edge_req_3, edge_resp_3,
-                 update_req_3, update_mm2pe_3, update_pe2mm_3)
-      .invoke<0>(Control, "Control", num_partitions, metadata, update_config_0,
-                 update_config_1, update_config_2, update_config_3,
-                 update_phase_0, update_phase_1, update_phase_2, update_phase_3,
-                 num_updates_0, num_updates_1, num_updates_2, num_updates_3,
-                 task_req_0, task_req_1, task_req_2, task_req_3, task_resp_0,
-                 task_resp_1, task_resp_2, task_resp_3)
+      .invoke<-1>(VertexMem, "VertexMem", vertex_req, vertex_pe2mm,
+                  vertex_mm2pe, vertices)
+      .invoke<-1>(EdgeMem, "EdgeMem_0", edge_req[0], edge_resp[0], edges_0)
+      .invoke<-1>(EdgeMem, "EdgeMem_1", edge_req[1], edge_resp[1], edges_1)
+      .invoke<-1>(EdgeMem, "EdgeMem_2", edge_req[2], edge_resp[2], edges_2)
+      .invoke<-1>(EdgeMem, "EdgeMem_3", edge_req[3], edge_resp[3], edges_3)
+      .invoke<-1>(UpdateMem, "UpdateMem_0", update_read_addr[0],
+                  update_read_data[0], update_write_addr[0],
+                  update_write_data[0], updates_0)
+      .invoke<-1>(UpdateMem, "UpdateMem_1", update_read_addr[1],
+                  update_read_data[1], update_write_addr[1],
+                  update_write_data[1], updates_1)
+      .invoke<-1>(UpdateMem, "UpdateMem_2", update_read_addr[2],
+                  update_read_data[2], update_write_addr[2],
+                  update_write_data[2], updates_2)
+      .invoke<-1>(UpdateMem, "UpdateMem_3", update_read_addr[3],
+                  update_read_data[3], update_write_addr[3],
+                  update_write_data[3], updates_3)
+      .invoke<0>(ProcElem, "ProcElem_0", task_req[0], task_resp[0],
+                 vertex_req[0], vertex_mm2pe[0], vertex_pe2mm[0], edge_req[0],
+                 edge_resp[0], update_req[0], update_mm2pe[0], update_pe2mm[0])
+      .invoke<0>(ProcElem, "ProcElem_1", task_req[1], task_resp[1],
+                 vertex_req[1], vertex_mm2pe[1], vertex_pe2mm[1], edge_req[1],
+                 edge_resp[1], update_req[1], update_mm2pe[1], update_pe2mm[1])
+      .invoke<0>(ProcElem, "ProcElem_2", task_req[2], task_resp[2],
+                 vertex_req[2], vertex_mm2pe[2], vertex_pe2mm[2], edge_req[2],
+                 edge_resp[2], update_req[2], update_mm2pe[2], update_pe2mm[2])
+      .invoke<0>(ProcElem, "ProcElem_3", task_req[3], task_resp[3],
+                 vertex_req[3], vertex_mm2pe[3], vertex_pe2mm[3], edge_req[3],
+                 edge_resp[3], update_req[3], update_mm2pe[3], update_pe2mm[3])
+      .invoke<0>(Control, "Control", num_partitions, metadata, update_config,
+                 update_phase, num_updates, task_req, task_resp)
       .invoke<0>(UpdateHandler, "UpdateHandler_0", num_partitions,
-                 update_config_0, update_phase_0, num_updates_0, update_req_0,
-                 update_pe2mm_0, update_mm2pe_0, update_read_addr_0,
-                 update_read_data_0, update_write_addr_0, update_write_data_0)
+                 update_config[0], update_phase[0], num_updates[0],
+                 update_req[0], update_pe2mm[0], update_mm2pe[0],
+                 update_read_addr[0], update_read_data[0], update_write_addr[0],
+                 update_write_data[0])
       .invoke<0>(UpdateHandler, "UpdateHandler_1", num_partitions,
-                 update_config_1, update_phase_1, num_updates_1, update_req_1,
-                 update_pe2mm_1, update_mm2pe_1, update_read_addr_1,
-                 update_read_data_1, update_write_addr_1, update_write_data_1)
+                 update_config[1], update_phase[1], num_updates[1],
+                 update_req[1], update_pe2mm[1], update_mm2pe[1],
+                 update_read_addr[1], update_read_data[1], update_write_addr[1],
+                 update_write_data[1])
       .invoke<0>(UpdateHandler, "UpdateHandler_2", num_partitions,
-                 update_config_2, update_phase_2, num_updates_2, update_req_2,
-                 update_pe2mm_2, update_mm2pe_2, update_read_addr_2,
-                 update_read_data_2, update_write_addr_2, update_write_data_2)
+                 update_config[2], update_phase[2], num_updates[2],
+                 update_req[2], update_pe2mm[2], update_mm2pe[2],
+                 update_read_addr[2], update_read_data[2], update_write_addr[2],
+                 update_write_data[2])
       .invoke<0>(UpdateHandler, "UpdateHandler_3", num_partitions,
-                 update_config_3, update_phase_3, num_updates_3, update_req_3,
-                 update_pe2mm_3, update_mm2pe_3, update_read_addr_3,
-                 update_read_data_3, update_write_addr_3, update_write_data_3);
+                 update_config[3], update_phase[3], num_updates[3],
+                 update_req[3], update_pe2mm[3], update_mm2pe[3],
+                 update_read_addr[3], update_read_data[3], update_write_addr[3],
+                 update_write_data[3]);
 }
