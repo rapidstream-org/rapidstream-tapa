@@ -42,7 +42,7 @@ def main():
         src = task_fmt.format(name=src_task_name, id=src_task_id)
         dst = task_fmt.format(name=dst_task_name, id=dst_task_id)
         label = fifo_name
-        label += '[%s]' % fifo_attr['depth']
+        label += '#%s' % fifo_attr['depth']
         levels[src_task_name].add(src_task_id)
         levels[dst_task_name].add(dst_task_id)
         output.write(f'  {src} -> {dst} [ label = "{label}" ];\n')

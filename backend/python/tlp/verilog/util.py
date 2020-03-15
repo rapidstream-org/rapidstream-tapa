@@ -1,4 +1,5 @@
-from typing import Iterator, Optional, Union
+import re
+from typing import Iterator, Optional, Tuple, Union
 
 from tlp.verilog import ast
 
@@ -24,3 +25,33 @@ class Pipeline:
     for x in self[1:]:
       yield ast.Pragma(ast.PragmaEntry('dont_touch = "yes"'))
       yield ast.Reg(name=x.name, width=self._width)
+
+
+def match_fifo_name(name: str) -> Optional[Tuple[str, int]]:
+  match = re.fullmatch(r'(\w+)\[(\d+)\]', name)
+  if match is not None:
+    return match[1], int(match[2])
+  return None
+
+
+def sanitize_fifo_name(name: str) -> str:
+  match = match_fifo_name(name)
+  if match is not None:
+    return f'{match[0]}__{match[1]}'
+  return name
+
+
+def wire_name(fifo: str, suffix: str) -> str:
+  """Return the wire name of the fifo signals in generated modules.
+
+  Args:
+      fifo (str): Name of the fifo.
+      suffix (str): One of the suffixes in ISTREAM_SUFFIXES or OSTREAM_SUFFIXES.
+
+  Returns:
+      str: Wire name of the fifo signal.
+  """
+  fifo = sanitize_fifo_name(fifo)
+  if suffix.startswith('_'):
+    suffix = suffix[1:]
+  return f'{fifo}__{suffix}'

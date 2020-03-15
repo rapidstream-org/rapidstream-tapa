@@ -21,8 +21,8 @@ import tlp.instance
 from haoda.backend import xilinx as backend
 from tlp.verilog import ast
 
-# pylint: disable=unused-import
-from .util import REGISTER_LEVEL, Pipeline
+from .util import (REGISTER_LEVEL, Pipeline, match_fifo_name,
+                   sanitize_fifo_name, wire_name)
 
 # const strings
 
@@ -167,15 +167,15 @@ M_AXI_PARAM_SUFFIXES = (
 M_AXI_PARAMS = ('C_M_AXI_DATA_WIDTH', 'C_M_AXI_WSTRB_WIDTH')
 
 ISTREAM_SUFFIXES = (
-    '_V_dout',
-    '_V_empty_n',
-    '_V_read',
+    '_dout',
+    '_empty_n',
+    '_read',
 )
 
 OSTREAM_SUFFIXES = (
-    '_V_din',
-    '_V_full_n',
-    '_V_write',
+    '_din',
+    '_full_n',
+    '_write',
 )
 
 FIFO_READ_PORTS = (
@@ -468,18 +468,19 @@ class Module:
       width: int,
       depth: int,
   ) -> 'Module':
-    rst_q = Pipeline(f'{name}_rst')
+    name = sanitize_fifo_name(name)
+    rst_q = Pipeline(f'{name}__rst')
     self.add_pipeline(rst_q, init=ast.Unot(RST_N))
 
     def ports() -> Iterator[ast.PortArg]:
       yield ast.make_port_arg(port='clk', arg=CLK)
       yield ast.make_port_arg(port='reset', arg=rst_q[-1])
       yield from (
-          ast.make_port_arg(port=port_name, arg=name + arg_suffix)
+          ast.make_port_arg(port=port_name, arg=wire_name(name, arg_suffix))
           for port_name, arg_suffix in zip(FIFO_READ_PORTS, ISTREAM_SUFFIXES))
       yield ast.make_port_arg(port=FIFO_READ_PORTS[-1], arg=TRUE)
       yield from (
-          ast.make_port_arg(port=port_name, arg=name + arg_suffix)
+          ast.make_port_arg(port=port_name, arg=wire_name(name, arg_suffix))
           for port_name, arg_suffix in zip(FIFO_WRITE_PORTS, OSTREAM_SUFFIXES))
       yield ast.make_port_arg(port=FIFO_WRITE_PORTS[-1], arg=TRUE)
 
@@ -507,7 +508,7 @@ class Module:
       max_burst_len: Optional[int] = None,
       reg_name: str = '',
   ) -> 'Module':
-    rst_q = Pipeline(f'{name}_rst')
+    rst_q = Pipeline(f'{name}__rst')
     self.add_pipeline(rst_q, init=ast.Unot(RST_N))
 
     paramargs = [
@@ -583,7 +584,7 @@ class Module:
             arg = "'d0"
           else:
             arg = ''
-        portargs.append(ast.make_port_arg(port=tag + suffix[2:], arg=arg))
+        portargs.append(ast.make_port_arg(port=tag + suffix, arg=arg))
 
     return self.add_instance(module_name='async_mmap',
                              instance_name=name + '_m_axi',
@@ -707,7 +708,7 @@ def generate_handshake_ports(
   for port in HANDSHAKE_OUTPUT_PORTS:
     yield ast.make_port_arg(
         port=port,
-        arg="" if instance.is_autorun else instance.name + '_' + port,
+        arg="" if instance.is_autorun else wire_name(instance.name, port),
     )
 
 
@@ -732,22 +733,32 @@ def fifo_port_name(fifo: str, suffix: str) -> str:
   Returns:
       str: Port name of the fifo generated via HLS.
   """
-  return f'{fifo}_fifo{suffix}'
+  match = match_fifo_name(fifo)
+  if match is not None:
+    return f'{match[0]}_fifo_V_{match[1]}{suffix}'
+  return f'{fifo}_fifo_V{suffix}'
 
 
 def generate_istream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in ISTREAM_SUFFIXES:
-    yield ast.make_port_arg(port=fifo_port_name(port, suffix), arg=arg + suffix)
+    yield ast.make_port_arg(port=fifo_port_name(port, suffix),
+                            arg=wire_name(arg, suffix))
 
 
 def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
   for suffix in OSTREAM_SUFFIXES:
-    yield ast.make_port_arg(port=fifo_port_name(port, suffix), arg=arg + suffix)
+    yield ast.make_port_arg(port=fifo_port_name(port, suffix),
+                            arg=wire_name(arg, suffix))
 
 
 def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
+  match = match_fifo_name(port)
+  if match is not None:
+    port = f'{match[0]}_peek_val_{match[1]}'
+  else:
+    port = f'{port}_peek_val'
   for suffix in verilog.ISTREAM_SUFFIXES[:1]:
-    yield ast.make_port_arg(port=f'{port}_peek_val', arg=arg + suffix)
+    yield ast.make_port_arg(port=port, arg=wire_name(arg, suffix))
 
 
 def async_mmap_suffixes(tag: str) -> Tuple[str, str, str]:
@@ -760,12 +771,12 @@ def async_mmap_suffixes(tag: str) -> Tuple[str, str, str]:
 
 
 def async_mmap_arg_name(arg: str, tag: str, suffix: str) -> str:
-  return arg + '_' + tag + suffix
+  return wire_name(f'{arg}_{tag}', suffix)
 
 
 def async_mmap_width(tag: str, suffix: str,
                      data_width: int) -> Optional[ast.Width]:
-  if suffix in {'_V_din', '_V_dout'}:
+  if suffix in {ISTREAM_SUFFIXES[0], OSTREAM_SUFFIXES[0]}:
     if tag.endswith('addr'):
       data_width = 64
     return ast.Width(msb=ast.Constant(data_width - 1), lsb=ast.Constant(0))
@@ -799,7 +810,7 @@ def generate_async_mmap_signals(tag: str, arg: str,
 def generate_async_mmap_ioports(tag: str, arg: str,
                                 data_width: int) -> Iterator[IOPort]:
   for suffix in async_mmap_suffixes(tag):
-    if suffix in {'_V_din', '_V_write', '_V_read'}:
+    if suffix in {ISTREAM_SUFFIXES[-1], *OSTREAM_SUFFIXES[::2]}:
       ioport_type = ast.Output
     else:
       ioport_type = ast.Input
