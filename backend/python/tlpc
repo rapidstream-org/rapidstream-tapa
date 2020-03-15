@@ -170,7 +170,7 @@ def main():
       tlp_program_json_dict.setdefault('headers', {})
       with open(os.path.join(input_file_dirname, dep), 'r') as dep_fp:
         tlp_program_json_dict['headers'][dep] = dep_fp.read()
-    tlp_program_json_str = json.dumps(tlp_program_json_dict)
+    tlp_program_json_str = json.dumps(tlp_program_json_dict, indent=2)
 
     # save program.json if work_dir is set or run_tlpcc is the last step
     if args.work_dir is not None or last_step == 'run_tlpcc':
