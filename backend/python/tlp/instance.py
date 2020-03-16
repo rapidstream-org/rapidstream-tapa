@@ -3,6 +3,7 @@ from typing import Dict, Iterator, Union
 
 from tlp import util
 from tlp.verilog import ast
+from tlp.verilog import xilinx as rtl
 
 from .task import Task
 
@@ -51,13 +52,13 @@ class Instance:
       self.port = port
       self.width = None
 
-  def __init__(self, task: Task, verilog, instance_id: int, **kwargs):
-    self.verilog = verilog
+  def __init__(self, task: Task, instance_id: int, **kwargs):
     self.task = task
     self.instance_id = instance_id
     self.step = kwargs.pop('step')
     self.args: Dict[str, Instance.Arg] = {
-        k: Instance.Arg(**v) for k, v in kwargs.pop('args').items()
+        rtl.sanitize_array_name(k): Instance.Arg(**v)
+        for k, v in kwargs.pop('args').items()
     }
 
   @property
@@ -161,7 +162,7 @@ class Instance:
   @property
   def rst_n(self) -> ast.Identifier:
     """The handshake synchronous active-low reset signal."""
-    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_RST_N}')
+    return ast.Identifier(f'{self.name}__{rtl.HANDSHAKE_RST_N}')
 
   @property
   def start(self) -> ast.Identifier:
@@ -173,7 +174,7 @@ class Instance:
     Returns:
       The ast.Identifier node of this signal.
     """
-    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_START}')
+    return ast.Identifier(f'{self.name}__{rtl.HANDSHAKE_START}')
 
   @property
   def done(self) -> ast.Identifier:
@@ -184,7 +185,7 @@ class Instance:
     Returns:
       The ast.Identifier node of this signal.
     """
-    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_DONE}')
+    return ast.Identifier(f'{self.name}__{rtl.HANDSHAKE_DONE}')
 
   @property
   def is_done(self) -> ast.Identifier:
@@ -194,12 +195,12 @@ class Instance:
   @property
   def idle(self) -> ast.Identifier:
     """Whether this isntance is idle."""
-    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_IDLE}')
+    return ast.Identifier(f'{self.name}__{rtl.HANDSHAKE_IDLE}')
 
   @property
   def ready(self) -> ast.Identifier:
     """Whether this isntance is ready to take new input."""
-    return ast.Identifier(f'{self.name}__{self.verilog.HANDSHAKE_READY}')
+    return ast.Identifier(f'{self.name}__{rtl.HANDSHAKE_READY}')
 
   def get_signal(self, signal: str) -> ast.Identifier:
     if signal not in {'done', 'idle', 'ready'}:
@@ -217,9 +218,8 @@ class Instance:
     yield ast.Wire(name=self.start.name, width=None)
     if not self.is_autorun:
       yield ast.Reg(name=self.state.name, width=ast.make_width(2))
-      yield from (ast.Wire(name=self.verilog.wire_name(self.name, suffix),
-                           width=None)
-                  for suffix in self.verilog.HANDSHAKE_OUTPUT_PORTS)
+      yield from (ast.Wire(name=rtl.wire_name(self.name, suffix), width=None)
+                  for suffix in rtl.HANDSHAKE_OUTPUT_PORTS)
 
   def get_instance_arg(self, arg: str) -> str:
     return f'{self.name}___{arg}'
@@ -235,6 +235,6 @@ class Port:
         'mmap': Instance.Arg.Cat.MMAP,
         'async_mmap': Instance.Arg.Cat.ASYNC_MMAP,
     }[obj['cat']]
-    self.name = obj['name']
+    self.name = rtl.sanitize_array_name(obj['name'])
     self.ctype = obj['type']
     self.width = obj['width']

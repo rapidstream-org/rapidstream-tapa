@@ -13,7 +13,7 @@ add_subdirectory(backend)
 add_library(tlp)
 target_sources(
   tlp
-  PUBLIC src/tlp.h
+  PUBLIC src/tlp.h src/tlp/stream.h src/tlp/mmap.h
   PRIVATE src/tlp.cpp)
 target_compile_features(tlp PUBLIC cxx_std_11)
 target_include_directories(tlp PUBLIC src)

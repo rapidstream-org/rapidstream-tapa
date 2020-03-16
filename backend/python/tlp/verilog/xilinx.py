@@ -21,8 +21,8 @@ import tlp.instance
 from haoda.backend import xilinx as backend
 from tlp.verilog import ast
 
-from .util import (REGISTER_LEVEL, Pipeline, match_fifo_name,
-                   sanitize_fifo_name, wire_name)
+from .util import (REGISTER_LEVEL, Pipeline, match_array_name,
+                   sanitize_array_name, wire_name)
 
 # const strings
 
@@ -468,7 +468,7 @@ class Module:
       width: int,
       depth: int,
   ) -> 'Module':
-    name = sanitize_fifo_name(name)
+    name = sanitize_array_name(name)
     rst_q = Pipeline(f'{name}__rst')
     self.add_pipeline(rst_q, init=ast.Unot(RST_N))
 
@@ -587,7 +587,7 @@ class Module:
         portargs.append(ast.make_port_arg(port=tag + suffix, arg=arg))
 
     return self.add_instance(module_name='async_mmap',
-                             instance_name=name + '_m_axi',
+                             instance_name=f'{name}__m_axi',
                              ports=portargs,
                              params=paramargs)
 
@@ -733,7 +733,7 @@ def fifo_port_name(fifo: str, suffix: str) -> str:
   Returns:
       str: Port name of the fifo generated via HLS.
   """
-  match = match_fifo_name(fifo)
+  match = match_array_name(fifo)
   if match is not None:
     return f'{match[0]}_fifo_V_{match[1]}{suffix}'
   return f'{fifo}_fifo_V{suffix}'
@@ -752,7 +752,7 @@ def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
 
 
 def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
-  match = match_fifo_name(port)
+  match = match_array_name(port)
   if match is not None:
     port = f'{match[0]}_peek_val_{match[1]}'
   else:

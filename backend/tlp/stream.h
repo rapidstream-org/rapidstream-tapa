@@ -158,16 +158,4 @@ inline std::string StreamNameAt(const std::string& array_name, int idx) {
   return array_name + "[" + std::to_string(idx) + "]";
 }
 
-inline uint64_t GetNumStreams(
-    const clang::ClassTemplateSpecializationDecl* decl) {
-  return *decl->getTemplateArgs()[1].getAsIntegral().getRawData();
-}
-inline uint64_t GetNumStreams(const clang::ParmVarDecl* param) {
-  return GetNumStreams(clang::dyn_cast<clang::ClassTemplateSpecializationDecl>(
-      param->getType()
-          ->getAs<clang::LValueReferenceType>()
-          ->getPointeeType()
-          ->getAsRecordDecl()));
-}
-
 #endif  // TLP_STREAM_H_

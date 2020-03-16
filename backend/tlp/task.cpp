@@ -212,30 +212,52 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   vector<StreamInfo> streams;
   for (const auto param : func->parameters()) {
     const string param_name = param->getNameAsString();
-    if (IsMmap(param) || IsAsyncMmap(param)) {
+    if (IsTlpType(param, "(async_)?mmap")) {
       GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           "uint64_t");
+    } else if (IsTlpType(param, "(async_)?mmaps")) {
+      string rewritten_text;
+      for (int i = 0; i < GetArraySize(param); ++i) {
+        if (!rewritten_text.empty()) rewritten_text += ", ";
+        rewritten_text += "uint64_t " + GetArrayElem(param_name, i);
+      }
+      GetRewriter().ReplaceText(param->getSourceRange(), rewritten_text);
     }
   }
 
   string replaced_body{"{\n"};
   for (const auto param : func->parameters()) {
-    replaced_body +=
-        "#pragma HLS interface s_axilite port = " + param->getNameAsString() +
-        " bundle = control\n";
+    auto param_name = param->getNameAsString();
+    auto add_pragma = [&](string port = "") {
+      if (port.empty()) port = param_name;
+      replaced_body += "#pragma HLS interface s_axilite port = " + port +
+                       " bundle = control\n";
+    };
+    if (IsTlpType(param, "(async_)?mmaps")) {
+      for (int i = 0; i < GetArraySize(param); ++i) {
+        add_pragma(GetArrayElem(param_name, i));
+      }
+    } else {
+      add_pragma();
+    }
   }
   replaced_body +=
       "#pragma HLS interface s_axilite port = return bundle = control\n\n";
 
   for (const auto param : func->parameters()) {
-    replaced_body += "{ auto val = reinterpret_cast<volatile ";
+    auto param_name = param->getNameAsString();
     if (IsStreamInterface(param)) {
       // TODO (maybe?)
+    } else if (IsTlpType(param, "(async_)?mmaps")) {
+      for (int i = 0; i < GetArraySize(param); ++i) {
+        replaced_body += "{ auto val = reinterpret_cast<volatile uint8_t&>(" +
+                         GetArrayElem(param_name, i) + "); }\n";
+      }
     } else {
       auto elem_type = param->getType();
       const bool is_const = elem_type.isConstQualified();
-      const auto param_name = param->getNameAsString();
+      replaced_body += "{ auto val = reinterpret_cast<volatile ";
       if (is_const) {
         replaced_body += "const ";
       }
@@ -258,10 +280,10 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   if (*top_name == func->getNameAsString()) {
     for (const auto param : func->parameters()) {
       const auto param_name = param->getNameAsString();
-      if (IsMmap(param) || IsAsyncMmap(param)) {
+      auto add_mmap_meta = [&](const string& name) {
         metadata["ports"].push_back(
-            {{"name", param_name},
-             {"cat", IsAsyncMmap(param) ? "async_mmap" : "mmap"},
+            {{"name", name},
+             {"cat", IsTlpType(param, "async_mmaps?") ? "async_mmap" : "mmap"},
              {"width",
               context_
                   .getTypeInfo(param->getType()
@@ -270,6 +292,13 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                    .getAsType())
                   .Width},
              {"type", GetMmapElemType(param) + "*"}});
+      };
+      if (IsTlpType(param, "(async_)?mmap")) {
+        add_mmap_meta(param_name);
+      } else if (IsTlpType(param, "(async_)?mmaps")) {
+        for (int i = 0; i < GetArraySize(param); ++i) {
+          add_mmap_meta(param_name + "[" + to_string(i) + "]");
+        }
       } else if (IsStreamInterface(param)) {
         // TODO
       } else {
@@ -296,7 +325,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           const auto args = decl->getTemplateArgs().asArray();
           const string elem_type = GetTemplateArgName(args[0]);
           const uint64_t fifo_depth = *args[2].getAsIntegral().getRawData();
-          for (int i = 0; i < GetNumStreams(decl); ++i) {
+          for (int i = 0; i < GetArraySize(decl); ++i) {
             const string var_name =
                 StreamNameAt(var_decl->getNameAsString(), i);
             metadata["fifos"][var_name]["depth"] = fifo_depth;
@@ -405,14 +434,14 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             register_arg();
           } else if (IsTlpType(param, "istreams")) {
             param_cat = "istream";
-            for (int i = 0; i < GetNumStreams(param); ++i) {
+            for (int i = 0; i < GetArraySize(param); ++i) {
               auto arg = StreamNameAt(arg_name, i);
               register_consumer(arg);
               register_arg(arg, StreamNameAt(param->getNameAsString(), i));
             }
           } else if (IsTlpType(param, "ostreams")) {
             param_cat = "ostream";
-            for (int i = 0; i < GetNumStreams(param); ++i) {
+            for (int i = 0; i < GetArraySize(param); ++i) {
               auto arg = StreamNameAt(arg_name, i);
               register_producer(arg);
               register_arg(arg, StreamNameAt(param->getNameAsString(), i));

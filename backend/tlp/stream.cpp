@@ -1,7 +1,6 @@
 #include "stream.h"
 
 #include <memory>
-#include <regex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -9,8 +8,6 @@
 #include "clang/AST/AST.h"
 
 using std::make_shared;
-using std::regex;
-using std::regex_match;
 using std::shared_ptr;
 using std::string;
 using std::unordered_map;
@@ -24,7 +21,6 @@ using clang::DiagnosticsEngine;
 using clang::Expr;
 using clang::MemberExpr;
 using clang::QualType;
-using clang::RecordDecl;
 using clang::Stmt;
 using clang::Type;
 
@@ -286,9 +282,4 @@ const ClassTemplateSpecializationDecl* GetTlpStreamsDecl(
     const QualType& qual_type) {
   return GetTlpStreamsDecl(
       qual_type.getUnqualifiedType().getCanonicalType().getTypePtr());
-}
-
-bool IsTlpType(const RecordDecl* decl, const string& type_name) {
-  return decl != nullptr && regex_match(decl->getQualifiedNameAsString(),
-                                        regex{"tlp::" + type_name});
 }

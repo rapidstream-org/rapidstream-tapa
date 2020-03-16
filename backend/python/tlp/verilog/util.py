@@ -10,7 +10,7 @@ class Pipeline:
 
   def __init__(self, name: str, width: Optional[int] = None):
     self._ids = tuple(
-        ast.Identifier(f'{name}_q%d' % i) for i in range(REGISTER_LEVEL + 1))
+        ast.Identifier(f'{name}__q%d' % i) for i in range(REGISTER_LEVEL + 1))
     self._width: Optional[ast.Width] = width and ast.make_width(width)
 
   def __getitem__(self, idx) -> ast.Identifier:
@@ -27,17 +27,17 @@ class Pipeline:
       yield ast.Reg(name=x.name, width=self._width)
 
 
-def match_fifo_name(name: str) -> Optional[Tuple[str, int]]:
+def match_array_name(name: str) -> Optional[Tuple[str, int]]:
   match = re.fullmatch(r'(\w+)\[(\d+)\]', name)
   if match is not None:
     return match[1], int(match[2])
   return None
 
 
-def sanitize_fifo_name(name: str) -> str:
-  match = match_fifo_name(name)
+def sanitize_array_name(name: str) -> str:
+  match = match_array_name(name)
   if match is not None:
-    return f'{match[0]}__{match[1]}'
+    return f'{match[0]}_{match[1]}'
   return name
 
 
@@ -51,7 +51,7 @@ def wire_name(fifo: str, suffix: str) -> str:
   Returns:
       str: Wire name of the fifo signal.
   """
-  fifo = sanitize_fifo_name(fifo)
+  fifo = sanitize_array_name(fifo)
   if suffix.startswith('_'):
     suffix = suffix[1:]
   return f'{fifo}__{suffix}'

@@ -73,7 +73,7 @@ inline bool IsAsyncMmap(const clang::ParmVarDecl* param) {
 
 // Works for both mmap and async_mmap.
 inline std::string GetMmapElemType(const clang::ParmVarDecl* param) {
-  if (IsMmap(param->getType()) || IsAsyncMmap(param->getType())) {
+  if (IsTlpType(param, "(async_)?mmaps?")) {
     return GetTemplateArgName(
         param->getType()->getAs<clang::TemplateSpecializationType>()->getArg(
             0));

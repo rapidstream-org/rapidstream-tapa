@@ -22,6 +22,35 @@ inline bool IsTlpType(const clang::ParmVarDecl* param,
   return IsTlpType(param->getType(), type_name);
 }
 
+inline std::string GetArrayElem(const std::string& name, int idx) {
+  return name + "_" + std::to_string(idx);
+}
+
+inline uint64_t GetArraySize(
+    const clang::ClassTemplateSpecializationDecl* decl) {
+  return *decl->getTemplateArgs()[1].getAsIntegral().getRawData();
+}
+inline uint64_t GetArraySize(const clang::RecordDecl* decl) {
+  return GetArraySize(
+      clang::dyn_cast<clang::ClassTemplateSpecializationDecl>(decl));
+}
+inline uint64_t GetArraySize(clang::QualType type);
+inline uint64_t GetArraySize(const clang::LValueReferenceType* decl) {
+  return GetArraySize(decl->getPointeeType());
+}
+inline uint64_t GetArraySize(clang::QualType type) {
+  if (auto ref = type->getAs<clang::LValueReferenceType>()) {
+    return GetArraySize(ref);
+  }
+  if (auto ref = type->getAsRecordDecl()) {
+    return GetArraySize(ref);
+  }
+  return 0;
+}
+inline uint64_t GetArraySize(const clang::ParmVarDecl* param) {
+  return GetArraySize(param->getType());
+}
+
 inline std::string GetTemplateArgName(const clang::TemplateArgument& arg) {
   std::string name;
   llvm::raw_string_ostream oss{name};
