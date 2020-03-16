@@ -89,6 +89,52 @@ struct task {
     }
     return *this;
   }
+
+  // invoke task vector without a name
+  template <int step, uint64_t length, typename Function, typename... Args>
+  task& invoke(Function&& f, Args&&... args) {
+    return invoke<step, length>(f, "", args...);
+  }
+
+  // invoke task vector with a name
+  template <int step, uint64_t length, typename Function, typename... Args,
+            size_t S>
+  task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
+    // wait until current_step >= step
+    for (; current_step < step; ++current_step) {
+      wait_for(current_step);
+    }
+    for (uint64_t i = 0; i < length; ++i) {
+      threads[step].push_back(std::thread(f, std::ref(access(args, i))...));
+      if (name[0] != '\0') {
+        thread_name_mtx.lock();
+        thread_name_table[threads[step].rbegin()->get_id()] =
+            std::string(name) + "[" + std::to_string(i) + "]";
+        thread_name_mtx.unlock();
+      }
+    }
+    return *this;
+  }
+
+ private:
+  // scalar
+  template <typename T>
+  static T& access(T& arg, uint64_t idx) {
+    return arg;
+  }
+
+  // access streams in vector invoke
+  template <typename T, uint64_t length, uint64_t depth>
+  static stream<T, depth>& access(streams<T, length, depth>& arg,
+                                  uint64_t idx) {
+    return arg[idx];
+  }
+
+  // access async_mmaps in vector invoke
+  template <typename T, uint64_t length>
+  static async_mmap<T>& access(async_mmaps<T, length>& arg, uint64_t idx) {
+    return arg[idx];
+  }
 };
 
 template <typename T>
