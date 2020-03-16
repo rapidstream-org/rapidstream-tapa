@@ -21,9 +21,5 @@ void Copy(tlp::async_mmap<Elem> mem, uint64_t n) {
 }
 
 void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n) {
-  tlp::task()
-      .invoke<0>(Copy, chan[0], n)
-      .invoke<0>(Copy, chan[1], n)
-      .invoke<0>(Copy, chan[2], n)
-      .invoke<0>(Copy, chan[3], n);
+  tlp::task().invoke<0, kBankCount>(Copy, chan, n);
 }

@@ -653,54 +653,18 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   tlp::task()
       .invoke<-1>(VertexMem, "VertexMem", vertex_req, vertex_pe2mm,
                   vertex_mm2pe, vertices)
-      .invoke<-1>(EdgeMem, "EdgeMem_0", edge_req[0], edge_resp[0], edges[0])
-      .invoke<-1>(EdgeMem, "EdgeMem_1", edge_req[1], edge_resp[1], edges[1])
-      .invoke<-1>(EdgeMem, "EdgeMem_2", edge_req[2], edge_resp[2], edges[2])
-      .invoke<-1>(EdgeMem, "EdgeMem_3", edge_req[3], edge_resp[3], edges[3])
-      .invoke<-1>(UpdateMem, "UpdateMem_0", update_read_addr[0],
-                  update_read_data[0], update_write_addr[0],
-                  update_write_data[0], updates[0])
-      .invoke<-1>(UpdateMem, "UpdateMem_1", update_read_addr[1],
-                  update_read_data[1], update_write_addr[1],
-                  update_write_data[1], updates[1])
-      .invoke<-1>(UpdateMem, "UpdateMem_2", update_read_addr[2],
-                  update_read_data[2], update_write_addr[2],
-                  update_write_data[2], updates[2])
-      .invoke<-1>(UpdateMem, "UpdateMem_3", update_read_addr[3],
-                  update_read_data[3], update_write_addr[3],
-                  update_write_data[3], updates[3])
-      .invoke<0>(ProcElem, "ProcElem_0", task_req[0], task_resp[0],
-                 vertex_req[0], vertex_mm2pe[0], vertex_pe2mm[0], edge_req[0],
-                 edge_resp[0], update_req[0], update_mm2pe[0], update_pe2mm[0])
-      .invoke<0>(ProcElem, "ProcElem_1", task_req[1], task_resp[1],
-                 vertex_req[1], vertex_mm2pe[1], vertex_pe2mm[1], edge_req[1],
-                 edge_resp[1], update_req[1], update_mm2pe[1], update_pe2mm[1])
-      .invoke<0>(ProcElem, "ProcElem_2", task_req[2], task_resp[2],
-                 vertex_req[2], vertex_mm2pe[2], vertex_pe2mm[2], edge_req[2],
-                 edge_resp[2], update_req[2], update_mm2pe[2], update_pe2mm[2])
-      .invoke<0>(ProcElem, "ProcElem_3", task_req[3], task_resp[3],
-                 vertex_req[3], vertex_mm2pe[3], vertex_pe2mm[3], edge_req[3],
-                 edge_resp[3], update_req[3], update_mm2pe[3], update_pe2mm[3])
+      .invoke<-1, kNumPes>(EdgeMem, "EdgeMem", edge_req, edge_resp, edges)
+      .invoke<-1, kNumPes>(UpdateMem, "UpdateMem", update_read_addr,
+                           update_read_data, update_write_addr,
+                           update_write_data, updates)
+      .invoke<0, kNumPes>(ProcElem, "ProcElem", task_req, task_resp, vertex_req,
+                          vertex_mm2pe, vertex_pe2mm, edge_req, edge_resp,
+                          update_req, update_mm2pe, update_pe2mm)
       .invoke<0>(Control, "Control", num_partitions, metadata, update_config,
                  update_phase, num_updates, task_req, task_resp)
-      .invoke<0>(UpdateHandler, "UpdateHandler_0", num_partitions,
-                 update_config[0], update_phase[0], num_updates[0],
-                 update_req[0], update_pe2mm[0], update_mm2pe[0],
-                 update_read_addr[0], update_read_data[0], update_write_addr[0],
-                 update_write_data[0])
-      .invoke<0>(UpdateHandler, "UpdateHandler_1", num_partitions,
-                 update_config[1], update_phase[1], num_updates[1],
-                 update_req[1], update_pe2mm[1], update_mm2pe[1],
-                 update_read_addr[1], update_read_data[1], update_write_addr[1],
-                 update_write_data[1])
-      .invoke<0>(UpdateHandler, "UpdateHandler_2", num_partitions,
-                 update_config[2], update_phase[2], num_updates[2],
-                 update_req[2], update_pe2mm[2], update_mm2pe[2],
-                 update_read_addr[2], update_read_data[2], update_write_addr[2],
-                 update_write_data[2])
-      .invoke<0>(UpdateHandler, "UpdateHandler_3", num_partitions,
-                 update_config[3], update_phase[3], num_updates[3],
-                 update_req[3], update_pe2mm[3], update_mm2pe[3],
-                 update_read_addr[3], update_read_data[3], update_write_addr[3],
-                 update_write_data[3]);
+      .invoke<0, kNumPes>(UpdateHandler, "UpdateHandler", num_partitions,
+                          update_config, update_phase, num_updates, update_req,
+                          update_pe2mm, update_mm2pe, update_read_addr,
+                          update_read_data, update_write_addr,
+                          update_write_data);
 }
