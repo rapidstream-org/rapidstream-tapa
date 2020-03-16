@@ -617,14 +617,8 @@ task_requests:
 
 void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
               tlp::async_mmap<VertexAttrAlignedVec> vertices,
-              tlp::async_mmap<EdgeVec> edges_0,
-              tlp::async_mmap<EdgeVec> edges_1,
-              tlp::async_mmap<EdgeVec> edges_2,
-              tlp::async_mmap<EdgeVec> edges_3,
-              tlp::async_mmap<UpdateVec> updates_0,
-              tlp::async_mmap<UpdateVec> updates_1,
-              tlp::async_mmap<UpdateVec> updates_2,
-              tlp::async_mmap<UpdateVec> updates_3) {
+              tlp::async_mmaps<EdgeVec, kNumPes> edges,
+              tlp::async_mmaps<UpdateVec, kNumPes> updates) {
   // between Control and ProcElem
   tlp::streams<TaskReq, kNumPes, 2> task_req("task_req");
   tlp::streams<TaskResp, kNumPes, 2> task_resp("task_resp");
@@ -659,22 +653,22 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   tlp::task()
       .invoke<-1>(VertexMem, "VertexMem", vertex_req, vertex_pe2mm,
                   vertex_mm2pe, vertices)
-      .invoke<-1>(EdgeMem, "EdgeMem_0", edge_req[0], edge_resp[0], edges_0)
-      .invoke<-1>(EdgeMem, "EdgeMem_1", edge_req[1], edge_resp[1], edges_1)
-      .invoke<-1>(EdgeMem, "EdgeMem_2", edge_req[2], edge_resp[2], edges_2)
-      .invoke<-1>(EdgeMem, "EdgeMem_3", edge_req[3], edge_resp[3], edges_3)
+      .invoke<-1>(EdgeMem, "EdgeMem_0", edge_req[0], edge_resp[0], edges[0])
+      .invoke<-1>(EdgeMem, "EdgeMem_1", edge_req[1], edge_resp[1], edges[1])
+      .invoke<-1>(EdgeMem, "EdgeMem_2", edge_req[2], edge_resp[2], edges[2])
+      .invoke<-1>(EdgeMem, "EdgeMem_3", edge_req[3], edge_resp[3], edges[3])
       .invoke<-1>(UpdateMem, "UpdateMem_0", update_read_addr[0],
                   update_read_data[0], update_write_addr[0],
-                  update_write_data[0], updates_0)
+                  update_write_data[0], updates[0])
       .invoke<-1>(UpdateMem, "UpdateMem_1", update_read_addr[1],
                   update_read_data[1], update_write_addr[1],
-                  update_write_data[1], updates_1)
+                  update_write_data[1], updates[1])
       .invoke<-1>(UpdateMem, "UpdateMem_2", update_read_addr[2],
                   update_read_data[2], update_write_addr[2],
-                  update_write_data[2], updates_2)
+                  update_write_data[2], updates[2])
       .invoke<-1>(UpdateMem, "UpdateMem_3", update_read_addr[3],
                   update_read_data[3], update_write_addr[3],
-                  update_write_data[3], updates_3)
+                  update_write_data[3], updates[3])
       .invoke<0>(ProcElem, "ProcElem_0", task_req[0], task_resp[0],
                  vertex_req[0], vertex_mm2pe[0], vertex_pe2mm[0], edge_req[0],
                  edge_resp[0], update_req[0], update_mm2pe[0], update_pe2mm[0])

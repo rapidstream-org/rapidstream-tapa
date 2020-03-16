@@ -20,14 +20,11 @@ if(FRT_FOUND)
     hw_emu_xclbin
     HW_XCLBIN
     hw_xclbin
-      --sp
-      Bandwidth.m_axi_chan0:DDR[0]
-      --sp
-      Bandwidth.m_axi_chan1:DDR[1]
-      --sp
-      Bandwidth.m_axi_chan2:DDR[2]
-      --sp
-      Bandwidth.m_axi_chan3:DDR[3]
+      --remote_ip_cache=$ENV{HOME}/.remote_ip_cache
+      --sp=Bandwidth.m_axi_chan_0:DDR[0]
+      --sp=Bandwidth.m_axi_chan_1:DDR[1]
+      --sp=Bandwidth.m_axi_chan_2:DDR[2]
+      --sp=Bandwidth.m_axi_chan_3:DDR[3]
       --vivado.prop
       run.impl_1.STRATEGY=Performance_EarlyBlockPlacement
       --vivado.prop

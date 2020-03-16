@@ -43,14 +43,8 @@ using std::chrono::high_resolution_clock;
 
 void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
               tlp::async_mmap<VertexAttrAlignedVec> vertices,
-              tlp::async_mmap<EdgeVec> edges_0,
-              tlp::async_mmap<EdgeVec> edges_1,
-              tlp::async_mmap<EdgeVec> edges_2,
-              tlp::async_mmap<EdgeVec> edges_3,
-              tlp::async_mmap<UpdateVec> updates_0,
-              tlp::async_mmap<UpdateVec> updates_1,
-              tlp::async_mmap<UpdateVec> updates_2,
-              tlp::async_mmap<UpdateVec> updates_3);
+              tlp::async_mmaps<EdgeVec, kNumPes> edges,
+              tlp::async_mmaps<UpdateVec, kNumPes> updates);
 
 // Ground truth implementation of page rank.
 //
@@ -309,15 +303,9 @@ int main(int argc, char* argv[]) {
 
   PageRank(base_vid, vertices_baseline, edges);
   PageRank(num_partitions, metadata,
-           tlp::async_mmap_from_vec<VertexAttrAligned, kVertexVecLen>(vertices),
-           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges[0]),
-           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges[1]),
-           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges[2]),
-           tlp::async_mmap_from_vec<Edge, kEdgeVecLen>(edges[3]),
-           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[0]),
-           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[1]),
-           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[2]),
-           tlp::async_mmap_from_vec<Update, kUpdateVecLen>(updates[3]));
+           tlp::make_vec_async_mmap<VertexAttrAligned, kVertexVecLen>(vertices),
+           tlp::make_vec_async_mmaps<Edge, kEdgeVecLen, kNumPes>(edges),
+           tlp::make_vec_async_mmaps<Update, kUpdateVecLen, kNumPes>(updates));
 
   LOG(INFO) << "device code finished after " << *metadata.rbegin()
             << " iterations";

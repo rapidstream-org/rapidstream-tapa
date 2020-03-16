@@ -1,38 +1,38 @@
 {
   "pblock_dynamic_SLR0": [
     "EdgeMem_0",
-    "edges_0_m_axi",
+    "edges_0__m_axi",
     "ProcElem_0",
     "UpdateMem_0",
-    "updates_0_m_axi",
+    "updates_0__m_axi",
     "UpdateHandler_0",
     "PageRank_control_s_axi_U"
   ],
   "pblock_dynamic_SLR1": [
     "EdgeMem_1",
-    "edges_1_m_axi",
+    "edges_1__m_axi",
     "ProcElem_1",
     "UpdateMem_1",
-    "updates_1_m_axi",
+    "updates_1__m_axi",
     "UpdateHandler_1",
     "Control_0"
   ],
   "pblock_dynamic_SLR2": [
     "EdgeMem_2",
-    "edges_2_m_axi",
+    "edges_2__m_axi",
     "ProcElem_2",
     "UpdateMem_2",
-    "updates_2_m_axi",
+    "updates_2__m_axi",
     "UpdateHandler_2",
     "VertexMem_0",
-    "vertices_m_axi"
+    "vertices__m_axi"
   ],
   "pblock_dynamic_SLR3": [
     "EdgeMem_3",
-    "edges_3_m_axi",
+    "edges_3__m_axi",
     "ProcElem_3",
     "UpdateMem_3",
-    "updates_3_m_axi",
+    "updates_3__m_axi",
     "UpdateHandler_3"
   ]
 }
