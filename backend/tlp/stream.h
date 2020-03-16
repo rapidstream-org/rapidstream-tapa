@@ -154,8 +154,4 @@ inline std::string GetStreamElemType(const clang::ParmVarDecl* param) {
   return "";
 }
 
-inline std::string StreamNameAt(const std::string& array_name, int idx) {
-  return array_name + "[" + std::to_string(idx) + "]";
-}
-
 #endif  // TLP_STREAM_H_

@@ -17,9 +17,16 @@ inline bool IsTlpType(clang::QualType type, const std::string& type_name) {
   return IsTlpType(type->getAsRecordDecl(), type_name) ||
          IsTlpType(type->getAs<clang::LValueReferenceType>(), type_name);
 }
+inline bool IsTlpType(const clang::Expr* expr, const std::string& type_name) {
+  return expr != nullptr && IsTlpType(expr->getType(), type_name);
+}
 inline bool IsTlpType(const clang::ParmVarDecl* param,
                       const std::string& type_name) {
   return IsTlpType(param->getType(), type_name);
+}
+
+inline std::string ArrayNameAt(const std::string& name, int idx) {
+  return name + "[" + std::to_string(idx) + "]";
 }
 
 inline std::string GetArrayElem(const std::string& name, int idx) {

@@ -326,8 +326,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           const string elem_type = GetTemplateArgName(args[0]);
           const uint64_t fifo_depth = *args[2].getAsIntegral().getRawData();
           for (int i = 0; i < GetArraySize(decl); ++i) {
-            const string var_name =
-                StreamNameAt(var_decl->getNameAsString(), i);
+            const string var_name = ArrayNameAt(var_decl->getNameAsString(), i);
             metadata["fifos"][var_name]["depth"] = fifo_depth;
           }
         }
@@ -341,10 +340,16 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   for (auto invoke : invokes) {
     int step = -1;
     bool has_name = false;
+    bool is_vec = false;
+    uint64_t vec_length = 1;
     if (const auto method = dyn_cast<CXXMethodDecl>(invoke->getCalleeDecl())) {
       auto args = method->getTemplateSpecializationArgs()->asArray();
       step =
           *reinterpret_cast<const int*>(args[0].getAsIntegral().getRawData());
+      if (args.size() > 1 && args[1].getKind() == TemplateArgument::Integral) {
+        is_vec = true;
+        vec_length = *args[1].getAsIntegral().getRawData();
+      }
       if (args.rbegin()->getKind() == TemplateArgument::Integral) {
         has_name = true;
       }
@@ -355,114 +360,133 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     }
     const FunctionDecl* task = nullptr;
     string task_name;
-    for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
-      const auto arg = invoke->getArg(i);
-      const auto decl_ref = dyn_cast<DeclRefExpr>(arg);
-      const auto op_call = dyn_cast<CXXOperatorCallExpr>(arg);
-      if (decl_ref || op_call) {
-        string arg_name;
-        if (decl_ref)
-          arg_name = decl_ref->getNameInfo().getName().getAsString();
-        if (op_call) {
-          const auto array_name = dyn_cast<DeclRefExpr>(op_call->getArg(0))
-                                      ->getNameInfo()
-                                      .getName()
-                                      .getAsString();
-          // probably only work with little endian
-          const auto array_idx = *dyn_cast<IntegerLiteral>(op_call->getArg(1))
-                                      ->getValue()
-                                      .getRawData();
-          arg_name = StreamNameAt(array_name, array_idx);
-        }
-        if (i == 0) {
-          task_name = arg_name;
-          metadata["tasks"][task_name].push_back({{"step", step}});
-          task = decl_ref->getDecl()->getAsFunction();
-        } else {
-          assert(task != nullptr);
-          auto param = task->getParamDecl(has_name ? i - 2 : i - 1);
-          string param_cat;
-
-          // register this argument to this task
-          auto register_arg = [&](string arg = "", string port = "") {
-            if (arg.empty()) arg = arg_name;  // use global arg_name by default
-            if (port.empty()) port = param->getNameAsString();
-            (*metadata["tasks"][task_name].rbegin())["args"][arg] = {
-                {"cat", param_cat}, {"port", port}};
-          };
-
-          // regsiter stream info to
-          auto register_consumer = [&](string arg = "") {
-            if (arg.empty()) arg = arg_name;  // use global arg_name by default
-            if (metadata["fifos"][arg].contains("consumed_by")) {
-              auto diagnostics_builder =
-                  ReportError(param->getLocation(),
-                              "tlp::stream '%0' consumed more than once");
-              diagnostics_builder.AddString(arg);
-              diagnostics_builder.AddSourceRange(
-                  CharSourceRange::getCharRange(param->getSourceRange()));
-            }
-            metadata["fifos"][arg]["consumed_by"] = {
-                task_name, metadata["tasks"][task_name].size() - 1};
-          };
-          auto register_producer = [&](string arg = "") {
-            if (arg.empty()) arg = arg_name;  // use global arg_name by default
-            if (metadata["fifos"][arg].contains("produced_by")) {
-              auto diagnostics_builder =
-                  ReportError(param->getLocation(),
-                              "tlp::stream '%0' produced more than once");
-              diagnostics_builder.AddString(arg);
-              diagnostics_builder.AddSourceRange(
-                  CharSourceRange::getCharRange(param->getSourceRange()));
-            }
-            metadata["fifos"][arg]["produced_by"] = {
-                task_name, metadata["tasks"][task_name].size() - 1};
-          };
-          if (IsMmap(param)) {
-            param_cat = "mmap";
-            register_arg();
-          } else if (IsAsyncMmap(param)) {
-            param_cat = "async_mmap";
-            register_arg();
-          } else if (IsTlpType(param, "istream")) {
-            param_cat = "istream";
-            register_consumer();
-            register_arg();
-          } else if (IsTlpType(param, "ostream")) {
-            param_cat = "ostream";
-            register_producer();
-            register_arg();
-          } else if (IsTlpType(param, "istreams")) {
-            param_cat = "istream";
-            for (int i = 0; i < GetArraySize(param); ++i) {
-              auto arg = StreamNameAt(arg_name, i);
-              register_consumer(arg);
-              register_arg(arg, StreamNameAt(param->getNameAsString(), i));
-            }
-          } else if (IsTlpType(param, "ostreams")) {
-            param_cat = "ostream";
-            for (int i = 0; i < GetArraySize(param); ++i) {
-              auto arg = StreamNameAt(arg_name, i);
-              register_producer(arg);
-              register_arg(arg, StreamNameAt(param->getNameAsString(), i));
-            }
+    auto get_name = [&](const string& name, uint64_t i,
+                        bool enable = true) -> string {
+      return enable && is_vec ? ArrayNameAt(name, i) : name;
+    };
+    for (uint64_t i_vec = 0; i_vec < vec_length; ++i_vec) {
+      for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
+        const auto arg = invoke->getArg(i);
+        const auto decl_ref = dyn_cast<DeclRefExpr>(arg);  // a variable
+        const bool arg_is_async_mmaps = IsTlpType(decl_ref, "async_mmaps");
+        const bool arg_is_streams = IsTlpType(decl_ref, "streams");
+        const auto op_call =
+            dyn_cast<CXXOperatorCallExpr>(arg);  // element in an array
+        if (decl_ref || op_call) {
+          string arg_name;
+          if (decl_ref) {
+            arg_name = decl_ref->getNameInfo().getName().getAsString();
+          }
+          if (op_call) {
+            const auto array_name = dyn_cast<DeclRefExpr>(op_call->getArg(0))
+                                        ->getNameInfo()
+                                        .getName()
+                                        .getAsString();
+            // probably only work with little endian
+            const auto array_idx = *dyn_cast<IntegerLiteral>(op_call->getArg(1))
+                                        ->getValue()
+                                        .getRawData();
+            arg_name = ArrayNameAt(array_name, array_idx);
+          }
+          if (i == 0) {
+            task_name = arg_name;
+            metadata["tasks"][task_name].push_back({{"step", step}});
+            task = decl_ref->getDecl()->getAsFunction();
           } else {
-            param_cat = "scalar";
-            register_arg();
+            assert(task != nullptr);
+            auto param = task->getParamDecl(has_name ? i - 2 : i - 1);
+            auto param_name = param->getNameAsString();
+            string param_cat;
+
+            // register this argument to task
+            auto register_arg = [&](string arg = "", string port = "") {
+              if (arg.empty())
+                arg = arg_name;  // use global arg_name by default
+              if (port.empty()) port = param_name;
+              (*metadata["tasks"][task_name].rbegin())["args"][arg] = {
+                  {"cat", param_cat}, {"port", port}};
+            };
+
+            // regsiter stream info to task
+            auto register_consumer = [&](string arg = "") {
+              // use global arg_name by default
+              if (arg.empty()) arg = arg_name;
+              if (metadata["fifos"][arg].contains("consumed_by")) {
+                auto diagnostics_builder =
+                    ReportError(param->getLocation(),
+                                "tlp::stream '%0' consumed more than once");
+                diagnostics_builder.AddString(arg);
+                diagnostics_builder.AddSourceRange(
+                    CharSourceRange::getCharRange(param->getSourceRange()));
+              }
+              metadata["fifos"][arg]["consumed_by"] = {
+                  task_name, metadata["tasks"][task_name].size() - 1};
+            };
+            auto register_producer = [&](string arg = "") {
+              // use global arg_name by default
+              if (arg.empty()) arg = arg_name;
+              if (metadata["fifos"][arg].contains("produced_by")) {
+                auto diagnostics_builder =
+                    ReportError(param->getLocation(),
+                                "tlp::stream '%0' produced more than once");
+                diagnostics_builder.AddString(arg);
+                diagnostics_builder.AddSourceRange(
+                    CharSourceRange::getCharRange(param->getSourceRange()));
+              }
+              metadata["fifos"][arg]["produced_by"] = {
+                  task_name, metadata["tasks"][task_name].size() - 1};
+            };
+            if (IsTlpType(param, "mmap")) {
+              param_cat = "mmap";
+              register_arg();
+            } else if (IsTlpType(param, "async_mmap")) {
+              param_cat = "async_mmap";
+              // vector invocation can map async_mmaps to async_mmap
+              register_arg(get_name(arg_name, i_vec, arg_is_async_mmaps));
+            } else if (IsTlpType(param, "istream")) {
+              param_cat = "istream";
+              // vector invocation can map istreams to istream
+              auto arg = get_name(arg_name, i_vec, arg_is_streams);
+              register_consumer(arg);
+              register_arg(arg);
+            } else if (IsTlpType(param, "ostream")) {
+              param_cat = "ostream";
+              // vector invocation can map ostreams to ostream
+              auto arg = get_name(arg_name, i_vec, arg_is_streams);
+              register_producer(arg);
+              register_arg(arg);
+            } else if (IsTlpType(param, "istreams")) {
+              param_cat = "istream";
+              for (int i = 0; i < GetArraySize(param); ++i) {
+                auto arg = ArrayNameAt(arg_name, i);
+                register_consumer(arg);
+                register_arg(arg, ArrayNameAt(param_name, i));
+              }
+            } else if (IsTlpType(param, "ostreams")) {
+              param_cat = "ostream";
+              for (int i = 0; i < GetArraySize(param); ++i) {
+                auto arg = ArrayNameAt(arg_name, i);
+                register_producer(arg);
+                register_arg(arg, ArrayNameAt(param_name, i));
+              }
+            } else {
+              param_cat = "scalar";
+              register_arg();
+            }
+          }
+          continue;
+        } else if (const auto string_literal = dyn_cast<StringLiteral>(arg)) {
+          if (i == 1 && has_name) {
+            (*metadata["tasks"][task_name].rbegin())["name"] =
+                string_literal->getString();
+            continue;
           }
         }
-        continue;
-      } else if (const auto string_literal = dyn_cast<StringLiteral>(arg)) {
-        if (i == 1 && has_name) {
-          (*metadata["tasks"][task_name].rbegin())["name"] =
-              string_literal->getString();
-          continue;
-        }
+        auto diagnostics_builder =
+            ReportError(arg->getBeginLoc(), "unexpected argument: %0");
+        diagnostics_builder.AddString(arg->getStmtClassName());
+        diagnostics_builder.AddSourceRange(GetCharSourceRange(arg));
       }
-      auto diagnostics_builder =
-          ReportError(arg->getBeginLoc(), "unexpected argument: %0");
-      diagnostics_builder.AddString(arg->getStmtClassName());
-      diagnostics_builder.AddSourceRange(GetCharSourceRange(arg));
     }
   }
 
