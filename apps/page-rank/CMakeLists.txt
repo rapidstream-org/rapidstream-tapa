@@ -49,7 +49,7 @@ if(FRT_FOUND)
     # --profile_kernel=data:all:all:all --profile_kernel=stall:all:all:all
     --remote_ip_cache=$ENV{HOME}/.remote_ip_cache
     --kernel_frequency=250
-    --vivado.prop=run.impl_1.STRATEGY=Congestion_SpreadLogic_High
+    --vivado.prop=run.impl_1.STRATEGY=Performance_EarlyBlockPlacement
     --vivado.prop
     run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=${CMAKE_CURRENT_SOURCE_DIR}/slr.tcl
     INPUT page-rank-hw-xo
