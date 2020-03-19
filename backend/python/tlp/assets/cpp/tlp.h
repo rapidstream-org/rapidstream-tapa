@@ -69,6 +69,8 @@ struct dummy {
 
 #endif  // __SYNTHESIS__
 
+#define AP_INT_MAX_W 2048
+
 #include <ap_int.h>
 #include <ap_utils.h>
 #include <hls_stream.h>
