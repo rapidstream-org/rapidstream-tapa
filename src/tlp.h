@@ -29,6 +29,18 @@ T reg(T x) {
   return x;
 }
 
+template <typename Addr, typename Payload>
+struct packet {
+  Addr addr;
+  Payload payload;
+};
+
+template <typename Addr, typename Payload>
+inline std::ostream& operator<<(std::ostream& os,
+                                const packet<Addr, Payload>& obj) {
+  return os << "{addr: " << obj.addr << ", payload: " << obj.payload << "}";
+}
+
 extern mutex thread_name_mtx;
 extern std::unordered_map<std::thread::id, std::string> thread_name_table;
 extern std::atomic_bool sleeping;

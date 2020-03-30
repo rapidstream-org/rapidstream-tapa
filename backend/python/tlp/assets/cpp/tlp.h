@@ -84,6 +84,12 @@ T reg(T x) {
   return x;
 }
 
+template <typename Addr, typename Payload>
+struct packet {
+  Addr addr;
+  Payload payload;
+};
+
 template <typename T>
 struct elem_t {
   T val;
