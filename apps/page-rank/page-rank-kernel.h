@@ -8,14 +8,24 @@
 #define VLOG_F(level, tag) VLOG(level) << #tag << "@" << __FUNCTION__ << ": "
 #define LOG_F(level, tag) LOG(level) << #tag << "@" << __FUNCTION__ << ": "
 
+struct VertexAttrKernel {
+  float ranking;
+  float tmp;
+};
+
+inline std::ostream& operator<<(std::ostream& os, const VertexAttrKernel& obj) {
+  return os << "{ranking: " << obj.ranking << ", out_degree|tmp: " << obj.tmp
+            << "}";
+}
+
+using VertexAttrVec = tlp::vec_t<VertexAttrKernel, kVertexVecLen>;
+
 struct TaskReq {
   enum Phase { kScatter = 0, kGather = 1 };
   Phase phase;
   Pid pid;
   Vid overall_base_vid;
-  Vid base_vid;
   Vid partition_size;
-  Vid num_vertices;
   Eid num_edges;
   Vid vid_offset;
   Eid eid_offset;
@@ -29,9 +39,7 @@ inline std::ostream& operator<<(std::ostream& os, const TaskReq::Phase& obj) {
 
 inline std::ostream& operator<<(std::ostream& os, const TaskReq& obj) {
   return os << "{phase: " << obj.phase << ", pid: " << obj.pid
-            << ", base_vid: " << obj.base_vid
             << ", partition_size: " << obj.partition_size
-            << ", num_vertices: " << obj.num_vertices
             << ", num_edges: " << obj.num_edges
             << ", vid_offset: " << obj.vid_offset
             << ", eid_offset: " << obj.eid_offset << ", init: " << obj.init

@@ -5,6 +5,7 @@
 #include <array>
 #include <chrono>
 #include <deque>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -42,7 +43,9 @@ using std::chrono::high_resolution_clock;
 // output uint64_t num_iterations;
 
 void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
-              tlp::async_mmap<VertexAttrAlignedVec> vertices,
+              tlp::async_mmap<FloatVec> degrees,
+              tlp::async_mmap<FloatVec> rankings,
+              tlp::async_mmap<FloatVec> tmps,
               tlp::async_mmaps<EdgeVec, kNumPes> edges,
               tlp::async_mmaps<UpdateVec, kNumPes> updates);
 
@@ -50,7 +53,7 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
 //
 // Initially the vertices should contain valid out degree information and
 // ranking.
-void PageRank(Vid base_vid, vector<VertexAttrAligned>& vertices,
+void PageRank(Vid base_vid, vector<VertexAttr>& vertices,
               const array<vector<Edge>, kNumPes>& edges) {
   const auto num_vertices = vertices.size();
   vector<Update> updates;
@@ -218,6 +221,18 @@ int main(int argc, char* argv[]) {
     total_num_edges_vec += num_out_edges[src_pid];
     LOG(INFO) << "num edges in partition[" << src_pid
               << "]: " << num_out_edges[src_pid];
+    Eid max_num = 0;
+    for (int pe = 0; pe < kNumPes; ++pe) {
+      max_num = std::max(num_out_edges_per_pe[pe][src_pid], max_num);
+    }
+    LOG(INFO) << "num edges in partition[" << src_pid
+              << "]: " << max_num * kNumPes << " (+" << std::fixed
+              << std::setprecision(2)
+
+              << (100. * (max_num * kNumPes - num_out_edges[src_pid]) /
+                  num_out_edges[src_pid])
+              << "%)";
+
     for (Pid dst_pid = 0; dst_pid < num_partitions; ++dst_pid) {
       VLOG(5) << "num edges in partition[" << src_pid << "][" << dst_pid
               << "]: " << num_edges_i[dst_pid];
@@ -231,7 +246,7 @@ int main(int argc, char* argv[]) {
             << 100. * (total_num_edges_vec - total_num_edges) / total_num_edges
             << "% over " << total_num_edges << ")";
 
-  vector<VertexAttrAligned> vertices_baseline(total_num_vertices);
+  vector<VertexAttr> vertices_baseline(total_num_vertices);
   // initialize vertex attributes
   for (auto& v : vertices_baseline) {
     v.out_degree = 0;
@@ -247,8 +262,6 @@ int main(int argc, char* argv[]) {
   for (auto& v : vertices_baseline) {
     v.tmp = v.ranking / v.out_degree;
   }
-
-  vector<VertexAttrAligned> vertices = vertices_baseline;
 
   array<vector<Update>, kNumPes> updates;
   for (int i = 0; i < kNumPes; ++i) {
@@ -275,7 +288,7 @@ int main(int argc, char* argv[]) {
       VLOG(10) << n;
     }
     VLOG(10) << "vertices: ";
-    for (auto v : vertices) {
+    for (auto v : vertices_baseline) {
       VLOG(10) << v;
     }
     VLOG(10) << "edges: ";
@@ -301,9 +314,21 @@ int main(int argc, char* argv[]) {
     if (updates[i].empty()) updates[i].resize(4096 / sizeof(Update));
   }
 
+  vector<float> degrees(RoundUp<kVertexVecLen>(vertices_baseline.size()));
+  vector<float> rankings(RoundUp<kVertexVecLen>(vertices_baseline.size()));
+  vector<float> tmps(RoundUp<kVertexVecLen>(vertices_baseline.size()));
+
+  for (size_t i = 0; i < vertices_baseline.size(); ++i) {
+    degrees[i] = 1. / vertices_baseline[i].out_degree;
+    rankings[i] = vertices_baseline[i].ranking;
+    tmps[i] = vertices_baseline[i].tmp;
+  }
+
   PageRank(base_vid, vertices_baseline, edges);
   PageRank(num_partitions, metadata,
-           tlp::make_vec_async_mmap<VertexAttrAligned, kVertexVecLen>(vertices),
+           tlp::make_vec_async_mmap<float, kVertexVecLen>(degrees),
+           tlp::make_vec_async_mmap<float, kVertexVecLen>(rankings),
+           tlp::make_vec_async_mmap<float, kVertexVecLen>(tmps),
            tlp::make_vec_async_mmaps<Edge, kEdgeVecLen, kNumPes>(edges),
            tlp::make_vec_async_mmaps<Update, kUpdateVecLen, kNumPes>(updates));
 
@@ -311,14 +336,14 @@ int main(int argc, char* argv[]) {
             << " iterations";
 
   vector<VertexAttr> best_baseline(10);
-  vector<VertexAttr> best = best_baseline;
+  vector<decltype(VertexAttr::ranking)> best(best_baseline.size());
   auto comp = [](const VertexAttr& lhs, const VertexAttr& rhs) {
     return lhs.ranking > rhs.ranking;
   };
   std::partial_sort_copy(vertices_baseline.begin(), vertices_baseline.end(),
                          best_baseline.begin(), best_baseline.end(), comp);
-  std::partial_sort_copy(vertices.begin(), vertices.end(), best.begin(),
-                         best.end(), comp);
+  std::partial_sort_copy(rankings.begin(), rankings.end(), best.begin(),
+                         best.end(), std::greater<float>{});
 
   if (VLOG_IS_ON(6)) {
     for (const auto& v : best_baseline) {
@@ -335,7 +360,7 @@ int main(int argc, char* argv[]) {
       VLOG(10) << n;
     }
     VLOG(10) << "vertices: ";
-    for (auto v : vertices) {
+    for (auto v : vertices_baseline) {
       VLOG(10) << v;
     }
     VLOG(10) << "updates: ";
@@ -350,7 +375,7 @@ int main(int argc, char* argv[]) {
   const uint64_t threshold = 10;  // only report up to these errors
   for (Vid i = 0; i < best_baseline.size(); ++i) {
     auto expected = best_baseline[i].ranking;
-    auto actual = best[i].ranking;
+    auto actual = best[i];
     if (actual < expected - kConvergenceThreshold ||
         actual > expected + kConvergenceThreshold) {
       if (num_errors < threshold) {

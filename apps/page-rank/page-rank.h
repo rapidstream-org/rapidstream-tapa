@@ -31,7 +31,7 @@ constexpr uint64_t kVecLenBytes = 64;  // 512 bits
 using Vid = uint32_t;     // can hold all vertices
 using Degree = uint32_t;  // can hold the maximum degree
 using Eid = uint32_t;     // can hold all edges
-using Pid = uint32_t;     // can hold all partitions
+using Pid = uint16_t;     // can hold all partitions
 
 constexpr float kDampingFactor = .85f;
 constexpr float kConvergenceThreshold = 0.0001f;
@@ -44,22 +44,12 @@ struct VertexAttr {
   float tmp;
 };
 
+constexpr uint64_t kVertexVecLen = kVecLenBytes / sizeof(float);
+
 inline std::ostream& operator<<(std::ostream& os, const VertexAttr& obj) {
   return os << "{out_degree: " << obj.out_degree << ", ranking: " << obj.ranking
             << ", tmp: " << obj.tmp << "}";
 }
-
-struct VertexAttrAligned : public VertexAttr {
-  uint32_t padding;
-
-  VertexAttrAligned() = default;
-  VertexAttrAligned(const VertexAttr& v) : VertexAttr(v) {}
-};
-
-static_assert(IsPowerOf2<sizeof(VertexAttrAligned)>(),
-              "VertexAttrAligned is not aligned to a power of 2");
-
-constexpr uint64_t kVertexVecLen = kVecLenBytes / sizeof(VertexAttrAligned);
 
 struct Edge {
   Vid src;
@@ -96,8 +86,7 @@ constexpr int kVertexUpdateLatency = 4;
 constexpr int kVertexUpdateDepDist = kVertexUpdateLatency + 1;
 
 // Alias for vec types.
-using VertexAttrVec = tlp::vec_t<VertexAttr, kVertexVecLen>;
-using VertexAttrAlignedVec = tlp::vec_t<VertexAttrAligned, kVertexVecLen>;
+using FloatVec = tlp::vec_t<float, kVertexVecLen>;
 using EdgeVec = tlp::vec_t<Edge, kEdgeVecLen>;
 using UpdateVec = tlp::vec_t<Update, kUpdateVecLen>;
 

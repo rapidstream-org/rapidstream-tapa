@@ -10,8 +10,8 @@ add_executable(page-rank)
 target_sources(page-rank PRIVATE page-rank.cpp)
 target_link_libraries(page-rank PUBLIC page-rank-h page_rank_host)
 add_test(NAME page-rank
-          COMMAND page-rank ${CMAKE_CURRENT_BINARY_DIR}/../graph/facebook.txt
-                  512)
+         COMMAND page-rank ${CMAKE_CURRENT_BINARY_DIR}/../graph/facebook.txt
+                 512)
 
 find_package(FRT)
 if(FRT_FOUND)
@@ -20,33 +20,34 @@ if(FRT_FOUND)
     page-rank-hw-xo
     INPUT page-rank.cpp
     TOP PageRank
-    PLATFORM xilinx_u250_xdma_201830_2
+    #PLATFORM xilinx_u50_gen3x16_xdma_201920_3
+    PLATFORM xilinx_u280_xdma_201920_3
     TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
     TLPCC $<TARGET_FILE:tlpcc>
     CLOCK_PERIOD 4.000)
 
   add_xocc_hw_link_targets(
     ${CMAKE_CURRENT_BINARY_DIR}
-    --sp=PageRank.m_axi_edges_0:DDR[0]
-    --sp=PageRank.m_axi_edges_1:DDR[1]
-    --sp=PageRank.m_axi_edges_2:DDR[2]
-    --sp=PageRank.m_axi_edges_3:DDR[3]
-    --sp=PageRank.m_axi_updates_0:DDR[0]
-    --sp=PageRank.m_axi_updates_1:DDR[1]
-    --sp=PageRank.m_axi_updates_2:DDR[2]
-    --sp=PageRank.m_axi_updates_3:DDR[3]
-    --sp=PageRank.m_axi_metadata:DDR[1]
-    --sp=PageRank.m_axi_vertices:DDR[2]
-    # --dk=chipscope:PageRank:m_axi_vertices
-    # --dk=chipscope:PageRank:m_axi_edges_0
-    # --dk=chipscope:PageRank:m_axi_edges_1
-    # --dk=chipscope:PageRank:m_axi_edges_2
-    # --dk=chipscope:PageRank:m_axi_edges_3
-    # --dk=chipscope:PageRank:m_axi_updates_0
-    # --dk=chipscope:PageRank:m_axi_updates_1
-    # --dk=chipscope:PageRank:m_axi_updates_2
-    # --dk=chipscope:PageRank:m_axi_updates_3
-    # --profile_kernel=data:all:all:all --profile_kernel=stall:all:all:all
+    --sp=PageRank.edges_0:HBM[0]
+    --sp=PageRank.edges_1:HBM[2]
+    --sp=PageRank.edges_2:HBM[4]
+    --sp=PageRank.edges_3:HBM[6]
+    # --sp=PageRank.edges_4:HBM[8]
+    # --sp=PageRank.edges_5:HBM[10]
+    # --sp=PageRank.edges_6:HBM[12]
+    # --sp=PageRank.edges_7:HBM[14]
+    --sp=PageRank.updates_0:HBM[1]
+    --sp=PageRank.updates_1:HBM[3]
+    --sp=PageRank.updates_2:HBM[5]
+    --sp=PageRank.updates_3:HBM[7]
+    # --sp=PageRank.updates_4:HBM[9]
+    # --sp=PageRank.updates_5:HBM[11]
+    # --sp=PageRank.updates_6:HBM[13]
+    # --sp=PageRank.updates_7:HBM[15]
+    --sp=PageRank.metadata:PLRAM[0]
+    --sp=PageRank.degrees:HBM[16]
+    --sp=PageRank.rankings:HBM[17]
+    --sp=PageRank.tmps:HBM[18]
     --remote_ip_cache=$ENV{HOME}/.remote_ip_cache
     --kernel_frequency=250
     --vivado.prop=run.impl_1.STRATEGY=Performance_EarlyBlockPlacement
@@ -79,7 +80,7 @@ if(FRT_FOUND)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   add_test(NAME page-rank-cosim
-            COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target
-                    page-rank-cosim)
+           COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target
+                   page-rank-cosim)
 
 endif() # FRT_FOUND

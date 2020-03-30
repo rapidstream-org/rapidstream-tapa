@@ -94,8 +94,6 @@ bulk_steps:
           TaskReq req{TaskReq::kScatter,
                       pid_send[pe],
                       base_vid,
-                      base_vid + partition_size * pid_send[pe],
-                      partition_size,
                       partition_size,
                       num_edges_local[pid_send[pe]][pe],
                       pid_send[pe] * partition_size,
@@ -174,8 +172,6 @@ bulk_steps:
           TaskReq req{TaskReq::kGather,
                       pid,
                       base_vid,
-                      base_vid + partition_size * pid,
-                      partition_size,
                       partition_size,
                       num_updates_local[pid],
                       partition_size * pid,
@@ -197,7 +193,8 @@ bulk_steps:
         }
       }
     }
-    VLOG_F(3, info) << (all_done ? "" : "not ") << "all done";
+    VLOG_F(3, info) << "iter #" << iter << (all_done ? " " : " not ")
+                    << "all done";
     ++iter;
   }
   // Terminates UpdateHandler.
@@ -213,49 +210,136 @@ bulk_steps:
 void VertexMem(tlp::istreams<VertexReq, kNumPes>& vertex_req_q,
                tlp::istreams<VertexAttrVec, kNumPes>& vertex_in_q,
                tlp::ostreams<VertexAttrVec, kNumPes>& vertex_out_q,
-               tlp::async_mmap<VertexAttrAlignedVec> vertices) {
+               tlp::async_mmap<FloatVec> degrees,
+               tlp::async_mmap<FloatVec> rankings,
+               tlp::async_mmap<FloatVec> tmps) {
   for (;;) {
     VertexReq req;
     bool done = false;
-    for (int pe = 0; pe < kNumPes; ++pe)
+    for (int pe = 0; pe < kNumPes; ++pe) {
 #pragma HLS unroll
       if (!done && vertex_req_q[pe].try_read(req)) {
         done |= true;
-        VertexAttrAlignedVec resp;
-        bool valid = false;
-      vertices:
-        for (Vid i_wr = 0, i_rd_req = 0, i_rd_resp = 0;
-             req.phase == TaskReq::kScatter ? i_rd_resp < req.length
-                                            : i_wr < req.length;) {
-          // Read vertices from DRAM.
-          // Send requests.
-          if (i_rd_req < req.length &&
-              (req.phase == TaskReq::kScatter ||
-               i_rd_req < i_wr + kEstimatedLatency * kVertexVecLen) &&
-              vertices.read_addr_try_write((req.offset + i_rd_req) /
-                                           kVertexVecLen)) {
-            i_rd_req += kVertexVecLen;
-          }
-          // Handle responses.
-          if (i_rd_resp < req.length) {
-            if (!valid) valid = vertices.read_data_try_read(resp);
-            if (valid && vertex_out_q[pe].try_write(resp)) {
-              i_rd_resp += kVertexVecLen;
+        if (req.phase == TaskReq::kScatter) {
+          // Scatter phase
+          //   Send tmp to PEs.
+          FloatVec resp;
+          VertexAttrVec tmp_out;
+          bool valid = false;
+        vertices_scatter:
+          for (Vid i_req = 0, i_resp = 0; i_resp < req.length;) {
+#pragma HLS pipeline II = 1
+            // Send requests.
+            if (i_req < req.length &&
+                i_req < i_resp + kEstimatedLatency * kVertexVecLen &&
+                tmps.read_addr_try_write((req.offset + i_req) /
+                                         kVertexVecLen)) {
+              i_req += kVertexVecLen;
+            }
+
+            // Handle responses.
+            if (!valid) valid = tmps.read_data_try_read(resp);
+            for (int i = 0; i < kVertexVecLen; ++i) {
+#pragma HLS unroll
+              tmp_out.set(i, VertexAttrKernel{0.f, resp[i]});
+            }
+            if (valid && vertex_out_q[pe].try_write(tmp_out)) {
+              i_resp += kVertexVecLen;
               valid = false;
             }
           }
+        } else {
+          // Gather phase
+          //   Send degree and ranking to PEs.
+          //   Recv tmp and ranking from PEs.
 
-          // Write vertices to DRAM.
-          if (req.phase == TaskReq::kGather && !vertex_in_q[pe].empty()) {
-            auto v = vertex_in_q[pe].peek(nullptr);
-            if (vertices.write_data_try_write(v)) {
-              vertex_in_q[pe].read(nullptr);
-              vertices.write_addr_write((req.offset + i_wr) / kVertexVecLen);
-              i_wr += kVertexVecLen;
+          FloatVec resp_degree;
+          FloatVec resp_ranking;
+
+          // valid_xx: resp_xx is valid
+          bool valid_degree = false;
+          bool valid_ranking = false;
+
+          // xx_ready_oo: write_xx has been written.
+          bool addr_ready_tmp = false;
+          bool data_ready_tmp = false;
+          bool addr_ready_ranking = false;
+          bool data_ready_ranking = false;
+
+        vertices_gather:
+          for (Vid i_rd_req_degree = 0, i_rd_req_ranking = 0, i_rd_resp = 0,
+                   i_wr = 0;
+               i_wr < req.length;) {
+#pragma HLS pipeline II = 1
+            // Send read requests.
+            if (i_rd_req_degree < req.length &&
+                i_rd_req_degree <
+                    i_rd_resp + kEstimatedLatency * kVertexVecLen &&
+                degrees.read_addr_try_write((req.offset + i_rd_req_degree) /
+                                            kVertexVecLen)) {
+              i_rd_req_degree += kVertexVecLen;
+            }
+            if (i_rd_req_ranking < req.length &&
+                i_rd_req_ranking <
+                    i_rd_resp + kEstimatedLatency * kVertexVecLen &&
+                rankings.read_addr_try_write((req.offset + i_rd_req_ranking) /
+                                             kVertexVecLen)) {
+              i_rd_req_ranking += kVertexVecLen;
+            }
+
+            // Handle read responses.
+            if (i_rd_resp < req.length) {
+              if (!valid_degree)
+                valid_degree = degrees.read_data_try_read(resp_degree);
+              if (!valid_ranking)
+                valid_ranking = rankings.read_data_try_read(resp_ranking);
+              VertexAttrVec vertex_attr_out;
+              for (int i = 0; i < kVertexVecLen; ++i) {
+#pragma HLS unroll
+                vertex_attr_out.set(
+                    i, VertexAttrKernel{resp_ranking[i], resp_degree[i]});
+              }
+              if (valid_degree && valid_ranking &&
+                  vertex_out_q[pe].try_write(vertex_attr_out)) {
+                i_rd_resp += kVertexVecLen;
+                valid_degree = false;
+                valid_ranking = false;
+              }
+            }
+
+            // Write to DRAM.
+            if (!vertex_in_q[pe].empty()) {
+              auto v = vertex_in_q[pe].peek(nullptr);
+              FloatVec ranking_out;
+              FloatVec tmp_out;
+              for (int i = 0; i < kVertexVecLen; ++i) {
+#pragma HLS unroll
+                ranking_out.set(i, v[i].ranking);
+                tmp_out.set(i, v[i].tmp);
+              }
+              uint64_t addr = (req.offset + i_wr) / kVertexVecLen;
+              if (!addr_ready_ranking)
+                addr_ready_ranking = rankings.write_addr_try_write(addr);
+              if (!data_ready_ranking)
+                data_ready_ranking = rankings.write_data_try_write(ranking_out);
+              if (!addr_ready_tmp)
+                addr_ready_tmp = tmps.write_addr_try_write(addr);
+              if (!data_ready_tmp)
+                data_ready_tmp = tmps.write_data_try_write(tmp_out);
+              if (addr_ready_ranking && data_ready_ranking && addr_ready_tmp &&
+                  data_ready_tmp) {
+                vertex_in_q[pe].read(nullptr);
+                addr_ready_ranking = false;
+                data_ready_ranking = false;
+                addr_ready_tmp = false;
+                data_ready_tmp = false;
+                i_wr += kVertexVecLen;
+              }
             }
           }
         }
       }
+    }
   }
 }
 
@@ -364,9 +448,9 @@ update_phases:
     VLOG_F(5, recv) << "Phase: " << phase;
     if (phase == TaskReq::kScatter) {
       // kScatter lasts until update_phase_q is non-empty.
-      Pid last_last_pid = 0xffffffff;
-      Pid last_pid = 0xffffffff;
-      Eid last_update_idx = 0xffffffff;
+      Pid last_last_pid = Pid(-1);
+      Pid last_pid = Pid(-1);
+      Eid last_update_idx = Eid(-1);
     update_writes:
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
@@ -374,7 +458,7 @@ update_phases:
         const auto peek_pid = update_in_q.peek(nullptr).pid;
         if (peek_pid != last_pid && peek_pid == last_last_pid) {
           // insert bubble
-          last_last_pid = 0xffffffff;
+          last_last_pid = Pid(-1);
         } else {
           const auto update_with_pid = update_in_q.read(nullptr);
           VLOG_F(5, recv) << "UpdateWithPid: " << update_with_pid;
@@ -387,7 +471,7 @@ update_phases:
           if (last_pid != pid) {
 #pragma HLS latency min = 1 max = 1
             update_idx = num_updates[pid / kNumPes];
-            if (last_pid != 0xffffffff) {
+            if (last_pid != Pid(-1)) {
               num_updates[last_pid / kNumPes] =
                   RoundUp<kUpdateVecLen>(last_update_idx);
             }
@@ -405,7 +489,7 @@ update_phases:
           updates_write_data_q.write(update_v);
         }
       }
-      if (last_pid != 0xffffffff) {
+      if (last_pid != Pid(-1)) {
         num_updates[last_pid / kNumPes] =
             RoundUp<kUpdateVecLen>(last_update_idx);
       }
@@ -494,6 +578,7 @@ void ProcElem(
 task_requests:
   TLP_WHILE_NOT_EOS(task_req_q) {
     const auto req = task_req_q.read();
+    auto base_vid = req.overall_base_vid + req.vid_offset;
     VLOG_F(5, recv) << "TaskReq: " << req;
     if (req.scatter_done) {
       update_out_q.close();
@@ -501,9 +586,9 @@ task_requests:
       bool active = false;
       if (req.phase == TaskReq::kScatter) {
         vertex_req_q.write(
-            {TaskReq::kScatter, req.vid_offset, req.num_vertices});
+            {TaskReq::kScatter, req.vid_offset, req.partition_size});
       vertex_reads:
-        for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
+        for (Vid i = 0; i * kVertexVecLen < req.partition_size; ++i) {
 #pragma HLS pipeline II = 1
           auto vertex_vec = vertex_in_q.read();
           for (uint64_t j = 0; j < kVertexVecLen; ++j) {
@@ -533,14 +618,14 @@ task_requests:
 #pragma HLS unroll
               const auto& edge = edge_v[i];
               if (edge.src != 0) {
-                auto addr = edge.src - req.base_vid;
+                auto addr = edge.src - base_vid;
                 LOG_IF(ERROR, addr % kEdgeVecLen != i)
                     << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
                 addr /= kEdgeVecLen;
                 // pre-compute pid for routing
                 // use pre-computed src.tmp = src.ranking / src.out_degree
                 update_v.updates.set(
-                    (edge.dst - req.base_vid) % kEdgeVecLen,
+                    (edge.dst - base_vid) % kEdgeVecLen,
                     {edge.dst, vertices_local[addr * kEdgeVecLen + i]});
               }
             }
@@ -551,9 +636,9 @@ task_requests:
         }
       } else {
       vertex_resets:
-        for (Vid i = 0; i < req.num_vertices; ++i) {
+        for (Vid i = 0; i < req.partition_size; ++i) {
 #pragma HLS pipeline II = 1
-#pragma HLS unroll factor = kEdgeVecLen
+#pragma HLS unroll factor = kVertexPartitionFactor
           vertices_local[i] = 0.f;
         }
 
@@ -569,7 +654,7 @@ task_requests:
 #pragma HLS unroll
             auto update = update_v[i];
             if (update.dst != 0) {
-              auto addr = update.dst - req.base_vid;
+              auto addr = update.dst - base_vid;
               LOG_IF(ERROR, addr % kEdgeVecLen != i)
                   << "addr " << addr << " != " << i << " mod " << kEdgeVecLen;
 #pragma HLS latency max = kVertexUpdateLatency
@@ -581,12 +666,12 @@ task_requests:
         update_in_q.open();
 
         vertex_req_q.write(
-            {TaskReq::kGather, req.vid_offset, req.num_vertices});
+            {TaskReq::kGather, req.vid_offset, req.partition_size});
 
         float max_delta = 0.f;
 
       vertex_writes:
-        for (Vid i = 0; i * kVertexVecLen < req.num_vertices; ++i) {
+        for (Vid i = 0; i * kVertexVecLen < req.partition_size; ++i) {
 #pragma HLS pipeline II = 1
           VertexAttrVec vertex_vec = vertex_in_q.read();
           float delta[kVertexVecLen];
@@ -599,7 +684,7 @@ task_requests:
             delta[j] = std::abs(new_ranking - vertex.ranking);
             vertex.ranking = new_ranking;
             // pre-compute vertex.tmp = vertex.ranking / vertex.out_degree
-            vertex.tmp = vertex.ranking / vertex.out_degree;
+            vertex.tmp = vertex.ranking * vertex.tmp;
             vertex_vec.set(j, vertex);
             VLOG_F(5, send) << "VertexAttr[" << j << "]: " << vertex;
           }
@@ -616,7 +701,9 @@ task_requests:
 }
 
 void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
-              tlp::async_mmap<VertexAttrAlignedVec> vertices,
+              tlp::async_mmap<FloatVec> degrees,
+              tlp::async_mmap<FloatVec> rankings,
+              tlp::async_mmap<FloatVec> tmps,
               tlp::async_mmaps<EdgeVec, kNumPes> edges,
               tlp::async_mmaps<UpdateVec, kNumPes> updates) {
   // between Control and ProcElem
@@ -652,7 +739,7 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
 
   tlp::task()
       .invoke<-1>(VertexMem, "VertexMem", vertex_req, vertex_pe2mm,
-                  vertex_mm2pe, vertices)
+                  vertex_mm2pe, degrees, rankings, tmps)
       .invoke<-1, kNumPes>(EdgeMem, "EdgeMem", edge_req, edge_resp, edges)
       .invoke<-1, kNumPes>(UpdateMem, "UpdateMem", update_read_addr,
                            update_read_data, update_write_addr,
