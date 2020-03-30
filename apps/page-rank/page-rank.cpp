@@ -636,9 +636,9 @@ task_requests:
                 addr /= kEdgeVecLen;
                 // pre-compute pid for routing
                 // use pre-computed src.tmp = src.ranking / src.out_degree
-                update_v.updates.set(
-                    (edge.dst - base_vid) % kEdgeVecLen,
-                    {edge.dst, vertices_local[addr * kEdgeVecLen + i]});
+                auto tmp = tlp::reg(vertices_local[addr * kEdgeVecLen + i]);
+                update_v.updates.set((edge.dst - base_vid) % kEdgeVecLen,
+                                     {edge.dst, tmp});
               }
             }
             update_out_q.write(update_v);
