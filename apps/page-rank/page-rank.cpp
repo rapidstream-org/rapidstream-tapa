@@ -12,6 +12,8 @@ constexpr int kMaxPartitionSize = 1024 * 256;
 constexpr int kEstimatedLatency = 50;
 
 void Control(Pid num_partitions, tlp::mmap<uint64_t> metadata,
+             // to VertexMem
+             tlp::ostream<VertexReq>& vertex_req_q,
              // to UpdateHandler
              tlp::ostreams<Eid, kNumPes>& update_config_q,
              tlp::ostreams<bool, kNumPes>& update_phase_q,
@@ -85,31 +87,33 @@ bulk_steps:
     }
 
   scatter:
-    for (Pid pid_send[kNumPes] = {}, pid_recv = 0;
-         pid_recv < num_partitions * kNumPes;) {
-#pragma HLS pipeline II = 1
+    for (Pid pid = 0; pid < num_partitions; ++pid) {
+      // Tell VertexMem to start broadcasting source vertices.
+      Vid vid_offset = pid * partition_size;
+      vertex_req_q.write({vid_offset, partition_size});
       for (int pe = 0; pe < kNumPes; ++pe) {
 #pragma HLS unroll
-        if (pid_send[pe] < num_partitions) {
-          TaskReq req{TaskReq::kScatter,
-                      pid_send[pe],
-                      base_vid,
-                      partition_size,
-                      num_edges_local[pid_send[pe]][pe],
-                      pid_send[pe] * partition_size,
-                      eid_offsets[pid_send[pe]][pe],
-                      0.f,
-                      false};
-          if (task_req_q[pe].try_write(req)) ++pid_send[pe];
-        }
+        TaskReq req{
+            /* phase            = */ TaskReq::kScatter,
+            /* pid              = */ 0,  // unused
+            /* overall_base_vid = */ base_vid,
+            /* partition_size   = */ partition_size,
+            /* num_edges        = */ num_edges_local[pid][pe],
+            /* vid_offset       = */ vid_offset,
+            /* eid_offset       = */ eid_offsets[pid][pe],
+            /* init             = */ 0.f,   // unused
+            /* scatter_done     = */ false  // unused
+        };
+        task_req_q[pe].write(req);
       }
-      TaskResp resp;
+
+#ifdef __SYNTHESIS__
+      ap_wait();
+#endif
+
       for (int pe = 0; pe < kNumPes; ++pe) {
 #pragma HLS unroll
-        if (task_resp_q[pe].try_read(resp)) {
-          assert(resp.phase == TaskReq::kScatter);
-          ++pid_recv;
-        }
+        task_resp_q[pe].read();
       }
     }
 
@@ -186,7 +190,6 @@ bulk_steps:
       for (int pe = 0; pe < kNumPes; ++pe) {
 #pragma HLS unroll
         if (task_resp_q[pe].try_read(resp)) {
-          assert(resp.phase == TaskReq::kGather);
           VLOG_F(3, recv) << resp;
           if (resp.active) all_done = false;
           ++pid_recv;
@@ -207,48 +210,59 @@ bulk_steps:
   metadata[2 + num_partitions * kNumPes + num_partitions] = iter;
 }
 
-void VertexMem(tlp::istreams<VertexReq, kNumPes>& vertex_req_q,
+void VertexMem(tlp::istream<VertexReq>& scatter_req_q,
+               tlp::istreams<VertexReq, kNumPes>& vertex_req_q,
                tlp::istreams<VertexAttrVec, kNumPes>& vertex_in_q,
                tlp::ostreams<VertexAttrVec, kNumPes>& vertex_out_q,
                tlp::async_mmap<FloatVec> degrees,
                tlp::async_mmap<FloatVec> rankings,
                tlp::async_mmap<FloatVec> tmps) {
   for (;;) {
-    VertexReq req;
-    bool done = false;
-    for (int pe = 0; pe < kNumPes; ++pe) {
-#pragma HLS unroll
-      if (!done && vertex_req_q[pe].try_read(req)) {
-        done |= true;
-        if (req.phase == TaskReq::kScatter) {
-          // Scatter phase
-          //   Send tmp to PEs.
-          FloatVec resp;
-          VertexAttrVec tmp_out;
-          bool valid = false;
-        vertices_scatter:
-          for (Vid i_req = 0, i_resp = 0; i_resp < req.length;) {
+    // Prioritize scatter phase broadcast.
+    VertexReq scatter_req;
+    if (scatter_req_q.try_read(scatter_req)) {
+      // Scatter phase
+      //   Send tmp to PEs.
+      FloatVec resp;
+      VertexAttrVec tmp_out;
+      bool valid = false;
+      bool ready[kNumPes] = {};
+    vertices_scatter:
+      for (Vid i_req = 0, i_resp = 0; i_resp < scatter_req.length;) {
 #pragma HLS pipeline II = 1
-            // Send requests.
-            if (i_req < req.length &&
-                i_req < i_resp + kEstimatedLatency * kVertexVecLen &&
-                tmps.read_addr_try_write((req.offset + i_req) /
-                                         kVertexVecLen)) {
-              i_req += kVertexVecLen;
-            }
+        // Send requests.
+        if (i_req < scatter_req.length &&
+            i_req < i_resp + kEstimatedLatency * kVertexVecLen &&
+            tmps.read_addr_try_write((scatter_req.offset + i_req) /
+                                     kVertexVecLen)) {
+          i_req += kVertexVecLen;
+        }
 
-            // Handle responses.
-            if (!valid) valid = tmps.read_data_try_read(resp);
-            for (int i = 0; i < kVertexVecLen; ++i) {
+        // Handle responses.
+        if (!valid) valid = tmps.read_data_try_read(resp);
+        for (int i = 0; i < kVertexVecLen; ++i) {
 #pragma HLS unroll
-              tmp_out.set(i, VertexAttrKernel{0.f, resp[i]});
-            }
-            if (valid && vertex_out_q[pe].try_write(tmp_out)) {
-              i_resp += kVertexVecLen;
-              valid = false;
-            }
+          tmp_out.set(i, VertexAttrKernel{0.f, resp[i]});
+        }
+        if (valid) {
+          for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+            if (!ready[pe]) ready[pe] = vertex_out_q[pe].try_write(tmp_out);
           }
-        } else {
+          if (All(ready)) {
+            i_resp += kVertexVecLen;
+            valid = false;
+            MemSet(ready, false);
+          }
+        }
+      }
+    } else {
+      VertexReq req;
+      bool done = false;
+      for (int pe = 0; pe < kNumPes; ++pe) {
+#pragma HLS unroll
+        if (!done && vertex_req_q[pe].try_read(req)) {
+          done |= true;
           // Gather phase
           //   Send degree and ranking to PEs.
           //   Recv tmp and ranking from PEs.
@@ -585,8 +599,6 @@ task_requests:
     } else {
       bool active = false;
       if (req.phase == TaskReq::kScatter) {
-        vertex_req_q.write(
-            {TaskReq::kScatter, req.vid_offset, req.partition_size});
       vertex_reads:
         for (Vid i = 0; i * kVertexVecLen < req.partition_size; ++i) {
 #pragma HLS pipeline II = 1
@@ -665,8 +677,7 @@ task_requests:
         }
         update_in_q.open();
 
-        vertex_req_q.write(
-            {TaskReq::kGather, req.vid_offset, req.partition_size});
+        vertex_req_q.write({req.vid_offset, req.partition_size});
 
         float max_delta = 0.f;
 
@@ -693,7 +704,7 @@ task_requests:
         }
         active = max_delta > kConvergenceThreshold;
       }
-      TaskResp resp{req.phase, req.pid, active};
+      TaskResp resp{active};
       task_resp_q.write(resp);
     }
   }
@@ -709,6 +720,10 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   // between Control and ProcElem
   tlp::streams<TaskReq, kNumPes, 2> task_req("task_req");
   tlp::streams<TaskResp, kNumPes, 2> task_resp("task_resp");
+
+  // between Control and VertexMem
+  tlp::stream<VertexReq, 2> scatter_phase_vertex_req(
+      "scatter_phase_vertex_req");
 
   // between ProcElem and VertexMem
   tlp::streams<VertexReq, kNumPes, 2> vertex_req("vertex_req");
@@ -738,8 +753,8 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   tlp::streams<NumUpdates, kNumPes, 2> num_updates("num_updates");
 
   tlp::task()
-      .invoke<-1>(VertexMem, "VertexMem", vertex_req, vertex_pe2mm,
-                  vertex_mm2pe, degrees, rankings, tmps)
+      .invoke<-1>(VertexMem, "VertexMem", scatter_phase_vertex_req, vertex_req,
+                  vertex_pe2mm, vertex_mm2pe, degrees, rankings, tmps)
       .invoke<-1, kNumPes>(EdgeMem, "EdgeMem", edge_req, edge_resp, edges)
       .invoke<-1, kNumPes>(UpdateMem, "UpdateMem", update_read_addr,
                            update_read_data, update_write_addr,
@@ -747,8 +762,9 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
       .invoke<0, kNumPes>(ProcElem, "ProcElem", task_req, task_resp, vertex_req,
                           vertex_mm2pe, vertex_pe2mm, edge_req, edge_resp,
                           update_req, update_mm2pe, update_pe2mm)
-      .invoke<0>(Control, "Control", num_partitions, metadata, update_config,
-                 update_phase, num_updates, task_req, task_resp)
+      .invoke<0>(Control, "Control", num_partitions, metadata,
+                 scatter_phase_vertex_req, update_config, update_phase,
+                 num_updates, task_req, task_resp)
       .invoke<0, kNumPes>(UpdateHandler, "UpdateHandler", num_partitions,
                           update_config, update_phase, num_updates, update_req,
                           update_pe2mm, update_mm2pe, update_read_addr,

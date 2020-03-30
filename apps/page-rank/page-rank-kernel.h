@@ -47,14 +47,11 @@ inline std::ostream& operator<<(std::ostream& os, const TaskReq& obj) {
 }
 
 struct TaskResp {
-  TaskReq::Phase phase;
-  Pid pid;
   bool active;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const TaskResp& obj) {
-  return os << "{phase: " << obj.phase << ", pid: " << obj.pid
-            << ", active: " << obj.active << "}";
+  return os << "{active: " << obj.active << "}";
 }
 
 struct UpdateReq {
@@ -68,7 +65,6 @@ inline std::ostream& operator<<(std::ostream& os, const UpdateReq& obj) {
 }
 
 struct VertexReq {
-  TaskReq::Phase phase;
   Vid offset;
   Vid length;
 };
@@ -103,6 +99,31 @@ inline T Max(const T (&array)[N]) {
 #pragma HLS inline
   return std::max(Max((const T(&)[N / 2])(array)),
                   Max((const T(&)[N - N / 2])(array[N / 2])));
+}
+
+inline bool All(const bool (&array)[1]) {
+#pragma HLS inline
+  return array[0];
+}
+
+template <int N>
+inline bool All(const bool (&array)[N]) {
+#pragma HLS inline
+  return All((const bool(&)[N / 2])(array)) &&
+         All((const bool(&)[N - N / 2])(array[N / 2]));
+}
+
+template <typename T>
+inline void MemSet(T (&array)[1], T value) {
+#pragma HLS inline
+  array[0] = value;
+}
+
+template <typename T, int N>
+inline void MemSet(T (&array)[N], T value) {
+#pragma HLS inline
+  MemSet((T(&)[N / 2])(array), value);
+  MemSet((T(&)[N - N / 2])(array[N / 2]), value);
 }
 
 #endif  // TLP_APPS_PAGE_RANK_KERNEL_H_
