@@ -149,13 +149,13 @@ bulk_steps:
 #pragma HLS unroll
         if (!done && num_updates_q[pe].try_read(num_updates)) {
           done |= true;
-          pid = num_updates.pid * kNumPes + pe;
+          pid = num_updates.addr * kNumPes + pe;
           ++pid_recv;
         }
       }
       if (done && pid < num_partitions) {
         VLOG_F(5, recv) << "num_updates: " << num_updates;
-        num_updates_local[pid] += num_updates.num_updates;
+        num_updates_local[pid] += num_updates.payload;
       }
     }
 
@@ -414,7 +414,7 @@ void UpdateHandler(Pid num_partitions,
                    tlp::ostream<NumUpdates>& num_updates_out_q,
                    // from ProcElem via UpdateRouter
                    tlp::istream<UpdateReq>& update_req_q,
-                   tlp::istream<UpdateVecWithPid>& update_in_q,
+                   tlp::istream<UpdateVecPacket>& update_in_q,
                    // to ProcElem via UpdateReorderer
                    tlp::ostream<UpdateVec>& update_out_q,
                    // to and from UpdateMem
@@ -469,15 +469,15 @@ update_phases:
       TLP_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
 #pragma HLS dependence variable = num_updates inter true distance = 2
-        const auto peek_pid = update_in_q.peek(nullptr).pid;
+        const auto peek_pid = update_in_q.peek(nullptr).addr;
         if (peek_pid != last_pid && peek_pid == last_last_pid) {
           // insert bubble
           last_last_pid = Pid(-1);
         } else {
           const auto update_with_pid = update_in_q.read(nullptr);
           VLOG_F(5, recv) << "UpdateWithPid: " << update_with_pid;
-          const Pid pid = update_with_pid.pid;
-          const UpdateVec& update_v = update_with_pid.updates;
+          const Pid pid = update_with_pid.addr;
+          const UpdateVec& update_v = update_with_pid.payload;
 
           // number of updates already written to current partition, not
           // including the current update
@@ -572,7 +572,7 @@ void ProcElem(
     // from UpdateHandler via UpdateReorderer
     tlp::istream<UpdateVec>& update_in_q,
     // to UpdateHandler via UpdateRouter
-    tlp::ostream<UpdateVecWithPid>& update_out_q) {
+    tlp::ostream<UpdateVecPacket>& update_out_q) {
   // HLS crashes without this...
   task_req_q.open();
 #ifdef __SYNTHESIS__
@@ -623,8 +623,8 @@ task_requests:
           // first edge in a vector must have valid dst for routing purpose
           if (edge_resp_q.try_read(edge_v)) {
             VLOG_F(10, recv) << "Edge: " << edge_v;
-            UpdateVecWithPid update_v = {};
-            update_v.pid =
+            UpdateVecPacket update_v = {};
+            update_v.addr =
                 (edge_v[0].dst - req.overall_base_vid) / req.partition_size;
             for (int i = 0; i < kEdgeVecLen; ++i) {
 #pragma HLS unroll
@@ -637,7 +637,7 @@ task_requests:
                 // pre-compute pid for routing
                 // use pre-computed src.tmp = src.ranking / src.out_degree
                 auto tmp = tlp::reg(vertices_local[addr * kEdgeVecLen + i]);
-                update_v.updates.set((edge.dst - base_vid) % kEdgeVecLen,
+                update_v.payload.set((edge.dst - base_vid) % kEdgeVecLen,
                                      {edge.dst, tmp});
               }
             }
@@ -747,7 +747,7 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   tlp::streams<uint64_t, kNumPes, 2> update_write_addr("update_write_addr");
   tlp::streams<UpdateVec, kNumPes, 2> update_write_data("update_write_data");
 
-  tlp::streams<UpdateVecWithPid, kNumPes, 2> update_pe2mm("update_pe2mm");
+  tlp::streams<UpdateVecPacket, kNumPes, 2> update_pe2mm("update_pe2mm");
   tlp::streams<UpdateVec, kNumPes, 2> update_mm2pe("update_mm2pe");
 
   tlp::streams<NumUpdates, kNumPes, 2> num_updates("num_updates");

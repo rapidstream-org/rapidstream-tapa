@@ -69,24 +69,8 @@ struct VertexReq {
   Vid length;
 };
 
-struct NumUpdates {
-  Pid pid;
-  Eid num_updates;
-};
-
-inline std::ostream& operator<<(std::ostream& os, const NumUpdates& obj) {
-  return os << "{pid: " << obj.pid << ", num_updates: " << obj.num_updates
-            << "}";
-}
-
-struct UpdateVecWithPid {
-  Pid pid;
-  UpdateVec updates;
-};
-
-inline std::ostream& operator<<(std::ostream& os, const UpdateVecWithPid& obj) {
-  return os << "{pid: " << obj.pid << ", updates: " << obj.updates << "}";
-}
+using NumUpdates = tlp::packet<Pid, Eid>;
+using UpdateVecPacket = tlp::packet<Pid, UpdateVec>;
 
 template <typename T>
 inline T Max(const T (&array)[1]) {
