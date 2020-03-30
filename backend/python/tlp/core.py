@@ -168,8 +168,8 @@ class Program:
         with open(self.get_rtl(name, prefix=False), 'w') as rtl_code:
           rtl_code.write(content)
 
-      for file_name in ('async_mmap.v', 'detect_burst.v', 'generate_last.v',
-                        'relay_station.v'):
+      for file_name in ('async_mmap.v', 'detect_burst.v', 'fifo.v',
+                        'generate_last.v', 'relay_station.v'):
         shutil.copy(
             os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
                          file_name), self.rtl_dir)
