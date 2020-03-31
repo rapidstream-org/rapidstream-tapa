@@ -382,10 +382,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                         ->getNameInfo()
                                         .getName()
                                         .getAsString();
-            // probably only work with little endian
-            const auto array_idx = *dyn_cast<IntegerLiteral>(op_call->getArg(1))
-                                        ->getValue()
-                                        .getRawData();
+            const auto array_idx = this->EvalAsInt(op_call->getArg(1));
             arg_name = ArrayNameAt(array_name, array_idx);
           }
           if (i == 0) {
@@ -690,6 +687,17 @@ CharSourceRange Visitor::GetCharSourceRange(SourceRange range) {
 }
 CharSourceRange Visitor::GetCharSourceRange(const Stmt* stmt) {
   return GetCharSourceRange(stmt->getSourceRange());
+}
+
+int64_t Visitor::EvalAsInt(const Expr* expr) {
+  clang::Expr::EvalResult result;
+  if (expr->EvaluateAsInt(result, this->context_)) {
+    return result.Val.getInt().getExtValue();
+  }
+  this->ReportError(expr->getBeginLoc(),
+                    "fail to evaluate as integer at compile time")
+      .AddSourceRange(this->GetCharSourceRange(expr));
+  return -1;
 }
 
 }  // namespace internal

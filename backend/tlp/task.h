@@ -77,6 +77,8 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   clang::CharSourceRange GetCharSourceRange(const clang::Stmt* stmt);
   clang::CharSourceRange GetCharSourceRange(clang::SourceRange range);
   clang::SourceLocation GetEndOfLoc(clang::SourceLocation loc);
+
+  int64_t EvalAsInt(const clang::Expr* expr);
 };
 
 // Find for a given upper-level task, return all direct children tasks (e.g.
