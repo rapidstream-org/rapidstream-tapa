@@ -158,6 +158,7 @@ int main(int argc, char* argv[]) {
                 "inconsistent Edge type");
 
   num_edges_per_pe.fill(0);
+  Eid total_max_num = 0;
   for (Pid src_pid = 0; src_pid < num_partitions; ++src_pid) {
     vector<size_t> num_edges_i(num_partitions);
 
@@ -219,19 +220,20 @@ int main(int argc, char* argv[]) {
     }
 
     total_num_edges_vec += num_out_edges[src_pid];
-    LOG(INFO) << "num edges in partition[" << src_pid
-              << "]: " << num_out_edges[src_pid];
+    VLOG(5) << "num edges in partition[" << src_pid
+            << "]: " << num_out_edges[src_pid];
     Eid max_num = 0;
     for (int pe = 0; pe < kNumPes; ++pe) {
       max_num = std::max(num_out_edges_per_pe[pe][src_pid], max_num);
     }
-    LOG(INFO) << "num edges in partition[" << src_pid
-              << "]: " << max_num * kNumPes << " (+" << std::fixed
-              << std::setprecision(2)
+    total_max_num += max_num * kNumPes;
+    VLOG(5) << "num edges in partition[" << src_pid
+            << "]: " << max_num * kNumPes << " (+" << std::fixed
+            << std::setprecision(2)
 
-              << (100. * (max_num * kNumPes - num_out_edges[src_pid]) /
-                  num_out_edges[src_pid])
-              << "%)";
+            << (100. * (max_num * kNumPes - num_out_edges[src_pid]) /
+                num_out_edges[src_pid])
+            << "%)";
 
     for (Pid dst_pid = 0; dst_pid < num_partitions; ++dst_pid) {
       VLOG(5) << "num edges in partition[" << src_pid << "][" << dst_pid
@@ -241,10 +243,16 @@ int main(int argc, char* argv[]) {
 
   for (auto& edges : edges) edges.shrink_to_fit();
 
-  LOG(INFO) << "total num edges: " << total_num_edges_vec << " (+" << std::fixed
+  LOG(INFO) << "num edges: " << total_num_edges_vec << " (+" << std::fixed
             << std::setprecision(2)
             << 100. * (total_num_edges_vec - total_num_edges) / total_num_edges
-            << "% over " << total_num_edges << ")";
+            << "% over " << total_num_edges << " due to vectorization)";
+  LOG(INFO) << "num edges: " << total_max_num << " (+" << std::fixed
+            << std::setprecision(2)
+            << 100. * (total_max_num - total_num_edges_vec) /
+                   total_num_edges_vec
+            << "% over " << total_num_edges_vec
+            << " due to partition synchronization)";
 
   vector<VertexAttr> vertices_baseline(total_num_vertices);
   // initialize vertex attributes
