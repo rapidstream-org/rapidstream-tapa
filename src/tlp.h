@@ -21,25 +21,10 @@
 
 #include "tlp/mmap.h"
 #include "tlp/stream.h"
+#include "tlp/synthesizable/traits.h"
+#include "tlp/synthesizable/util.h"
 
 namespace tlp {
-
-template <typename T>
-T reg(T x) {
-  return x;
-}
-
-template <typename Addr, typename Payload>
-struct packet {
-  Addr addr;
-  Payload payload;
-};
-
-template <typename Addr, typename Payload>
-inline std::ostream& operator<<(std::ostream& os,
-                                const packet<Addr, Payload>& obj) {
-  return os << "{addr: " << obj.addr << ", payload: " << obj.payload << "}";
-}
 
 extern mutex thread_name_mtx;
 extern std::unordered_map<std::thread::id, std::string> thread_name_table;
@@ -148,11 +133,6 @@ struct task {
     return arg[idx];
   }
 };
-
-template <typename T>
-inline constexpr uint64_t widthof() {
-  return sizeof(T) * CHAR_BIT;
-}
 
 template <typename T, uint64_t N>
 struct vec_t {
