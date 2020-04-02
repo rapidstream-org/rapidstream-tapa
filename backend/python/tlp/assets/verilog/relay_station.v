@@ -27,14 +27,16 @@ module relay_station #(
   (* dont_touch = "yes" *) wire                  empty_n [LEVEL:0];
   (* dont_touch = "yes" *) wire [DATA_WIDTH-1:0] data    [LEVEL:0];
 
-  localparam kDepthPerUnit = (DEPTH - 1) / LEVEL + 1;
+  localparam DepthPerUnit = (DEPTH - 1) / LEVEL + 1;
+  localparam Threshold = 4096;
 
   genvar i;
   for (i = 0; i < LEVEL; i = i + 1) begin : inst
-    fifo #(
+    fifo_bram #(
+      .MEM_STYLE (DATA_WIDTH * DEPTH > Threshold ? "block" : "registers"),
       .DATA_WIDTH(DATA_WIDTH),
       .ADDR_WIDTH(ADDR_WIDTH),
-      .DEPTH(kDepthPerUnit < 2 ? 2 : kDepthPerUnit)
+      .DEPTH(DepthPerUnit < 2 ? 2 : DepthPerUnit)
     ) unit (
       .clk(clk),
       .reset(reset),
