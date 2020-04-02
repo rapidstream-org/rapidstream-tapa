@@ -957,4 +957,14 @@ OTHER_MODULES = {
                                           width=32,
                                           depth=32,
                                           addr_width=(32 - 1).bit_length()),
+    'fifo_srl':
+        backend.SRL_FIFO_TEMPLATE.format(name='fifo_srl',
+                                         width=32,
+                                         depth=32,
+                                         addr_width=(32 - 1).bit_length()),
+    'fifo':
+        backend.AUTO_FIFO_TEMPLATE.format(name='fifo',
+                                          width=32,
+                                          depth=32,
+                                          addr_width=(32 - 1).bit_length()),
 }
