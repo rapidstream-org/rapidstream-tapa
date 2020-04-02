@@ -5,8 +5,8 @@ import shutil
 import sys
 import tarfile
 import tempfile
-from typing import (BinaryIO, Dict, Iterator, List, Optional, TextIO, Tuple,
-                    Union)
+from typing import (BinaryIO, Dict, Iterator, List, Optional, Set, TextIO,
+                    Tuple, Union)
 
 from haoda.backend import xilinx as hls
 from tlp import util
@@ -20,6 +20,10 @@ STATE00 = ast.IntConst("2'b00")
 STATE01 = ast.IntConst("2'b01")
 STATE11 = ast.IntConst("2'b11")
 STATE10 = ast.IntConst("2'b10")
+
+
+class InputError(Exception):
+  pass
 
 
 class Program:
@@ -68,6 +72,26 @@ class Program:
   @property
   def tasks(self) -> Tuple[Task, ...]:
     return tuple(self._tasks.values())
+
+  @property
+  def top_task(self) -> Task:
+    return self._tasks[self.top]
+
+  @property
+  def ctrl_instance_name(self) -> str:
+    return rtl.ctrl_instance_name(self.top)
+
+  @property
+  def register_level(self) -> int:
+    return self.top_task.module.register_level
+
+  @property
+  def start_q(self) -> rtl.Pipeline:
+    return rtl.Pipeline(rtl.START.name, level=self.register_level)
+
+  @property
+  def done_q(self) -> rtl.Pipeline:
+    return rtl.Pipeline(rtl.DONE.name, level=self.register_level)
 
   @property
   def rtl_dir(self) -> str:
@@ -139,7 +163,10 @@ class Program:
         tarfileobj.extractall(path=self.work_dir)
     return self
 
-  def instrument_rtl(self) -> 'Program':
+  def instrument_rtl(
+      self,
+      directive: Optional[Tuple[Dict[str, List[str]], TextIO]] = None,
+  ) -> 'Program':
     """Instrument HDL files generated from HLS."""
     width_table = {port.name: port.width for port in self.ports}
 
@@ -149,6 +176,10 @@ class Program:
       os.chdir(self.work_dir)
       task.module = rtl.Module([self.get_rtl(task.name)])
       os.chdir(oldcwd)
+
+    # generate partitioning constraints if partitioning directive is given
+    if directive is not None:
+      self._process_partition_directive(*directive)
 
     # instrument the upper-level RTL
     for task in self._tasks.values():
@@ -182,6 +213,81 @@ class Program:
              rtl_dir=self.rtl_dir,
              output_file=output_file)
     return self
+
+  def _process_partition_directive(
+      self,
+      directive: Dict[str, List[Union[str, Dict[str, List[str]]]]],
+      constraints: TextIO,
+  ) -> Tuple[int, Dict[str, int]]:
+    # mapping instance names to region names
+    instance_dict = {self.ctrl_instance_name: ''}
+
+    topology: Dict[str, Dict[str, List[str]]] = {}
+
+    for instance in self._generate_child_instances(self.top_task):
+      for name, arg in instance.args.items():
+        if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+          name = rtl.async_mmap_instance_name(name)
+          instance_dict[name] = ''
+      instance_dict[instance.name] = ''
+
+    # check that all non-FIFO instances are assigned to one and only one SLR
+    directive_instance_set: Set[str] = set()
+    for region, instances in directive.items():
+      subset = set()
+      for instance in instances:
+        if isinstance(instance, str):
+          instance = rtl.sanitize_array_name(instance)
+          instance_dict[instance] = region
+          subset.add(instance)
+        else:
+          topology[region] = instance
+      intersect = subset & directive_instance_set
+      if intersect:
+        raise InputError('more than one region assignment: %s' % intersect)
+      directive_instance_set.update(subset)
+    program_instance_set = set(instance_dict)
+    missing_instances = program_instance_set - directive_instance_set
+    if missing_instances:
+      raise InputError('missing region assignment: {%s}' %
+                       ', '.join(missing_instances))
+    unnecessary_instances = directive_instance_set - program_instance_set
+    if unnecessary_instances:
+      raise InputError('unnecessary region assignment: {%s}' %
+                       ', '.join(unnecessary_instances))
+
+    # determine partitioning of each FIFO
+    fifo_partition_count: Dict[str, int] = {}
+
+    for name, meta in self.top_task.fifos.items():
+      name = rtl.sanitize_array_name(name)
+      producer_region = instance_dict[util.get_instance_name(
+          meta['produced_by'])]
+      consumer_region = instance_dict[util.get_instance_name(
+          meta['consumed_by'])]
+      if producer_region == consumer_region:
+        fifo_partition_count[name] = 1
+        instance_dict[name] = producer_region
+      else:
+        if producer_region not in topology:
+          raise InputError(f'missing topology info for {producer_region}')
+        if consumer_region not in topology[producer_region]:
+          raise InputError(f'{consumer_region} is not reachable from '
+                           f'{producer_region}')
+        idx = 0  # makes linter happy
+        for idx, region in enumerate((
+            producer_region,
+            *topology[producer_region][consumer_region],
+            consumer_region,
+        )):
+          instance_dict[rtl.fifo_partition_name(name, idx)] = region
+        fifo_partition_count[name] = idx + 1
+
+    rtl.print_constraints(instance_dict, constraints)
+
+    self.top_task.module.register_level = max(
+        map(len, topology[instance_dict[self.ctrl_instance_name]].values())) + 1
+    self.top_task.module.fifo_partition_count = fifo_partition_count
 
   def _generate_child_instances(self, task: Task) -> Iterator[Instance]:
     for task_name, instance_objs in task.tasks.items():
@@ -288,11 +394,18 @@ class Program:
           width = 64  # 64-bit address
           if arg.cat == Instance.Arg.Cat.SCALAR:
             width = width_table[arg_name]
-            q = rtl.Pipeline(name=instance.get_instance_arg(arg_name),
-                             width=width)
+            q = rtl.Pipeline(
+                name=instance.get_instance_arg(arg_name),
+                level=self.register_level,
+                width=width,
+            )
             arg_table[instance.get_instance_arg(arg_name)] = q
           else:
-            q = rtl.Pipeline(name=arg_name, width=width)
+            q = rtl.Pipeline(
+                name=arg_name,
+                level=self.register_level,
+                width=width,
+            )
             arg_table[arg_name] = q
           task.module.add_pipeline(q, init=ast.Identifier(arg_name))
 
@@ -327,7 +440,7 @@ class Program:
                     tag=tag, arg=arg_name, data_width=width_table[arg_name]))
 
       # add reset registers
-      rst_q = rtl.Pipeline(instance.rst_n)
+      rst_q = rtl.Pipeline(instance.rst_n, level=self.register_level)
       task.module.add_pipeline(rst_q, init=rtl.RST_N)
 
       if instance.is_autorun:
@@ -339,12 +452,21 @@ class Program:
         ])
       else:
         # set up state
-        is_done_q = rtl.Pipeline(f'{instance.is_done.name}')
-        start_q = rtl.Pipeline(f'{instance.start.name}_global')
-        done_q = rtl.Pipeline(f'{instance.done.name}_global')
+        is_done_q = rtl.Pipeline(
+            f'{instance.is_done.name}',
+            level=self.register_level,
+        )
+        start_q = rtl.Pipeline(
+            f'{instance.start.name}_global',
+            level=self.register_level,
+        )
+        done_q = rtl.Pipeline(
+            f'{instance.done.name}_global',
+            level=self.register_level,
+        )
         task.module.add_pipeline(is_done_q, instance.is_state(STATE10))
-        task.module.add_pipeline(start_q, rtl.START_Q[0])
-        task.module.add_pipeline(done_q, rtl.DONE_Q[0])
+        task.module.add_pipeline(start_q, self.start_q[0])
+        task.module.add_pipeline(done_q, self.done_q[0])
 
         if_branch = (instance.set_state(STATE00))
         else_branch = ((
@@ -469,7 +591,7 @@ class Program:
       return ast.NonblockingSubstitution(left=rtl.STATE, right=state)
 
     countdown = ast.Identifier('countdown')
-    countdown_width = (rtl.REGISTER_LEVEL - 1).bit_length()
+    countdown_width = (self.register_level - 1).bit_length()
 
     task.module.add_signals([
         ast.Reg(rtl.STATE.name, width=ast.make_width(2)),
@@ -480,7 +602,7 @@ class Program:
         ast.make_if_with_block(
             cond=is_state(STATE00),
             true=ast.make_if_with_block(
-                cond=rtl.START_Q[-1],
+                cond=self.start_q[-1],
                 true=set_state(STATE01),
             ),
         ),
@@ -497,10 +619,10 @@ class Program:
         ast.make_if_with_block(
             cond=is_state(STATE10),
             true=ast.make_block([
-                set_state(STATE11 if rtl.REGISTER_LEVEL else STATE00),
+                set_state(STATE11 if self.register_level else STATE00),
                 ast.NonblockingSubstitution(
                     left=countdown,
-                    right=ast.make_int(max(0, rtl.REGISTER_LEVEL - 1)),
+                    right=ast.make_int(max(0, self.register_level - 1)),
                 ),
             ]),
         ),
@@ -534,9 +656,9 @@ class Program:
                 )),
         ),
         ast.Assign(left=rtl.IDLE, right=is_state(STATE00)),
-        ast.Assign(left=rtl.DONE, right=rtl.DONE_Q[-1]),
-        ast.Assign(left=rtl.READY, right=rtl.DONE_Q[0]),
+        ast.Assign(left=rtl.DONE, right=self.done_q[-1]),
+        ast.Assign(left=rtl.READY, right=self.done_q[0]),
     ])
 
-    task.module.add_pipeline(rtl.START_Q, init=rtl.START)
-    task.module.add_pipeline(rtl.DONE_Q, init=is_state(STATE10))
+    task.module.add_pipeline(self.start_q, init=rtl.START)
+    task.module.add_pipeline(self.done_q, init=is_state(STATE10))

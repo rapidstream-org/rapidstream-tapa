@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+from typing import Dict, List, Optional, TextIO, Tuple
 
 import haoda.backend.xilinx
 import tlp.core
@@ -57,6 +58,14 @@ def main():
                       dest='output_file',
                       metavar='file',
                       help='output file')
+  parser.add_argument('--directive',
+                      type=argparse.FileType('r'),
+                      dest='directive',
+                      help='partitioning directive json')
+  parser.add_argument('--constraint',
+                      type=argparse.FileType('w'),
+                      dest='constraint',
+                      help='partitioning constraint tcl')
   parser.add_argument(type=str,
                       dest='input_file',
                       metavar='file',
@@ -234,7 +243,10 @@ def main():
     program.extract_rtl()
 
   if all_steps or args.instrument_rtl is not None:
-    program.instrument_rtl()
+    directive: Optional[Tuple[Dict[str, List[str]]], TextIO] = None
+    if args.directive is not None and args.constraint is not None:
+      directive = json.load(args.directive), args.constraint
+    program.instrument_rtl(directive)
 
   if all_steps or args.pack_xo is not None:
     with open(args.output_file, 'wb') as packed_obj:

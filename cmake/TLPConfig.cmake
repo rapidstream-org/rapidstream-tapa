@@ -27,9 +27,15 @@ function(add_tlp_target target_name)
   # * TLPCC: Optional, path to the tlpcc executable.
   # * CLOCK_PERIOD: Optional, override the clock period.
   # * PART_NUM: Optional, override the part number.
+  # * DIRECTIVE: Optional, apply partitioning directives.
+  # * CONSTRAINT: Optional if DIRECTIVE is not set, generate partitioning
+  #   constraints.
   cmake_parse_arguments(
-    TLP "" "OUTPUT;INPUT;TOP;PLATFORM;TLPC;TLPCC;CLOCK_PERIOD;PART_NUM"
-    "DRAM_MAPPING" ${ARGN})
+    TLP
+    ""
+    "OUTPUT;INPUT;TOP;PLATFORM;TLPC;TLPCC;CLOCK_PERIOD;PART_NUM;DIRECTIVE;CONSTRAINT"
+    "DRAM_MAPPING"
+    ${ARGN})
   if(NOT TLP_INPUT)
     message(FATAL_ERROR "INPUT not specified")
   endif()
@@ -66,6 +72,12 @@ function(add_tlp_target target_name)
     message(FATAL_ERROR "cannot find tlpcc")
   endif()
 
+  if(TLP_DIRECTIVE)
+    if(NOT TLP_CONSTRAINT)
+      message(FATAL_ERROR "CONSTRAINT not set but DIRECTIVE is")
+    endif()
+  endif()
+
   set(tlpc_cmd ${TLPC} ${TLP_INPUT})
   list(APPEND tlpc_cmd --top ${TLP_TOP})
   list(APPEND tlpc_cmd --tlpcc ${TLPCC})
@@ -78,6 +90,12 @@ function(add_tlp_target target_name)
   if(TLP_PART_NUM)
     list(APPEND tlpc_cmd --part-num ${TLP_PART_NUM})
   endif()
+  if(TLP_DIRECTIVE)
+    list(APPEND tlpc_cmd --directive ${TLP_DIRECTIVE})
+  endif()
+  if(TLP_CONSTRAINT)
+    list(APPEND tlpc_cmd --constraint ${TLP_CONSTRAINT})
+  endif()
 
   add_custom_command(
     OUTPUT ${TLP_OUTPUT}
@@ -89,6 +107,5 @@ function(add_tlp_target target_name)
   set_target_properties(
     ${target_name}
     PROPERTIES FILE_NAME ${TLP_OUTPUT} TARGET hw KERNEL ${TLP_TOP}
-
                PLATFORM ${TLP_PLATFORM} DRAM_MAPPING "${TLP_DRAM_MAPPING}")
 endfunction()

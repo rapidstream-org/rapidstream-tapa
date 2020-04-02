@@ -11,6 +11,8 @@ additional_commands = {
             "TLPCC": 1,
             "CLOCK_PERIOD": 1,
             "PART_NUM": 1,
+            "DIRECTIVE": 1,
+            "CONSTRAINT": 1,
         }
     },
 }

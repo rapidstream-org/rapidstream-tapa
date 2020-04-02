@@ -11,8 +11,8 @@ import os
 import shutil
 import sys
 import tempfile
-from typing import (IO, BinaryIO, Callable, Dict, Iterable, Iterator, Optional,
-                    Tuple, Union)
+from typing import (IO, BinaryIO, Callable, Dict, Iterable, Iterator, List,
+                    Optional, TextIO, Tuple, Union)
 
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
@@ -21,7 +21,7 @@ import tlp.instance
 from haoda.backend import xilinx as backend
 from tlp.verilog import ast
 
-from .util import (REGISTER_LEVEL, Pipeline, match_array_name,
+from .util import (Pipeline, async_mmap_instance_name, match_array_name,
                    sanitize_array_name, wire_name)
 
 # const strings
@@ -234,13 +234,6 @@ IOPort = Union[ast.Input, ast.Output, ast.Inout]
 Signal = Union[ast.Reg, ast.Wire, ast.Pragma]
 Logic = Union[ast.Assign, ast.Always, ast.Initial]
 
-# registered ast nodes
-
-START_Q = Pipeline(START.name)
-DONE_Q = Pipeline(DONE.name)
-IDLE_Q = Pipeline(IDLE.name)
-RST_N_Q = Pipeline(RST_N.name)
-
 
 class Module:
   """AST and helpers for a verilog module.
@@ -303,6 +296,40 @@ class Module:
   @name.setter
   def name(self, name: str) -> None:
     self._module_def.name = name
+
+  @property
+  def register_level(self) -> int:
+    """The register level of global control signals.
+
+    The minimum register level is 0, which means no additional registers are
+    inserted.
+
+    Returns:
+        int: N, where any global control signals are registered by N cycles.
+    """
+    return getattr(self, '_register_level', 0)
+
+  @register_level.setter
+  def register_level(self, level: int) -> None:
+    self._register_level = level
+
+  @property
+  def rst_n_q(self) -> Pipeline:
+    return Pipeline(RST_N.name, level=self.register_level)
+
+  def partition_count_of(self, fifo_name: str) -> int:
+    """Get the partition count of each FIFO.
+
+    The minimum partition count is 1, which means the FIFO is implemeneted as a
+    whole, not many small FIFOs.
+
+    Args:
+        fifo_name (str): Name of the FIFO.
+
+    Returns:
+        int: N, where this FIFO is partitioned into N small FIFOs.
+    """
+    return getattr(self, 'fifo_partition_count', {}).get(fifo_name, 1)
 
   @property
   def ports(self) -> Dict[str, IOPort]:
@@ -377,7 +404,7 @@ class Module:
             sens_list=CLK_SENS_LIST,
             statement=ast.make_block(
                 ast.NonblockingSubstitution(left=q[i + 1], right=q[i])
-                for i in range(REGISTER_LEVEL)),
+                for i in range(q.level)),
         ),
         ast.Assign(left=q[0], right=init),
     ))
@@ -469,7 +496,7 @@ class Module:
       depth: int,
   ) -> 'Module':
     name = sanitize_array_name(name)
-    rst_q = Pipeline(f'{name}__rst')
+    rst_q = Pipeline(f'{name}__rst', level=self.register_level)
     self.add_pipeline(rst_q, init=ast.Unot(RST_N))
 
     def ports() -> Iterator[ast.PortArg]:
@@ -484,8 +511,18 @@ class Module:
           for port_name, arg_suffix in zip(FIFO_WRITE_PORTS, OSTREAM_SUFFIXES))
       yield ast.make_port_arg(port=FIFO_WRITE_PORTS[-1], arg=TRUE)
 
+    partition_count = self.partition_count_of(name)
+    module_name = 'fifo'
+    level = []
+    if partition_count > 1:
+      module_name = 'relay_station'
+      level.append(
+          ast.ParamArg(
+              paramname='LEVEL',
+              argname=ast.Constant(partition_count),
+          ))
     return self.add_instance(
-        module_name='relay_station',
+        module_name=module_name,
         instance_name=name,
         ports=ports(),
         params=(
@@ -493,9 +530,9 @@ class Module:
             ast.ParamArg(paramname='ADDR_WIDTH',
                          argname=ast.Constant((depth - 1).bit_length())),
             ast.ParamArg(paramname='DEPTH', argname=ast.Constant(depth)),
-            ast.ParamArg(paramname='LEVEL',
-                         argname=ast.Constant(REGISTER_LEVEL + 1)),
-        ))
+            *level,
+        ),
+    )
 
   def add_async_mmap_instance(
       self,
@@ -508,7 +545,7 @@ class Module:
       max_burst_len: Optional[int] = None,
       reg_name: str = '',
   ) -> 'Module':
-    rst_q = Pipeline(f'{name}__rst')
+    rst_q = Pipeline(f'{name}__rst', level=self.register_level)
     self.add_pipeline(rst_q, init=ast.Unot(RST_N))
 
     paramargs = [
@@ -587,7 +624,7 @@ class Module:
         portargs.append(ast.make_port_arg(port=tag + suffix, arg=arg))
 
     return self.add_instance(module_name='async_mmap',
-                             instance_name=f'{name}__m_axi',
+                             instance_name=async_mmap_instance_name(name),
                              ports=portargs,
                              params=paramargs)
 
@@ -636,8 +673,12 @@ class Module:
     self.add_signals(
         map(ast.Wire,
             (HANDSHAKE_RST, HANDSHAKE_DONE, HANDSHAKE_IDLE, HANDSHAKE_READY)))
-    self.add_pipeline(RST_N_Q, init=RST_N)
-    self.add_logics([ast.Assign(left=RST, right=ast.Unot(RST_N_Q[-1]))])
+    self.add_pipeline(self.rst_n_q, init=RST_N)
+    self.add_logics([ast.Assign(left=RST, right=ast.Unot(self.rst_n_q[-1]))])
+
+
+def ctrl_instance_name(top: str) -> str:
+  return f'{top}_control_s_axi_U'
 
 
 def is_data_port(port: str) -> bool:
@@ -737,6 +778,10 @@ def fifo_port_name(fifo: str, suffix: str) -> str:
   if match is not None:
     return f'{match[0]}_fifo_V_{match[1]}{suffix}'
   return f'{fifo}_fifo_V{suffix}'
+
+
+def fifo_partition_name(name: str, idx: int) -> str:
+  return f'{name}/inst[{idx}].unit'
 
 
 def generate_istream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
@@ -851,6 +896,23 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tlp.instance.Port],
       sys.stderr.write(stderr.decode('utf-8'))
   if not isinstance(output_file, str):
     os.remove(xo_file)
+
+
+def print_constraints(instance_dict: Dict[str, str], output: TextIO) -> None:
+  directive_dict: Dict[str, List[str]] = {}
+  for instance, pblock in instance_dict.items():
+    directive_dict.setdefault(pblock, []).append(instance)
+
+  output.write('# partitioning constraints generated by tlpc\n')
+  output.write('# modify only if you know what you are doing\n')
+  output.write('puts "applying partitioning constraints generated by tlpc"\n')
+  for pblock, modules in directive_dict.items():
+    output.write(f'add_cells_to_pblock [get_pblocks {pblock}] '
+                 '[get_cells -hierarchical -regex {\n')
+    for module in modules:
+      module = module.replace('[', r'\\[').replace('.', r'\\.')
+      output.write(f'  (.*/)?{module}\n')
+    output.write('}]\n')
 
 
 def print_kernel_xml(name: str, ports: Iterable[tlp.instance.Port],

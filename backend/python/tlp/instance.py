@@ -143,8 +143,8 @@ class Instance:
   # + 00 -> 01: if start == 1
   # + 01 -> 01: if all(*is_done) == 0
   # + 01 -> 10: if all(*is_done) == 1
-  # + 10 -> 00: if REGISTER_LEVEL == 0; countdown <- REGISTER_LEVEL
-  # + 10 -> 11: if REGISTER_LEVEL > 0; countdown <- REGISTER_LEVEL
+  # + 10 -> 00: if register_level == 0; countdown <- register_level
+  # + 10 -> 11: if register_level > 0; countdown <- register_level
   # + 11 -> 11: if countdown > 1; countdown <- countdown - 1
   # + 11 -> 00: if countdown == 1
 

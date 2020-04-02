@@ -3,14 +3,13 @@ from typing import Iterator, Optional, Tuple, Union
 
 from tlp.verilog import ast
 
-REGISTER_LEVEL = 3
-
 
 class Pipeline:
 
-  def __init__(self, name: str, width: Optional[int] = None):
+  def __init__(self, name: str, level: int, width: Optional[int] = None):
+    self.level = level
     self._ids = tuple(
-        ast.Identifier(f'{name}__q%d' % i) for i in range(REGISTER_LEVEL + 1))
+        ast.Identifier(f'{name}__q%d' % i) for i in range(level + 1))
     self._width: Optional[ast.Width] = width and ast.make_width(width)
 
   def __getitem__(self, idx) -> ast.Identifier:
@@ -55,3 +54,7 @@ def wire_name(fifo: str, suffix: str) -> str:
   if suffix.startswith('_'):
     suffix = suffix[1:]
   return f'{fifo}__{suffix}'
+
+
+def async_mmap_instance_name(variable_name: str) -> str:
+  return f'{variable_name}__m_axi'
