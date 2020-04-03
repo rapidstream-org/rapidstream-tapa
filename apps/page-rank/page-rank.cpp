@@ -11,6 +11,10 @@ constexpr int kMaxNumPartitions = 2048;
 constexpr int kMaxPartitionSize = 1024 * 256;
 constexpr int kEstimatedLatency = 50;
 
+constexpr int kNumPesR0 = 1;
+constexpr int kNumPesR1 = (kNumPes - kNumPesR0) / 2;
+constexpr int kNumPesR2 = kNumPes - kNumPesR0 - kNumPesR1;
+
 void Control(Pid num_partitions, tlp::mmap<uint64_t> metadata,
              // to VertexMem
              tlp::ostream<VertexReq>& vertex_req_q,
@@ -211,30 +215,31 @@ bulk_steps:
 }
 
 void VertexMem(tlp::istream<VertexReq>& scatter_req_q,
-               tlp::istreams<VertexReq, kNumPes>& vertex_req_q,
-               tlp::istreams<VertexAttrVec, kNumPes>& vertex_in_q,
-               tlp::ostreams<VertexAttrVec, kNumPes>& vertex_out_q,
-               tlp::async_mmap<FloatVec> degrees,
-               tlp::async_mmap<FloatVec> rankings,
-               tlp::async_mmap<FloatVec> tmps) {
+               tlp::istreams<VertexReq, kNumPesR0 + 1>& vertex_req_q,
+               tlp::istreams<VertexAttrVec, kNumPesR0 + 1>& vertex_in_q,
+               tlp::ostreams<VertexAttrVec, kNumPesR0 + 1>& vertex_out_q,
+               tlp::async_mmap<FloatVec>& degrees,
+               tlp::async_mmap<FloatVec>& rankings,
+               tlp::async_mmap<FloatVec>& tmps) {
+  constexpr int N = kNumPesR0 + 1;
   for (;;) {
     // Prioritize scatter phase broadcast.
     VertexReq scatter_req;
     if (scatter_req_q.try_read(scatter_req)) {
+      auto req = tlp::reg(scatter_req);
       // Scatter phase
       //   Send tmp to PEs.
       FloatVec resp;
       VertexAttrVec tmp_out;
       bool valid = false;
-      bool ready[kNumPes] = {};
+      bool ready[N] = {};
     vertices_scatter:
-      for (Vid i_req = 0, i_resp = 0; i_resp < scatter_req.length;) {
+      for (Vid i_req = 0, i_resp = 0; i_resp < req.length;) {
 #pragma HLS pipeline II = 1
         // Send requests.
-        if (i_req < scatter_req.length &&
+        if (i_req < req.length &&
             i_req < i_resp + kEstimatedLatency * kVertexVecLen &&
-            tmps.read_addr_try_write((scatter_req.offset + i_req) /
-                                     kVertexVecLen)) {
+            tmps.read_addr_try_write((req.offset + i_req) / kVertexVecLen)) {
           i_req += kVertexVecLen;
         }
 
@@ -245,7 +250,7 @@ void VertexMem(tlp::istream<VertexReq>& scatter_req_q,
           tmp_out.set(i, VertexAttrKernel{0.f, resp[i]});
         }
         if (valid) {
-          for (int pe = 0; pe < kNumPes; ++pe) {
+          for (int pe = 0; pe < N; ++pe) {
 #pragma HLS unroll
             if (!ready[pe]) ready[pe] = vertex_out_q[pe].try_write(tmp_out);
           }
@@ -259,7 +264,7 @@ void VertexMem(tlp::istream<VertexReq>& scatter_req_q,
     } else {
       VertexReq req;
       bool done = false;
-      for (int pe = 0; pe < kNumPes; ++pe) {
+      for (int pe = 0; pe < N; ++pe) {
 #pragma HLS unroll
         if (!done && vertex_req_q[pe].try_read(req)) {
           done |= true;
@@ -355,6 +360,130 @@ void VertexMem(tlp::istream<VertexReq>& scatter_req_q,
       }
     }
   }
+}
+
+template <uint64_t N>
+void VertexRouterTemplated(
+    // upstream to VertexMem
+    tlp::ostream<VertexReq>& mm_req_q, tlp::istream<VertexAttrVec>& mm_in_q,
+    tlp::ostream<VertexAttrVec>& mm_out_q,
+    // downstream to ProcElem
+    tlp::istreams<VertexReq, N>& pe_req_q,
+    tlp::istreams<VertexAttrVec, N>& pe_in_q,
+    tlp::ostreams<VertexAttrVec, N>& pe_out_q) {
+  TLP_ELEM_TYPE(pe_req_q) pe_req;
+  bool pe_req_valid = false;
+  bool mm_req_ready = false;
+
+  TLP_ELEM_TYPE(mm_in_q) mm_in;
+  bool mm_in_valid = false;
+  bool pe_out_ready[N] = {};
+
+  TLP_ELEM_TYPE(pe_in_q) pe_in;
+  bool pe_in_valid = false;
+  bool mm_out_ready = false;
+
+  uint8_t pe = 0;
+  decltype(pe_req.length) mm2pe_count = 0;
+  decltype(pe_req.length) pe2mm_count = 0;
+
+vertex_router:
+  for (;;) {
+#pragma HLS pipeline II = 1
+    if (pe2mm_count == 0) {
+      // Not processing a gather phase request.
+
+      // Broadcast scatter phase data if any.
+      if (!mm_in_valid) mm_in_valid = mm_in_q.try_read(mm_in);
+      if (mm_in_valid) {
+#pragma HLS latency max = 1
+        for (uint64_t i = 0; i < N; ++i) {
+#pragma HLS unroll
+          if (!pe_out_ready[i]) pe_out_ready[i] = pe_out_q[i].try_write(mm_in);
+        }
+        if (All(pe_out_ready)) {
+#pragma HLS latency max = 1
+          VLOG_F(20, fwd) << "scatter phase data";
+          mm_in_valid = false;
+          MemSet(pe_out_ready, false);
+        }
+      }
+
+      // Accept gather phase requests.
+      for (uint64_t i = 0; i < N; ++i) {
+#pragma HLS unroll
+        if (!pe_req_valid && pe_req_q[i].try_read(pe_req)) {
+          pe_req_valid |= true;
+          pe = i;
+          mm2pe_count = pe2mm_count = pe_req.length / kVertexVecLen;
+        }
+      }
+    } else {
+      // Processing a gather phase request.
+
+      // Forward vertex attribtues from ProcElem to VertexMem.
+      if (!pe_in_valid) pe_in_valid = pe_in_q[pe].try_read(pe_in);
+      if (pe_in_valid) {
+        if (!mm_out_ready) mm_out_ready = mm_out_q.try_write(pe_in);
+        if (mm_out_ready) {
+          VLOG_F(10, fwd) << "gather phase: memory <- port " << int(pe)
+                          << "; remaining: " << pe2mm_count - 1;
+          pe_in_valid = false;
+          mm_out_ready = false;
+          --pe2mm_count;
+        }
+      }
+
+      // Forward vertex attribtues from VertexMem to ProcElem.
+      if (!mm_in_valid) mm_in_valid = mm_in_q.try_read(mm_in);
+      if (mm_in_valid && mm2pe_count > 0) {
+        if (!pe_out_ready[pe]) pe_out_ready[pe] = pe_out_q[pe].try_write(mm_in);
+        if (pe_out_ready[pe]) {
+          VLOG_F(10, fwd) << "gather phase: memory -> port " << int(pe)
+                          << "; remaining: " << mm2pe_count - 1;
+          mm_in_valid = false;
+          pe_out_ready[pe] = false;
+          --mm2pe_count;
+        }
+      }
+
+      // Forward request from ProcElem to VertexMem.
+      if (pe_req_valid) {
+        if (!mm_req_ready) mm_req_ready = mm_req_q.try_write(pe_req);
+        if (mm_req_ready) {
+          VLOG_F(9, recv) << "fulfilling request from port " << int(pe);
+          pe_req_valid = false;
+          mm_req_ready = false;
+        }
+      }
+    }
+  }
+}
+
+void VertexRouterR1(
+    // upstream to VertexMem
+    tlp::ostream<VertexReq>& mm_req_q, tlp::istream<VertexAttrVec>& mm_in_q,
+    tlp::ostream<VertexAttrVec>& mm_out_q,
+    // downstream to ProcElem
+    tlp::istreams<VertexReq, kNumPesR1 + 1>& pe_req_q,
+    tlp::istreams<VertexAttrVec, kNumPesR1 + 1>& pe_in_q,
+    tlp::ostreams<VertexAttrVec, kNumPesR1 + 1>& pe_out_q) {
+#pragma HLS inline region
+  VertexRouterTemplated(mm_req_q, mm_in_q, mm_out_q, pe_req_q, pe_in_q,
+                        pe_out_q);
+}
+
+void VertexRouterR2(
+    // upstream to VertexMem
+    tlp::ostream<VertexReq>& mm_req_q, tlp::istream<VertexAttrVec>& mm_in_q,
+    tlp::ostream<VertexAttrVec>& mm_out_q,
+    // downstream to ProcElem
+    tlp::istreams<VertexReq, kNumPesR2>& pe_req_q,
+    tlp::istreams<VertexAttrVec, kNumPesR2>& pe_in_q,
+    tlp::ostreams<VertexAttrVec, kNumPesR2>& pe_out_q) {
+#pragma HLS inline region
+  VertexRouterTemplated(mm_req_q, mm_in_q, mm_out_q, pe_req_q, pe_in_q,
+                        pe_out_q);
 }
 
 // Handles edge read requests.
@@ -725,10 +854,24 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   tlp::stream<VertexReq, 2> scatter_phase_vertex_req(
       "scatter_phase_vertex_req");
 
-  // between ProcElem and VertexMem
-  tlp::streams<VertexReq, kNumPes, 2> vertex_req("vertex_req");
-  tlp::streams<VertexAttrVec, kNumPes, 2> vertex_pe2mm("vertex_pe2mm");
-  tlp::streams<VertexAttrVec, kNumPes, 2> vertex_mm2pe("vertex_mm2pe");
+  // between ProcElem and VertexMem in region 0
+  tlp::streams<VertexReq, kNumPesR0 + 1, 2> vertex_req_r0("vertex_req_r0");
+  tlp::streams<VertexAttrVec, kNumPesR0 + 1, 2> vertex_pe2mm_r0(
+      "vertex_pe2mm_r0");
+  tlp::streams<VertexAttrVec, kNumPesR0 + 1, 2> vertex_mm2pe_r0(
+      "vertex_mm2pe_r0");
+
+  // between ProcElem and VertexMem in region 1
+  tlp::streams<VertexReq, kNumPesR1 + 1, 2> vertex_req_r1("vertex_req_r1");
+  tlp::streams<VertexAttrVec, kNumPesR1 + 1, 2> vertex_pe2mm_r1(
+      "vertex_pe2mm_r1");
+  tlp::streams<VertexAttrVec, kNumPesR1 + 1, 2> vertex_mm2pe_r1(
+      "vertex_mm2pe_r1");
+
+  // between ProcElem and VertexMem in region 2
+  tlp::streams<VertexReq, kNumPesR2, 2> vertex_req_r2("vertex_req_r2");
+  tlp::streams<VertexAttrVec, kNumPesR2, 2> vertex_pe2mm_r2("vertex_pe2mm_r2");
+  tlp::streams<VertexAttrVec, kNumPesR2, 2> vertex_mm2pe_r2("vertex_mm2pe_r2");
 
   // between ProcElem and EdgeMem
   tlp::streams<Eid, kNumPes, 2> edge_req("edge_req");
@@ -753,15 +896,51 @@ void PageRank(Pid num_partitions, tlp::mmap<uint64_t> metadata,
   tlp::streams<NumUpdates, kNumPes, 2> num_updates("num_updates");
 
   tlp::task()
-      .invoke<-1>(VertexMem, "VertexMem", scatter_phase_vertex_req, vertex_req,
-                  vertex_pe2mm, vertex_mm2pe, degrees, rankings, tmps)
+      .invoke<-1>(VertexMem, "VertexMem", scatter_phase_vertex_req,
+                  vertex_req_r0, vertex_pe2mm_r0, vertex_mm2pe_r0, degrees,
+                  rankings, tmps)
+      .invoke<-1>(VertexRouterR1, "VertexRouterR1", vertex_req_r0[kNumPesR0],
+                  vertex_mm2pe_r0[kNumPesR0], vertex_pe2mm_r0[kNumPesR0],
+                  vertex_req_r1, vertex_pe2mm_r1, vertex_mm2pe_r1)
+      .invoke<-1>(VertexRouterR2, "VertexRouterR2", vertex_req_r1[kNumPesR1],
+                  vertex_mm2pe_r1[kNumPesR1], vertex_pe2mm_r1[kNumPesR1],
+                  vertex_req_r2, vertex_pe2mm_r2, vertex_mm2pe_r2)
       .invoke<-1, kNumPes>(EdgeMem, "EdgeMem", edge_req, edge_resp, edges)
       .invoke<-1, kNumPes>(UpdateMem, "UpdateMem", update_read_addr,
                            update_read_data, update_write_addr,
                            update_write_data, updates)
-      .invoke<0, kNumPes>(ProcElem, "ProcElem", task_req, task_resp, vertex_req,
-                          vertex_mm2pe, vertex_pe2mm, edge_req, edge_resp,
-                          update_req, update_mm2pe, update_pe2mm)
+      .invoke<0>(ProcElem, "ProcElem[0]", task_req[0], task_resp[0],
+                 vertex_req_r0[0], vertex_mm2pe_r0[0], vertex_pe2mm_r0[0],
+                 edge_req[0], edge_resp[0], update_req[0], update_mm2pe[0],
+                 update_pe2mm[0])
+      .invoke<0>(ProcElem, "ProcElem[1]", task_req[1], task_resp[1],
+                 vertex_req_r1[0], vertex_mm2pe_r1[0], vertex_pe2mm_r1[0],
+                 edge_req[1], edge_resp[1], update_req[1], update_mm2pe[1],
+                 update_pe2mm[1])
+      .invoke<0>(ProcElem, "ProcElem[2]", task_req[2], task_resp[2],
+                 vertex_req_r1[1], vertex_mm2pe_r1[1], vertex_pe2mm_r1[1],
+                 edge_req[2], edge_resp[2], update_req[2], update_mm2pe[2],
+                 update_pe2mm[2])
+      .invoke<0>(ProcElem, "ProcElem[3]", task_req[3], task_resp[3],
+                 vertex_req_r1[2], vertex_mm2pe_r1[2], vertex_pe2mm_r1[2],
+                 edge_req[3], edge_resp[3], update_req[3], update_mm2pe[3],
+                 update_pe2mm[3])
+      .invoke<0>(ProcElem, "ProcElem[4]", task_req[4], task_resp[4],
+                 vertex_req_r2[0], vertex_mm2pe_r2[0], vertex_pe2mm_r2[0],
+                 edge_req[4], edge_resp[4], update_req[4], update_mm2pe[4],
+                 update_pe2mm[4])
+      .invoke<0>(ProcElem, "ProcElem[5]", task_req[5], task_resp[5],
+                 vertex_req_r2[1], vertex_mm2pe_r2[1], vertex_pe2mm_r2[1],
+                 edge_req[5], edge_resp[5], update_req[5], update_mm2pe[5],
+                 update_pe2mm[5])
+      .invoke<0>(ProcElem, "ProcElem[6]", task_req[6], task_resp[6],
+                 vertex_req_r2[2], vertex_mm2pe_r2[2], vertex_pe2mm_r2[2],
+                 edge_req[6], edge_resp[6], update_req[6], update_mm2pe[6],
+                 update_pe2mm[6])
+      .invoke<0>(ProcElem, "ProcElem[7]", task_req[7], task_resp[7],
+                 vertex_req_r2[3], vertex_mm2pe_r2[3], vertex_pe2mm_r2[3],
+                 edge_req[7], edge_resp[7], update_req[7], update_mm2pe[7],
+                 update_pe2mm[7])
       .invoke<0>(Control, "Control", num_partitions, metadata,
                  scatter_phase_vertex_req, update_config, update_phase,
                  num_updates, task_req, task_resp)
