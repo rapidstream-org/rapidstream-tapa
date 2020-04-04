@@ -234,6 +234,8 @@ IOPort = Union[ast.Input, ast.Output, ast.Inout]
 Signal = Union[ast.Reg, ast.Wire, ast.Pragma]
 Logic = Union[ast.Assign, ast.Always, ast.Initial]
 
+BUILTIN_INSTANCES = {'hmss_0'}
+
 
 class Module:
   """AST and helpers for a verilog module.

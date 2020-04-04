@@ -251,7 +251,8 @@ class Program:
     if missing_instances:
       raise InputError('missing region assignment: {%s}' %
                        ', '.join(missing_instances))
-    unnecessary_instances = directive_instance_set - program_instance_set
+    unnecessary_instances = (directive_instance_set - program_instance_set -
+                             rtl.BUILTIN_INSTANCES)
     if unnecessary_instances:
       raise InputError('unnecessary region assignment: {%s}' %
                        ', '.join(unnecessary_instances))
