@@ -232,6 +232,7 @@ class Program:
       instance_dict[instance.name] = ''
 
     # check that all non-FIFO instances are assigned to one and only one SLR
+    program_instance_set = set(instance_dict)
     directive_instance_set: Set[str] = set()
     for region, instances in directive.items():
       subset = set()
@@ -246,7 +247,6 @@ class Program:
       if intersect:
         raise InputError('more than one region assignment: %s' % intersect)
       directive_instance_set.update(subset)
-    program_instance_set = set(instance_dict)
     missing_instances = program_instance_set - directive_instance_set
     if missing_instances:
       raise InputError('missing region assignment: {%s}' %
