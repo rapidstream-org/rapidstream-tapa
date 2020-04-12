@@ -1,7 +1,7 @@
 """ High-Level Synthesis Task-Level Parallelization.
 
 See:
-https://github.com/Blaok/hlstlp
+https://github.com/Blaok/tlp
 """
 
 import re
@@ -20,12 +20,12 @@ with open(path.join(here, '..', '..', 'CMakeLists.txt'), encoding='utf-8') as f:
       r'set\(CPACK_PACKAGE_VERSION_..... (.*)\)', f.read()))
 
 setup(
-    name='hlstlp',
+    name='tlpc',
     version=version,
     description='High-level synthesis task-level parallelization',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/Blaok/hlstlp',
+    url='https://github.com/Blaok/tlp',
     author='Blaok Chi',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
@@ -37,6 +37,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: System :: Hardware',
     ],
     packages=find_packages(),
