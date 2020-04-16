@@ -8,12 +8,14 @@
 
 ## Application Synopsis
 
-| App      | Properties       | Details               | # Streams | # Tasks | # Steps |
-|----------|------------------|-----------------------|-----------|---------|---------|
-| `cannon` | static,feedback  | Cannon's algorithm    | 20        | 7       | 1       |
-| `graph`  | dynamic,feedback | connected components  | 6         | 3       | 1       |
-| `jacobi` | static           | 5-point stencil       | 23        | 17      | 1       |
-| `vadd`   | static           | naÃ¯ve vector addition | 3         | 4       | 1       |
+| App         | Properties       | Details                           | # Streams | # Tasks | # Steps |
+| ----------- | ---------------- | --------------------------------- | --------- | ------- | ------- |
+| `bandwidth` | static           | bandwidth test using `async_mmap` | 4         | 4       | 1       |
+| `cannon`    | static,feedback  | Cannon's algorithm                | 20        | 7       | 1       |
+| `graph`     | dynamic,feedback | connected components              | 6         | 3       | 1       |
+| `jacobi`    | static           | 5-point stencil                   | 23        | 17      | 1       |
+| `page-rank` | dynamic,feedback | Page Rank on HBM                  | 143       | 36      | 2       |
+| `vadd`      | static           | naïve vector addition             | 3         | 4       | 1       |
 
 ## Getting Started
 
