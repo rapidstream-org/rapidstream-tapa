@@ -224,9 +224,9 @@ def main():
         platform = os.path.join('/', 'opt', 'xilinx', 'platforms', platform)
     if platform is None or not os.path.isdir(platform):
       if args.clock_period is None:
-        parser.error('--platform is not valid and neither does --clock-period')
+        parser.error('--platform is not valid and neither is --clock-period')
       if args.part_num is None:
-        parser.error('--platform is not valid and neither does --part-num')
+        parser.error('--platform is not valid and neither is --part-num')
       hls_kwargs = {
           'clock_period': args.clock_period,
           'part_num': args.part_num,
