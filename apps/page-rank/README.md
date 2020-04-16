@@ -74,3 +74,39 @@ This step can also be done in `O(m)` time and can be offloaded to FPGA.
     collects `TaskResp` from them
   + `ProcElem` requests `Update` from `UpdateHandler`
   + `UpdateHandler` sends `Update`
+
+## Performance Analysis
+
+Let $n$ and $m$ be the number of vertices and edges, respectively.
+Let $K$ be the number of PEs.
+Let the vertex vector in each channel have length $L_v$.
+Let the edge vector in each channel have length $L_e$.
+Assume update vectors have the same length as edge vectors.
+Assume no different data reside in the same memory channel.
+Assume no double buffering for vertices.
+
++ `kScatter` phase
+  + Load each `Vertex` partition from memory once
+  + Load each `Edge` partition from memory once and store each `Update`
+    partition once
++ `kGather` phase
+  + Initialize each `Vertex` partition once
+  + Load each `Update` partition from memory once
+  + Load and store each `Vertex` partition once
+
+Execution time per iteration:
+
+$$ t = \frac{n}{L_v}
+     + \frac{m}{KL_e}
+     + \frac{n}{KL_v}
+     + \frac{m}{KL_e}
+     + \frac{n}{KL_v} \cdot 2
+     = \frac{n \cdot (1+3/K)}{L_v}
+     + \frac{2m}{KL_e}$$
+
+Apparently, the more PEs the better.
+However,
+  $K$ is subject to the limit on the resources and total number of memory
+  channels.
+Besides, $K$ has to be a power of 2 due to hardware limits.
+$L_v$ and $L_e$ can be decided by the data width of the memory channels.
