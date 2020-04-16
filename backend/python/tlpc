@@ -123,7 +123,7 @@ def main():
       tlpcc = shutil.which('tlpcc')
     else:
       tlpcc = args.tlpcc
-    if args.tlpcc is None:
+    if tlpcc is None:
       parser.error('cannot find tlpcc')
     tlpcc_cmd += tlpcc, args.input_file
 
