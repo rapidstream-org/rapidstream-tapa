@@ -14,6 +14,7 @@ add_library(tlp)
 target_sources(
   tlp
   PUBLIC src/tlp.h src/tlp/stream.h src/tlp/mmap.h
+         src/tlp/synthesizable/traits.h src/tlp/synthesizable/util.h
   PRIVATE src/tlp.cpp)
 target_compile_features(tlp PUBLIC cxx_std_11)
 target_include_directories(tlp PUBLIC src)
@@ -21,16 +22,20 @@ target_link_libraries(
   tlp
   INTERFACE glog
   PUBLIC pthread)
-set_target_properties(tlp PROPERTIES OUTPUT_NAME tlp PUBLIC_HEADER "src/tlp.h")
+set_target_properties(tlp PROPERTIES OUTPUT_NAME tlp)
 
 include(GNUInstallDirs)
 install(
   TARGETS tlp tlpcc
   EXPORT TLPTargets
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(
+  DIRECTORY "${CMAKE_SOURCE_DIR}/src/"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING
+  PATTERN "*.h")
 
 set(CPACK_PACKAGE_NAME hlstlp)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
