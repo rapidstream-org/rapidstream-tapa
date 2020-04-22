@@ -5,7 +5,8 @@
 
 #include "bandwidth.h"
 
-void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n) {
+void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n,
+               uint64_t flags) {
   auto instance = fpga::Instance(getenv("BITSTREAM"));
   for (int i = 0; i < kBankCount; ++i) {
     auto arg = fpga::ReadWrite(chan[i].get(), chan[i].size());
@@ -13,6 +14,7 @@ void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n) {
     instance.SetArg(i, arg);
   }
   instance.SetArg(kBankCount, n);
+  instance.SetArg(kBankCount + 1, flags);
 
   instance.WriteToDevice();
   instance.Exec();

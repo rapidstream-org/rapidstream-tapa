@@ -9,10 +9,12 @@
 template <typename T>
 using vector = std::vector<T, tlp::aligned_allocator<T>>;
 
-void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n);
+void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n,
+               uint64_t flags);
 
 int main(int argc, char* argv[]) {
   const uint64_t n = argc > 1 ? atoll(argv[1]) : 1024 * 1024;
+  const uint64_t flags = argc > 2 ? atoll(argv[2]) : 6LL;
 
   vector<Elem> chan[kBankCount];
   for (int64_t i = 0; i < kBankCount; ++i) {
@@ -24,7 +26,9 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  Bandwidth(chan, n);
+  Bandwidth(chan, n, flags);
+
+  if (!((flags & kRead) && (flags & kWrite))) return 0;
 
   int64_t num_errors = 0;
   const int64_t threshold = 10;  // only report up to these errors
