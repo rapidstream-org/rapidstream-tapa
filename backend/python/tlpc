@@ -135,13 +135,14 @@ def main():
     tlpcc_cmd += '-top', args.top, '--', '-I', tlp_include_dir
 
     # find clang include location
-    for clang_version in ('10', '9', '8'):
+    for clang_version in ('10', '9', '8', '7', '6.0', '5.0', '4.0', '3.9',
+                          '3.8', '3.7', '3.6', '3.5'):
       clang_include = os.path.join('/', 'usr', 'lib', 'clang', clang_version,
                                    'include')
       if os.path.isdir(clang_include):
         break
     else:
-      parser.error('tlpcc cannot run without clang 8+ installation')
+      parser.error('tlpcc cannot run without clang headers')
     tlpcc_cmd += '-I', clang_include
 
     proc = subprocess.run(tlpcc_cmd,
