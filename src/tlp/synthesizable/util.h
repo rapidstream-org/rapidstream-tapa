@@ -12,6 +12,16 @@ inline constexpr uint64_t widthof() {
   return sizeof(T) * CHAR_BIT;
 }
 
+template <uint64_t N>
+uint64_t round_up_div(uint64_t i) {
+  return ((i - 1) / N + 1);
+}
+
+template <uint64_t N>
+uint64_t round_up(uint64_t i) {
+  return ((i - 1) / N + 1) * N;
+}
+
 template <typename T>
 T reg(T x) {
 #pragma HLS inline self off
