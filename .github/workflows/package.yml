@@ -1,0 +1,84 @@
+name: package
+
+on:
+  push:
+    tags:
+    - '*'
+
+jobs:
+  package-deb:
+    if: github.repository == 'Blaok/tlp'
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-16.04, ubuntu-18.04]
+      max-parallel: 1
+
+    steps:
+      - name: Checkout myself
+        uses: actions/checkout@v2
+      - name: Install build dependencies
+        run: |
+          sudo apt install python-pip libgoogle-glog-dev -y
+          sudo -H python -m pip install --upgrade pip
+          sudo -H python -m pip install cmake
+      - name: Configure myself
+        run: cmake -S . -B build -D CMAKE_BUILD_TYPE=Release
+      - name: Cache llvm-src
+        uses: actions/cache@v1
+        with:
+          path: build/_deps/llvm-src
+          key: ${{ matrix.os }}-llvm-src
+      - name: Cache llvm-build
+        uses: actions/cache@v1
+        with:
+          path: build/_deps/llvm-build
+          key: ${{ matrix.os }}-llvm-build
+      - name: Cache llvm-subbuild
+        uses: actions/cache@v1
+        with:
+          path: build/_deps/llvm-subbuild
+          key: ${{ matrix.os }}-llvm-subbuild
+      - name: Package myself
+        run: cmake --build build --target package
+      - name: Cache APT database
+        uses: actions/cache@v1
+        with:
+          path: apt-db-cache
+          key: ${{ runner.os }}-apt-db-cache
+      - name: Update APT repository
+        run: ./.github/scripts/upload-apt-repo.sh
+        env:
+          BUILD_DIR: build
+          CACHE_DIR: apt-db-cache
+          LABEL: High-Level Synthesis Task-Level Parallelization Repository
+          GPG_KEY: ${{ secrets.GPG_KEY }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+
+  package-pypi:
+    if: github.repository == 'Blaok/tlp'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
+      - name: Install setuptools and wheel
+        run: pip install --upgrade setuptools wheel
+      - name: Checkout myself
+        uses: actions/checkout@v2
+      - name: Install myself
+        working-directory: backend/python
+        run: python setup.py install
+      - name: Build dist
+        working-directory: backend/python
+        run: python setup.py sdist bdist_wheel
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_password }}
+          packages_dir: backend/python/dist/
