@@ -199,6 +199,16 @@ template <typename T, uint64_t N>
 struct vec_t;
 
 template <typename T, uint64_t N, typename Allocator>
+inline mmap<vec_t<T, N>> make_vec_mmap(
+    std::vector<typename std::remove_const<T>::type, Allocator>& vec) {
+  if (vec.size() % N != 0) {
+    throw std::runtime_error("vector must be aligned to make mmap vec");
+  }
+  return mmap<vec_t<T, N>>(reinterpret_cast<vec_t<T, N>*>(vec.data()),
+                           vec.size() / N);
+}
+
+template <typename T, uint64_t N, typename Allocator>
 inline async_mmap<vec_t<T, N>> make_vec_async_mmap(
     std::vector<typename std::remove_const<T>::type, Allocator>& vec) {
   if (vec.size() % N != 0) {
