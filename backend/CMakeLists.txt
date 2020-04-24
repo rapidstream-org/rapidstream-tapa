@@ -48,6 +48,7 @@ endif()
 
 add_library(type)
 target_sources(type PUBLIC tlp/type.h PRIVATE tlp/type.cpp)
+target_compile_features(type PUBLIC cxx_std_11)
 target_include_directories(type PUBLIC ${CLANG_INCLUDE_DIRS}
                                        ${LLVM_INCLUDE_DIRS})
 target_link_libraries(type PUBLIC clangTooling)
