@@ -92,7 +92,7 @@ struct vec_t {
   static constexpr uint64_t length = N;
   static constexpr uint64_t bytes = length * sizeof(T);
   static constexpr uint64_t bits = bytes * CHAR_BIT;
-  ap_uint<bits> data = 0;
+  ap_uint<bits> data;
   // T& operator[](uint64_t idx) { return *(reinterpret_cast<T*>(&data) + idx);
   // }
   void set(uint64_t idx, T val) {
