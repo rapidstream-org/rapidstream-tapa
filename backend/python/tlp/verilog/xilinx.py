@@ -928,7 +928,6 @@ def print_kernel_xml(name: str, ports: Iterable[tlp.instance.Port],
   """
   args = []
   for port in ports:
-    port_name = backend.S_AXI_NAME
     if port.cat == tlp.instance.Instance.Arg.Cat.SCALAR:
       cat = backend.Cat.SCALAR
     elif port.cat in {
@@ -936,7 +935,6 @@ def print_kernel_xml(name: str, ports: Iterable[tlp.instance.Port],
         tlp.instance.Instance.Arg.Cat.ASYNC_MMAP
     }:
       cat = backend.Cat.MMAP
-      port_name = M_AXI_PREFIX + port.name
     elif port.cat == tlp.instance.Instance.Arg.Cat.ISTREAM:
       cat = backend.Cat.ISTREAM
     elif port.cat == tlp.instance.Instance.Arg.Cat.OSTREAM:
@@ -945,11 +943,13 @@ def print_kernel_xml(name: str, ports: Iterable[tlp.instance.Port],
       raise ValueError(f'unexpected port.cat: {port.cat}')
 
     args.append(
-        backend.Arg(cat=cat,
-                    name=port.name,
-                    port=port_name,
-                    ctype=port.ctype,
-                    width=port.width))
+        backend.Arg(
+            cat=cat,
+            name=port.name,
+            port='',  # use defaults
+            ctype=port.ctype,
+            width=port.width,
+        ))
   backend.print_kernel_xml(name, args, kernel_xml)
 
 
