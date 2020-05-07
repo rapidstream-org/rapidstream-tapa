@@ -215,30 +215,13 @@ def main():
     program.extract_cpp()
 
   if all_steps or args.run_hls is not None:
-    platform = args.platform
-    if platform is not None:
-      platform = os.path.join(
-          os.path.dirname(platform),
-          os.path.basename(platform).replace(':', '_').replace('.', '_'))
-    if platform is not None:
-      if not os.path.isdir(platform):
-        platform = os.path.join('/', 'opt', 'xilinx', 'platforms', platform)
-    if platform is None or not os.path.isdir(platform):
-      if args.clock_period is None:
-        parser.error('--platform is not valid and neither is --clock-period')
-      if args.part_num is None:
-        parser.error('--platform is not valid and neither is --part-num')
-      hls_kwargs = {
-          'clock_period': args.clock_period,
-          'part_num': args.part_num,
-      }
-    else:
-      hls_kwargs = haoda.backend.xilinx.get_device_info(platform)
-      if args.clock_period is not None:
-        hls_kwargs['clock_period'] = args.clock_period
-      if args.part_num is not None:
-        hls_kwargs['part_num'] = args.part_num
-    program.run_hls(**hls_kwargs)
+    program.run_hls(**haoda.backend.xilinx.parse_device_info(
+        parser,
+        args,
+        platform_name='platform',
+        part_num_name='part_num',
+        clock_period_name='clock_period',
+    ))
 
   if all_steps or args.extract_rtl is not None:
     program.extract_rtl()
