@@ -8,6 +8,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "coroutine.h"
+
 namespace tlp {
 
 template <typename T>
@@ -82,7 +84,11 @@ class async_mmap : public mmap<T> {
     read_addr_write(addr);
     return true;
   }
-  bool read_data_empty() { return read_addr_q_.empty(); }
+  bool read_data_empty() {
+    bool is_empty = read_addr_q_.empty();
+    if (is_empty) (*current_handle)();
+    return is_empty;
+  }
   bool read_data_try_read(T& resp) {
     if (read_data_empty()) {
       return false;

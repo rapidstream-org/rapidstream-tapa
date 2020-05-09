@@ -6,16 +6,13 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include <array>
-#include <atomic>
-#include <future>
 #include <iostream>
+#include <iterator>
+#include <list>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include <signal.h>
-#include <time.h>
 
 #include <glog/logging.h>
 
@@ -23,49 +20,23 @@
 #include "tlp/stream.h"
 #include "tlp/synthesizable/traits.h"
 #include "tlp/synthesizable/util.h"
-
 namespace tlp {
-
-extern mutex thread_name_mtx;
-extern std::unordered_map<std::thread::id, std::string> thread_name_table;
-extern std::atomic_bool sleeping;
 
 struct task {
   int current_step{0};
-  std::unordered_map<int, std::vector<std::thread>> threads{};
-  std::thread::id main_thread_id;
+  std::map<int, std::list<push_type>> coroutines;
+  std::unordered_map<push_type*, pull_type*> handle_table;
 
-  task();
+  task() {}
   task(task&&) = default;
   task(const task&) = delete;
-  ~task() {
-    wait_for(current_step);
-    for (auto& pair : threads) {
-      for (auto& thread : pair.second) {
-        if (thread.joinable()) {
-          // use an atomic flag to make sure thread is no longer doing anything
-          sleeping = false;
-          // make thread sleep forever to avoid accessing freed memory
-          pthread_kill(thread.native_handle(), SIGUSR1);
-          // wait until thread is sleeping
-          while (!sleeping) std::this_thread::yield();
-          // let OS do the clean-up when the whole program terminates
-          thread.detach();
-        }
-      }
-    }
-  }
+  ~task() { wait_for(current_step); }
 
   task& operator=(task&&) = default;
   task& operator=(const task&) = delete;
 
-  void signal_handler(int signal);
-
-  void wait_for(int step) {
-    for (auto& t : threads[step]) {
-      if (t.joinable()) t.join();
-    }
-  }
+  // proceed until step completes
+  void wait_for(int step);
 
   template <int step, typename Function, typename... Args>
   task& invoke(Function&& f, Args&&... args) {
@@ -78,12 +49,14 @@ struct task {
     for (; current_step < step; ++current_step) {
       wait_for(current_step);
     }
-    threads[step].push_back(std::thread(f, std::ref(args)...));
-    if (name[0] != '\0') {
-      thread_name_mtx.lock();
-      thread_name_table[threads[step].rbegin()->get_id()] = name;
-      thread_name_mtx.unlock();
-    }
+    auto& list = this->coroutines[step];
+    int idx = list.size();
+    list.emplace_back(make_stack_allocator(), [&, idx](pull_type& source) {
+      // sink must have a stable pointer
+      auto& sink = *std::next(coroutines[step].begin(), idx);
+      handle_table[&sink] = current_handle = &source;
+      f(args...);
+    });
     return *this;
   }
 
@@ -97,18 +70,8 @@ struct task {
   template <int step, uint64_t length, typename Function, typename... Args,
             size_t S>
   task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
-    // wait until current_step >= step
-    for (; current_step < step; ++current_step) {
-      wait_for(current_step);
-    }
     for (uint64_t i = 0; i < length; ++i) {
-      threads[step].push_back(std::thread(f, std::ref(access(args, i))...));
-      if (name[0] != '\0') {
-        thread_name_mtx.lock();
-        thread_name_table[threads[step].rbegin()->get_id()] =
-            std::string(name) + "[" + std::to_string(i) + "]";
-        thread_name_mtx.unlock();
-      }
+      this->invoke<step>(f, access(args, i)...);
     }
     return *this;
   }

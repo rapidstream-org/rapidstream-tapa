@@ -4,38 +4,12 @@
 #include <cstddef>
 
 #include <array>
-#include <atomic>
 #include <stdexcept>
 #include <string>
-#include <thread>
-#include <unordered_map>
 
-#if __cplusplus >= 201402L
-#include <shared_mutex>
-#else
-#include <mutex>
-#endif  // __cplusplus >= 201402L
+#include "coroutine.h"
 
 namespace tlp {
-
-#if __cplusplus >= 201402L
-using mutex = std::shared_timed_mutex;
-using shared_lock = std::shared_lock<mutex>;
-#else
-using std::mutex;
-using shared_lock = std::unique_lock<mutex>;
-#endif  // __cplusplus >= 201402L
-
-extern mutex thread_name_mtx;
-extern std::unordered_map<std::thread::id, std::string> thread_name_table;
-
-extern thread_local uint64_t last_signal_timestamp;
-constexpr uint64_t kSignalThreshold = 500000000;
-inline uint64_t get_time_ns() {
-  timespec tp;
-  clock_gettime(CLOCK_MONOTONIC, &tp);
-  return static_cast<uint64_t>(tp.tv_sec) * 1000000000 + tp.tv_nsec;
-}
 
 template <typename T>
 struct elem_t {
@@ -146,7 +120,11 @@ class stream : public istream<T>, public ostream<T> {
   // consumer const operations
 
   // whether stream is empty
-  bool empty() const override { return head == tail; }
+  bool empty() const override {
+    bool is_empty = head == tail;
+    if (is_empty) (*current_handle)();
+    return is_empty;
+  }
   // whether stream has ended
   bool try_eos(bool& eos) const override {
     if (!empty()) {
@@ -220,7 +198,6 @@ class stream : public istream<T>, public ostream<T> {
   T read() override {
     T val;
     while (!try_read(val)) {
-      yield("read");
     }
     return val;
   }
@@ -260,16 +237,18 @@ class stream : public istream<T>, public ostream<T> {
   }
   // blocking destructive open
   void open() override {
-    T val;
     while (!try_open()) {
-      yield("open");
     }
   }
 
   // producer const operations
 
   // whether stream is full
-  bool full() const override { return head - tail == depth; }
+  bool full() const override {
+    bool is_full = head - tail == depth;
+    if (is_full) (*current_handle)();
+    return is_full;
+  }
 
   // producer non-const operations
 
@@ -285,7 +264,6 @@ class stream : public istream<T>, public ostream<T> {
   // blocking write
   void write(const T& val) override {
     while (!try_write(val)) {
-      yield("write");
     }
   }
   // non-blocking close
@@ -300,15 +278,13 @@ class stream : public istream<T>, public ostream<T> {
   // blocking close
   void close() override {
     while (!try_close()) {
-      yield("close");
     }
   }
 
   // producer writes to head and consumer reads from tail
   // okay to keep incrementing because it'll take > 100 yr to overflow uint64_t
-
-  std::atomic<uint64_t> tail;
-  std::atomic<uint64_t> head;
+  uint64_t tail;
+  uint64_t head;
 
   // buffer operations
 
@@ -317,25 +293,6 @@ class stream : public istream<T>, public ostream<T> {
   elem_t<T>& access(uint64_t idx) { return buffer[idx % buffer.size()]; }
   const elem_t<T>& access(uint64_t idx) const {
     return buffer[idx % buffer.size()];
-  }
-
-  void yield(const std::string& func) const {
-    if (last_signal_timestamp != 0) {
-      // print stalling message if within 500 ms of signal
-      if (get_time_ns() - last_signal_timestamp < kSignalThreshold) {
-        shared_lock lock(thread_name_mtx);
-        std::string thread_name;
-        auto it = thread_name_table.find(std::this_thread::get_id());
-        if (it != thread_name_table.end()) {
-          thread_name = it->second + " is ";
-        }
-        LOG(INFO) << thread_name
-                  << "stalling for: " << (name.empty() ? "" : name + ".")
-                  << func << "()";
-      }
-      last_signal_timestamp = 0;
-    }
-    std::this_thread::yield();
   }
 };
 

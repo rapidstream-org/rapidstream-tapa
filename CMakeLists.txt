@@ -10,11 +10,14 @@ project(tlp)
 
 add_subdirectory(backend)
 
+find_package(Boost 1.59 REQUIRED COMPONENTS coroutine)
+
 add_library(tlp)
 target_sources(
   tlp
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp.h>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/coroutine.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/stream.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/mmap.h>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/synthesizable/traits.h>
@@ -22,11 +25,12 @@ target_sources(
   PRIVATE src/tlp.cpp)
 target_compile_features(tlp PUBLIC cxx_std_11)
 target_include_directories(
-  tlp PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+  tlp PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+             ${Boost_INCLUDE_DIRS})
 target_link_libraries(
   tlp
   INTERFACE glog
-  PUBLIC pthread)
+  PUBLIC pthread ${Boost_LIBRARIES})
 set_target_properties(tlp PROPERTIES OUTPUT_NAME tlp)
 
 include(GNUInstallDirs)
@@ -65,7 +69,9 @@ set(CPACK_PACKAGE_VERSION_PATCH 20200423.1)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "High-Level Synthesis Task-Level Parallelization")
 
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "iverilog, libclang-dev, libgoogle-glog-dev")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS
+    "iverilog, libclang-dev, libboost-coroutine-dev (>= 1.59), libgoogle-glog-dev"
+)
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Blaok Chi")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
