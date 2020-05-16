@@ -1,6 +1,7 @@
 #ifndef TLP_STREAM_H_
 #define TLP_STREAM_H_
 
+#include <cassert>
 #include <cstdint>
 
 #include <hls_stream.h>
