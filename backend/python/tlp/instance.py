@@ -222,6 +222,9 @@ class Instance:
                   for suffix in rtl.HANDSHAKE_OUTPUT_PORTS)
 
   def get_instance_arg(self, arg: str) -> str:
+    if "'d" in arg:
+      width, value = arg.split("'d")
+      return f'{self.name}___const__{width}b{value}'
     return f'{self.name}___{arg}'
 
 

@@ -405,7 +405,9 @@ class Program:
         }:
           width = 64  # 64-bit address
           if arg.cat == Instance.Arg.Cat.SCALAR:
-            width = width_table[arg_name]
+            width = width_table.get(arg_name, 0)
+            if width == 0:
+              width = int(arg_name.split("'d")[0])
             q = rtl.Pipeline(
                 name=instance.get_instance_arg(arg_name),
                 level=self.register_level,
@@ -557,6 +559,7 @@ class Program:
         elif arg.cat == Instance.Arg.Cat.MMAP:
           portargs.extend(
               rtl.generate_m_axi_ports(
+                  module=instance.task.module,
                   port=arg.port,
                   arg=arg_name,
                   arg_reg=arg_table[arg_name][-1].name,

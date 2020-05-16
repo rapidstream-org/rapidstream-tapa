@@ -371,11 +371,14 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
         const auto arg = invoke->getArg(i);
         const auto decl_ref = dyn_cast<DeclRefExpr>(arg);  // a variable
+        clang::Expr::EvalResult arg_eval_as_int_result;
+        const bool arg_is_int =
+            arg->EvaluateAsInt(arg_eval_as_int_result, this->context_);
         const bool arg_is_async_mmaps = IsTlpType(decl_ref, "async_mmaps");
         const bool arg_is_streams = IsTlpType(decl_ref, "streams");
         const auto op_call =
             dyn_cast<CXXOperatorCallExpr>(arg);  // element in an array
-        if (decl_ref || op_call) {
+        if (decl_ref || op_call || arg_is_int) {
           string arg_name;
           if (decl_ref) {
             arg_name = decl_ref->getNameInfo().getName().getAsString();
@@ -387,6 +390,11 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                         .getAsString();
             const auto array_idx = this->EvalAsInt(op_call->getArg(1));
             arg_name = ArrayNameAt(array_name, array_idx);
+          }
+          if (arg_is_int) {
+            arg_name = "64'd" +
+                       std::to_string(uint64_t(
+                           arg_eval_as_int_result.Val.getInt().getExtValue()));
           }
           if (i == 0) {
             task_name = arg_name;

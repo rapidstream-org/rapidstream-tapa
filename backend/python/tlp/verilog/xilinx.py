@@ -756,14 +756,34 @@ def generate_handshake_ports(
 
 
 def generate_m_axi_ports(
+    module: Module,
     port: str,
     arg: str,
     arg_reg: str = '',
 ) -> Iterator[ast.PortArg]:
+  """Generate AXI mmap ports that instantiate given module.
+
+  Args:
+      module (Module): Module that needs to be instantiated.
+      port (str): Port name in the instantiated module.
+      arg (str): Argument name in the instantiating module.
+      arg_reg (str, optional): Registered argument name. Defaults to ''.
+
+  Raises:
+      ValueError: If the offset port cannot be found in the instantiated module.
+
+  Yields:
+      Iterator[ast.PortArg]: PortArgs.
+  """
   for suffix in M_AXI_SUFFIXES:
     yield ast.make_port_arg(port=M_AXI_PREFIX + port + suffix,
                             arg=M_AXI_PREFIX + arg + suffix)
-  yield ast.make_port_arg(port=port + '_offset', arg=arg_reg or arg)
+  for suffix in '_offset', '_V':
+    if module.find_port(prefix=port, suffix=suffix) is not None:
+      yield ast.make_port_arg(port=port + suffix, arg=arg_reg or arg)
+      break
+  else:
+    raise ValueError(f'cannot find offset port for {port}')
 
 
 def fifo_port_name(fifo: str, suffix: str) -> str:
