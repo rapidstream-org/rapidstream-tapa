@@ -155,7 +155,7 @@ def main():
 
     # Use -MM to find all user headers
     input_file_basename = os.path.basename(args.input_file)
-    input_file_dirname = os.path.dirname(args.input_file)
+    input_file_dirname = os.path.dirname(args.input_file) or '.'
     deps: str = subprocess.check_output([
         'clang++-' + clang_version,
         '-MM',
@@ -188,7 +188,7 @@ def main():
         tlp_program_json_file = args.output_file
       else:
         tlp_program_json_file = os.path.join(args.work_dir, 'program.json')
-      os.makedirs(os.path.dirname(tlp_program_json_file), exist_ok=True)
+      os.makedirs(os.path.dirname(tlp_program_json_file) or '.', exist_ok=True)
       with open(tlp_program_json_file, 'w') as output_fp:
         output_fp.write(tlp_program_json_str)
     tlp_program_json = lambda: io.StringIO(tlp_program_json_str)
