@@ -312,6 +312,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   }
 
   // Process stream declarations.
+  unordered_map<string, const VarDecl*> fifo_decls;
   for (const auto child : func_body->children()) {
     if (const auto decl_stmt = dyn_cast<DeclStmt>(child)) {
       if (const auto var_decl = dyn_cast<VarDecl>(*decl_stmt->decl_begin())) {
@@ -321,6 +322,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           const uint64_t fifo_depth{*args[1].getAsIntegral().getRawData()};
           const string var_name{var_decl->getNameAsString()};
           metadata["fifos"][var_name]["depth"] = fifo_depth;
+          fifo_decls[var_name] = var_decl;
         } else if (auto decl = GetTlpStreamsDecl(var_decl->getType())) {
           const auto args = decl->getTemplateArgs().asArray();
           const string elem_type = GetTemplateArgName(args[0]);
@@ -328,6 +330,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           for (int i = 0; i < GetArraySize(decl); ++i) {
             const string var_name = ArrayNameAt(var_decl->getNameAsString(), i);
             metadata["fifos"][var_name]["depth"] = fifo_depth;
+            fifo_decls[var_name] = var_decl;
           }
         }
       }
@@ -484,6 +487,22 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         diagnostics_builder.AddString(arg->getStmtClassName());
         diagnostics_builder.AddSourceRange(GetCharSourceRange(arg));
       }
+    }
+  }
+
+  for (auto& fifo : metadata["fifos"].items()) {
+    if (fifo.value().size() < 3) {
+      auto fifo_name = fifo.key();
+      auto fifo_decl = fifo_decls[fifo_name];
+      auto& diagnostics = context_.getDiagnostics();
+      static const auto diagnostic_id = diagnostics.getCustomDiagID(
+          clang::DiagnosticsEngine::Warning, "unused stream: %0");
+      auto diagnostics_builder =
+          diagnostics.Report(fifo_decl->getBeginLoc(), diagnostic_id);
+      diagnostics_builder.AddString(fifo_name);
+      diagnostics_builder.AddSourceRange(
+          GetCharSourceRange(fifo_decl->getSourceRange()));
+      metadata["fifos"].erase(fifo_name);
     }
   }
 
