@@ -61,11 +61,18 @@ def main():
   parser.add_argument('--directive',
                       type=argparse.FileType('r'),
                       dest='directive',
-                      help='partitioning directive json')
+                      metavar='file',
+                      help='input partitioning directive json file')
   parser.add_argument('--constraint',
                       type=argparse.FileType('w'),
                       dest='constraint',
-                      help='partitioning constraint tcl')
+                      metavar='file',
+                      help='output partitioning constraint tcl file')
+  parser.add_argument('--register-level',
+                      type=int,
+                      dest='register_level',
+                      metavar='INT',
+                      help='override register level of top-level signals')
   parser.add_argument(type=str,
                       dest='input_file',
                       metavar='file',
@@ -230,7 +237,12 @@ def main():
     directive: Optional[Tuple[Dict[str, List[str]]], TextIO] = None
     if args.directive is not None and args.constraint is not None:
       directive = json.load(args.directive), args.constraint
-    program.instrument_rtl(directive)
+    elif args.directive is not None or args.constraint is not None:
+      parser.error('only one of directive and constraint is given')
+    if args.register_level is not None:
+      if args.register_level <= 0:
+        parser.error('register level must be positive')
+    program.instrument_rtl(directive, args.register_level or 0)
 
   if all_steps or args.pack_xo is not None:
     with open(args.output_file, 'wb') as packed_obj:

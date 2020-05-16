@@ -5,7 +5,7 @@ import shutil
 import sys
 import tarfile
 import tempfile
-from typing import (BinaryIO, Dict, Iterator, List, Optional, Set, TextIO,
+from typing import (Any, BinaryIO, Dict, Iterator, List, Optional, Set, TextIO,
                     Tuple, Union)
 
 from haoda.backend import xilinx as hls
@@ -165,9 +165,18 @@ class Program:
 
   def instrument_rtl(
       self,
-      directive: Optional[Tuple[Dict[str, List[str]], TextIO]] = None,
+      directive: Optional[Tuple[Dict[str, Any], TextIO]] = None,
+      register_level: int = 0,
   ) -> 'Program':
-    """Instrument HDL files generated from HLS."""
+    """Instrument HDL files generated from HLS.
+
+    Args:
+        directive: Optional, if given it should a tuple of json object and file.
+        register_level: Non-zero value overrides self.register_level.
+
+    Returns:
+        Program: Return self.
+    """
     width_table = {port.name: port.width for port in self.ports}
 
     # extract and parse RTL
@@ -179,7 +188,9 @@ class Program:
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
-      self._process_partition_directive(*directive)
+      self._process_partition_directive(directive[0], directive[1])
+    if register_level:
+      self.top_task.module.register_level = register_level
 
     # instrument the upper-level RTL
     for task in self._tasks.values():
@@ -218,7 +229,7 @@ class Program:
       self,
       directive: Dict[str, List[Union[str, Dict[str, List[str]]]]],
       constraints: TextIO,
-  ) -> Tuple[int, Dict[str, int]]:
+  ) -> None:
     # mapping instance names to region names
     instance_dict = {self.ctrl_instance_name: ''}
 
@@ -235,14 +246,14 @@ class Program:
     program_instance_set = set(instance_dict)
     directive_instance_set: Set[str] = set()
     for region, instances in directive.items():
-      subset = set()
-      for instance in instances:
-        if isinstance(instance, str):
-          instance = rtl.sanitize_array_name(instance)
-          instance_dict[instance] = region
-          subset.add(instance)
+      subset: Set[str] = set()
+      for instance_obj in instances:
+        if isinstance(instance_obj, str):
+          instance_obj = rtl.sanitize_array_name(instance_obj)
+          instance_dict[instance_obj] = region
+          subset.add(instance_obj)
         else:
-          topology[region] = instance
+          topology[region] = instance_obj
       intersect = subset & directive_instance_set
       if intersect:
         raise InputError('more than one region assignment: %s' % intersect)
