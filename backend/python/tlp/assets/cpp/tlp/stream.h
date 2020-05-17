@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 
 #include <hls_stream.h>
 
@@ -148,7 +149,8 @@ class ostream {
   bool try_close() {
 #pragma HLS inline
 #pragma HLS protocol
-    elem_t<T> elem = {};
+    elem_t<T> elem;
+    memset(&elem.val, 0, sizeof(elem.val));
     elem.eos = true;
     return fifo.write_nb(elem);
   }
@@ -156,7 +158,8 @@ class ostream {
   void close() {
 #pragma HLS inline
 #pragma HLS protocol
-    elem_t<T> elem = {};
+    elem_t<T> elem;
+    memset(&elem.val, 0, sizeof(elem.val));
     elem.eos = true;
     fifo.write(elem);
   }
