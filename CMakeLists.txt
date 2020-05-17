@@ -70,9 +70,14 @@ set(CPACK_PACKAGE_VERSION_PATCH 20200513.1)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "High-Level Synthesis Task-Level Parallelization")
 
-set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "iverilog, libclang-dev, libboost-coroutine-dev (>= 1.59), libgoogle-glog-dev"
-)
+string(
+  JOIN
+  ", "
+  CPACK_DEBIAN_PACKAGE_DEPENDS
+  "clang"
+  "iverilog"
+  "libboost-coroutine-dev (>= 1.59)"
+  "libgoogle-glog-dev")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Blaok Chi")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
