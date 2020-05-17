@@ -31,7 +31,8 @@ target_link_libraries(
   tlp
   INTERFACE glog
   PUBLIC pthread ${Boost_LIBRARIES})
-set_target_properties(tlp PROPERTIES OUTPUT_NAME tlp)
+set_target_properties(tlp PROPERTIES OUTPUT_NAME tlp POSITION_INDEPENDENT_CODE
+                                                     ON)
 
 include(GNUInstallDirs)
 install(
