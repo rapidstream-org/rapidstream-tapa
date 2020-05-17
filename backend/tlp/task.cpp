@@ -522,6 +522,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
 // Apply tlp s2s transformations on a lower-level task.
 void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
+  const auto func_body = func->getBody();
+
   // Find interface streams.
   vector<StreamInfo> streams;
   vector<MmapInfo> mmaps;
@@ -529,32 +531,35 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   for (const auto param : func->parameters()) {
     if (IsStreamInterface(param)) {
       auto elem_type = GetStreamElemType(param);
-      streams.emplace_back(param->getNameAsString(), elem_type);
+      streams.emplace_back(param->getNameAsString(),
+                           elem_type, /*is_producer= */
+                           IsTlpType(param, "ostream"),
+                           /* is_consumer= */
+                           IsTlpType(param, "istream"));
     } else if (IsMmap(param)) {
       auto elem_type = GetMmapElemType(param);
       mmaps.emplace_back(param->getNameAsString(), elem_type);
     } else if (IsAsyncMmap(param)) {
       auto elem_type = GetMmapElemType(param);
       AsyncMmapInfo async_mmap(param->getNameAsString(), elem_type);
-      async_mmap.GetAsyncMmapInfo(func->getBody(), context_.getDiagnostics());
+      async_mmap.GetAsyncMmapInfo(func_body, context_.getDiagnostics());
       async_mmaps.push_back(async_mmap);
     } else if (IsTlpType(param, "(i|o)streams")) {
-      InsertHlsPragma(func->getBody()->getBeginLoc(), "data_pack",
+      InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
                       {{"variable", param->getNameAsString() + "._[0].fifo"}});
       if (IsTlpType(param, "istreams")) {
-        InsertHlsPragma(
-            func->getBody()->getBeginLoc(), "data_pack",
-            {{"variable", param->getNameAsString() + "._[0].peek_val"}});
-        InsertHlsPragma(
-            func->getBody()->getBeginLoc(), "array_partition",
-            {{"variable", param->getNameAsString() + "._[0].peek_val"},
-             {"complete", ""}});
+        auto peek_var = param->getNameAsString() + "._[0].peek_val";
+        InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
+                        {{"variable", peek_var}});
+        InsertHlsPragma(func_body->getBeginLoc(), "interface",
+                        {{"ap_stable", {}}, {"port", peek_var}});
+        InsertHlsPragma(func_body->getBeginLoc(), "array_partition",
+                        {{"variable", peek_var}, {"complete", {}}});
       }
     }
   }
 
   // Retrieve stream information.
-  const auto func_body = func->getBody();
   GetStreamInfo(func_body, streams, context_.getDiagnostics());
 
   // Insert interface pragmas.
@@ -573,6 +578,10 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     if (stream.is_consumer) {
       InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
                       {{"variable", stream.PeekVar()}});
+      if (!stream.need_peeking) {
+        InsertHlsPragma(func_body->getBeginLoc(), "interface",
+                        {{"ap_stable", {}}, {"port", stream.PeekVar()}});
+      }
     }
   }
   for (const auto& mmap : mmaps) {

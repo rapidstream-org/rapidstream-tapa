@@ -50,8 +50,11 @@ enum class StreamOpEnum : uint64_t {
 
 // Information about a particular stream used in a task.
 struct StreamInfo : public ObjectInfo {
-  StreamInfo(const std::string& name, const std::string& type)
-      : ObjectInfo(name, type) {}
+  StreamInfo(const std::string& name, const std::string& type, bool is_producer,
+             bool is_consumer)
+      : ObjectInfo(name, type),
+        is_producer(is_producer),
+        is_consumer(is_consumer) {}
   // List of operations performed.
   std::vector<StreamOpEnum> ops{};
   // List of AST nodes. Each of them corresponds to a stream operation.
@@ -119,7 +122,8 @@ class RecursiveInnermostLoopsVisitor
           return true;
         }
       }
-      default: {}
+      default: {
+      }
     }
     return false;
   }
