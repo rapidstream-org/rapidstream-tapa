@@ -20,23 +20,10 @@
 
 ### Prerequisites
 
-+ Ubuntu 16.04+ (18.04 recommended)
++ Ubuntu 18.04
 + Python 3.6+
 
 ### Install from GitHub
-
-#### Ubuntu 16.04
-
-You'll need to install Python 3.6 or higher and use that.
-
-```bash
-sudo tee /etc/apt/sources.list.d/tlp.list <<EOF
-deb [arch=amd64] https://about.blaok.me/tlp xenial main
-EOF
-sudo apt update
-sudo apt install -y hlstlp
-sudo -H python3.6 -m pip install tlpc
-```
 
 #### Ubuntu 18.04
 
@@ -45,7 +32,7 @@ sudo tee /etc/apt/sources.list.d/tlp.list <<EOF
 deb [arch=amd64] https://about.blaok.me/tlp bionic main
 EOF
 sudo apt update
-sudo apt install -y hlstlp
+sudo apt install -y hlstlp python3
 sudo -H python3 -m pip install tlpc
 ```
 
