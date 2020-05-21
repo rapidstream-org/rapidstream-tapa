@@ -92,12 +92,10 @@ void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
 #pragma HLS loop_tripcount min = kNumElems max = kNumElems
 #pragma HLS dependence false variable = a
 #pragma HLS dependence false variable = b
-      if (b_wr < kNumElems) i_prev.write(b[b_wr++]);
-      if (a_wr < kNumElems) j_prev.write(a[a_wr++]);
-      bool succeed_a;
-      bool succeed_b;
-      if (b_rd < b_wr && !i_next.empty()) b[b_rd++] = i_next.read(succeed_a);
-      if (a_rd < a_wr && !j_next.empty()) a[a_rd++] = j_next.read(succeed_b);
+      if (b_wr < kNumElems) i_prev.try_write(b[b_wr]) && ++b_wr;
+      if (a_wr < kNumElems) j_prev.try_write(a[a_wr]) && ++a_wr;
+      if (b_rd < b_wr && !i_next.empty()) b[b_rd++] = i_next.read(nullptr);
+      if (a_rd < a_wr && !j_next.empty()) a[a_rd++] = j_next.read(nullptr);
     }
   }
 
