@@ -12,33 +12,34 @@ add_subdirectory(backend)
 
 find_package(Boost 1.59 REQUIRED COMPONENTS coroutine)
 
-add_library(tlp)
-target_sources(
-  tlp
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp.h>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/coroutine.h>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/stream.h>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/mmap.h>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/synthesizable/traits.h>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src/tlp/synthesizable/util.h>
-  PRIVATE src/tlp.cpp)
-target_compile_features(tlp PUBLIC cxx_std_11)
+add_library(tlp_static STATIC)
+add_library(tlp ALIAS tlp_static)
+add_library(tlp_shared SHARED)
+target_sources(tlp_static PRIVATE src/tlp.cpp)
+target_sources(tlp_shared PRIVATE src/tlp.cpp)
+target_compile_features(tlp_static PUBLIC cxx_std_11)
+target_compile_features(tlp_shared PUBLIC cxx_std_11)
 target_include_directories(
-  tlp PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-             ${Boost_INCLUDE_DIRS})
+  tlp_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+                    ${Boost_INCLUDE_DIRS})
+target_include_directories(
+  tlp_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+                    ${Boost_INCLUDE_DIRS})
 target_link_libraries(
-  tlp
+  tlp_static
   INTERFACE glog
   PUBLIC pthread ${Boost_LIBRARIES})
-set_target_properties(tlp PROPERTIES OUTPUT_NAME tlp POSITION_INDEPENDENT_CODE
-                                                     ON)
+target_link_libraries(
+  tlp_shared
+  INTERFACE glog
+  PUBLIC pthread ${Boost_LIBRARIES})
+set_target_properties(tlp_static tlp_shared
+                      PROPERTIES OUTPUT_NAME tlp POSITION_INDEPENDENT_CODE ON)
 
 include(GNUInstallDirs)
 install(
-  TARGETS tlp
+  TARGETS tlp_static tlp_shared
   EXPORT TLPTargets
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(TARGETS tlpcc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
