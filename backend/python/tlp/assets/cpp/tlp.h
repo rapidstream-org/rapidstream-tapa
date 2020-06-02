@@ -100,6 +100,13 @@ struct vec_t {
     data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>()) =
         reinterpret_cast<ap_uint<widthof<T>()>&>(val);
   }
+  void set(T val) {
+#pragma HLS inline
+    for (uint64_t i = 0; i < N; ++i) {
+#pragma HLS unroll
+      set(i, val);
+    }
+  }
   T get(uint64_t idx) const {
 #pragma HLS inline
     return reinterpret_cast<T&&>(static_cast<ap_uint<widthof<T>()>>(
@@ -109,7 +116,120 @@ struct vec_t {
 #pragma HLS inline
     return get(idx);
   }
+
+// assignment operators
+#define DEFINE_OP(op)                                    \
+  template <typename T2>                                 \
+  vec_t<T, N>& operator op##=(const vec_t<T2, N>& rhs) { \
+    _Pragma("HLS inline");                               \
+    for (uint64_t i = 0; i < N; ++i) {                   \
+      _Pragma("HLS unroll");                             \
+      set(i, get(i) op rhs[i]);                          \
+    }                                                    \
+    return *this;                                        \
+  }                                                      \
+  template <typename T2>                                 \
+  vec_t<T, N>& operator op##=(const T2& rhs) {           \
+    _Pragma("HLS inline");                               \
+    for (uint64_t i = 0; i < N; ++i) {                   \
+      _Pragma("HLS unroll");                             \
+      set(i, get(i) op rhs);                             \
+    }                                                    \
+    return *this;                                        \
+  }
+  DEFINE_OP(+)
+  DEFINE_OP(-)
+  DEFINE_OP(*)
+  DEFINE_OP(/)
+  DEFINE_OP(%)
+  DEFINE_OP(&)
+  DEFINE_OP(|)
+  DEFINE_OP(^)
+  DEFINE_OP(<<)
+  DEFINE_OP(>>)
+#undef DEFINE_OP
+
+// unary arithemetic operators
+#define DEFINE_OP(op)                  \
+  vec_t<T, N> operator op() {          \
+    _Pragma("HLS inline");             \
+    for (uint64_t i = 0; i < N; ++i) { \
+      _Pragma("HLS unroll");           \
+      set(i, op get(i));               \
+    }                                  \
+    return *this;                      \
+  }
+  DEFINE_OP(+)
+  DEFINE_OP(-)
+  DEFINE_OP(~)
+#undef DEFINE_OP
+
+// binary arithemetic operators
+#define DEFINE_OP(op)                                \
+  template <typename T2>                             \
+  vec_t<T, N> operator op(const vec_t<T2, N>& rhs) { \
+    _Pragma("HLS inline");                           \
+    vec_t<T, N> result;                              \
+    for (uint64_t i = 0; i < N; ++i) {               \
+      _Pragma("HLS unroll");                         \
+      result.set(i, get(i) op rhs[i]);               \
+    }                                                \
+    return result;                                   \
+  }                                                  \
+  template <typename T2>                             \
+  vec_t<T, N> operator op(const T2& rhs) {           \
+    _Pragma("HLS inline");                           \
+    vec_t<T, N> result;                              \
+    for (uint64_t i = 0; i < N; ++i) {               \
+      _Pragma("HLS unroll");                         \
+      result.set(i, get(i) op rhs);                  \
+    }                                                \
+    return result;                                   \
+  }
+  DEFINE_OP(+)
+  DEFINE_OP(-)
+  DEFINE_OP(*)
+  DEFINE_OP(/)
+  DEFINE_OP(%)
+  DEFINE_OP(&)
+  DEFINE_OP(|)
+  DEFINE_OP(^)
+  DEFINE_OP(<<)
+  DEFINE_OP(>>)
+#undef DEFINE_OP
 };
+
+// binary arithemetic operators, vector on the right-hand side
+#define DEFINE_OP(op)                                              \
+  template <typename T, uint64_t N, typename T2>                   \
+  vec_t<T, N> operator op(const T2& lhs, const vec_t<T, N>& rhs) { \
+    _Pragma("HLS inline");                                         \
+    vec_t<T, N> result;                                            \
+    for (uint64_t i = 0; i < N; ++i) {                             \
+      _Pragma("HLS unroll");                                       \
+      result.set(i, lhs op rhs[i]);                                \
+    }                                                              \
+    return result;                                                 \
+  }
+DEFINE_OP(+)
+DEFINE_OP(-)
+DEFINE_OP(*)
+DEFINE_OP(/)
+DEFINE_OP(%)
+DEFINE_OP(&)
+DEFINE_OP(|)
+DEFINE_OP(^)
+DEFINE_OP(<<)
+DEFINE_OP(>>)
+#undef DEFINE_OP
+
+template <uint64_t N, typename T>
+vec_t<T, N> make_vec(T val) {
+#pragma HLS inline
+  vec_t<T, N> result;
+  result.set(val);
+  return result;
+}
 
 }  // namespace tlp
 

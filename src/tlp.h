@@ -110,12 +110,118 @@ struct vec_t {
   }
   // T& operator[](uint64_t idx) { return data[idx]; }
   void set(uint64_t idx, T val) { data[idx] = val; }
+  void set(T val) {
+    for (uint64_t i = 0; i < N; ++i) {
+      set(i, val);
+    }
+  }
   T get(uint64_t idx) const { return data[idx]; }
   T operator[](uint64_t idx) const { return get(idx); }
+
+// assignment operators
+#define DEFINE_OP(op)                                    \
+  template <typename T2>                                 \
+  vec_t<T, N>& operator op##=(const vec_t<T2, N>& rhs) { \
+    for (uint64_t i = 0; i < N; ++i) {                   \
+      set(i, get(i) op rhs[i]);                          \
+    }                                                    \
+    return *this;                                        \
+  }                                                      \
+  template <typename T2>                                 \
+  vec_t<T, N>& operator op##=(const T2& rhs) {           \
+    for (uint64_t i = 0; i < N; ++i) {                   \
+      set(i, get(i) op rhs);                             \
+    }                                                    \
+    return *this;                                        \
+  }
+  DEFINE_OP(+)
+  DEFINE_OP(-)
+  DEFINE_OP(*)
+  DEFINE_OP(/)
+  DEFINE_OP(%)
+  DEFINE_OP(&)
+  DEFINE_OP(|)
+  DEFINE_OP(^)
+  DEFINE_OP(<<)
+  DEFINE_OP(>>)
+#undef DEFINE_OP
+
+// unary arithemetic operators
+#define DEFINE_OP(op)                  \
+  vec_t<T, N> operator op() {          \
+    for (uint64_t i = 0; i < N; ++i) { \
+      set(i, op get(i));               \
+    }                                  \
+    return *this;                      \
+  }
+  DEFINE_OP(+)
+  DEFINE_OP(-)
+  DEFINE_OP(~)
+#undef DEFINE_OP
+
+// binary arithemetic operators
+#define DEFINE_OP(op)                                \
+  template <typename T2>                             \
+  vec_t<T, N> operator op(const vec_t<T2, N>& rhs) { \
+    vec_t<T, N> result;                              \
+    for (uint64_t i = 0; i < N; ++i) {               \
+      result.set(i, get(i) op rhs[i]);               \
+    }                                                \
+    return result;                                   \
+  }                                                  \
+  template <typename T2>                             \
+  vec_t<T, N> operator op(const T2& rhs) {           \
+    vec_t<T, N> result;                              \
+    for (uint64_t i = 0; i < N; ++i) {               \
+      result.set(i, get(i) op rhs);                  \
+    }                                                \
+    return result;                                   \
+  }
+  DEFINE_OP(+)
+  DEFINE_OP(-)
+  DEFINE_OP(*)
+  DEFINE_OP(/)
+  DEFINE_OP(%)
+  DEFINE_OP(&)
+  DEFINE_OP(|)
+  DEFINE_OP(^)
+  DEFINE_OP(<<)
+  DEFINE_OP(>>)
+#undef DEFINE_OP
+
   static constexpr uint64_t length = N;
   static constexpr uint64_t bytes = length * sizeof(T);
   static constexpr uint64_t bits = bytes * CHAR_BIT;
 };
+
+// binary arithemetic operators, vector on the right-hand side
+#define DEFINE_OP(op)                                              \
+  template <typename T, uint64_t N, typename T2>                   \
+  vec_t<T, N> operator op(const T2& lhs, const vec_t<T, N>& rhs) { \
+    vec_t<T, N> result;                                            \
+    for (uint64_t i = 0; i < N; ++i) {                             \
+      result.set(i, lhs op rhs[i]);                                \
+    }                                                              \
+    return result;                                                 \
+  }
+DEFINE_OP(+)
+DEFINE_OP(-)
+DEFINE_OP(*)
+DEFINE_OP(/)
+DEFINE_OP(%)
+DEFINE_OP(&)
+DEFINE_OP(|)
+DEFINE_OP(^)
+DEFINE_OP(<<)
+DEFINE_OP(>>)
+#undef DEFINE_OP
+
+template <uint64_t N, typename T>
+vec_t<T, N> make_vec(T val) {
+  vec_t<T, N> result;
+  result.set(val);
+  return result;
+}
 
 template <typename T, uint64_t N>
 inline std::ostream& operator<<(std::ostream& os, const vec_t<T, N>& obj) {
