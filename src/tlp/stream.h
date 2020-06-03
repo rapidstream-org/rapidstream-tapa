@@ -4,6 +4,7 @@
 #include <cstddef>
 
 #include <array>
+#include <atomic>
 #include <stdexcept>
 #include <string>
 
@@ -283,8 +284,8 @@ class stream : public istream<T>, public ostream<T> {
 
   // producer writes to head and consumer reads from tail
   // okay to keep incrementing because it'll take > 100 yr to overflow uint64_t
-  uint64_t tail;
-  uint64_t head;
+  std::atomic_uint64_t tail;
+  std::atomic_uint64_t head;
 
   // buffer operations
 
