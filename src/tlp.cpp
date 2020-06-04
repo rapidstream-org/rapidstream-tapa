@@ -208,14 +208,30 @@ class thread_pool {
   ~thread_pool() { clean_up(); }
 };
 
-thread_pool pool;
+thread_pool* pool = nullptr;
+mutex mtx;
 
 }  // namespace internal
 
-void task::schedule(bool detach, const function<void()>& f) {
-  internal::pool.add_task(detach, f);
+task::task() : is_top(false) {
+  unique_lock lock(internal::mtx);
+  if (internal::pool == nullptr) {
+    internal::pool = new internal::thread_pool;
+    this->is_top = true;
+  }
 }
 
-void task::wait() { internal::pool.wait(); }
+task::~task() {
+  internal::pool->wait();
+  if (this->is_top) {
+    unique_lock lock(internal::mtx);
+    delete internal::pool;
+    internal::pool = nullptr;
+  }
+}
+
+void task::schedule(bool detach, const function<void()>& f) {
+  internal::pool->add_task(detach, f);
+}
 
 }  // namespace tlp

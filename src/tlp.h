@@ -29,10 +29,10 @@
 namespace tlp {
 
 struct task {
-  task() {}
+  task();
   task(task&&) = delete;
   task(const task&) = delete;
-  ~task() { wait(); }
+  ~task();
 
   task& operator=(task&&) = delete;
   task& operator=(const task&) = delete;
@@ -65,7 +65,7 @@ struct task {
   }
 
  private:
-  void wait();
+  bool is_top;
 
   // scalar
   template <typename T>
