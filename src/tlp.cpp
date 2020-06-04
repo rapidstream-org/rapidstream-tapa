@@ -60,13 +60,13 @@ rlim_t get_stack_size() {
 }
 
 class worker {
-  // dict mapping task to list of coroutine
-  unordered_map<const task*, std::list<push_type>> coroutines;
+  // dict mapping detach to list of coroutine
+  unordered_map<bool, std::list<push_type>> coroutines;
 
   // dict mapping coroutine to handle
   unordered_map<push_type*, pull_type*> handle_table;
 
-  queue<std::tuple<const task*, function<void()>>> tasks;
+  queue<std::tuple<bool, function<void()>>> tasks;
   mutex mtx;
   condition_variable task_cv;
   condition_variable wait_cv;
@@ -91,12 +91,12 @@ class worker {
 
           // create coroutines
           while (!this->tasks.empty()) {
-            const tlp::task* task;
+            bool detach;
             function<void()> f;
-            std::tie(task, f) = this->tasks.front();
+            std::tie(detach, f) = this->tasks.front();
             this->tasks.pop();
 
-            auto& l = this->coroutines[task];  // list of coroutines
+            auto& l = this->coroutines[detach];  // list of coroutines
             auto last = l.empty() ? l.end() : std::prev(l.end());
             auto call_back = [this, &l, last, f](pull_type& handle) {
               // must have a stable pointer
@@ -139,10 +139,10 @@ class worker {
     });
   }
 
-  void add_task(const tlp::task* task, const function<void()>& f) {
+  void add_task(bool detach, const function<void()>& f) {
     {
       unique_lock lock(this->mtx);
-      this->tasks.emplace(task, f);
+      this->tasks.emplace(detach, f);
     }
     this->task_cv.notify_one();
   }
@@ -150,9 +150,7 @@ class worker {
   void wait() {
     unique_lock lock(this->mtx);
     this->wait_cv.wait(lock, [this] {
-      return this->tasks.empty() &&
-             (this->coroutines.empty() || (this->coroutines.size() == 1 &&
-                                           this->coroutines.count(nullptr)));
+      return this->tasks.empty() && this->coroutines.count(false) == 0;
     });
   }
 
@@ -196,8 +194,8 @@ class thread_pool {
     }
   }
 
-  void add_task(const tlp::task* task, const function<void()>& f) {
-    it->add_task(task, f);
+  void add_task(bool detach, const function<void()>& f) {
+    it->add_task(detach, f);
     ++it;
     if (it == this->workers.end()) it = this->workers.begin();
   }
@@ -214,8 +212,8 @@ thread_pool pool;
 
 }  // namespace internal
 
-void task::schedule(const function<void()>& f, bool detach) {
-  internal::pool.add_task(detach ? nullptr : this, f);
+void task::schedule(bool detach, const function<void()>& f) {
+  internal::pool.add_task(detach, f);
 }
 
 void task::wait() { internal::pool.wait(); }

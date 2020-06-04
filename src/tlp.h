@@ -44,8 +44,7 @@ struct task {
 
   template <int step, typename Function, typename... Args, size_t S>
   task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
-    schedule(std::bind(f, std::ref(args)...),
-             /* detach= */ step < 0);
+    schedule(/* detach= */ step < 0, std::bind(f, std::ref(args)...));
     return *this;
   }
 
@@ -87,7 +86,7 @@ struct task {
     return arg[idx];
   }
 
-  void schedule(const std::function<void()>&, bool detach);
+  void schedule(bool detach, const std::function<void()>&);
 };
 
 template <typename T, uint64_t N>
