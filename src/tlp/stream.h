@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "coroutine.h"
+#include "tlp/coroutine.h"
 
 namespace tlp {
 
@@ -123,7 +123,7 @@ class stream : public istream<T>, public ostream<T> {
   // whether stream is empty
   bool empty() const override {
     bool is_empty = head == tail;
-    if (is_empty) (*current_handle)();
+    if (is_empty) internal::yield();
     return is_empty;
   }
   // whether stream has ended
@@ -247,7 +247,7 @@ class stream : public istream<T>, public ostream<T> {
   // whether stream is full
   bool full() const override {
     bool is_full = head - tail == depth;
-    if (is_full) (*current_handle)();
+    if (is_full) internal::yield();
     return is_full;
   }
 

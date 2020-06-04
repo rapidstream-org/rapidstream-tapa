@@ -1,24 +1,207 @@
 #include "tlp.h"
 
+#include <cstring>
+
+#include <algorithm>
+#include <condition_variable>
+#include <functional>
+#include <future>
+#include <list>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <stdexcept>
+#include <thread>
+#include <vector>
+
+#include <boost/coroutine2/coroutine.hpp>
+#include <boost/coroutine2/fixedsize_stack.hpp>
+
+#include <sys/resource.h>
+#include <time.h>
+
+using std::condition_variable;
+using std::function;
+using std::future;
+using std::get;
+using std::mutex;
+using std::queue;
+using std::runtime_error;
+using std::unordered_map;
+using std::vector;
+
+using unique_lock = std::unique_lock<mutex>;
+
+using pull_type = boost::coroutines2::coroutine<void>::pull_type;
+using push_type = boost::coroutines2::coroutine<void>::push_type;
+
+using boost::coroutines2::fixedsize_stack;
+
 namespace tlp {
 
-pull_type* current_handle;
+namespace internal {
 
-void task::wait_for(int step) {
-  for (bool active = true; active;) {
-    active = false;
-    for (auto& p : this->coroutines) {
-      if (p.first > step) break;
-      for (auto& coroutine : p.second) {
-        if (coroutine) {
-          active |= p.first == step;
-          current_handle = handle_table[&coroutine];
-          coroutine();
+thread_local pull_type* current_handle;
+
+void yield() { (*current_handle)(); }
+
+uint64_t get_time_ns() {
+  timespec tp;
+  clock_gettime(CLOCK_MONOTONIC, &tp);
+  return static_cast<uint64_t>(tp.tv_sec) * 1000000000 + tp.tv_nsec;
+}
+
+rlim_t get_stack_size() {
+  rlimit rl;
+  if (getrlimit(RLIMIT_STACK, &rl) != 0) {
+    throw runtime_error(std::strerror(errno));
+  }
+  return rl.rlim_cur;
+}
+
+class worker {
+  // dict mapping task to list of coroutine
+  unordered_map<const task*, std::list<push_type>> coroutines;
+
+  // dict mapping coroutine to handle
+  unordered_map<push_type*, pull_type*> handle_table;
+
+  queue<std::tuple<const task*, function<void()>>> tasks;
+  mutex mtx;
+  condition_variable task_cv;
+  condition_variable wait_cv;
+  bool done = false;
+
+ public:
+  // each worker should be launched only once as a separate thread
+  void operator()() {
+    auto stack_size = get_stack_size();
+    for (;;) {
+      // accept new tasks
+      {
+        unique_lock lock(this->mtx);
+        this->task_cv.wait(lock, [this] {
+          return this->done || !this->coroutines.empty() ||
+                 !this->tasks.empty();
+        });
+
+        // stop worker if it is done
+        if (this->done && this->tasks.empty()) break;
+
+        // create coroutines
+        while (!this->tasks.empty()) {
+          const tlp::task* task;
+          function<void()> f;
+          std::tie(task, f) = this->tasks.front();
+          this->tasks.pop();
+
+          auto& l = this->coroutines[task];  // list of coroutines
+          auto last = l.empty() ? l.end() : std::prev(l.end());
+          auto call_back = [this, &l, last, f](pull_type& handle) {
+            // must have a stable pointer
+            auto& coroutine = last == l.end() ? *l.begin() : *std::next(last);
+            this->handle_table[&coroutine] = current_handle = &handle;
+            f();
+          };
+          l.emplace_back(fixedsize_stack(stack_size), call_back);
+        }
+      }
+
+      // iterate over all tasks and their coroutines
+      for (auto it = this->coroutines.begin(); it != this->coroutines.end();) {
+        auto& coroutines = it->second;
+        for (auto it = coroutines.begin(); it != coroutines.end();) {
+          if (auto& coroutine = *it) {
+            current_handle = this->handle_table[&coroutine];
+            auto coroutine_begin = get_time_ns();
+            coroutine();
+            auto coroutine_end = get_time_ns();
+            auto delta = coroutine_end - coroutine_begin;
+            if (delta > 1000000 /* 1 ms */) {
+              LOG(INFO) << "last coroutine ran for " << delta * 1e-6 << " ms";
+            }
+          }
+          it = *it ? std::next(it) : coroutines.erase(it);
+        }
+
+        // clean up
+        if (coroutines.empty()) {
+          // response to wait requests
+          {
+            unique_lock lock(this->mtx);
+            it = this->coroutines.erase(it);
+          }
+          this->wait_cv.notify_all();
+        } else {
+          ++it;
         }
       }
     }
   }
-  this->coroutines.erase(step);
+
+  void add_task(const tlp::task* task, const function<void()>& f) {
+    {
+      unique_lock lock(this->mtx);
+      this->tasks.emplace(task, f);
+    }
+    this->task_cv.notify_one();
+  }
+
+  void wait_for(const tlp::task* task) {
+    unique_lock lock(this->mtx);
+    this->wait_cv.wait(lock, [this, task] {
+      return this->tasks.empty() && this->coroutines.count(task) == 0;
+    });
+  }
+
+  ~worker() {
+    {
+      unique_lock lock(this->mtx);
+      this->done = true;
+    }
+    this->task_cv.notify_all();
+  }
+};
+
+class thread_pool {
+  vector<std::thread> threads;
+  mutex worker_mtx;
+  std::deque<worker> workers;
+
+ public:
+  thread_pool(size_t worker_count = 1) { this->add_worker(worker_count); }
+
+  void add_worker(size_t count = 1) {
+    for (size_t i = 0; i < count; ++i) {
+      unique_lock lock(this->worker_mtx);
+      this->workers.emplace_back();
+      this->threads.emplace_back(std::ref(*this->workers.rbegin()));
+    }
+  }
+
+  void add_task(const tlp::task* task, const function<void()>& f) {
+    this->workers.begin()->add_task(task, f);
+  }
+
+  void wait_for(const tlp::task* task) {
+    for (auto& w : this->workers) w.wait_for(task);
+  }
+
+  ~thread_pool() {
+    unique_lock lock(this->worker_mtx);
+    this->workers.clear();
+    for (auto& t : threads) t.join();
+  }
+};
+
+thread_pool pool;
+
+}  // namespace internal
+
+void task::schedule(const function<void()>& f, bool detach) {
+  internal::pool.add_task(detach ? nullptr : this, f);
 }
+
+void task::wait_for(int step) { internal::pool.wait_for(this); }
 
 }  // namespace tlp

@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "coroutine.h"
+#include "tlp/coroutine.h"
 
 namespace tlp {
 
@@ -86,7 +86,7 @@ class async_mmap : public mmap<T> {
   }
   bool read_data_empty() {
     bool is_empty = read_addr_q_.empty();
-    if (is_empty) (*current_handle)();
+    if (is_empty) internal::yield();
     return is_empty;
   }
   bool read_data_try_read(T& resp) {

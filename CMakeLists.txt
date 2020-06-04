@@ -27,12 +27,14 @@ target_include_directories(
                     ${Boost_INCLUDE_DIRS})
 target_link_libraries(
   tlp_static
+  PRIVATE ${Boost_LIBRARIES}
   INTERFACE glog
-  PUBLIC pthread ${Boost_LIBRARIES})
+  PUBLIC pthread)
 target_link_libraries(
   tlp_shared
+  PRIVATE ${Boost_LIBRARIES}
   INTERFACE glog
-  PUBLIC pthread ${Boost_LIBRARIES})
+  PUBLIC pthread)
 set_target_properties(tlp_static tlp_shared
                       PROPERTIES OUTPUT_NAME tlp POSITION_INDEPENDENT_CODE ON)
 

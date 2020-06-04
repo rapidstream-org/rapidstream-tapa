@@ -1,11 +1,16 @@
 #ifndef TASK_LEVEL_PARALLELIZATION_H_
 #define TASK_LEVEL_PARALLELIZATION_H_
 
+#ifdef __SYNTHESIS__
+#error this header is not synthesizable
+#endif  // __SYNTHESIS__
+
 #include <climits>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdlib>
 
+#include <functional>
 #include <iostream>
 #include <iterator>
 #include <list>
@@ -20,23 +25,19 @@
 #include "tlp/stream.h"
 #include "tlp/synthesizable/traits.h"
 #include "tlp/synthesizable/util.h"
+
 namespace tlp {
 
 struct task {
   int current_step{0};
-  std::map<int, std::list<push_type>> coroutines;
-  std::unordered_map<push_type*, pull_type*> handle_table;
 
   task() {}
-  task(task&&) = default;
+  task(task&&) = delete;
   task(const task&) = delete;
   ~task() { wait_for(current_step); }
 
-  task& operator=(task&&) = default;
+  task& operator=(task&&) = delete;
   task& operator=(const task&) = delete;
-
-  // proceed until step completes
-  void wait_for(int step);
 
   template <int step, typename Function, typename... Args>
   task& invoke(Function&& f, Args&&... args) {
@@ -49,14 +50,8 @@ struct task {
     for (; current_step < step; ++current_step) {
       wait_for(current_step);
     }
-    auto& list = this->coroutines[step];
-    int idx = list.size();
-    list.emplace_back(make_stack_allocator(), [&, idx](pull_type& source) {
-      // sink must have a stable pointer
-      auto& sink = *std::next(coroutines[step].begin(), idx);
-      handle_table[&sink] = current_handle = &source;
-      f(args...);
-    });
+    schedule(std::bind(f, std::ref(args)...),
+             /* detach= */ step < current_step);
     return *this;
   }
 
@@ -77,6 +72,9 @@ struct task {
   }
 
  private:
+  // proceed until step completes
+  void wait_for(int step);
+
   // scalar
   template <typename T>
   static T& access(T& arg, uint64_t idx) {
@@ -95,6 +93,8 @@ struct task {
   static async_mmap<T>& access(async_mmaps<T, length>& arg, uint64_t idx) {
     return arg[idx];
   }
+
+  void schedule(const std::function<void()>&, bool detach);
 };
 
 template <typename T, uint64_t N>
