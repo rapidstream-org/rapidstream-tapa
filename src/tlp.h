@@ -29,12 +29,10 @@
 namespace tlp {
 
 struct task {
-  int current_step{0};
-
   task() {}
   task(task&&) = delete;
   task(const task&) = delete;
-  ~task() { wait_for(current_step); }
+  ~task() { wait(); }
 
   task& operator=(task&&) = delete;
   task& operator=(const task&) = delete;
@@ -46,12 +44,8 @@ struct task {
 
   template <int step, typename Function, typename... Args, size_t S>
   task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
-    // wait until current_step >= step
-    for (; current_step < step; ++current_step) {
-      wait_for(current_step);
-    }
     schedule(std::bind(f, std::ref(args)...),
-             /* detach= */ step < current_step);
+             /* detach= */ step < 0);
     return *this;
   }
 
@@ -72,8 +66,7 @@ struct task {
   }
 
  private:
-  // proceed until step completes
-  void wait_for(int step);
+  void wait();
 
   // scalar
   template <typename T>

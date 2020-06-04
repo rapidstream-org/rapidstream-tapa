@@ -71,72 +71,72 @@ class worker {
   condition_variable task_cv;
   condition_variable wait_cv;
   bool done = false;
+  std::thread thread;
 
  public:
-  // each worker should be launched only once as a separate thread
-  void operator()() {
+  worker() {
     auto stack_size = get_stack_size();
-    for (;;) {
-      // accept new tasks
-      {
-        unique_lock lock(this->mtx);
-        this->task_cv.wait(lock, [this] {
-          return this->done || !this->coroutines.empty() ||
-                 !this->tasks.empty();
-        });
+    this->thread = std::thread([this, stack_size]() {
+      for (;;) {
+        // accept new tasks
+        {
+          unique_lock lock(this->mtx);
+          this->task_cv.wait(lock, [this] {
+            return this->done || !this->coroutines.empty() ||
+                   !this->tasks.empty();
+          });
 
-        // stop worker if it is done
-        if (this->done && this->tasks.empty()) break;
+          // stop worker if it is done
+          if (this->done && this->tasks.empty()) break;
 
-        // create coroutines
-        while (!this->tasks.empty()) {
-          const tlp::task* task;
-          function<void()> f;
-          std::tie(task, f) = this->tasks.front();
-          this->tasks.pop();
+          // create coroutines
+          while (!this->tasks.empty()) {
+            const tlp::task* task;
+            function<void()> f;
+            std::tie(task, f) = this->tasks.front();
+            this->tasks.pop();
 
-          auto& l = this->coroutines[task];  // list of coroutines
-          auto last = l.empty() ? l.end() : std::prev(l.end());
-          auto call_back = [this, &l, last, f](pull_type& handle) {
-            // must have a stable pointer
-            auto& coroutine = last == l.end() ? *l.begin() : *std::next(last);
-            this->handle_table[&coroutine] = current_handle = &handle;
-            f();
-          };
-          l.emplace_back(fixedsize_stack(stack_size), call_back);
+            auto& l = this->coroutines[task];  // list of coroutines
+            auto last = l.empty() ? l.end() : std::prev(l.end());
+            auto call_back = [this, &l, last, f](pull_type& handle) {
+              // must have a stable pointer
+              auto& coroutine = last == l.end() ? *l.begin() : *std::next(last);
+              this->handle_table[&coroutine] = current_handle = &handle;
+              f();
+            };
+            l.emplace_back(fixedsize_stack(stack_size), call_back);
+          }
         }
-      }
 
-      // iterate over all tasks and their coroutines
-      for (auto it = this->coroutines.begin(); it != this->coroutines.end();) {
-        auto& coroutines = it->second;
-        for (auto it = coroutines.begin(); it != coroutines.end();) {
-          if (auto& coroutine = *it) {
-            current_handle = this->handle_table[&coroutine];
-            auto coroutine_begin = get_time_ns();
-            coroutine();
-            auto coroutine_end = get_time_ns();
-            auto delta = coroutine_end - coroutine_begin;
-            if (delta > 1000000 /* 1 ms */) {
-              LOG(INFO) << "last coroutine ran for " << delta * 1e-6 << " ms";
+        // iterate over all tasks and their coroutines
+        for (auto it = this->coroutines.begin();
+             it != this->coroutines.end();) {
+          auto& coroutines = it->second;
+          for (auto it = coroutines.begin(); it != coroutines.end();) {
+            if (auto& coroutine = *it) {
+              current_handle = this->handle_table[&coroutine];
+              auto coroutine_begin = get_time_ns();
+              coroutine();
+              auto coroutine_end = get_time_ns();
+              auto delta = coroutine_end - coroutine_begin;
             }
+            it = *it ? std::next(it) : coroutines.erase(it);
           }
-          it = *it ? std::next(it) : coroutines.erase(it);
-        }
 
-        // clean up
-        if (coroutines.empty()) {
-          // response to wait requests
-          {
-            unique_lock lock(this->mtx);
-            it = this->coroutines.erase(it);
+          // clean up
+          if (coroutines.empty()) {
+            // response to wait requests
+            {
+              unique_lock lock(this->mtx);
+              it = this->coroutines.erase(it);
+            }
+            this->wait_cv.notify_all();
+          } else {
+            ++it;
           }
-          this->wait_cv.notify_all();
-        } else {
-          ++it;
         }
       }
-    }
+    });
   }
 
   void add_task(const tlp::task* task, const function<void()>& f) {
@@ -147,10 +147,12 @@ class worker {
     this->task_cv.notify_one();
   }
 
-  void wait_for(const tlp::task* task) {
+  void wait() {
     unique_lock lock(this->mtx);
-    this->wait_cv.wait(lock, [this, task] {
-      return this->tasks.empty() && this->coroutines.count(task) == 0;
+    this->wait_cv.wait(lock, [this] {
+      return this->tasks.empty() &&
+             (this->coroutines.empty() || (this->coroutines.size() == 1 &&
+                                           this->coroutines.count(nullptr)));
     });
   }
 
@@ -160,38 +162,52 @@ class worker {
       this->done = true;
     }
     this->task_cv.notify_all();
+    this->thread.join();
   }
 };
 
 class thread_pool {
-  vector<std::thread> threads;
   mutex worker_mtx;
-  std::deque<worker> workers;
+  std::list<worker> workers;
+  decltype(workers)::iterator it;
+
+  void clean_up() {
+    unique_lock lock(this->worker_mtx);
+    this->workers.clear();
+  }
 
  public:
-  thread_pool(size_t worker_count = 1) { this->add_worker(worker_count); }
+  thread_pool(size_t worker_count = 0) {
+    if (worker_count == 0) {
+      if (auto concurrency = getenv("TLP_CONCURRENCY")) {
+        worker_count = atoi(concurrency);
+      } else {
+        worker_count = std::thread::hardware_concurrency();
+      }
+    }
+    this->add_worker(worker_count);
+    it = workers.begin();
+  }
 
   void add_worker(size_t count = 1) {
+    unique_lock lock(this->worker_mtx);
     for (size_t i = 0; i < count; ++i) {
-      unique_lock lock(this->worker_mtx);
       this->workers.emplace_back();
-      this->threads.emplace_back(std::ref(*this->workers.rbegin()));
     }
   }
 
   void add_task(const tlp::task* task, const function<void()>& f) {
-    this->workers.begin()->add_task(task, f);
+    it->add_task(task, f);
+    ++it;
+    if (it == this->workers.end()) it = this->workers.begin();
   }
 
-  void wait_for(const tlp::task* task) {
-    for (auto& w : this->workers) w.wait_for(task);
+  void wait() {
+    for (auto& w : this->workers) w.wait();
+    clean_up();
   }
 
-  ~thread_pool() {
-    unique_lock lock(this->worker_mtx);
-    this->workers.clear();
-    for (auto& t : threads) t.join();
-  }
+  ~thread_pool() { clean_up(); }
 };
 
 thread_pool pool;
@@ -202,6 +218,6 @@ void task::schedule(const function<void()>& f, bool detach) {
   internal::pool.add_task(detach ? nullptr : this, f);
 }
 
-void task::wait_for(int step) { internal::pool.wait_for(this); }
+void task::wait() { internal::pool.wait(); }
 
 }  // namespace tlp
