@@ -15,9 +15,9 @@ jobs:
       uses: actions/checkout@v1
     - name: Install dependencies
       run: |
-        sudo apt install python-pip libboost-coroutine-dev libgoogle-glog-dev -y
-        sudo -H python -m pip install --upgrade pip
-        sudo -H python -m pip install cmake
+        sudo apt install python3-pip libboost-coroutine-dev libgoogle-glog-dev -y
+        sudo -H python3 -m pip install --upgrade pip
+        sudo -H python3 -m pip install cmake
     - name: Configure myself
       run: cmake -S . -B build
     - name: Cache llvm-src
