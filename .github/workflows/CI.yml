@@ -5,7 +5,10 @@ on: [push, pull_request]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04]
 
     steps:
     - name: Checkout myself
@@ -21,17 +24,17 @@ jobs:
       uses: actions/cache@v1
       with:
         path: build/_deps/llvm-src
-        key: ${{ runner.os }}-llvm-src
+        key: ${{ matrix.os }}-llvm-src
     - name: Cache llvm-build
       uses: actions/cache@v1
       with:
         path: build/_deps/llvm-build
-        key: ${{ runner.os }}-llvm-build
+        key: ${{ matrix.os }}-llvm-build
     - name: Cache llvm-subbuild
       uses: actions/cache@v1
       with:
         path: build/_deps/llvm-subbuild
-        key: ${{ runner.os }}-llvm-subbuild
+        key: ${{ matrix.os }}-llvm-subbuild
     - name: Build myself
       run: cmake --build build --target all
     - name: Test myself
