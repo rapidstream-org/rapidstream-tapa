@@ -44,6 +44,11 @@ struct task {
 
   template <int step, typename Function, typename... Args, size_t S>
   task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
+    // invoke a child task
+    if (step > 0) {
+      f(std::forward<Args>(args)...);
+      return *this;
+    }
     schedule(/* detach= */ step < 0, std::bind(f, std::forward<Args>(args)...));
     return *this;
   }
@@ -65,8 +70,6 @@ struct task {
   }
 
  private:
-  bool is_top;
-
   // scalar
   template <typename T>
   static T& access(T& arg, uint64_t idx) {

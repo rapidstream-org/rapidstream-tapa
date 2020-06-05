@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <condition_variable>
 #include <functional>
-#include <future>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -22,10 +21,7 @@
 
 using std::condition_variable;
 using std::function;
-using std::future;
-using std::get;
 using std::mutex;
-using std::queue;
 using std::runtime_error;
 using std::unordered_map;
 using std::vector;
@@ -41,7 +37,7 @@ namespace tlp {
 
 namespace internal {
 
-thread_local pull_type* current_handle;
+static thread_local pull_type* current_handle;
 
 void yield() { (*current_handle)(); }
 
@@ -66,11 +62,12 @@ class worker {
   // dict mapping coroutine to handle
   unordered_map<push_type*, pull_type*> handle_table;
 
-  queue<std::tuple<bool, function<void()>>> tasks;
+  std::queue<std::tuple<bool, function<void()>>> tasks;
   mutex mtx;
   condition_variable task_cv;
   condition_variable wait_cv;
   bool done = false;
+  std::atomic_bool started{false};
   std::thread thread;
 
  public:
@@ -109,37 +106,35 @@ class worker {
         }
 
         // iterate over all tasks and their coroutines
-        for (auto it = this->coroutines.begin();
-             it != this->coroutines.end();) {
-          auto& coroutines = it->second;
+        bool active = false;
+        for (auto& pair : this->coroutines) {
+          bool detach = pair.first;
+          auto& coroutines = pair.second;
           for (auto it = coroutines.begin(); it != coroutines.end();) {
             if (auto& coroutine = *it) {
               current_handle = this->handle_table[&coroutine];
-              auto coroutine_begin = get_time_ns();
               coroutine();
-              auto coroutine_end = get_time_ns();
-              auto delta = coroutine_end - coroutine_begin;
             }
-            it = *it ? std::next(it) : coroutines.erase(it);
-          }
 
-          // clean up
-          if (coroutines.empty()) {
-            // response to wait requests
-            {
+            if (*it || !this->started) {
+              if (!detach) active = true;
+              ++it;
+            } else {
               unique_lock lock(this->mtx);
-              it = this->coroutines.erase(it);
+              it = coroutines.erase(it);
             }
-            this->wait_cv.notify_all();
-          } else {
-            ++it;
           }
         }
+        // response to wait requests
+        if (!active) this->wait_cv.notify_all();
       }
     });
   }
 
   void add_task(bool detach, const function<void()>& f) {
+    if (this->started) {
+      throw std::runtime_error("new task added after worker started");
+    }
     {
       unique_lock lock(this->mtx);
       this->tasks.emplace(detach, f);
@@ -148,9 +143,10 @@ class worker {
   }
 
   void wait() {
+    this->started = true;
     unique_lock lock(this->mtx);
     this->wait_cv.wait(lock, [this] {
-      return this->tasks.empty() && this->coroutines.count(false) == 0;
+      return this->tasks.empty() && this->coroutines[false].empty();
     });
   }
 
@@ -168,11 +164,6 @@ class thread_pool {
   mutex worker_mtx;
   std::list<worker> workers;
   decltype(workers)::iterator it;
-
-  void clean_up() {
-    unique_lock lock(this->worker_mtx);
-    this->workers.clear();
-  }
 
  public:
   thread_pool(size_t worker_count = 0) {
@@ -196,34 +187,38 @@ class thread_pool {
 
   void add_task(bool detach, const function<void()>& f) {
     it->add_task(detach, f);
+    unique_lock lock(this->worker_mtx);
     ++it;
     if (it == this->workers.end()) it = this->workers.begin();
   }
 
   void wait() {
     for (auto& w : this->workers) w.wait();
-    clean_up();
   }
 
-  ~thread_pool() { clean_up(); }
+  ~thread_pool() {
+    unique_lock lock(this->worker_mtx);
+    this->workers.clear();
+  }
 };
 
-thread_pool* pool = nullptr;
-mutex mtx;
+static thread_pool* pool = nullptr;
+static const task* top_task = nullptr;
+static mutex mtx;
 
 }  // namespace internal
 
-task::task() : is_top(false) {
+task::task() {
   unique_lock lock(internal::mtx);
   if (internal::pool == nullptr) {
     internal::pool = new internal::thread_pool;
-    this->is_top = true;
+    internal::top_task = this;
   }
 }
 
 task::~task() {
-  internal::pool->wait();
-  if (this->is_top) {
+  if (this == internal::top_task) {
+    internal::pool->wait();
     unique_lock lock(internal::mtx);
     delete internal::pool;
     internal::pool = nullptr;
