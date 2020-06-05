@@ -20,8 +20,10 @@ target_sources(tlp_shared PRIVATE src/tlp.cpp)
 target_compile_features(tlp_static PUBLIC cxx_std_11)
 target_compile_features(tlp_shared PUBLIC cxx_std_11)
 if(Boost_FOUND)
-  target_compile_definitions(tlp_static PRIVATE BOOST_VERSION=${Boost_VERSION})
-  target_compile_definitions(tlp_shared PRIVATE BOOST_VERSION=${Boost_VERSION})
+  target_compile_definitions(tlp_static
+                             PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
+  target_compile_definitions(tlp_shared
+                             PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
 endif()
 target_include_directories(
   tlp_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
@@ -77,14 +79,12 @@ set(CPACK_PACKAGE_VERSION_PATCH 20200517.1)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "High-Level Synthesis Task-Level Parallelization")
 
-string(
-  JOIN
-  ", "
-  CPACK_DEBIAN_PACKAGE_DEPENDS
-  "clang"
-  "iverilog"
-  "libboost-coroutine-dev (>= 1.59)"
-  "libgoogle-glog-dev")
+string(JOIN ", " CPACK_DEBIAN_PACKAGE_DEPENDS "clang" "iverilog"
+       "libgoogle-glog-dev")
+if(Boost_FOUND)
+  string(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
+         ", libboost-coroutine-dev (>= 1.59)")
+endif()
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Blaok Chi")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
