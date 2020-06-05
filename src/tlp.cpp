@@ -13,6 +13,8 @@
 #include <thread>
 #include <vector>
 
+#if BOOST_VERSION > 105900
+
 #include <boost/coroutine2/coroutine.hpp>
 #include <boost/coroutine2/fixedsize_stack.hpp>
 
@@ -230,3 +232,40 @@ void task::schedule(bool detach, const function<void()>& f) {
 }
 
 }  // namespace tlp
+
+#else  // BOOST_VERSION
+
+namespace tlp {
+namespace internal {
+
+void yield() { std::this_thread::yield(); }
+
+static std::vector<std::thread> threads;
+static const task* top_task = nullptr;
+
+}  // namespace internal
+
+task::task() {
+  if (internal::top_task == nullptr) {
+    internal::top_task = this;
+  }
+}
+
+task::~task() {
+  if (this == internal::top_task) {
+    for (auto& t : internal::threads) t.join();
+    internal::top_task = nullptr;
+  }
+}
+
+void task::schedule(bool detach, const std::function<void()>& f) {
+  if (detach) {
+    std::thread(f).detach();
+  } else {
+    internal::threads.emplace_back(f);
+  }
+}
+
+}  // namespace tlp
+
+#endif  // BOOST_VERSION

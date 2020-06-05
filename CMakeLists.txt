@@ -10,7 +10,7 @@ project(tlp)
 
 add_subdirectory(backend)
 
-find_package(Boost 1.59 REQUIRED COMPONENTS coroutine)
+find_package(Boost 1.59 COMPONENTS coroutine)
 
 add_library(tlp_static STATIC)
 add_library(tlp ALIAS tlp_static)
@@ -19,6 +19,10 @@ target_sources(tlp_static PRIVATE src/tlp.cpp)
 target_sources(tlp_shared PRIVATE src/tlp.cpp)
 target_compile_features(tlp_static PUBLIC cxx_std_11)
 target_compile_features(tlp_shared PUBLIC cxx_std_11)
+if(Boost_FOUND)
+  target_compile_definitions(tlp_static PRIVATE BOOST_VERSION=${Boost_VERSION})
+  target_compile_definitions(tlp_shared PRIVATE BOOST_VERSION=${Boost_VERSION})
+endif()
 target_include_directories(
   tlp_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
                     ${Boost_INCLUDE_DIRS})

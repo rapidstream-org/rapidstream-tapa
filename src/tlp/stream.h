@@ -21,8 +21,8 @@ class lock_free_queue {
 
   // producer writes to head and consumer reads from tail
   // okay to keep incrementing because it'll take > 100 yr to overflow uint64_t
-  std::atomic_uint64_t tail{0};
-  std::atomic_uint64_t head{0};
+  std::atomic<uint64_t> tail{0};
+  std::atomic<uint64_t> head{0};
 
   std::vector<T> buffer;
 
