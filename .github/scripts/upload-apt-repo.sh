@@ -60,9 +60,9 @@ apt-ftparchive release \
   "dists/${codename}" >"${dest_dir}/dists/${codename}/Release"
 
 gpg --no-tty --batch --armor --yes --output "dists/${codename}/Release.gpg" \
-  --detach-sign "dists/${codename}/Release"
+  --digest-algo SHA256 --detach-sign "dists/${codename}/Release"
 gpg --no-tty --batch --armor --yes --output "dists/${codename}/InRelease" \
-  --detach-sign --clearsign "dists/${codename}/Release"
+  --digest-algo SHA256 --detach-sign --clearsign "dists/${codename}/Release"
 
 # upload gh-pages
 git add --all
