@@ -1,0 +1,16 @@
+name: install
+
+on: page_build
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04]
+
+    steps:
+      - name: Checkout myself
+        uses: actions/checkout@v1
+      - name: Install from script
+        run: ./install.sh

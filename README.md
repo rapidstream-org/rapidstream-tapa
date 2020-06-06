@@ -20,20 +20,12 @@
 
 ### Prerequisites
 
-+ Ubuntu 18.04
-+ Python 3.6+
++ Ubuntu 16.04+
 
-### Install from GitHub
-
-#### Ubuntu 18.04
+### Install from Binary
 
 ```bash
-sudo tee /etc/apt/sources.list.d/tlp.list <<EOF
-deb [arch=amd64] https://about.blaok.me/tlp bionic main
-EOF
-sudo apt update
-sudo apt install -y hlstlp python3
-sudo -H python3 -m pip install tlpc
+./install.sh
 ```
 
 ### Install from Source
