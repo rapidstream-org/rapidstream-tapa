@@ -6,6 +6,7 @@
 #include <array>
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 
@@ -15,10 +16,30 @@ namespace tlp {
 
 namespace internal {
 
-template <typename T>
-class lock_free_queue {
+class base_queue {
+ public:
+  // debug helpers
+  const char* get_name() const { return this->name.c_str(); }
+  void set_name(const std::string& name) { this->name = name; }
+
+ protected:
   std::string name;
 
+  base_queue(const std::string& name) : name(name) {}
+
+  virtual bool empty() const = 0;
+
+  void check_leftover() {
+    if (!this->empty()) {
+      LOG(WARNING) << "stream `" << this->name
+                   << "' destructed with leftovers; hardware behavior may be "
+                      "unexpected in consecutive invocations";
+    }
+  }
+};
+
+template <typename T>
+class lock_free_queue : public base_queue {
   // producer writes to head and consumer reads from tail
   // okay to keep incrementing because it'll take > 100 yr to overflow uint64_t
   std::atomic<uint64_t> tail{0};
@@ -28,19 +49,16 @@ class lock_free_queue {
 
  public:
   // constructors
-  lock_free_queue(size_t depth) { this->buffer.resize(depth + 1); }
-  lock_free_queue(size_t depth, const std::string& name) {
+  lock_free_queue(size_t depth, const std::string& name = "")
+      : base_queue(name) {
     this->buffer.resize(depth + 1);
-    this->name = name;
   }
 
   // debug helpers
-  const char* get_name() const { return this->name.c_str(); }
-  void set_name(const std::string& name) { this->name = name; }
   uint64_t get_depth() const { return this->buffer.size() - 1; }
 
   // basic queue operations
-  bool empty() const { return this->head == this->tail; }
+  bool empty() const override { return this->head == this->tail; }
   bool full() const { return this->head - this->tail == this->buffer.size(); }
   const T& front() const { return this->buffer[this->tail % buffer.size()]; }
   T pop() {
@@ -53,18 +71,56 @@ class lock_free_queue {
     ++this->head;
   }
 
-  ~lock_free_queue() {
-    // do not call virtual function empty() in destructor
-    if (!this->empty()) {
-      LOG(WARNING) << "stream '" << this->name
-                   << "' destructed with leftovers; hardware behavior may be "
-                      "unexpected in consecutive invocations";
-    }
-  }
+  ~lock_free_queue() { this->check_leftover(); }
 };
 
 template <typename T>
+class locked_queue : public base_queue {
+  size_t depth;
+  mutable std::mutex mtx;
+  std::deque<T> buffer;
+
+ public:
+  // constructors
+  locked_queue(size_t depth, const std::string& name = "")
+      : base_queue(name), depth(depth) {}
+
+  // debug helpers
+  uint64_t get_depth() const { return this->depth; }
+
+  // basic queue operations
+  bool empty() const override {
+    std::unique_lock<std::mutex> lock(this->mtx);
+    return this->buffer.empty();
+  }
+  bool full() const {
+    std::unique_lock<std::mutex> lock(this->mtx);
+    return this->buffer.size() >= this->depth;
+  }
+  const T& front() const {
+    std::unique_lock<std::mutex> lock(this->mtx);
+    return this->buffer.front();
+  }
+  T pop() {
+    std::unique_lock<std::mutex> lock(this->mtx);
+    auto val = this->buffer.front();
+    this->buffer.pop_front();
+    return val;
+  }
+  void push(const T& val) {
+    std::unique_lock<std::mutex> lock(this->mtx);
+    this->buffer.push_back(val);
+  }
+
+  ~locked_queue() { this->check_leftover(); }
+};
+
+template <typename T>
+#ifdef TLP_USE_LOCKED_QUEUE
+using queue = locked_queue<T>;
+#else   // TLP_USE_LOCKED_QUEUE
 using queue = lock_free_queue<T>;
+#endif  // TLP_USE_LOCKED_QUEUE
 
 template <typename T>
 struct elem_t {
