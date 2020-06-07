@@ -57,6 +57,7 @@ install(
   FILES_MATCHING
   PATTERN "*.h")
 
+set_target_properties(tlp_static PROPERTIES EXPORT_NAME tlp)
 export(
   EXPORT TLPTargets
   NAMESPACE tlp::
@@ -75,7 +76,7 @@ install(
 set(CPACK_PACKAGE_NAME hlstlp)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 0)
-set(CPACK_PACKAGE_VERSION_PATCH 20200606.3)
+set(CPACK_PACKAGE_VERSION_PATCH 20200606.4)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "High-Level Synthesis Task-Level Parallelization")
 
