@@ -28,4 +28,5 @@ wget -O - https://about.blaok.me/fpga-runtime/frt.gpg.key | sudo apt-key add -
 
 sudo apt update
 sudo apt install -y hlstlp
+${pip} install --upgrade setuptools
 ${pip} install --user --upgrade tlpc
