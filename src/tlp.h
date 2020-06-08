@@ -95,6 +95,11 @@ struct task {
 template <typename T, uint64_t N>
 struct vec_t {
   T data[N];
+  vec_t() { memset(data, 0xcc, sizeof(data)); }
+  vec_t(const vec_t&) = default;
+  vec_t(vec_t&&) = default;
+  vec_t& operator=(const vec_t&) = default;
+  vec_t& operator=(vec_t&&) = default;
   template <typename U>
   operator vec_t<U, N>() {
     vec_t<U, N> result;
