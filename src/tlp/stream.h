@@ -2,6 +2,7 @@
 #define TLP_STREAM_H_
 
 #include <cstddef>
+#include <cstring>
 
 #include <array>
 #include <atomic>
@@ -201,11 +202,13 @@ class istream : virtual public internal::base<T> {
   // alternative non-blocking non-destructive read
   T peek(bool& succeeded) const {
     T val;
+    memset(&val, 0xcc, sizeof(val));
     succeeded = try_peek(val);
     return val;
   }
   T peek(std::nullptr_t) const {
     T val;
+    memset(&val, 0xcc, sizeof(val));
     try_peek(val);
     return val;
   }
@@ -247,11 +250,13 @@ class istream : virtual public internal::base<T> {
   // alterative non-blocking destructive read
   T read(bool& succeeded) {
     T val;
+    memset(&val, 0xcc, sizeof(val));
     succeeded = try_read(val);
     return val;
   }
   T read(std::nullptr_t) {
     T val;
+    memset(&val, 0xcc, sizeof(val));
     try_read(val);
     return val;
   }
