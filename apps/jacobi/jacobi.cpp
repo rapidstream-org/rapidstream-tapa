@@ -61,7 +61,7 @@ void Module3Func1(tlp::ostream<float>& fifo_st_0,
 module_3_1_epoch:
   TLP_WHILE_NEITHER_EOS(fifo_ld_0, fifo_ld_1) {
 #pragma HLS pipeline II = 1
-    float fifo_ref_0;
+    float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
       fifo_ref_0 = fifo_ld_0.read(nullptr);
@@ -83,7 +83,7 @@ void Module3Func2(tlp::ostream<float>& fifo_st_0,
 module_3_2_epoch:
   TLP_WHILE_NEITHER_EOS(fifo_ld_0, fifo_ld_1) {
 #pragma HLS pipeline II = 1
-    float fifo_ref_0;
+    float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
       fifo_ref_0 = fifo_ld_0.read(nullptr);
@@ -107,13 +107,13 @@ void Module6Func1(tlp::ostream<float>& fifo_st_0,
 module_6_1_epoch:
   TLP_WHILE_NONE_EOS(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
 #pragma HLS pipeline II = 1
-    float fifo_ref_0;
+    float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
       fifo_ref_0 = fifo_ld_0.read(nullptr);
     }
     auto fifo_ref_1 = fifo_ld_1.read(nullptr);
-    float fifo_ref_2;
+    float fifo_ref_2 = 0.f;
     bool do_ld_2 = count >= delay_2;
     if (do_ld_2) {
       fifo_ref_2 = fifo_ld_2.read(nullptr);
@@ -135,13 +135,13 @@ void Module6Func2(tlp::ostream<float>& fifo_st_0,
 module_6_2_epoch:
   TLP_WHILE_NONE_EOS(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
 #pragma HLS pipeline II = 1
-    float fifo_ref_0;
+    float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
       fifo_ref_0 = fifo_ld_0.read(nullptr);
     }
     auto fifo_ref_1 = fifo_ld_1.read(nullptr);
-    float fifo_ref_2;
+    float fifo_ref_2 = 0.f;
     bool do_ld_2 = count >= delay_2;
     if (do_ld_2) {
       fifo_ref_2 = fifo_ld_2.read(nullptr);
