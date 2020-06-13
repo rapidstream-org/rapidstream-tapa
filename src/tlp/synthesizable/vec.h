@@ -145,6 +145,27 @@ struct vec_t {
   DEFINE_OP(<<)
   DEFINE_OP(>>)
 #undef DEFINE_OP
+
+  // shift all elements by 1, put val at [N-1], and through away [0]
+  void shift(const T& val) {
+#pragma inline
+    for (int i = 1; i < N; ++i) {
+#pragma HLS unroll
+      set(i - 1, get(i));
+    }
+    set(N - 1, val);
+  }
+
+  // return true if and only if val exists
+  bool has(const T& val) {
+#pragma inline
+    bool result = false;
+    for (int i = 0; i < N; ++i) {
+#pragma HLS unroll
+      if (val == get(i)) result |= true;
+    }
+    return result;
+  }
 };
 
 // binary arithemetic operators, vector on the right-hand side
