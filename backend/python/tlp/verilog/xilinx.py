@@ -7,6 +7,7 @@ for Xilinx devices.
 import collections
 import copy
 import itertools
+import logging
 import os
 import shutil
 import sys
@@ -23,6 +24,8 @@ from tlp.verilog import ast
 
 from .util import (Pipeline, async_mmap_instance_name, match_array_name,
                    sanitize_array_name, wire_name)
+
+_logger = logging.getLogger().getChild(__name__)
 
 # const strings
 
@@ -778,9 +781,14 @@ def generate_m_axi_ports(
   for suffix in M_AXI_SUFFIXES:
     yield ast.make_port_arg(port=M_AXI_PREFIX + port + suffix,
                             arg=M_AXI_PREFIX + arg + suffix)
-  for suffix in '_offset', '_V':
-    if module.find_port(prefix=port, suffix=suffix) is not None:
-      yield ast.make_port_arg(port=port + suffix, arg=arg_reg or arg)
+  for suffix in '_offset', '_data_V', '_V':
+    port_name = module.find_port(prefix=port, suffix=suffix)
+    if port_name is not None:
+      if port_name != port + suffix:
+        _logger.warn(f"unexpected offset port `{port_name}' in module"
+                     f" `{module.name}'; please double check if this is the "
+                     f"offset port for m_axi port `{port}'")
+      yield ast.make_port_arg(port=port_name, arg=arg_reg or arg)
       break
   else:
     raise ValueError(f'cannot find offset port for {port}')
