@@ -53,3 +53,6 @@ sudo ln -s build/backend/tlpcc /usr/local/bin/
 ## Known Issues
 
 + Template functions cannot be tasks
++ Vivado HLS include paths (e.g., `/opt/Xilinx/Vivado/2019.2/include`) must not
+    be specified in `tlpc --cflags`;
+  + Workaround is to `export CPATH=/opt/Xilinx/Vivado/2019.2/include`
