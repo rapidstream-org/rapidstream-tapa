@@ -122,6 +122,9 @@ def main():
     parser.error('output file must be set if pack xo is the last step')
   if not all_steps and last_step != 'run_tlpcc' and args.work_dir is None:
     parser.error("steps beyond run tlpcc won't work with --work-dir unset")
+  cflag_list = []
+  if args.cflags is not None:
+    cflag_list = args.cflags.strip().split()
 
   if all_steps or args.run_tlpcc is not None:
     tlpcc_cmd = []
@@ -151,6 +154,7 @@ def main():
     else:
       parser.error('tlpcc cannot run without clang headers')
     tlpcc_cmd += '-I', clang_include
+    tlpcc_cmd += cflag_list
 
     proc = subprocess.run(tlpcc_cmd,
                           stdout=subprocess.PIPE,
@@ -169,6 +173,7 @@ def main():
         input_file_basename,
         '-I',
         tlp_include_dir,
+        *cflag_list,
     ],
                                         cwd=input_file_dirname,
                                         universal_newlines=True)
