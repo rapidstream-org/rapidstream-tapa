@@ -2,10 +2,12 @@
 #define TLP_VEC_H_
 
 #include <climits>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 
 #include <algorithm>
+#include <functional>
 
 #include "./util.h"
 
@@ -24,7 +26,7 @@ struct vec_t {
   vec_t() {}
   T get(uint64_t idx) const {
 #pragma HLS inline
-    return reinterpret_cast<T&&>(static_cast<ap_uint<widthof<T>()> >(
+    return reinterpret_cast<T&&>(static_cast<ap_uint<widthof<T>()>>(
         data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>())));
   }
   void set(uint64_t idx, T val) {
@@ -168,6 +170,77 @@ struct vec_t {
   }
 };
 
+// return vec[begin:end]
+template <uint64_t begin, uint64_t end, typename T, uint64_t N>
+inline vec_t<T, end - begin> truncated(const vec_t<T, N>& vec) {
+  static_assert(begin >= 0, "cannot truncate before 0");
+  static_assert(end <= N, "cannot truncate after N");
+  vec_t<T, end - begin> result;
+#pragma HLS inline
+  for (uint64_t i = 0; i < end - begin; ++i) {
+#pragma HLS unroll
+    result.set(i, vec[begin + i]);
+  }
+  return result;
+}
+
+// return vec[:length]
+template <uint64_t length, typename T, uint64_t N>
+inline vec_t<T, length> truncated(const vec_t<T, N>& vec) {
+#pragma HLS inline
+  return truncated<0, length>(vec);
+}
+
+// return vec[:] + [val]
+template <typename T, uint64_t N>
+inline vec_t<T, N + 1> cat(const vec_t<T, N>& vec, const T& val) {
+  vec_t<T, N + 1> result;
+#pragma HLS inline
+  for (uint64_t i = 0; i < N; ++i) {
+#pragma HLS unroll
+    result.set(i, vec[i]);
+  }
+  result.set(N, val);
+  return result;
+}
+
+// return [val] + vec[:]
+template <typename T, uint64_t N>
+inline vec_t<T, N + 1> cat(const T& val, const vec_t<T, N>& vec) {
+  vec_t<T, N + 1> result;
+#pragma HLS inline
+  result.set(0, val);
+  for (uint64_t i = 0; i < N; ++i) {
+#pragma HLS unroll
+    result.set(i + 1, vec[i]);
+  }
+  return result;
+}
+
+// return v1[:] + v2[:]
+template <typename T, uint64_t N1, uint64_t N2>
+inline vec_t<T, N1 + N2> cat(const vec_t<T, N1>& v1, const vec_t<T, N2>& v2) {
+  vec_t<T, N1 + N2> result;
+#pragma HLS inline
+  for (uint64_t i = 0; i < N1; ++i) {
+#pragma HLS unroll
+    result.set(i, v1[i]);
+  }
+  for (uint64_t i = 0; i < N2; ++i) {
+#pragma HLS unroll
+    result.set(i + N1, v2[i]);
+  }
+  return result;
+}
+
+#if __cplusplus >= 201402L
+template <typename T, typename... Args>
+inline auto cat(T arg, Args... args) {
+#pragma HLS inline
+  return cat(arg, cat(args...));
+}
+#endif  // __cplusplus >= 201402L
+
 // binary arithemetic operators, vector on the right-hand side
 #define DEFINE_OP(op)                                              \
   template <typename T, uint64_t N, typename T2>                   \
@@ -200,6 +273,27 @@ vec_t<T, N> make_vec(T val) {
   return result;
 }
 
+// unary operation functions
+#define DEFINE_FUNC(func)              \
+  template <typename T, uint64_t N>    \
+  vec_t<T, N> func(vec_t<T, N> vec) {  \
+    _Pragma("HLS inline");             \
+    for (uint64_t i = 0; i < N; ++i) { \
+      _Pragma("HLS unroll");           \
+      vec.set(i, std::func(vec[i]));   \
+    }                                  \
+    return vec;                        \
+  }
+DEFINE_FUNC(exp)
+DEFINE_FUNC(exp2)
+DEFINE_FUNC(expm1)
+DEFINE_FUNC(log)
+DEFINE_FUNC(log10)
+DEFINE_FUNC(log1p)
+DEFINE_FUNC(log2)
+#undef DEFINE_FUNC
+
+// binary operation functions
 #define DEFINE_FUNC(func)                                            \
   template <typename T, uint64_t N>                                  \
   vec_t<T, N> func(const vec_t<T, N>& lhs, const vec_t<T, N>& rhs) { \
@@ -221,6 +315,22 @@ vec_t<T, N> make_vec(T val) {
   }
 DEFINE_FUNC(max)
 DEFINE_FUNC(min)
+#undef DEFINE_FUNC
+
+// reduction operation functions
+#define DEFINE_FUNC(func, op)                                             \
+  template <typename T>                                                   \
+  T func(const vec_t<T, 1>& vec) {                                        \
+    _Pragma("HLS inline");                                                \
+    return vec[0];                                                        \
+  }                                                                       \
+  template <typename T, uint64_t N>                                       \
+  T func(const vec_t<T, N>& vec) {                                        \
+    _Pragma("HLS inline");                                                \
+    return func(truncated<N / 2>(vec)) op func(truncated<N / 2, N>(vec)); \
+  }
+DEFINE_FUNC(sum, +)
+DEFINE_FUNC(product, *)
 #undef DEFINE_FUNC
 
 }  // namespace tlp
