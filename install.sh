@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+if ! which sudo >/dev/null; then
+  apt update
+  apt install -y sudo
+fi
+
+sudo apt update
+sudo apt install -y gnupg wget
+
+wget -O - https://about.blaok.me/tlp/tlp.gpg.key | sudo apt-key add -
+wget -O - https://about.blaok.me/fpga-runtime/frt.gpg.key | sudo apt-key add -
+
 codename="$(grep --perl --only '(?<=UBUNTU_CODENAME=).+' /etc/os-release)"
 
 # get pip
@@ -23,8 +34,6 @@ EOF
 sudo tee /etc/apt/sources.list.d/frt.list <<EOF
 deb [arch=amd64] https://about.blaok.me/fpga-runtime ${codename} main
 EOF
-wget -O - https://about.blaok.me/tlp/tlp.gpg.key | sudo apt-key add -
-wget -O - https://about.blaok.me/fpga-runtime/frt.gpg.key | sudo apt-key add -
 
 sudo apt update
 sudo apt install -y hlstlp
