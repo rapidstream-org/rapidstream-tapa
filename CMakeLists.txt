@@ -80,7 +80,7 @@ set(CPACK_PACKAGE_VERSION_PATCH 20200711.1)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "High-Level Synthesis Task-Level Parallelization")
 
-string(JOIN ", " CPACK_DEBIAN_PACKAGE_DEPENDS "clang" "iverilog"
+string(JOIN ", " CPACK_DEBIAN_PACKAGE_DEPENDS "clang-8" "iverilog"
        "libgoogle-glog-dev")
 if(Boost_FOUND)
   string(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
