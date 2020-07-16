@@ -7,7 +7,7 @@ if ! which sudo >/dev/null; then
 fi
 
 sudo apt update
-sudo apt install -y gnupg wget
+sudo apt install -y apt-transport-https gnupg wget
 
 wget -O - https://about.blaok.me/tlp/tlp.gpg.key | sudo apt-key add -
 wget -O - https://about.blaok.me/fpga-runtime/frt.gpg.key | sudo apt-key add -
@@ -17,8 +17,8 @@ codename="$(grep --perl --only '(?<=UBUNTU_CODENAME=).+' /etc/os-release)"
 # get pip
 if test "${codename}" = "xenial"; then
   sudo apt update
-  sudo apt install software-properties-common
-  sudo add-apt-repository ppa:deadsnakes/ppa
+  sudo apt install -y software-properties-common
+  sudo add-apt-repository -y ppa:deadsnakes/ppa
   sudo apt update
   sudo apt install -y python3.6 python3-pip
   pip="python3.6 -m pip"
@@ -36,6 +36,7 @@ deb [arch=amd64] https://about.blaok.me/fpga-runtime ${codename} main
 EOF
 
 sudo apt update
+sudo apt install -y xrt --no-install-recommends || true
 sudo apt install -y hlstlp
 ${pip} install --upgrade setuptools
 ${pip} install --user --upgrade tlpc
