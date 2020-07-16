@@ -1,10 +1,12 @@
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
+
 add_executable(graph)
 target_sources(graph
                PRIVATE
                nxgraph.hpp
                graph-host.cpp
                graph.cpp)
-target_link_libraries(graph PUBLIC tlp)
+target_link_libraries(graph PUBLIC ${TLP})
 file(
   DOWNLOAD "https://snap.stanford.edu/data/facebook_combined.txt.gz"
   ${CMAKE_CURRENT_BINARY_DIR}/facebook.txt.gz
@@ -22,9 +24,7 @@ if(FRT_FOUND)
   add_tlp_target(graph-hw-xo
                  INPUT graph.cpp
                  TOP Graph
-                 PLATFORM xilinx_u250_xdma_201830_2
-                 TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
-                 TLPCC $<TARGET_FILE:tlpcc>)
+                 PLATFORM xilinx_u250_xdma_201830_2)
 
   add_xocc_hw_link_targets(${CMAKE_CURRENT_BINARY_DIR}
                            INPUT graph-hw-xo
@@ -36,7 +36,7 @@ if(FRT_FOUND)
                  PRIVATE
                  graph-host.cpp
                  graph-frt.cpp)
-  target_link_libraries(graph-frt PRIVATE tlp frt::frt)
+  target_link_libraries(graph-frt PRIVATE ${TLP} frt::frt)
 
   add_custom_target(
     graph-cosim

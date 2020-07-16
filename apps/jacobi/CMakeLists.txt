@@ -1,9 +1,11 @@
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
+
 add_executable(jacobi)
 target_sources(jacobi
                PRIVATE
                jacobi-host.cpp
                jacobi.cpp)
-target_link_libraries(jacobi PRIVATE tlp)
+target_link_libraries(jacobi PRIVATE ${TLP})
 add_test(NAME jacobi COMMAND jacobi)
 
 find_package(FRT)
@@ -11,9 +13,7 @@ if(FRT_FOUND)
   add_tlp_target(jacobi-hw-xo
                  INPUT jacobi.cpp
                  TOP Jacobi
-                 PLATFORM xilinx_u250_xdma_201830_2
-                 TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
-                 TLPCC $<TARGET_FILE:tlpcc>)
+                 PLATFORM xilinx_u250_xdma_201830_2)
 
   add_xocc_hw_link_targets(${CMAKE_CURRENT_BINARY_DIR}
                            INPUT jacobi-hw-xo
@@ -25,7 +25,7 @@ if(FRT_FOUND)
                  PRIVATE
                  jacobi-host.cpp
                  jacobi-frt.cpp)
-  target_link_libraries(jacobi-frt PRIVATE tlp frt::frt)
+  target_link_libraries(jacobi-frt PRIVATE ${TLP} frt::frt)
 
   add_custom_target(
     jacobi-cosim

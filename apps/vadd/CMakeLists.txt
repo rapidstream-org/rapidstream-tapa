@@ -1,9 +1,11 @@
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
+
 add_executable(vadd)
 target_sources(vadd
                PRIVATE
                vadd-host.cpp
                vadd.cpp)
-target_link_libraries(vadd PRIVATE tlp)
+target_link_libraries(vadd PRIVATE ${TLP})
 add_test(NAME vadd COMMAND vadd)
 
 find_package(FRT)
@@ -11,9 +13,7 @@ if(FRT_FOUND)
   add_tlp_target(vadd-hw-xo
                  INPUT vadd.cpp
                  TOP VecAdd
-                 PLATFORM xilinx_u250_xdma_201830_2
-                 TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc
-                 TLPCC $<TARGET_FILE:tlpcc>)
+                 PLATFORM xilinx_u250_xdma_201830_2)
 
   add_xocc_hw_link_targets(${CMAKE_CURRENT_BINARY_DIR}
                            INPUT vadd-hw-xo
@@ -25,7 +25,7 @@ if(FRT_FOUND)
                  PRIVATE
                  vadd-host.cpp
                  vadd-frt.cpp)
-  target_link_libraries(vadd-frt PRIVATE tlp frt::frt)
+  target_link_libraries(vadd-frt PRIVATE ${TLP} frt::frt)
 
   add_custom_target(
     vadd-cosim

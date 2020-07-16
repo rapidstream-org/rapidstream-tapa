@@ -1,0 +1,8 @@
+if(PROJECT_NAME STREQUAL "tlp")
+  set(TLP tlp)
+  set(TLPC ${CMAKE_SOURCE_DIR}/backend/python/tlpc)
+  set(TLPCC $<TARGET_FILE:tlpcc>)
+else()
+  find_package(TLP REQUIRED)
+  set(TLP tlp::tlp)
+endif()
