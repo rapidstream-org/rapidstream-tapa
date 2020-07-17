@@ -4,7 +4,6 @@ base_dir="$(realpath "$(dirname "$0")")"
 
 "${base_dir}/install.sh"
 pip install --user --upgrade cmake
-sudo apt update
 sudo apt install -y moreutils xilinx-u250-xdma-dev
 
 parallel=$(which parallel.moreutils || true)

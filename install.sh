@@ -16,14 +16,12 @@ codename="$(grep --perl --only '(?<=UBUNTU_CODENAME=).+' /etc/os-release)"
 
 # get pip
 if test "${codename}" = "xenial"; then
-  sudo apt update
   sudo apt install -y software-properties-common
   sudo add-apt-repository -y ppa:deadsnakes/ppa
   sudo apt update
   sudo apt install -y python3.6 python3-pip
   pip="python3.6 -m pip"
 else
-  sudo apt update
   sudo apt install -y python3 python3-pip
   pip="python3 -m pip"
 fi
