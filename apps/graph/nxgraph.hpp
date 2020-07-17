@@ -147,8 +147,7 @@ std::vector<Partition<Vid, Eid, VertexAttr, EdgeAttr>> LoadEdgeList(
   using PartitionType = Partition<Vid, Eid, VertexAttr, EdgeAttr>;
   using EdgeType = Edge<Vid, EdgeAttr>;
 
-  int fd = open(filename.c_str(), O_RDWR | O_CREAT,
-                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+  int fd = open(filename.c_str(), O_RDONLY);
   if (fd == -1) {
     throw runtime_error("cannot open file " + filename);
   }
