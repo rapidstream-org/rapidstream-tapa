@@ -1,10 +1,10 @@
 #include <cstdint>
 
-#include <tlp.h>
+#include <tapa.h>
 
 #include "bandwidth.h"
 
-void Copy(tlp::async_mmap<Elem> mem, uint64_t n, uint64_t flags) {
+void Copy(tapa::async_mmap<Elem> mem, uint64_t n, uint64_t flags) {
   const bool random = flags & kRandom;
   const bool read = flags & kRead;
   const bool write = flags & kWrite;
@@ -66,7 +66,7 @@ void Copy(tlp::async_mmap<Elem> mem, uint64_t n, uint64_t flags) {
   }
 }
 
-void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n,
+void Bandwidth(tapa::async_mmaps<Elem, kBankCount> chan, uint64_t n,
                uint64_t flags) {
-  tlp::task().invoke<0, kBankCount>(Copy, chan, n, flags);
+  tapa::task().invoke<0, kBankCount>(Copy, chan, n, flags);
 }

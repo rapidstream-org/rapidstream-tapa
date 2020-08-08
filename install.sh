@@ -9,7 +9,7 @@ fi
 sudo apt update
 sudo apt install -y apt-transport-https gnupg wget
 
-wget -O - https://about.blaok.me/tlp/tlp.gpg.key | sudo apt-key add -
+wget -O - https://about.blaok.me/tapa/tapa.gpg.key | sudo apt-key add -
 wget -O - https://about.blaok.me/fpga-runtime/frt.gpg.key | sudo apt-key add -
 
 codename="$(grep --perl --only '(?<=UBUNTU_CODENAME=).+' /etc/os-release)"
@@ -26,8 +26,8 @@ else
   pip="python3 -m pip"
 fi
 
-sudo tee /etc/apt/sources.list.d/tlp.list <<EOF
-deb [arch=amd64] https://about.blaok.me/tlp ${codename} main
+sudo tee /etc/apt/sources.list.d/tapa.list <<EOF
+deb [arch=amd64] https://about.blaok.me/tapa ${codename} main
 EOF
 sudo tee /etc/apt/sources.list.d/frt.list <<EOF
 deb [arch=amd64] https://about.blaok.me/fpga-runtime ${codename} main
@@ -35,6 +35,6 @@ EOF
 
 sudo apt update
 sudo apt install -y xrt --no-install-recommends || true
-sudo apt install -y hlstlp
+sudo apt install -y tapa
 ${pip} install --upgrade setuptools
-${pip} install --user --upgrade tlpc
+${pip} install --user --upgrade tapac

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include <tlp.h>
+#include <tapa.h>
 
 using std::clog;
 using std::endl;
@@ -12,7 +12,7 @@ using std::vector;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
-void Jacobi(tlp::mmap<float> bank_0_t0, tlp::mmap<const float> bank_0_t1,
+void Jacobi(tapa::mmap<float> bank_0_t0, tapa::mmap<const float> bank_0_t1,
             uint64_t coalesced_data_num);
 
 int main(int argc, char* argv[]) {

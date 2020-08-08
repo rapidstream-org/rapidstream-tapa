@@ -2,14 +2,14 @@
 #include <iostream>
 #include <vector>
 
-#include <tlp.h>
+#include <tapa.h>
 
 #include "bandwidth.h"
 
 template <typename T>
-using vector = std::vector<T, tlp::aligned_allocator<T>>;
+using vector = std::vector<T, tapa::aligned_allocator<T>>;
 
-void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n,
+void Bandwidth(tapa::async_mmaps<Elem, kBankCount> chan, uint64_t n,
                uint64_t flags);
 
 int main(int argc, char* argv[]) {

@@ -47,30 +47,45 @@ if(NOT json_POPULATED)
 endif()
 
 add_library(type)
-target_sources(type PUBLIC tlp/type.h PRIVATE tlp/type.cpp)
+target_sources(
+  type
+  PUBLIC tapa/type.h
+  PRIVATE tapa/type.cpp)
 target_compile_features(type PUBLIC cxx_std_11)
 target_include_directories(type PUBLIC ${CLANG_INCLUDE_DIRS}
                                        ${LLVM_INCLUDE_DIRS})
 target_link_libraries(type PUBLIC clangTooling)
 
 add_library(stream)
-target_sources(stream PUBLIC tlp/stream.h PRIVATE tlp/stream.cpp)
+target_sources(
+  stream
+  PUBLIC tapa/stream.h
+  PRIVATE tapa/stream.cpp)
 target_link_libraries(stream PUBLIC type)
 
 add_library(mmap)
-target_sources(mmap PUBLIC tlp/mmap.h PRIVATE tlp/mmap.cpp)
+target_sources(
+  mmap
+  PUBLIC tapa/mmap.h
+  PRIVATE tapa/mmap.cpp)
 target_link_libraries(mmap PUBLIC type)
 
 add_library(async_mmap)
-target_sources(async_mmap PUBLIC tlp/async_mmap.h PRIVATE tlp/async_mmap.cpp)
+target_sources(
+  async_mmap
+  PUBLIC tapa/async_mmap.h
+  PRIVATE tapa/async_mmap.cpp)
 target_link_libraries(async_mmap PUBLIC type stream mmap)
 
 add_library(task)
-target_sources(task PUBLIC tlp/task.h PRIVATE tlp/task.cpp)
+target_sources(
+  task
+  PUBLIC tapa/task.h
+  PRIVATE tapa/task.cpp)
 target_link_libraries(task PUBLIC stream mmap async_mmap
                                   nlohmann_json::nlohmann_json)
 
-add_executable(tlpcc)
-target_sources(tlpcc PRIVATE tlpcc.cpp)
-target_compile_options(tlpcc PRIVATE -fno-rtti)
-target_link_libraries(tlpcc PRIVATE task nlohmann_json::nlohmann_json)
+add_executable(tapacc)
+target_sources(tapacc PRIVATE tapacc.cpp)
+target_compile_options(tapacc PRIVATE -fno-rtti)
+target_link_libraries(tapacc PRIVATE task nlohmann_json::nlohmann_json)

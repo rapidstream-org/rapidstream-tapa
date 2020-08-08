@@ -1,4 +1,4 @@
-# Task-Level Parallelization for HLS
+# Extending High-Level Synthesis for Task-Parallel Programs
 
 ## Feature Synopsis
 
@@ -37,7 +37,7 @@
 + Google glog library
 + Clang headers
 
-#### Build `tlpcc`
+#### Build `tapacc`
 
 ```bash
 mkdir build
@@ -46,13 +46,13 @@ cmake ..
 make
 make test
 cd ..
-sudo ln -s backend/python/tlpc /usr/local/bin/
-sudo ln -s build/backend/tlpcc /usr/local/bin/
+sudo ln -s backend/python/tapac /usr/local/bin/
+sudo ln -s build/backend/tapacc /usr/local/bin/
 ```
 
 ## Known Issues
 
 + Template functions cannot be tasks
 + Vivado HLS include paths (e.g., `/opt/Xilinx/Vivado/2019.2/include`) must not
-    be specified in `tlpc --cflags`;
+    be specified in `tapac --cflags`;
   + Workaround is to `export CPATH=/opt/Xilinx/Vivado/2019.2/include`

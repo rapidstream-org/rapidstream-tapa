@@ -1,3 +1,3 @@
-include tlp/assets/cpp/tlp.h
-include tlp/assets/cpp/tlp/*.h
-include tlp/assets/verilog/*.v
+include tapa/assets/cpp/tapa.h
+include tapa/assets/cpp/tapa/*.h
+include tapa/assets/verilog/*.v

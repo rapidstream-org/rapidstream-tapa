@@ -1,11 +1,11 @@
 #include <stdlib.h>
 
 #include <frt.h>
-#include <tlp.h>
+#include <tapa.h>
 
 #include "bandwidth.h"
 
-void Bandwidth(tlp::async_mmaps<Elem, kBankCount> chan, uint64_t n,
+void Bandwidth(tapa::async_mmaps<Elem, kBankCount> chan, uint64_t n,
                uint64_t flags) {
   auto instance = fpga::Instance(getenv("BITSTREAM"));
   for (int i = 0; i < kBankCount; ++i) {

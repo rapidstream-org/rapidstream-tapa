@@ -6,79 +6,78 @@ if(CLANG_TIDY)
   set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY})
 endif()
 
-project(tlp)
+project(tapa)
 
 add_subdirectory(backend)
 
 find_package(Boost 1.59 COMPONENTS coroutine)
 
-add_library(tlp_static STATIC)
-add_library(tlp ALIAS tlp_static)
-add_library(tlp_shared SHARED)
-target_sources(tlp_static PRIVATE src/tlp.cpp)
-target_sources(tlp_shared PRIVATE src/tlp.cpp)
-target_compile_features(tlp_static PUBLIC cxx_std_11)
-target_compile_features(tlp_shared PUBLIC cxx_std_11)
+add_library(tapa_static STATIC)
+add_library(tapa ALIAS tapa_static)
+add_library(tapa_shared SHARED)
+target_sources(tapa_static PRIVATE src/tapa.cpp)
+target_sources(tapa_shared PRIVATE src/tapa.cpp)
+target_compile_features(tapa_static PUBLIC cxx_std_11)
+target_compile_features(tapa_shared PUBLIC cxx_std_11)
 if(Boost_FOUND)
-  target_compile_definitions(tlp_static
+  target_compile_definitions(tapa_static
                              PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
-  target_compile_definitions(tlp_shared
+  target_compile_definitions(tapa_shared
                              PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
 endif()
 target_include_directories(
-  tlp_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-                    ${Boost_INCLUDE_DIRS})
+  tapa_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+                     ${Boost_INCLUDE_DIRS})
 target_include_directories(
-  tlp_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-                    ${Boost_INCLUDE_DIRS})
+  tapa_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+                     ${Boost_INCLUDE_DIRS})
 target_link_libraries(
-  tlp_static
+  tapa_static
   PRIVATE ${Boost_LIBRARIES}
   INTERFACE glog
   PUBLIC pthread)
 target_link_libraries(
-  tlp_shared
+  tapa_shared
   PRIVATE ${Boost_LIBRARIES}
   INTERFACE glog
   PUBLIC pthread)
-set_target_properties(tlp_static tlp_shared
-                      PROPERTIES OUTPUT_NAME tlp POSITION_INDEPENDENT_CODE ON)
+set_target_properties(tapa_static tapa_shared
+                      PROPERTIES OUTPUT_NAME tapa POSITION_INDEPENDENT_CODE ON)
 
 include(GNUInstallDirs)
 install(
-  TARGETS tlp_static tlp_shared
-  EXPORT TLPTargets
+  TARGETS tapa_static tapa_shared
+  EXPORT TAPATargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(TARGETS tlpcc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS tapacc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(
   DIRECTORY "${CMAKE_SOURCE_DIR}/src/"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
   PATTERN "*.h")
 
-set_target_properties(tlp_static PROPERTIES EXPORT_NAME tlp)
+set_target_properties(tapa_static PROPERTIES EXPORT_NAME tapa)
 export(
-  EXPORT TLPTargets
-  NAMESPACE tlp::
-  FILE ${CMAKE_CURRENT_BINARY_DIR}/tlp/TLPTargets.cmake)
-set(ConfigPackageLocation lib/cmake/tlp)
+  EXPORT TAPATargets
+  NAMESPACE tapa::
+  FILE ${CMAKE_CURRENT_BINARY_DIR}/tapa/TAPATargets.cmake)
+set(ConfigPackageLocation lib/cmake/tapa)
 install(
-  EXPORT TLPTargets
-  FILE TLPTargets.cmake
-  NAMESPACE tlp::
+  EXPORT TAPATargets
+  FILE TAPATargets.cmake
+  NAMESPACE tapa::
   DESTINATION ${ConfigPackageLocation})
 install(
-  FILES cmake/TLPConfig.cmake cmake/TLPCCConfig.cmake
+  FILES cmake/TAPAConfig.cmake cmake/TAPACCConfig.cmake
   DESTINATION ${ConfigPackageLocation}
   COMPONENT Devel)
 
-set(CPACK_PACKAGE_NAME hlstlp)
+set(CPACK_PACKAGE_NAME tapa)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 0)
 set(CPACK_PACKAGE_VERSION_PATCH 20200716.1)
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-    "High-Level Synthesis Task-Level Parallelization")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Task-Parallel High-Level Synthesis")
 
 string(JOIN ", " CPACK_DEBIAN_PACKAGE_DEPENDS "clang-8" "iverilog"
        "libgoogle-glog-dev")
@@ -94,7 +93,7 @@ set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set(CPACK_GENERATOR TGZ DEB)
 include(CPack)
 
-include(cmake/TLPCCConfig.cmake)
+include(cmake/TAPACCConfig.cmake)
 enable_testing()
 add_subdirectory(apps/bandwidth)
 add_subdirectory(apps/cannon)

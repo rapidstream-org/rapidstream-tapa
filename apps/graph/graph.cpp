@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include <tlp.h>
+#include <tapa.h>
 
 using Vid = uint32_t;
 using Eid = uint32_t;
@@ -112,10 +112,10 @@ ostream& operator<<(ostream& os, const UpdateReq& obj) {
 const int kMaxNumPartitions = 1024;
 const int kMaxPartitionSize = 1024 * 1024;
 
-void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-             tlp::mmap<const Eid> num_edges,
-             tlp::ostream<UpdateConfig>& update_config_q,
-             tlp::ostream<TaskReq>& req_q, tlp::istream<TaskResp>& resp_q) {
+void Control(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
+             tapa::mmap<const Eid> num_edges,
+             tapa::ostream<UpdateConfig>& update_config_q,
+             tapa::ostream<TaskReq>& req_q, tapa::istream<TaskResp>& resp_q) {
   // Keeps track of all partitions.
 
   // Vid of the 0-th vertex in each partition.
@@ -222,11 +222,11 @@ void Control(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
 }
 
 void UpdateHandler(Pid num_partitions,
-                   tlp::istream<UpdateConfig>& update_config_q,
-                   tlp::istream<UpdateReq>& update_req_q,
-                   tlp::istream<Update>& update_in_q,
-                   tlp::ostream<Update>& update_out_q,
-                   tlp::mmap<Update> updates) {
+                   tapa::istream<UpdateConfig>& update_config_q,
+                   tapa::istream<UpdateReq>& update_req_q,
+                   tapa::istream<Update>& update_in_q,
+                   tapa::ostream<Update>& update_out_q,
+                   tapa::mmap<Update> updates) {
   // HLS crashes without this...
   update_out_q.close();
 #ifdef __SYNTHESIS__
@@ -245,7 +245,7 @@ void UpdateHandler(Pid num_partitions,
 
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
-  TLP_WHILE_NOT_EOS(update_config_q) {
+  TAPA_WHILE_NOT_EOS(update_config_q) {
 #pragma HLS pipeline II = 1
     auto config = update_config_q.read(nullptr);
     VLOG(5) << "recv@UpdateHandler: UpdateConfig: " << config;
@@ -263,14 +263,14 @@ void UpdateHandler(Pid num_partitions,
     }
   }
 
-  TLP_WHILE_NOT_EOS(update_req_q) {
+  TAPA_WHILE_NOT_EOS(update_req_q) {
     // Each UpdateReq either requests forwarding all Updates from ProcElem to
     // the memory (scatter phase), or requests forwarding all Updates from the
     // memory to ProcElem (gather phase).
     const auto update_req = update_req_q.read();
     VLOG(5) << "recv@UpdateHandler: UpdateReq: " << update_req;
     if (update_req.phase == TaskReq::kScatter) {
-      TLP_WHILE_NOT_EOS(update_in_q) {
+      TAPA_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
         Update update = update_in_q.read(nullptr);
         VLOG(5) << "recv@UpdateHandler: Update: " << update;
@@ -302,11 +302,11 @@ void UpdateHandler(Pid num_partitions,
   VLOG(3) << "info@UpdateHandler: done";
 }
 
-void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
-              tlp::ostream<UpdateReq>& update_req_q,
-              tlp::istream<Update>& update_in_q,
-              tlp::ostream<Update>& update_out_q,
-              tlp::mmap<VertexAttr> vertices, tlp::mmap<const Edge> edges) {
+void ProcElem(tapa::istream<TaskReq>& req_q, tapa::ostream<TaskResp>& resp_q,
+              tapa::ostream<UpdateReq>& update_req_q,
+              tapa::istream<Update>& update_in_q,
+              tapa::ostream<Update>& update_out_q,
+              tapa::mmap<VertexAttr> vertices, tapa::mmap<const Edge> edges) {
   // HLS crashes without this...
   update_in_q.open();
 #ifdef __SYNTHESIS__
@@ -315,7 +315,7 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
   update_out_q.close();
 
   VertexAttr vertices_local[kMaxPartitionSize];
-  TLP_WHILE_NOT_EOS(req_q) {
+  TAPA_WHILE_NOT_EOS(req_q) {
     const TaskReq req = req_q.read();
     VLOG(5) << "recv@ProcElem: TaskReq: " << req;
     update_req_q.write({req.phase, req.pid});
@@ -334,7 +334,7 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
       }
       update_out_q.close();
     } else {
-      TLP_WHILE_NOT_EOS(update_in_q) {
+      TAPA_WHILE_NOT_EOS(update_in_q) {
 #pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = vertices_local
         auto update = update_in_q.read(nullptr);
@@ -358,17 +358,17 @@ void ProcElem(tlp::istream<TaskReq>& req_q, tlp::ostream<TaskResp>& resp_q,
   update_req_q.close();
 }
 
-void Graph(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-           tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-           tlp::mmap<const Edge> edges, tlp::mmap<Update> updates) {
-  tlp::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
-  tlp::stream<TaskResp, 32> task_resp("task_resp");
-  tlp::stream<Update, 32> update_pe2handler("update_pe2handler");
-  tlp::stream<Update, 32> update_handler2pe("update_handler2pe");
-  tlp::stream<UpdateConfig, 32> update_config("update_config");
-  tlp::stream<UpdateReq, 32> update_req("update_req");
+void Graph(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
+           tapa::mmap<const Eid> num_edges, tapa::mmap<VertexAttr> vertices,
+           tapa::mmap<const Edge> edges, tapa::mmap<Update> updates) {
+  tapa::stream<TaskReq, kMaxNumPartitions> task_req("task_req");
+  tapa::stream<TaskResp, 32> task_resp("task_resp");
+  tapa::stream<Update, 32> update_pe2handler("update_pe2handler");
+  tapa::stream<Update, 32> update_handler2pe("update_handler2pe");
+  tapa::stream<UpdateConfig, 32> update_config("update_config");
+  tapa::stream<UpdateReq, 32> update_req("update_req");
 
-  tlp::task()
+  tapa::task()
       .invoke<0>(Control, num_partitions, num_vertices, num_edges,
                  update_config, task_req, task_resp)
       .invoke<0>(UpdateHandler, num_partitions, update_config, update_req,

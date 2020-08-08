@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include <frt.h>
-#include <tlp.h>
+#include <tapa.h>
 
 using Vid = uint32_t;
 using Eid = uint32_t;
@@ -19,9 +19,9 @@ struct Update {
   float delta;
 };
 
-void Graph(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-           tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-           tlp::mmap<const Edge> edges, tlp::mmap<Update> updates) {
+void Graph(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
+           tapa::mmap<const Eid> num_edges, tapa::mmap<VertexAttr> vertices,
+           tapa::mmap<const Edge> edges, tapa::mmap<Update> updates) {
   fpga::Invoke(getenv("BITSTREAM"), num_partitions,
                fpga::WriteOnly(num_vertices.get(), num_vertices.size()),
                fpga::WriteOnly(num_edges.get(), num_edges.size()),

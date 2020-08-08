@@ -1,9 +1,9 @@
 #include <stdlib.h>
 
 #include <frt.h>
-#include <tlp.h>
+#include <tapa.h>
 
-void Jacobi(tlp::mmap<float> bank_0_t0, tlp::mmap<const float> bank_0_t1,
+void Jacobi(tapa::mmap<float> bank_0_t0, tapa::mmap<const float> bank_0_t1,
             uint64_t coalesced_data_num) {
   fpga::Invoke(
       getenv("BITSTREAM"),

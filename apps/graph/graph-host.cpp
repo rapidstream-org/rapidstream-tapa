@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include <tlp.h>
+#include <tapa.h>
 
 #include "nxgraph.hpp"
 
@@ -34,9 +34,9 @@ struct Update {
   Vid value;
 };
 
-void Graph(Pid num_partitions, tlp::mmap<const Vid> num_vertices,
-           tlp::mmap<const Eid> num_edges, tlp::mmap<VertexAttr> vertices,
-           tlp::mmap<const Edge> edges, tlp::mmap<Update> updates);
+void Graph(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
+           tapa::mmap<const Eid> num_edges, tapa::mmap<VertexAttr> vertices,
+           tapa::mmap<const Edge> edges, tapa::mmap<Update> updates);
 
 void Graph(Vid base_vid, vector<VertexAttr>& vertices,
            const vector<Edge>& edges) {

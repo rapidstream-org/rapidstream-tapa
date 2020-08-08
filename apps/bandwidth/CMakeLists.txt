@@ -2,12 +2,12 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(bandwidth)
 target_sources(bandwidth PRIVATE bandwidth-host.cpp bandwidth.cpp)
-target_link_libraries(bandwidth PUBLIC ${TLP})
+target_link_libraries(bandwidth PUBLIC ${TAPA})
 add_test(NAME bandwidth COMMAND bandwidth)
 
 find_package(FRT)
 if(FRT_FOUND)
-  add_tlp_target(
+  add_tapa_target(
     bandwidth-hw-xo
     INPUT bandwidth.cpp
     TOP Bandwidth
@@ -32,7 +32,7 @@ if(FRT_FOUND)
 
   add_executable(bandwidth-frt)
   target_sources(bandwidth-frt PRIVATE bandwidth-host.cpp bandwidth-frt.cpp)
-  target_link_libraries(bandwidth-frt PRIVATE ${TLP} frt::frt)
+  target_link_libraries(bandwidth-frt PRIVATE ${TAPA} frt::frt)
 
   add_custom_target(
     bandwidth-cosim

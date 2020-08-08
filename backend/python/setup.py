@@ -1,7 +1,7 @@
-""" High-Level Synthesis Task-Level Parallelization.
+"""Extending High-Level Synthesis for Task-Parallel Programs.
 
 See:
-https://github.com/Blaok/tlp
+https://github.com/Blaok/tapa
 """
 
 import re
@@ -20,12 +20,12 @@ with open(path.join(here, '..', '..', 'CMakeLists.txt'), encoding='utf-8') as f:
       r'set\(CPACK_PACKAGE_VERSION_..... (.*)\)', f.read()))
 
 setup(
-    name='tlpc',
+    name='tapa',
     version=version,
-    description='High-level synthesis task-level parallelization',
+    description='Extending High-Level Synthesis for Task-Parallel Programs',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/Blaok/tlp',
+    url='https://github.com/Blaok/tapa',
     author='Blaok Chi',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
@@ -44,7 +44,7 @@ setup(
     python_requires='>=3.6',
     install_requires=['haoda>=0.0.20200507.dev1', 'pyverilog>=1.2.0'],
     entry_points={
-        'console_scripts': ['tlpc=tlp.tlpc:main', 'tlpv=tlp.tlpv:main'],
+        'console_scripts': ['tapac=tapa.tapac:main', 'tapav=tapa.tapav:main'],
     },
     include_package_data=True,
 )

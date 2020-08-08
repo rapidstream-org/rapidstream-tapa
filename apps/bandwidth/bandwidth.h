@@ -1,6 +1,6 @@
-#include <tlp.h>
+#include <tapa.h>
 
-using Elem = tlp::vec_t<float, 16>;
+using Elem = tapa::vec_t<float, 16>;
 constexpr int kBankCount = 4;
 constexpr int kEstimatedLatency = 50;
 

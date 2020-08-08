@@ -1,7 +1,7 @@
 #include <cassert>
 #include <cstring>
 
-#include <tlp.h>
+#include <tapa.h>
 
 // p x p PEs
 const int p = 2;
@@ -10,9 +10,9 @@ const int p = 2;
 const int kN = 64;  // Use fixed value for efficient hardware generation.
 
 // Scatter n*n matrix into p*p blocks, each block.
-void Scatter(tlp::mmap<const float> matrix_ptr, tlp::ostream<float>& block_00,
-             tlp::ostream<float>& block_01, tlp::ostream<float>& block_10,
-             tlp::ostream<float>& block_11) {
+void Scatter(tapa::mmap<const float> matrix_ptr, tapa::ostream<float>& block_00,
+             tapa::ostream<float>& block_01, tapa::ostream<float>& block_10,
+             tapa::ostream<float>& block_11) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   for (uint64_t i = 0; i < kNumElems; ++i) {
     block_00.write(*matrix_ptr);
@@ -32,9 +32,9 @@ void Scatter(tlp::mmap<const float> matrix_ptr, tlp::ostream<float>& block_00,
   }
 }
 
-void Gather(tlp::mmap<float> matrix_ptr, tlp::istream<float>& block_00,
-            tlp::istream<float>& block_01, tlp::istream<float>& block_10,
-            tlp::istream<float>& block_11) {
+void Gather(tapa::mmap<float> matrix_ptr, tapa::istream<float>& block_00,
+            tapa::istream<float>& block_01, tapa::istream<float>& block_10,
+            tapa::istream<float>& block_11) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   for (uint64_t i = 0; i < kNumElems; ++i) {
     *matrix_ptr = block_00.read();
@@ -55,10 +55,10 @@ void Gather(tlp::mmap<float> matrix_ptr, tlp::istream<float>& block_00,
 }
 
 // Each PE processes n/p * n/p block of matrix.
-void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
-              tlp::ostream<float>& c_fifo, tlp::ostream<float>& i_prev,
-              tlp::istream<float>& i_next, tlp::ostream<float>& j_prev,
-              tlp::istream<float>& j_next) {
+void ProcElem(tapa::istream<float>& a_fifo, tapa::istream<float>& b_fifo,
+              tapa::ostream<float>& c_fifo, tapa::ostream<float>& i_prev,
+              tapa::istream<float>& i_next, tapa::ostream<float>& j_prev,
+              tapa::istream<float>& j_next) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   float a[kN / p * kN / p];
   float b[kN / p * kN / p];
@@ -104,33 +104,33 @@ void ProcElem(tlp::istream<float>& a_fifo, tlp::istream<float>& b_fifo,
   }
 }
 
-void Cannon(tlp::mmap<const float> a_vec, tlp::mmap<const float> b_vec,
-            tlp::mmap<float> c_vec, uint64_t n) {
+void Cannon(tapa::mmap<const float> a_vec, tapa::mmap<const float> b_vec,
+            tapa::mmap<float> c_vec, uint64_t n) {
   assert(kN % p == 0);
   assert(n <= kN);
 
-  tlp::stream<float, 2> a_00("a->PE00");
-  tlp::stream<float, 2> a_01("a->PE01");
-  tlp::stream<float, 2> a_10("a->PE10");
-  tlp::stream<float, 2> a_11("a->PE11");
-  tlp::stream<float, 2> b_00("b->PE00");
-  tlp::stream<float, 2> b_01("b->PE01");
-  tlp::stream<float, 2> b_10("b->PE10");
-  tlp::stream<float, 2> b_11("b->PE11");
-  tlp::stream<float, 2> c_00("c->PE00");
-  tlp::stream<float, 2> c_01("c->PE01");
-  tlp::stream<float, 2> c_10("c->PE10");
-  tlp::stream<float, 2> c_11("c->PE11");
-  tlp::stream<float, 8> fifo_00_01("PE00->PE01");
-  tlp::stream<float, 8> fifo_01_00("PE01->PE00");
-  tlp::stream<float, 8> fifo_10_11("PE10->PE11");
-  tlp::stream<float, 8> fifo_11_10("PE11->PE10");
-  tlp::stream<float, 8> fifo_00_10("PE00->PE10");
-  tlp::stream<float, 8> fifo_10_00("PE10->PE00");
-  tlp::stream<float, 8> fifo_01_11("PE01->PE11");
-  tlp::stream<float, 8> fifo_11_01("PE11->PE01");
+  tapa::stream<float, 2> a_00("a->PE00");
+  tapa::stream<float, 2> a_01("a->PE01");
+  tapa::stream<float, 2> a_10("a->PE10");
+  tapa::stream<float, 2> a_11("a->PE11");
+  tapa::stream<float, 2> b_00("b->PE00");
+  tapa::stream<float, 2> b_01("b->PE01");
+  tapa::stream<float, 2> b_10("b->PE10");
+  tapa::stream<float, 2> b_11("b->PE11");
+  tapa::stream<float, 2> c_00("c->PE00");
+  tapa::stream<float, 2> c_01("c->PE01");
+  tapa::stream<float, 2> c_10("c->PE10");
+  tapa::stream<float, 2> c_11("c->PE11");
+  tapa::stream<float, 8> fifo_00_01("PE00->PE01");
+  tapa::stream<float, 8> fifo_01_00("PE01->PE00");
+  tapa::stream<float, 8> fifo_10_11("PE10->PE11");
+  tapa::stream<float, 8> fifo_11_10("PE11->PE10");
+  tapa::stream<float, 8> fifo_00_10("PE00->PE10");
+  tapa::stream<float, 8> fifo_10_00("PE10->PE00");
+  tapa::stream<float, 8> fifo_01_11("PE01->PE11");
+  tapa::stream<float, 8> fifo_11_01("PE11->PE01");
 
-  tlp::task()
+  tapa::task()
       .invoke<0>(Scatter, a_vec, a_00, a_01, a_10, a_11)
       .invoke<0>(Scatter, b_vec, b_00, b_01, b_10, b_11)
       .invoke<0>(ProcElem, a_00, b_00, c_00, fifo_00_10, fifo_10_00, fifo_00_01,

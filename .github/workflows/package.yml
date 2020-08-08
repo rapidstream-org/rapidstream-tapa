@@ -3,11 +3,11 @@ name: package
 on:
   push:
     tags:
-    - '*'
+      - "*"
 
 jobs:
   package-deb:
-    if: github.repository == 'Blaok/tlp'
+    if: github.repository == 'Blaok/tapa'
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -52,12 +52,12 @@ jobs:
         env:
           BUILD_DIR: build
           CACHE_DIR: apt-db-cache
-          LABEL: High-Level Synthesis Task-Level Parallelization Repository
+          LABEL: Extending High-Level Synthesis for Task-Parallel Programs
           GPG_KEY: ${{ secrets.GPG_KEY }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
 
   package-pypi:
-    if: github.repository == 'Blaok/tlp'
+    if: github.repository == 'Blaok/tapa'
 
     runs-on: ubuntu-latest
 
