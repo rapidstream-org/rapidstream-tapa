@@ -37,4 +37,4 @@ sudo apt update
 sudo apt install -y xrt --no-install-recommends || true
 sudo apt install -y tapa
 ${pip} install --upgrade setuptools
-${pip} install --user --upgrade tapac
+${pip} install --user --upgrade tapa
