@@ -35,6 +35,7 @@ class Program:
     is_temp: Whether to delete the working directory after done.
     ports: Tuple of Port objects.
     _tasks: Dict mapping names of tasks to Task objects.
+    frt_interface: Optional string of FRT interface code.
   """
 
   def __init__(self,
@@ -64,6 +65,7 @@ class Program:
     self._tasks: Dict[str, Task] = collections.OrderedDict(
         (name, Task(name=name, **task))
         for name, task in sorted(obj['tasks'].items(), key=lambda x: x[0]))
+    self.frt_interface = obj['tasks'][self.top].get('frt_interface')
 
   def __del__(self):
     if self.is_temp:

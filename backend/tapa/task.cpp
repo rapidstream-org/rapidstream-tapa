@@ -19,6 +19,7 @@
 
 using std::array;
 using std::binary_search;
+using std::initializer_list;
 using std::make_shared;
 using std::pair;
 using std::shared_ptr;
@@ -58,6 +59,8 @@ using clang::VarDecl;
 using clang::WhileStmt;
 
 using llvm::dyn_cast;
+using llvm::join;
+using llvm::StringRef;
 
 using nlohmann::json;
 
@@ -177,6 +180,11 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       if (rewriters_.count(func) > 0) {
         if (func == current_task) {
           if (auto task = GetTapaTask(func->getBody())) {
+            // Run this before "extern C" is injected by
+            // `ProcessUpperLevelTask`.
+            if (*top_name == func->getNameAsString()) {
+              metadata_[func]["frt_interface"] = GetFrtInterface(func);
+            }
             ProcessUpperLevelTask(task, func);
           } else {
             ProcessLowerLevelTask(func);
@@ -712,6 +720,126 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     }
   }
 }  // namespace internal
+
+string Visitor::GetFrtInterface(const FunctionDecl* func) {
+  auto func_body_source_range = func->getBody()->getSourceRange();
+  auto& source_manager = context_.getSourceManager();
+  auto main_file_id = source_manager.getMainFileID();
+
+  vector<string> content;
+  content.reserve(5 + func->getNumParams());
+
+  // Content before the function body.
+  content.push_back(join(
+      initializer_list<StringRef>{
+          "#include <sstream>",
+          "#include <stdexcept>",
+          "#include <frt.h>",
+          "\n",
+      },
+      "\n"));
+  content.push_back(GetRewriter().getRewrittenText(
+      SourceRange(source_manager.getLocForStartOfFile(main_file_id),
+                  func_body_source_range.getBegin())));
+
+  // Function body.
+  content.push_back(join(
+      initializer_list<StringRef>{
+          "\n#define TAPAB_APP \"TAPAB_",
+          func->getNameAsString(),
+          "\"\n",
+      },
+      ""));
+  content.push_back(R"(#define TAPAB "TAPAB"
+  const char* _tapa_bitstream = nullptr;
+  if ((_tapa_bitstream = getenv(TAPAB_APP)) ||
+      (_tapa_bitstream = getenv(TAPAB))) {
+    fpga::Instance _tapa_instance(_tapa_bitstream);
+    int _tapa_arg_index = 0;
+    for (const auto& _tapa_arg_info : _tapa_instance.GetArgsInfo()) {
+      if (false) {)");
+  for (auto param : func->parameters()) {
+    const auto name = param->getNameAsString();
+    if (IsTapaType(param, "(async_)?mmaps?")) {
+      // TODO: Leverage kernel information.
+      bool write_device = true;
+      bool read_device = !param->getType()
+                              ->getAs<clang::TemplateSpecializationType>()
+                              ->getArg(0)
+                              .getAsType()
+                              .isConstQualified();
+      auto direction =
+          write_device ? (read_device ? "ReadWrite" : "WriteOnly") : "ReadOnly";
+      auto add_param = [&content, direction](StringRef name, StringRef var) {
+        content.push_back(join(
+            initializer_list<StringRef>{
+                R"(
+      } else if (_tapa_arg_info.name == ")",
+                name,
+                R"(") {
+        auto _tapa_arg = fpga::)",
+                direction,
+                R"(()",
+                var,
+                R"(.get(), )",
+                var,
+                R"(.size());
+        _tapa_instance.AllocBuf(_tapa_arg_index, _tapa_arg);
+        _tapa_instance.SetArg(_tapa_arg_index, _tapa_arg);)",
+            },
+            ""));
+      };
+      if (IsTapaType(param, "(async_)?mmaps")) {
+        const uint64_t array_size = GetArraySize(param);
+        for (uint64_t i = 0; i < array_size; ++i) {
+          add_param(GetArrayElem(name, i), ArrayNameAt(name, i));
+        }
+      } else {
+        add_param(name, name);
+      }
+    } else if (IsTapaType(param, "(i|o)streams?")) {
+      content.push_back("\n#error stream not supported yet\n");
+    } else {
+      content.push_back(join(
+          initializer_list<StringRef>{
+              R"(
+      } else if (_tapa_arg_info.name == ")",
+              name,
+              R"(") {
+        _tapa_instance.SetArg(_tapa_arg_index, )",
+              name,
+              R"();)",
+          },
+          ""));
+    }
+  }
+  content.push_back(
+      R"(
+      } else {
+        std::stringstream ss;
+        ss << "unknown argument: " << _tapa_arg_info;
+        throw std::runtime_error(ss.str());
+      }
+      ++_tapa_arg_index;
+    }
+    _tapa_instance.WriteToDevice();
+    _tapa_instance.Exec();
+    _tapa_instance.ReadFromDevice();
+    _tapa_instance.Finish();
+  } else {
+    throw std::runtime_error("no bitstream found; please set `" TAPAB_APP
+                             "` or `" TAPAB "`");
+  }
+)");
+
+  // Content after the function body.
+  content.push_back(GetRewriter().getRewrittenText(
+      SourceRange(func_body_source_range.getEnd(),
+                  source_manager.getLocForEndOfFile(main_file_id))));
+
+  // Join everything together (without excessive copying).
+  return llvm::join(content.begin(), content.end(), "");
+}
 
 SourceLocation Visitor::GetEndOfLoc(SourceLocation loc) {
   return loc.getLocWithOffset(Lexer::MeasureTokenLength(

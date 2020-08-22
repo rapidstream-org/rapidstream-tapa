@@ -54,6 +54,11 @@ def main():
                       dest='output_file',
                       metavar='file',
                       help='output file')
+  parser.add_argument('--frt-interface',
+                      type=str,
+                      dest='frt_interface',
+                      metavar='file',
+                      help='output FRT interface file')
   parser.add_argument('--directive',
                       type=argparse.FileType('r'),
                       dest='directive',
@@ -227,6 +232,10 @@ def main():
     program = tapa.core.Program(tapa_program_json_obj,
                                 cflags=cflags,
                                 work_dir=args.work_dir)
+
+  if args.frt_interface is not None and program.frt_interface is not None:
+    with open(args.frt_interface, 'w') as output_fp:
+      output_fp.write(program.frt_interface)
 
   if all_steps or args.extract_cpp is not None:
     program.extract_cpp()
