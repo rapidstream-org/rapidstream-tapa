@@ -21,6 +21,7 @@ if(FRT_FOUND)
   add_tapa_target(
     graph-hw-xo
     INPUT graph.cpp
+    FRT_INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/graph.frt.cpp
     TOP Graph
     PLATFORM xilinx_u250_xdma_201830_2)
 
@@ -33,18 +34,20 @@ if(FRT_FOUND)
     hw_xclbin)
 
   add_executable(graph-frt)
-  target_sources(graph-frt PRIVATE graph-host.cpp graph-frt.cpp)
+  target_include_directories(graph-frt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_sources(graph-frt PRIVATE graph-host.cpp
+                                   ${CMAKE_CURRENT_BINARY_DIR}/graph.frt.cpp)
   target_link_libraries(graph-frt PRIVATE ${TAPA} frt::frt)
 
   add_custom_target(
     graph-cosim
-    COMMAND BITSTREAM=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
+    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
             $<TARGET_FILE:graph-frt> ${CMAKE_CURRENT_SOURCE_DIR}/graph.txt
     DEPENDS graph-frt ${hw_emu_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   add_custom_target(
     graph-hw
-    COMMAND BITSTREAM=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
+    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
             $<TARGET_FILE:graph-frt> ${CMAKE_CURRENT_BINARY_DIR}/facebook.txt
     DEPENDS graph-frt ${hw_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

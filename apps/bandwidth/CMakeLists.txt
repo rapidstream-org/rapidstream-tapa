@@ -10,6 +10,7 @@ if(FRT_FOUND)
   add_tapa_target(
     bandwidth-hw-xo
     INPUT bandwidth.cpp
+    FRT_INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/bandwidth.frt.cpp
     TOP Bandwidth
     PLATFORM xilinx_u250_xdma_201830_2)
 
@@ -31,18 +32,21 @@ if(FRT_FOUND)
       run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=${CMAKE_CURRENT_SOURCE_DIR}/slr.tcl)
 
   add_executable(bandwidth-frt)
-  target_sources(bandwidth-frt PRIVATE bandwidth-host.cpp bandwidth-frt.cpp)
+  target_include_directories(bandwidth-frt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_sources(
+    bandwidth-frt PRIVATE bandwidth-host.cpp
+                          ${CMAKE_CURRENT_BINARY_DIR}/bandwidth.frt.cpp)
   target_link_libraries(bandwidth-frt PRIVATE ${TAPA} frt::frt)
 
   add_custom_target(
     bandwidth-cosim
-    COMMAND BITSTREAM=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
+    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
             $<TARGET_FILE:bandwidth-frt> 1000
     DEPENDS bandwidth-frt ${hw_emu_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   add_custom_target(
     bandwidth-hw
-    COMMAND BITSTREAM=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
+    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
             $<TARGET_FILE:bandwidth-frt>
     DEPENDS bandwidth-frt ${hw_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
