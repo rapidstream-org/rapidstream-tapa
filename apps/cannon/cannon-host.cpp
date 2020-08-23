@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  Cannon(a_buf.data(), b_buf.data(), c_buf.data(), n);
+  Cannon(a_buf, b_buf, c_buf, n);
 
   for (uint64_t i = 0; i < p; ++i) {
     for (uint64_t j = 0; j < p; ++j) {
