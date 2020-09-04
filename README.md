@@ -33,9 +33,14 @@
 #### Build Prerequisites
 
 + CMake 3.13+
-+ A C++11 compiler
-+ Google glog library
-+ Clang headers
++ A C++ 11 compiler (e.g. `g++-9`)
++ Python 3
+    + [`haoda`](https://github.com/Blaok/haoda), `pyverilog`
++ Google glog library (`libgoogle-glog-dev`)
++ Clang 8 and its headers (`clang-8`, `libclang-8-dev`)
++ Boost coroutine library (`libboost-coroutine-dev`)
++ Icarus Verilog (`iverilog`)
++ [FPGA Runtime](https://github.com/UCLA-VAST/fpga-runtime)
 
 #### Build `tapacc`
 
