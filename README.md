@@ -2,25 +2,17 @@
 
 ## Feature Synopsis
 
-+ [x] software simulation (not cycle-accurate)
-+ [x] Xilinx HLS backend
-+ [ ] HeteroCL frontend
-
-## Application Synopsis
-
-| App         | Properties       | Details                           | # Streams | # Tasks | # Steps |
-| ----------- | ---------------- | --------------------------------- | --------- | ------- | ------- |
-| `bandwidth` | static           | bandwidth test using `async_mmap` | 4         | 4       | 1       |
-| `cannon`    | static,feedback  | Cannon's algorithm                | 20        | 7       | 1       |
-| `graph`     | dynamic,feedback | connected components              | 6         | 3       | 1       |
-| `jacobi`    | static           | 5-point stencil                   | 23        | 17      | 1       |
-| `vadd`      | static           | naïve vector addition             | 3         | 4       | 1       |
++ Convenient kernel communication APIs
++ Simple host-kernel interface
++ Universal software simulation w/ coroutines
++ Hierarchical code generator w/ Xilinx HLS backend
 
 ## Getting Started
 
 ### Prerequisites
 
 + Ubuntu 16.04+
+  + Coroutine-based simulator only works on Ubuntu 18.04+
 
 ### Install from Binary
 
@@ -35,7 +27,7 @@
 + CMake 3.13+
 + A C++ 11 compiler (e.g. `g++-9`)
 + Python 3
-    + [`haoda`](https://github.com/Blaok/haoda), `pyverilog`
+  + [`haoda`](https://github.com/Blaok/haoda), `pyverilog`
 + Google glog library (`libgoogle-glog-dev`)
 + Clang 8 and its headers (`clang-8`, `libclang-8-dev`)
 + Boost coroutine library (`libboost-coroutine-dev`)
