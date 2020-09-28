@@ -507,7 +507,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   }
 
   for (auto& fifo : metadata["fifos"].items()) {
-    if (fifo.value().size() < 3) {
+    if (!fifo.value().contains("consumed_by") &&
+        !fifo.value().contains("produced_by")) {
       auto fifo_name = fifo.key();
       auto fifo_decl = fifo_decls[fifo_name];
       auto& diagnostics = context_.getDiagnostics();
