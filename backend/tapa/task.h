@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <queue>
 
 #include "clang/AST/AST.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -108,19 +109,28 @@ inline std::vector<const clang::FunctionDecl*> FindChildrenTasks(
   return {};
 }
 
-// Recursively find all tasks instanciated. If a task is instantiated more than
-// once, it will only appear once.
+// Find all tasks instanciated using breadth-first search.
+// If a task is instantiated more than once, it will only appear once.
 // Lower-level tasks or non-task functions return an empty vector.
 inline std::vector<const clang::FunctionDecl*> FindAllTasks(
-    const clang::FunctionDecl* upper) {
-  std::vector<const clang::FunctionDecl*> tasks{upper};
-  std::unordered_set<const clang::FunctionDecl*> task_set{upper};
-  for (auto child : FindChildrenTasks(upper)) {
-    if (task_set.count(child) == 0) {
-      tasks.push_back(child);
-      task_set.insert(child);
+    const clang::FunctionDecl* root_upper) {
+  std::vector<const clang::FunctionDecl*> tasks{root_upper};
+  std::unordered_set<const clang::FunctionDecl*> task_set{root_upper};
+  std::queue<const clang::FunctionDecl*> task_queue;
+
+  task_queue.push(root_upper);
+  while (!task_queue.empty()) {
+    auto upper = task_queue.front();
+    for (auto child : FindChildrenTasks(upper)) {
+      if (task_set.count(child) == 0) {
+        tasks.push_back(child);
+        task_set.insert(child);
+        task_queue.push(child);
+      }
     }
+    task_queue.pop();
   }
+
   return tasks;
 }
 
