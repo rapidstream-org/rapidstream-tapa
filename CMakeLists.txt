@@ -21,9 +21,9 @@ target_compile_features(tapa_static PUBLIC cxx_std_11)
 target_compile_features(tapa_shared PUBLIC cxx_std_11)
 if(Boost_FOUND)
   target_compile_definitions(tapa_static
-                             PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
+                             PRIVATE BOOST_VERSION=${Boost_VERSION})
   target_compile_definitions(tapa_shared
-                             PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
+                             PRIVATE BOOST_VERSION=${Boost_VERSION})
 endif()
 target_include_directories(
   tapa_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
