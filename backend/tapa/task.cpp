@@ -246,6 +246,11 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       for (int i = 0; i < GetArraySize(param); ++i) {
         add_pragma(GetArrayElem(param_name, i));
       }
+    } else if (IsStreamInterface(param)) {
+      replaced_body += "#pragma HLS data_pack variable = " + param_name + ".fifo\n";
+      if (IsTapaType(param, "istream")) {
+        replaced_body += "#pragma HLS data_pack variable = " + param_name + ".peek_val\n";
+      }
     } else {
       add_pragma();
     }
@@ -256,7 +261,13 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   for (const auto param : func->parameters()) {
     auto param_name = param->getNameAsString();
     if (IsStreamInterface(param)) {
-      // TODO (maybe?)
+      if (IsTapaType(param, "istream")) {
+        replaced_body += "{ auto val = " + param_name + ".read(); }\n";
+      } else if (IsTapaType(param, "ostream")) {
+        auto type = GetStreamElemType(param);
+        replaced_body += "{ static " + type + " val; " +
+                         param_name + ".write(val); }\n";
+      }
     } else if (IsTapaType(param, "(async_)?mmaps")) {
       for (int i = 0; i < GetArraySize(param); ++i) {
         replaced_body += "{ auto val = reinterpret_cast<volatile uint8_t&>(" +
