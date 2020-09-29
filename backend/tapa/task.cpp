@@ -255,8 +255,11 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       add_pragma();
     }
   }
-  replaced_body +=
-      "#pragma HLS interface s_axilite port = return bundle = control\n\n";
+  if (*top_name == func->getNameAsString()) {
+    replaced_body +=
+        "#pragma HLS interface s_axilite port = return bundle = control\n";
+  }
+  replaced_body += "\n";
 
   for (const auto param : func->parameters()) {
     auto param_name = param->getNameAsString();
@@ -534,10 +537,12 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     }
   }
 
-  // SDAccel only works with extern C kernels.
-  GetRewriter().InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
-  GetRewriter().InsertTextAfterToken(func->getEndLoc(),
-                                     "\n\n}  // extern \"C\"\n");
+  if (*top_name == func->getNameAsString()) {
+    // SDAccel only works with extern C kernels.
+    GetRewriter().InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
+    GetRewriter().InsertTextAfterToken(func->getEndLoc(),
+                                       "\n\n}  // extern \"C\"\n");
+  }
 }
 
 // Apply tapa s2s transformations on a lower-level task.
