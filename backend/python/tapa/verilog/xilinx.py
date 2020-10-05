@@ -243,6 +243,8 @@ BUILTIN_INSTANCES = {'hmss_0'}
 class Module:
   """AST and helpers for a verilog module.
 
+  _last_*_idx is the array bound if the type of item is not present.
+
   Attributes:
     ast: The ast.Source node.
     directives: Tuple of Directives.
@@ -283,6 +285,11 @@ class Module:
             self._handshake_output_ports[item.left.var.name] = item
       elif isinstance(item, ast.InstanceList):
         self._last_instance_idx = idx
+
+    # if the item type is not present, set idx to the array bound
+    for attr in 'io_port', 'signal', 'param', 'logic', 'instance':
+      if not hasattr(self, '_last_%s_idx' % attr):
+        setattr(self, '_last_%s_idx' % attr, len(self._module_def.items))
 
   @property
   def _module_def(self) -> ast.ModuleDef:
