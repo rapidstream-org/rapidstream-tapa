@@ -209,6 +209,7 @@ bool Visitor::InsertHlsPragma(const SourceLocation& loc, const string& pragma,
       line += " = " + arg.second;
     }
   }
+  line += "\n";
   return GetRewriter().InsertTextAfterToken(loc, line);
 }
 
