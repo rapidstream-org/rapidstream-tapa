@@ -481,11 +481,33 @@ class Program:
       rst_q = rtl.Pipeline(instance.rst_n, level=self.register_level)
       task.module.add_pipeline(rst_q, init=rtl.RST_N)
 
+      # add start registers
+      start_q = rtl.Pipeline(
+          f'{instance.start.name}_global',
+          level=self.register_level,
+      )
+      task.module.add_pipeline(start_q, self.start_q[0])
+
       if instance.is_autorun:
+        # autorun modules start when the global start signal is asserted
         task.module.add_logics([
-            ast.Assign(
-                left=instance.start,
-                right=rtl.TRUE,
+            ast.Always(
+                sens_list=rtl.CLK_SENS_LIST,
+                statement=ast.make_block(
+                    ast.make_if_with_block(
+                        cond=ast.Unot(rst_q[-1]),
+                        true=ast.NonblockingSubstitution(
+                            left=instance.start,
+                            right=rtl.FALSE,
+                        ),
+                        false=ast.make_if_with_block(
+                            cond=start_q[-1],
+                            true=ast.NonblockingSubstitution(
+                                left=instance.start,
+                                right=rtl.TRUE,
+                            ),
+                        ),
+                    )),
             ),
         ])
       else:
@@ -494,16 +516,11 @@ class Program:
             f'{instance.is_done.name}',
             level=self.register_level,
         )
-        start_q = rtl.Pipeline(
-            f'{instance.start.name}_global',
-            level=self.register_level,
-        )
         done_q = rtl.Pipeline(
             f'{instance.done.name}_global',
             level=self.register_level,
         )
         task.module.add_pipeline(is_done_q, instance.is_state(STATE10))
-        task.module.add_pipeline(start_q, self.start_q[0])
         task.module.add_pipeline(done_q, self.done_q[0])
 
         if_branch = (instance.set_state(STATE00))

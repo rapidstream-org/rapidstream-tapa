@@ -215,8 +215,10 @@ class Instance:
     Yields:
       Union[ast.Wire, ast.Reg] of signals.
     """
-    yield ast.Wire(name=self.start.name, width=None)
-    if not self.is_autorun:
+    if self.is_autorun:
+      yield ast.Reg(name=self.start.name, width=None)
+    else:
+      yield ast.Wire(name=self.start.name, width=None)
       yield ast.Reg(name=self.state.name, width=ast.make_width(2))
       yield from (ast.Wire(name=rtl.wire_name(self.name, suffix), width=None)
                   for suffix in rtl.HANDSHAKE_OUTPUT_PORTS)
