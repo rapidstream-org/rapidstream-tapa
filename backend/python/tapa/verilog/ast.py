@@ -172,9 +172,11 @@ def make_if_with_block(
     cond: Node,
     true: Union[Iterable[Node], Node],
     false: Union[Iterable[Node], Node, None] = None) -> IfStatement:
+  if not (false is None or isinstance(false, IfStatement)):
+    false = make_block(false)
   return IfStatement(cond=cond,
                      true_statement=make_block(true),
-                     false_statement=false and make_block(false))
+                     false_statement=false)
 
 
 def make_width(width: int) -> Optional[Width]:
