@@ -309,10 +309,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
              {"cat", IsTapaType(param, "async_mmaps?") ? "async_mmap" : "mmap"},
              {"width",
               context_
-                  .getTypeInfo(param->getType()
-                                   ->getAs<clang::TemplateSpecializationType>()
-                                   ->getArg(0)
-                                   .getAsType())
+                  .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
                   .Width},
              {"type", GetMmapElemType(param) + "*"}});
       };
@@ -562,10 +559,10 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
                            IsTapaType(param, "ostream"),
                            /* is_consumer= */
                            IsTapaType(param, "istream"));
-    } else if (IsMmap(param)) {
+    } else if (IsTapaType(param, "mmap")) {
       auto elem_type = GetMmapElemType(param);
       mmaps.emplace_back(param->getNameAsString(), elem_type);
-    } else if (IsAsyncMmap(param)) {
+    } else if (IsTapaType(param, "async_mmap")) {
       auto elem_type = GetMmapElemType(param);
       AsyncMmapInfo async_mmap(param->getNameAsString(), elem_type);
       async_mmap.GetAsyncMmapInfo(func_body, context_.getDiagnostics());
@@ -781,11 +778,8 @@ string Visitor::GetFrtInterface(const FunctionDecl* func) {
     if (IsTapaType(param, "(async_)?mmaps?")) {
       // TODO: Leverage kernel information.
       bool write_device = true;
-      bool read_device = !param->getType()
-                              ->getAs<clang::TemplateSpecializationType>()
-                              ->getArg(0)
-                              .getAsType()
-                              .isConstQualified();
+      bool read_device =
+          !GetTemplateArg(param->getType(), 0)->getAsType().isConstQualified();
       auto direction =
           write_device ? (read_device ? "ReadWrite" : "WriteOnly") : "ReadOnly";
       auto add_param = [&content, direction](StringRef name, StringRef var) {

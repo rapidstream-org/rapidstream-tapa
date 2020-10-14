@@ -58,27 +58,7 @@ struct AsyncMmapInfo : public ObjectInfo {
   std::string GetReplacedText() const;
 };
 
-inline bool IsAsyncMmap(const clang::RecordDecl* decl) {
-  return decl != nullptr &&
-         decl->getQualifiedNameAsString() == "tapa::async_mmap";
-}
-
-inline bool IsAsyncMmap(clang::QualType type) {
-  return IsAsyncMmap(type->getAsRecordDecl());
-}
-
-inline bool IsAsyncMmap(const clang::ParmVarDecl* param) {
-  return IsAsyncMmap(param->getType());
-}
-
 // Works for both mmap and async_mmap.
-inline std::string GetMmapElemType(const clang::ParmVarDecl* param) {
-  if (IsTapaType(param, "(async_)?mmaps?")) {
-    return GetTemplateArgName(
-        param->getType()->getAs<clang::TemplateSpecializationType>()->getArg(
-            0));
-  }
-  return "";
-}
+std::string GetMmapElemType(const clang::ParmVarDecl* param);
 
 #endif  // TAPA_ASYNC_MMAP_H_

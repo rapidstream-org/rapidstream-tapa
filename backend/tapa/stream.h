@@ -149,11 +149,9 @@ inline bool IsStream(T obj) {
 
 inline std::string GetStreamElemType(const clang::ParmVarDecl* param) {
   if (IsStreamInterface(param->getType())) {
-    return GetTemplateArgName(param->getType()
-                                  ->getAs<clang::LValueReferenceType>()
-                                  ->getPointeeType()
-                                  ->getAs<clang::TemplateSpecializationType>()
-                                  ->getArg(0));
+    if (auto arg = GetTemplateArg(param->getType(), 0)) {
+      return GetTemplateArgName(*arg);
+    }
   }
   return "";
 }

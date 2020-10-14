@@ -9,12 +9,13 @@ using std::string;
 using clang::CXXMemberCallExpr;
 using clang::DeclRefExpr;
 using clang::DiagnosticsEngine;
+using clang::ParmVarDecl;
 using clang::Stmt;
 
 using llvm::dyn_cast;
 
 AsyncMmapOpEnum GetAsyncMmapOp(const CXXMemberCallExpr* call_expr) {
-  if (!IsAsyncMmap(call_expr->getRecordDecl())) {
+  if (!IsTapaType(call_expr->getRecordDecl(), "async_mmap")) {
     return AsyncMmapOpEnum::kNotAsyncMmapOperation;
   }
   // Check caller name and number of arguments.
@@ -102,4 +103,13 @@ string AsyncMmapInfo::GetReplacedText() const {
     }
   }
   return replaced_text;
+}
+
+string GetMmapElemType(const ParmVarDecl* param) {
+  if (IsTapaType(param, "(async_)?mmaps?")) {
+    if (auto arg = GetTemplateArg(param->getType(), 0)) {
+      return GetTemplateArgName(*arg);
+    }
+  }
+  return "";
 }

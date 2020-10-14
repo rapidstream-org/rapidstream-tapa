@@ -23,7 +23,7 @@ void GetTapaMmapOps(const Stmt* stmt,
   }
   if (const auto call_expr = dyn_cast<CXXOperatorCallExpr>(stmt)) {
     if (const auto caller = dyn_cast<DeclRefExpr>(call_expr->getArg(0))) {
-      if (IsMmap(caller->getType())) {
+      if (IsTapaType(caller->getType(), "mmap")) {
         mmap_ops.push_back(call_expr);
       }
     }

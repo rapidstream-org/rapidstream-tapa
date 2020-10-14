@@ -58,6 +58,8 @@ inline uint64_t GetArraySize(const clang::ParmVarDecl* param) {
   return GetArraySize(param->getType());
 }
 
+const clang::TemplateArgument* GetTemplateArg(clang::QualType type, int idx);
+
 inline std::string GetTemplateArgName(const clang::TemplateArgument& arg) {
   std::string name;
   llvm::raw_string_ostream oss{name};
