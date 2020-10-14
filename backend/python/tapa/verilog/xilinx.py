@@ -882,8 +882,6 @@ def generate_async_mmap_ports(
     tag: str, port: str, arg: str,
     instance: tapa.instance.Instance) -> Iterator[ast.PortArg]:
   prefix = port + '_' + tag + '_V_'
-  if tag.endswith('_data'):
-    prefix += 'data_V_'
   for suffix in async_mmap_suffixes(tag):
     port_name = instance.task.module.find_port(prefix=prefix, suffix=suffix)
     if port_name is not None:
