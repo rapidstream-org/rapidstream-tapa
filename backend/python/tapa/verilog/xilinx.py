@@ -181,6 +181,16 @@ OSTREAM_SUFFIXES = (
     '_write',
 )
 
+# {channel_suffix: (name, direction)}
+STREAM_PORT_MAPPING = {
+    '_dout':    ('_fifo_V_dout',    'input'),
+    '_empty_n': ('_fifo_V_empty_n', 'input'),
+    '_read':    ('_fifo_V_read',    'output'),
+    '_din':     ('_fifo_V_din',     'output'),
+    '_full_n':  ('_fifo_V_full_n',  'input'),
+    '_write':   ('_fifo_V_write',   'output'),
+}
+
 FIFO_READ_PORTS = (
     'if_dout',
     'if_empty_n',
@@ -676,6 +686,9 @@ class Module:
     self.del_params(prefix='ap_ST_fsm_state')
     self.del_signals(prefix='ap_CS_fsm')
     self.del_signals(prefix='ap_NS_fsm')
+    self.del_signals(suffix='_fifo_V_read')
+    self.del_signals(suffix='_fifo_V_write')
+    self.del_signals(suffix='_fifo_V_blk_n')
     self.del_signals(HANDSHAKE_RST)
     self.del_signals(HANDSHAKE_DONE)
     self.del_signals(HANDSHAKE_IDLE)
