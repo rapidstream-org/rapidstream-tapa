@@ -68,5 +68,5 @@ void Copy(tapa::async_mmap<Elem> mem, uint64_t n, uint64_t flags) {
 
 void Bandwidth(tapa::async_mmaps<Elem, kBankCount> chan, uint64_t n,
                uint64_t flags) {
-  tapa::task().invoke<0, kBankCount>(Copy, chan, n, flags);
+  tapa::task().invoke<tapa::join, kBankCount>(Copy, chan, n, flags);
 }
