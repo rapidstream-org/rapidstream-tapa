@@ -14,7 +14,7 @@ project(tapa)
 
 add_subdirectory(backend)
 
-find_package(Boost 1.59 COMPONENTS coroutine)
+find_package(Boost 1.59 COMPONENTS coroutine stacktrace_backtrace)
 
 add_library(tapa_static STATIC)
 add_library(tapa ALIAS tapa_static)
@@ -36,6 +36,22 @@ if(Boost_FOUND)
                                PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
   endif()
 endif()
+
+if(Boost_stacktrace_backtrace_FOUND)
+  find_library(BACKTRACE_LIBRARY backtrace REQUIRED
+               PATHS /usr/lib/gcc/x86_64-linux-gnu/*)
+  get_filename_component(BACKTRACE_INCLUDEDIR ${BACKTRACE_LIBRARY} DIRECTORY)
+  target_include_directories(tapa_static
+                             PRIVATE ${BACKTRACE_INCLUDEDIR}/include)
+  target_include_directories(tapa_shared
+                             PRIVATE ${BACKTRACE_INCLUDEDIR}/include)
+  target_link_libraries(tapa_static PUBLIC ${BACKTRACE_LIBRARY} dl)
+  target_link_libraries(tapa_shared PUBLIC ${BACKTRACE_LIBRARY} dl)
+else()
+  target_compile_definitions(tapa_static PRIVATE BOOST_STACKTRACE_USE_NOOP)
+  target_compile_definitions(tapa_shared PRIVATE BOOST_STACKTRACE_USE_NOOP)
+endif()
+
 target_include_directories(
   tapa_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
                      ${Boost_INCLUDE_DIRS})

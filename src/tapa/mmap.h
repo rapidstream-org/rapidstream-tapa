@@ -86,7 +86,9 @@ class async_mmap : public mmap<T> {
   }
   bool read_data_empty() {
     bool is_empty = read_addr_q_.empty();
-    if (is_empty) internal::yield();
+    if (is_empty) {
+      internal::yield("read data channel is empty");
+    }
     return is_empty;
   }
   bool read_data_try_read(T& resp) {

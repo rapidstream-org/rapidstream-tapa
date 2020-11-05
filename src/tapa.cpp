@@ -1,8 +1,10 @@
 #include "tapa.h"
 
+#include <csignal>
 #include <cstring>
 
 #include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <list>
@@ -10,10 +12,17 @@
 #include <mutex>
 #include <queue>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <vector>
 
-#if BOOST_VERSION > 105900
+#if BOOST_VERSION >= 105900
+
+#ifndef BOOST_STACKTRACE_USE_NOOP
+#include <boost/algorithm/string/predicate.hpp>
+#define BOOST_STACKTRACE_USE_BACKTRACE
+#include <boost/stacktrace.hpp>
+#endif  // BOOST_STACKTRACE_USE_NOOP
 
 #include <boost/coroutine2/coroutine.hpp>
 #include <boost/coroutine2/fixedsize_stack.hpp>
@@ -25,6 +34,7 @@ using std::condition_variable;
 using std::function;
 using std::mutex;
 using std::runtime_error;
+using std::string;
 using std::unordered_map;
 using std::vector;
 
@@ -40,8 +50,37 @@ namespace tapa {
 namespace internal {
 
 static thread_local pull_type* current_handle;
+static thread_local bool debug = false;
+static mutex debug_mtx;  // Print stacktrace one-by-one.
 
-void yield() { (*current_handle)(); }
+void yield(const string& msg) {
+  if (debug) {
+    unique_lock l(debug_mtx);
+    LOG(INFO) << msg;
+#ifndef BOOST_STACKTRACE_USE_NOOP
+    for (auto& frame : boost::stacktrace::stacktrace()) {
+      const auto line = frame.source_line();
+      const auto file = frame.source_file();
+      auto name = frame.name();
+      if (line == 0 || file == __FILE__ ||
+          boost::algorithm::starts_with(name, "void std::") ||
+          boost::algorithm::starts_with(name, "std::") ||
+          boost::algorithm::ends_with(file, "/tapa/mmap.h") ||
+          boost::algorithm::ends_with(file, "/tapa/stream.h") ||
+          boost::algorithm::ends_with(file, "/tapa/synthesizable/../mmap.h") ||
+          boost::algorithm::ends_with(file,
+                                      "/tapa/synthesizable/../stream.h")) {
+        continue;
+      }
+      name = name.substr(0, name.find('('));
+      const auto space_pos = name.find(' ');
+      if (space_pos != string::npos) name = name.substr(space_pos + 1);
+      LOG(INFO) << "  in " << name << "(...) from " << file << ":" << line;
+    }
+#endif  // BOOST_STACKTRACE_USE_NOOP
+  }
+  (*current_handle)();
+}
 
 uint64_t get_time_ns() {
   timespec tp;
@@ -69,6 +108,7 @@ class worker {
   condition_variable task_cv;
   condition_variable wait_cv;
   bool done = false;
+  std::atomic_int signal{0};
   std::atomic_bool started{false};
   std::thread thread;
 
@@ -109,6 +149,8 @@ class worker {
 
         // iterate over all tasks and their coroutines
         bool active = false;
+        bool debugging = this->signal;
+        if (debugging) debug = true;
         for (auto& pair : this->coroutines) {
           bool detach = pair.first;
           auto& coroutines = pair.second;
@@ -126,6 +168,10 @@ class worker {
               it = coroutines.erase(it);
             }
           }
+        }
+        if (debugging) {
+          debug = false;
+          this->signal = 0;
         }
         // response to wait requests
         if (!active) this->wait_cv.notify_all();
@@ -152,6 +198,8 @@ class worker {
     });
   }
 
+  void send(int signal) { this->signal = signal; }
+
   ~worker() {
     {
       unique_lock lock(this->mtx);
@@ -162,6 +210,8 @@ class worker {
   }
 };
 
+static void signal_handler(int signal);
+
 class thread_pool {
   mutex worker_mtx;
   std::list<worker> workers;
@@ -169,6 +219,7 @@ class thread_pool {
 
  public:
   thread_pool(size_t worker_count = 0) {
+    signal(SIGINT, signal_handler);
     if (worker_count == 0) {
       if (auto concurrency = getenv("TAPA_CONCURRENCY")) {
         worker_count = atoi(concurrency);
@@ -198,6 +249,10 @@ class thread_pool {
     for (auto& w : this->workers) w.wait();
   }
 
+  void send(int signal) {
+    for (auto& worker : this->workers) worker.send(signal);
+  }
+
   ~thread_pool() {
     unique_lock lock(this->worker_mtx);
     this->workers.clear();
@@ -207,6 +262,31 @@ class thread_pool {
 static thread_pool* pool = nullptr;
 static const task* top_task = nullptr;
 static mutex mtx;
+
+// How the signal handler works:
+//
+// 1. The main thread receives the signal;
+// 2. Each worker sets `this->signal`;
+// 3. Each worker prints debug info in next iteration of coroutines;
+// 4. Each worker clears `this->signal`.
+static constexpr int64_t kSignalThreshold = 500 * 1000 * 1000;  // 500 ms
+static int64_t last_signal_timestamp = 0;
+static void signal_handler(int signal) {
+  if (signal == SIGINT) {
+    const int64_t signal_timestamp = get_time_ns();
+    if (last_signal_timestamp != 0 &&
+        signal_timestamp - last_signal_timestamp < kSignalThreshold) {
+      LOG(INFO) << "caught SIGINT twice in " << kSignalThreshold / 1000000
+                << " ms; exit";
+      exit(EXIT_FAILURE);
+    }
+    LOG(INFO) << "caught SIGINT";
+    last_signal_timestamp = signal_timestamp;
+    pool->send(signal);
+  } else {
+    last_signal_timestamp = get_time_ns();
+  }
+}
 
 }  // namespace internal
 
@@ -233,12 +313,12 @@ void task::schedule(bool detach, const function<void()>& f) {
 
 }  // namespace tapa
 
-#else  // BOOST_VERSION
+#else  // BOOST_VERSION >= 105900
 
 namespace tapa {
 namespace internal {
 
-void yield() { std::this_thread::yield(); }
+void yield(const std::string& msg) { std::this_thread::yield(); }
 
 static std::vector<std::thread> threads;
 static const task* top_task = nullptr;
@@ -268,4 +348,4 @@ void task::schedule(bool detach, const std::function<void()>& f) {
 
 }  // namespace tapa
 
-#endif  // BOOST_VERSION
+#endif  // BOOST_VERSION >= 105900

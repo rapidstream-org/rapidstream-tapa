@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <string>
 
+#include <glog/logging.h>
+
 #include "tapa/coroutine.h"
 
 namespace tapa {
@@ -20,7 +22,7 @@ namespace internal {
 class base_queue {
  public:
   // debug helpers
-  const char* get_name() const { return this->name.c_str(); }
+  const std::string& get_name() const { return this->name; }
   void set_name(const std::string& name) { this->name = name; }
 
  protected:
@@ -32,7 +34,7 @@ class base_queue {
 
   void check_leftover() {
     if (!this->empty()) {
-      LOG(WARNING) << "stream `" << this->name
+      LOG(WARNING) << "channel '" << this->name
                    << "' destructed with leftovers; hardware behavior may be "
                       "unexpected in consecutive invocations";
     }
@@ -135,7 +137,7 @@ class base {
   base(std::shared_ptr<queue<elem_t<T>>> ptr) : ptr(ptr) {}
 
   // debug helpers
-  const char* get_name() const { return this->ptr->get_name(); }
+  const std::string& get_name() const { return this->ptr->get_name(); }
   void set_name(const std::string& name) { ptr->set_name(name); }
   uint64_t get_depth() const { return this->ptr->get_depth(); }
 
@@ -165,7 +167,9 @@ class istream : virtual public internal::base<T> {
   // whether stream is empty
   bool empty() const {
     bool is_empty = this->ptr->empty();
-    if (is_empty) internal::yield();
+    if (is_empty) {
+      internal::yield("channel '" + this->get_name() + "' is empty");
+    }
     return is_empty;
   }
   // whether stream has ended
@@ -191,8 +195,7 @@ class istream : virtual public internal::base<T> {
     if (!empty()) {
       auto& elem = this->ptr->front();
       if (elem.eos) {
-        throw std::runtime_error(std::string("stream '") + this->get_name() +
-                                 "' peeked when closed");
+        LOG(FATAL) << "channel '" << this->get_name() << "' peeked when closed";
       }
       val = elem.val;
       return true;
@@ -232,8 +235,7 @@ class istream : virtual public internal::base<T> {
     if (!empty()) {
       auto elem = this->ptr->pop();
       if (elem.eos) {
-        throw std::runtime_error(std::string("stream '") + this->get_name() +
-                                 "' read when closed");
+        LOG(FATAL) << "channel '" << this->get_name() << "' read when closed";
       }
       val = elem.val;
       return true;
@@ -275,8 +277,8 @@ class istream : virtual public internal::base<T> {
     if (!empty()) {
       auto elem = this->ptr->pop();
       if (!elem.eos) {
-        throw std::runtime_error(std::string("stream '") + this->get_name() +
-                                 "' opened when not closed");
+        LOG(FATAL) << "channel '" << this->get_name()
+                   << "' opened when not closed";
       }
       return true;
     }
@@ -305,7 +307,9 @@ class ostream : virtual public internal::base<T> {
   // whether stream is full
   bool full() const {
     bool is_full = this->ptr->full();
-    if (is_full) internal::yield();
+    if (is_full) {
+      internal::yield("channel '" + this->get_name() + "' is full");
+    }
     return is_full;
   }
 
