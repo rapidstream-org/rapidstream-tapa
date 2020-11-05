@@ -51,9 +51,13 @@ namespace tapa {
 
 namespace internal {
 
-static thread_local pull_type* current_handle;
-static thread_local bool debug = false;
-static mutex debug_mtx;  // Print stacktrace one-by-one.
+namespace {
+
+thread_local pull_type* current_handle;
+thread_local bool debug = false;
+mutex debug_mtx;  // Print stacktrace one-by-one.
+
+}  // namespace
 
 void yield(const string& msg) {
   if (debug) {
@@ -83,6 +87,8 @@ void yield(const string& msg) {
   }
   (*current_handle)();
 }
+
+namespace {
 
 uint64_t get_time_ns() {
   timespec tp;
@@ -212,7 +218,7 @@ class worker {
   }
 };
 
-static void signal_handler(int signal);
+void signal_handler(int signal);
 
 class thread_pool {
   mutex worker_mtx;
@@ -261,9 +267,9 @@ class thread_pool {
   }
 };
 
-static thread_pool* pool = nullptr;
-static const task* top_task = nullptr;
-static mutex mtx;
+thread_pool* pool = nullptr;
+const task* top_task = nullptr;
+mutex mtx;
 
 // How the signal handler works:
 //
@@ -271,9 +277,9 @@ static mutex mtx;
 // 2. Each worker sets `this->signal`;
 // 3. Each worker prints debug info in next iteration of coroutines;
 // 4. Each worker clears `this->signal`.
-static constexpr int64_t kSignalThreshold = 500 * 1000 * 1000;  // 500 ms
-static int64_t last_signal_timestamp = 0;
-static void signal_handler(int signal) {
+constexpr int64_t kSignalThreshold = 500 * 1000 * 1000;  // 500 ms
+int64_t last_signal_timestamp = 0;
+void signal_handler(int signal) {
   if (signal == SIGINT) {
     const int64_t signal_timestamp = get_time_ns();
     if (last_signal_timestamp != 0 &&
@@ -289,6 +295,8 @@ static void signal_handler(int signal) {
     last_signal_timestamp = get_time_ns();
   }
 }
+
+}  // namespace
 
 }  // namespace internal
 
@@ -322,8 +330,12 @@ namespace internal {
 
 void yield(const std::string& msg) { std::this_thread::yield(); }
 
-static std::vector<std::thread> threads;
-static const task* top_task = nullptr;
+namespace {
+
+std::vector<std::thread> threads;
+const task* top_task = nullptr;
+
+}  // namespace
 
 }  // namespace internal
 
