@@ -19,11 +19,11 @@
 #if BOOST_VERSION >= 105900
 
 #ifndef BOOST_STACKTRACE_USE_NOOP
-#include <boost/algorithm/string/predicate.hpp>
 #define BOOST_STACKTRACE_USE_BACKTRACE
 #include <boost/stacktrace.hpp>
 #endif  // BOOST_STACKTRACE_USE_NOOP
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/coroutine2/coroutine.hpp>
 #include <boost/coroutine2/fixedsize_stack.hpp>
 
@@ -43,6 +43,8 @@ using unique_lock = std::unique_lock<mutex>;
 using pull_type = boost::coroutines2::coroutine<void>::pull_type;
 using push_type = boost::coroutines2::coroutine<void>::push_type;
 
+using boost::algorithm::ends_with;
+using boost::algorithm::starts_with;
 using boost::coroutines2::fixedsize_stack;
 
 namespace tapa {
@@ -63,13 +65,13 @@ void yield(const string& msg) {
       const auto file = frame.source_file();
       auto name = frame.name();
       if (line == 0 || file == __FILE__ ||
-          boost::algorithm::starts_with(name, "void std::") ||
-          boost::algorithm::starts_with(name, "std::") ||
-          boost::algorithm::ends_with(file, "/tapa/mmap.h") ||
-          boost::algorithm::ends_with(file, "/tapa/stream.h") ||
-          boost::algorithm::ends_with(file, "/tapa/synthesizable/../mmap.h") ||
-          boost::algorithm::ends_with(file,
-                                      "/tapa/synthesizable/../stream.h")) {
+          // Ignore STL functions.
+          starts_with(name, "void std::") || starts_with(name, "std::") ||
+          // Ignore TAPA channel functions.
+          ends_with(file, "/tapa/mmap.h") ||
+          ends_with(file, "/tapa/stream.h") ||
+          ends_with(file, "/tapa/synthesizable/../mmap.h") ||
+          ends_with(file, "/tapa/synthesizable/../stream.h")) {
         continue;
       }
       name = name.substr(0, name.find('('));
