@@ -198,7 +198,7 @@ class Program:
         task.module.cleanup()
         self._instantiate_fifos(task)
         self._connect_fifos(task)
-        width_table = {port.name: port.width for port in task.ports}
+        width_table = {port.name: port.width for port in task.ports.values()}
         is_done_signals = self._instantiate_children_tasks(task, width_table)
         self._instantiate_global_fsm(task, is_done_signals)
 
