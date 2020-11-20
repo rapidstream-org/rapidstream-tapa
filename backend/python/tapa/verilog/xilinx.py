@@ -801,7 +801,7 @@ def generate_m_axi_ports(
   for suffix in M_AXI_SUFFIXES:
     yield ast.make_port_arg(port=M_AXI_PREFIX + port + suffix,
                             arg=M_AXI_PREFIX + arg + suffix)
-  for suffix in '_offset', '_data_V', '_V':
+  for suffix in '_offset', '_data_V', '_V', '':
     port_name = module.find_port(prefix=port, suffix=suffix)
     if port_name is not None:
       if port_name != port + suffix:

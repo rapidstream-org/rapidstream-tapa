@@ -33,7 +33,7 @@ class Program:
     top: Name of the top-level module.
     work_dir: Working directory.
     is_temp: Whether to delete the working directory after done.
-    ports: Tuple of Port objects.
+    toplevel_ports: Tuple of Port objects.
     _tasks: Dict mapping names of tasks to Task objects.
     frt_interface: Optional string of FRT interface code.
   """
@@ -61,7 +61,7 @@ class Program:
       self.work_dir = os.path.abspath(work_dir)
       os.makedirs(self.work_dir, exist_ok=True)
       self.is_temp = False
-    self.ports = tuple(map(Port, obj['tasks'][self.top]['ports']))
+    self.toplevel_ports = tuple(map(Port, obj['tasks'][self.top]['ports']))
     self._tasks: Dict[str, Task] = collections.OrderedDict(
         (name, Task(name=name, **task))
         for name, task in sorted(obj['tasks'].items(), key=lambda x: x[0]))
@@ -179,8 +179,6 @@ class Program:
     Returns:
         Program: Return self.
     """
-    width_table = {port.name: port.width for port in self.ports}
-
     # extract and parse RTL
     for task in self._tasks.values():
       oldcwd = os.getcwd()
@@ -200,6 +198,7 @@ class Program:
         task.module.cleanup()
         self._instantiate_fifos(task)
         self._connect_fifos(task)
+        width_table = {port.name: port.width for port in task.ports}
         is_done_signals = self._instantiate_children_tasks(task, width_table)
         self._instantiate_global_fsm(task, is_done_signals)
 
@@ -223,7 +222,7 @@ class Program:
 
   def pack_rtl(self, output_file: BinaryIO) -> 'Program':
     rtl.pack(top_name=self.top,
-             ports=self.ports,
+             ports=self.toplevel_ports,
              rtl_dir=self.rtl_dir,
              output_file=output_file)
     return self

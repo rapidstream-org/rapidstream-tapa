@@ -244,7 +244,6 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                        " bundle = control\n";
     };
     if (IsTapaType(param, "(async_)?mmaps")) {
-      // FIXME: if not top level function.
       for (int i = 0; i < GetArraySize(param); ++i) {
         add_pragma(GetArrayElem(param_name, i));
       }
@@ -303,34 +302,32 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   auto& metadata = GetMetadata();
   metadata["fifos"] = json::object();
 
-  if (*top_name == func->getNameAsString()) {
-    for (const auto param : func->parameters()) {
-      const auto param_name = param->getNameAsString();
-      auto add_mmap_meta = [&](const string& name) {
-        metadata["ports"].push_back(
-            {{"name", name},
-             {"cat", IsTapaType(param, "async_mmaps?") ? "async_mmap" : "mmap"},
-             {"width",
-              context_
-                  .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
-                  .Width},
-             {"type", GetMmapElemType(param) + "*"}});
-      };
-      if (IsTapaType(param, "(async_)?mmap")) {
-        add_mmap_meta(param_name);
-      } else if (IsTapaType(param, "(async_)?mmaps")) {
-        for (int i = 0; i < GetArraySize(param); ++i) {
-          add_mmap_meta(param_name + "[" + to_string(i) + "]");
-        }
-      } else if (IsStreamInterface(param)) {
-        // TODO
-      } else {
-        metadata["ports"].push_back(
-            {{"name", param_name},
-             {"cat", "scalar"},
-             {"width", context_.getTypeInfo(param->getType()).Width},
-             {"type", param->getType().getAsString()}});
+  for (const auto param : func->parameters()) {
+    const auto param_name = param->getNameAsString();
+    auto add_mmap_meta = [&](const string& name) {
+      metadata["ports"].push_back(
+          {{"name", name},
+           {"cat", IsTapaType(param, "async_mmaps?") ? "async_mmap" : "mmap"},
+           {"width",
+            context_
+                .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
+                .Width},
+           {"type", GetMmapElemType(param) + "*"}});
+    };
+    if (IsTapaType(param, "(async_)?mmap")) {
+      add_mmap_meta(param_name);
+    } else if (IsTapaType(param, "(async_)?mmaps")) {
+      for (int i = 0; i < GetArraySize(param); ++i) {
+        add_mmap_meta(param_name + "[" + to_string(i) + "]");
       }
+    } else if (IsStreamInterface(param)) {
+      // TODO
+    } else {
+      metadata["ports"].push_back(
+          {{"name", param_name},
+           {"cat", "scalar"},
+           {"width", context_.getTypeInfo(param->getType()).Width},
+           {"type", param->getType().getAsString()}});
     }
   }
 

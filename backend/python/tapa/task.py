@@ -3,6 +3,7 @@ import enum
 from typing import Union
 
 import tapa.verilog.xilinx
+from .instance import Port
 
 
 class Task:
@@ -14,6 +15,7 @@ class Task:
     code: str, HLS C++ code of this task.
     tasks: A dict mapping child task names to json instance description objects.
     fifos: A dict mapping child fifo names to json FIFO description objects.
+    ports: A tuple of instance.Port objects for the current task.
     module: rtl.Module, should be attached after RTL code is generated.
 
   Properties:
@@ -46,6 +48,7 @@ class Task:
       self.fifos = collections.OrderedDict(
           sorted((item for item in kwargs.pop('fifos').items()),
                  key=lambda x: x[0]))
+      self.ports = tuple(map(Port, kwargs.pop('ports')))
     self.module = tapa.verilog.xilinx.Module('')
 
   @property

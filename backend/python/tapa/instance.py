@@ -5,7 +5,9 @@ from tapa import util
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
 
-from .task import Task
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+  from .task import Task
 
 
 class Instance:
@@ -52,7 +54,7 @@ class Instance:
       self.port = port
       self.width = None
 
-  def __init__(self, task: Task, instance_id: int, **kwargs):
+  def __init__(self, task: 'Task', instance_id: int, **kwargs):
     self.task = task
     self.instance_id = instance_id
     self.step = kwargs.pop('step')
