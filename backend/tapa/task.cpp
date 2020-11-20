@@ -244,6 +244,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                        " bundle = control\n";
     };
     if (IsTapaType(param, "(async_)?mmaps")) {
+      // FIXME: if not top level function.
       for (int i = 0; i < GetArraySize(param); ++i) {
         add_pragma(GetArrayElem(param_name, i));
       }
@@ -253,7 +254,9 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         replaced_body += "#pragma HLS data_pack variable = " + param_name + ".peek_val\n";
       }
     } else {
-      add_pragma();
+      if (*top_name == func->getNameAsString()) {
+        add_pragma();
+      } // else, middle level scalars
     }
   }
   if (*top_name == func->getNameAsString()) {
