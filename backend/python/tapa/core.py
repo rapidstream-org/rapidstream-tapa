@@ -450,7 +450,9 @@ class Program:
         # arg.port is the lower-level name
 
         # check which ports are used for async_mmap
-        if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+        # acknowlege only if the child module is a leaf
+        if arg.cat == Instance.Arg.Cat.ASYNC_MMAP and \
+           instance.task.is_lower:
           for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
             if set(x.portname for x in rtl.generate_async_mmap_ports(
                 tag=tag,
@@ -460,14 +462,14 @@ class Program:
             )) & child_port_set:
               async_mmap_args.setdefault(arg_name, []).append(tag)
 
-        # add m_axi ports to the upper task
+        # add m_axi ports to the upper tasks
         if arg.cat == Instance.Arg.Cat.MMAP or (
-            arg.cat == Instance.Arg.Cat.ASYNC_MMAP and task.name == self.top):
+            arg.cat == Instance.Arg.Cat.ASYNC_MMAP and task.is_upper):
           task.module.add_m_axi(name=arg_name, data_width=width_table[arg_name])
 
         # declare wires or forward async_mmap ports
         for tag in async_mmap_args.get(arg_name, []):
-          if task.name == self.top:
+          if task.is_upper and instance.task.is_lower:
             task.module.add_signals(
                 rtl.generate_async_mmap_signals(
                     tag=tag, arg=arg_name, data_width=width_table[arg_name]))
@@ -596,7 +598,8 @@ class Program:
         elif arg.cat == Instance.Arg.Cat.OSTREAM:
           portargs.extend(
               rtl.generate_ostream_ports(port=arg.port, arg=arg_name))
-        elif arg.cat == Instance.Arg.Cat.MMAP:
+        elif arg.cat == Instance.Arg.Cat.MMAP or \
+            instance.task.is_upper:  # only acknowlege leaf async
           portargs.extend(
               rtl.generate_m_axi_ports(
                   module=instance.task.module,
@@ -620,8 +623,8 @@ class Program:
           ports=portargs,
       )
 
-    # instantiate async_mmap module in the top module
-    if task.name == self.top:
+    # instantiate async_mmap modules at the upper levels
+    if task.is_upper:
       for arg_name in async_mmap_args:
         task.module.add_async_mmap_instance(
             name=arg_name,
