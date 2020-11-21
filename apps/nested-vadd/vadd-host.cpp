@@ -11,7 +11,7 @@ using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
 void VecAddNested(
-        tapa::mmap<const float> a_array, tapa::mmap<const float> b_array,
+        tapa::mmap<float> a_array, tapa::mmap<float> b_array,
         tapa::mmap<float> c_array, uint64_t n);
 
 int main(int argc, char* argv[]) {

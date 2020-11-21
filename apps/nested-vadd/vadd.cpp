@@ -36,17 +36,26 @@ void Compute(uint64_t n_ext,
 }
 
 void Mmap2Stream_internal(
-        tapa::mmap<const float> mmap_int,
+        tapa::async_mmap<float> mmap_int,
         uint64_t n_int,
         tapa::ostream<float>& stream_int) {
-  for (uint64_t i = 0; i < n_int; ++i) {
-    stream_int.write(mmap_int[i]);
+
+  for (uint64_t rq_i = 0, rs_i = 0; rs_i < n_int; ) {
+#pragma HLS pipeline II = 1
+    float elem;
+    if (rq_i < n_int && rq_i < rs_i + 50 &&  // TODO: resolve the DRAM lock issue
+        mmap_int.read_addr_try_write(rq_i)) rq_i++;
+    if (mmap_int.read_data_try_read(elem)) {
+      stream_int.write(elem);
+      rs_i++;
+    }
   }
+
   stream_int.close();
 }
 
 void Mmap2Stream(
-        tapa::mmap<const float> mmap_ext,
+        tapa::mmap<float> mmap_ext,
         uint64_t n_ext,
         tapa::ostream<float>& stream_ext) {
     tapa::task().invoke<0>(Mmap2Stream_internal,
@@ -54,8 +63,8 @@ void Mmap2Stream(
 }
 
 void Load(
-        tapa::mmap<const float> a_array,
-        tapa::mmap<const float> b_array,
+        tapa::async_mmap<float> a_array,
+        tapa::async_mmap<float> b_array,
         tapa::ostream<float>&   a_stream,
         tapa::ostream<float>&   b_stream,
         uint64_t n) {
@@ -74,8 +83,8 @@ void Store(
 }
 
 void VecAddNested(
-        tapa::mmap<const float> a_array,
-        tapa::mmap<const float> b_array,
+        tapa::mmap<float> a_array,
+        tapa::mmap<float> b_array,
         tapa::mmap<float> c_array, uint64_t n) {
   tapa::stream<float, 8> a_stream("a");
   tapa::stream<float, 8> b_stream("b");
