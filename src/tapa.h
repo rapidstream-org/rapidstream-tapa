@@ -31,7 +31,6 @@ namespace tapa {
 
 constexpr int join = 0;
 constexpr int detach = -1;
-constexpr int child = 1;
 
 struct task {
   task();
@@ -49,11 +48,6 @@ struct task {
 
   template <int step, typename Function, typename... Args, size_t S>
   task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
-    // invoke a child task
-    if (step > 0) {
-      f(std::forward<Args>(args)...);
-      return *this;
-    }
     schedule(/* detach= */ step < 0, std::bind(f, std::forward<Args>(args)...));
     return *this;
   }
