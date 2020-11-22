@@ -435,19 +435,12 @@ class Program:
             width = width_table.get(arg_name, 0)
             if width == 0:
               width = int(arg_name.split("'d")[0])
-            q = rtl.Pipeline(
-                name=instance.get_instance_arg(arg_name),
-                level=self.register_level,
-                width=width,
-            )
-            arg_table[instance.get_instance_arg(arg_name)] = q
-          else:
-            q = rtl.Pipeline(
-                name=arg_name,
-                level=self.register_level,
-                width=width,
-            )
-            arg_table[arg_name] = q
+          q = rtl.Pipeline(
+              name=instance.get_instance_arg(arg_name),
+              level=self.register_level,
+              width=width,
+          )
+          arg_table[arg_name] = q
           task.module.add_pipeline(q, init=ast.Identifier(arg_name))
 
         # arg_name is the upper-level name
@@ -586,9 +579,7 @@ class Program:
                                   key=lambda x: x[0]):
         if arg.cat == Instance.Arg.Cat.SCALAR:
           portargs.append(
-              ast.PortArg(
-                  portname=arg.port,
-                  argname=arg_table[instance.get_instance_arg(arg_name)][-1]))
+              ast.PortArg(portname=arg.port, argname=arg_table[arg_name][-1]))
         elif arg.cat == Instance.Arg.Cat.ISTREAM:
           portargs.extend(
               rtl.generate_istream_ports(port=arg.port, arg=arg_name))
