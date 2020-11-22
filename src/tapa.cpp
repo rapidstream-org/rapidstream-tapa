@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #if BOOST_VERSION >= 105900
@@ -328,31 +329,36 @@ void yield(const std::string& msg) { std::this_thread::yield(); }
 
 namespace {
 
-std::vector<std::thread> threads;
-const task* top_task = nullptr;
+std::unordered_map<const task*, std::vector<std::thread>> threads;
+std::mutex mtx;
 
 }  // namespace
-
 }  // namespace internal
 
-task::task() {
-  if (internal::top_task == nullptr) {
-    internal::top_task = this;
-  }
-}
+task::task() {}
 
 task::~task() {
-  if (this == internal::top_task) {
-    for (auto& t : internal::threads) t.join();
-    internal::top_task = nullptr;
+  std::vector<std::thread>* threads;
+  {
+    std::unique_lock<std::mutex> lock(internal::mtx);
+    threads = &internal::threads[this];
   }
+  for (auto& t : *threads) t.join();
+
+  std::unique_lock<std::mutex> lock(internal::mtx);
+  internal::threads.erase(this);
 }
 
 void task::schedule(bool detach, const std::function<void()>& f) {
   if (detach) {
     std::thread(f).detach();
   } else {
-    internal::threads.emplace_back(f);
+    std::vector<std::thread>* threads;
+    {
+      std::unique_lock<std::mutex> lock(internal::mtx);
+      threads = &internal::threads[this];
+    }
+    threads->emplace_back(f);
   }
 }
 
