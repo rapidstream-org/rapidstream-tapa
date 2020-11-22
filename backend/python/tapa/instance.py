@@ -40,7 +40,7 @@ class Instance:
       ISTREAM = STREAM | INPUT
       OSTREAM = STREAM | OUTPUT
 
-    def __init__(self, cat: Union[str, Cat], port: str):
+    def __init__(self, cat: Union[str, Cat], port: str, is_upper=False):
       if isinstance(cat, str):
         self.cat = {
             'istream': Instance.Arg.Cat.ISTREAM,
@@ -49,6 +49,9 @@ class Instance:
             'mmap': Instance.Arg.Cat.MMAP,
             'async_mmap': Instance.Arg.Cat.ASYNC_MMAP
         }[cat]
+        # only lower-level async_mmap is acknowledged
+        if is_upper and self.cat == Instance.Arg.Cat.ASYNC_MMAP:
+          self.cat = Instance.Arg.Cat.MMAP
       else:
         self.cat = cat
       self.port = port
@@ -59,7 +62,7 @@ class Instance:
     self.instance_id = instance_id
     self.step = kwargs.pop('step')
     self.args: Dict[str, Instance.Arg] = {
-        rtl.sanitize_array_name(k): Instance.Arg(**v)
+        rtl.sanitize_array_name(k): Instance.Arg(is_upper=task.is_upper, **v)
         for k, v in kwargs.pop('args').items()
     }
 

@@ -313,13 +313,15 @@ class Program:
 
   def _connect_fifos(self, task: Task) -> None:
     for fifo_name, fifo in task.fifos.items():
-      directions = {'consumed_by': rtl.ISTREAM_SUFFIXES,
-                    'produced_by': rtl.OSTREAM_SUFFIXES}
+      directions = {
+          'consumed_by': rtl.ISTREAM_SUFFIXES,
+          'produced_by': rtl.OSTREAM_SUFFIXES
+      }
 
       for direction, suffixes in directions.items():
         # skip if not in this direction
         if direction not in fifo:
-            continue
+          continue
 
         task_name, task_idx = fifo[direction]
         fifo_port = task.tasks[task_name][task_idx]['args'][fifo_name]['port']
@@ -340,12 +342,14 @@ class Program:
             task.module.add_signals([port])
             if port_direction == 'input':
               task.module.add_logics([
-                ast.Assign(left=ast.Identifier(wire_name),
-                           right=ast.Identifier(port_name))])
+                  ast.Assign(left=ast.Identifier(wire_name),
+                             right=ast.Identifier(port_name))
+              ])
             elif port_direction == 'output':
               task.module.add_logics([
-                ast.Assign(left=ast.Identifier(port_name),
-                           right=ast.Identifier(wire_name))])
+                  ast.Assign(left=ast.Identifier(port_name),
+                             right=ast.Identifier(wire_name))
+              ])
 
   def _instantiate_fifos(self, task: Task) -> None:
     for fifo_name, fifo in task.fifos.items():
@@ -450,9 +454,7 @@ class Program:
         # arg.port is the lower-level name
 
         # check which ports are used for async_mmap
-        # acknowlege only if the child module is a leaf
-        if arg.cat == Instance.Arg.Cat.ASYNC_MMAP and \
-           instance.task.is_lower:
+        if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
           for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
             if set(x.portname for x in rtl.generate_async_mmap_ports(
                 tag=tag,
@@ -463,8 +465,7 @@ class Program:
               async_mmap_args.setdefault(arg_name, []).append(tag)
 
         # add m_axi ports to the upper tasks
-        if arg.cat == Instance.Arg.Cat.MMAP or (
-            arg.cat == Instance.Arg.Cat.ASYNC_MMAP and task.is_upper):
+        if arg.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
           task.module.add_m_axi(name=arg_name, data_width=width_table[arg_name])
 
         # declare wires or forward async_mmap ports
@@ -594,12 +595,10 @@ class Program:
           portargs.extend(portarg for portarg in rtl.generate_peek_ports(
               rtl, port=arg.port, arg=arg_name)
                           if portarg.portname in child_port_set)
-
         elif arg.cat == Instance.Arg.Cat.OSTREAM:
           portargs.extend(
               rtl.generate_ostream_ports(port=arg.port, arg=arg_name))
-        elif arg.cat == Instance.Arg.Cat.MMAP or \
-            instance.task.is_upper:  # only acknowlege leaf async
+        elif arg.cat == Instance.Arg.Cat.MMAP:
           portargs.extend(
               rtl.generate_m_axi_ports(
                   module=instance.task.module,
