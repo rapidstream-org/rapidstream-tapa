@@ -106,6 +106,7 @@ rlim_t get_stack_size() {
 
 class worker {
   // dict mapping detach to list of coroutine
+  // list is used because the stable pointer can be used as key in handle_table
   unordered_map<bool, std::list<push_type>> coroutines;
 
   // dict mapping coroutine to handle
@@ -117,7 +118,6 @@ class worker {
   condition_variable wait_cv;
   bool done = false;
   std::atomic_int signal{0};
-  std::atomic_bool started{false};
   std::thread thread;
 
  public:
@@ -144,14 +144,14 @@ class worker {
             this->tasks.pop();
 
             auto& l = this->coroutines[detach];  // list of coroutines
-            auto last = l.empty() ? l.end() : std::prev(l.end());
-            auto call_back = [this, &l, last, f](pull_type& handle) {
-              // must have a stable pointer
-              auto& coroutine = last == l.end() ? *l.begin() : *std::next(last);
-              this->handle_table[&coroutine] = current_handle = &handle;
+            auto coroutine = new push_type*;
+            auto call_back = [this, &l, f, coroutine](pull_type& handle) {
+              this->handle_table[*coroutine] = current_handle = &handle;
+              delete coroutine;
               f();
             };
             l.emplace_back(fixedsize_stack(stack_size), call_back);
+            *coroutine = &l.back();
           }
         }
 
@@ -168,7 +168,7 @@ class worker {
               coroutine();
             }
 
-            if (*it || !this->started) {
+            if (*it) {
               if (!detach) active = true;
               ++it;
             } else {
@@ -188,9 +188,6 @@ class worker {
   }
 
   void add_task(bool detach, const function<void()>& f) {
-    if (this->started) {
-      throw std::runtime_error("new task added after worker started");
-    }
     {
       unique_lock lock(this->mtx);
       this->tasks.emplace(detach, f);
@@ -199,7 +196,6 @@ class worker {
   }
 
   void wait() {
-    this->started = true;
     unique_lock lock(this->mtx);
     this->wait_cv.wait(lock, [this] {
       return this->tasks.empty() && this->coroutines[false].empty();
