@@ -69,8 +69,8 @@ void Load(
         tapa::ostream<float>&   b_stream,
         uint64_t n) {
     tapa::task()
-        .invoke<tapa::child>(Mmap2Stream, a_array, n, a_stream)
-        .invoke<tapa::child>(Mmap2Stream, b_array, n, b_stream);
+        .invoke<tapa::join>(Mmap2Stream, a_array, n, a_stream)
+        .invoke<tapa::join>(Mmap2Stream, b_array, n, b_stream);
 }
 
 void Store(
@@ -91,7 +91,7 @@ void VecAddNested(
   tapa::stream<float, 8> c_stream("c");
 
   tapa::task()
-      .invoke<tapa::child>(Load,    a_array, b_array, a_stream, b_stream, n)
-      .invoke<tapa::child>(Compute, n, a_stream, b_stream, c_stream)
+      .invoke<tapa::join>(Load,    a_array, b_array, a_stream, b_stream, n)
+      .invoke<tapa::join>(Compute, n, a_stream, b_stream, c_stream)
       .invoke<tapa::join>(Store,   c_stream, c_array, n);
 }
