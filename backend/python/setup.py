@@ -42,7 +42,11 @@ setup(
     ],
     packages=find_packages(),
     python_requires='>=3.6',
-    install_requires=['haoda>=0.0.20200507.dev1', 'pyverilog>=1.2.0'],
+    install_requires=[
+        'haoda>=0.0.20200507.dev1',
+        'pyverilog>=1.2.0',
+        'toposort',
+    ],
     entry_points={
         'console_scripts': ['tapac=tapa.tapac:main', 'tapav=tapa.tapav:main'],
     },

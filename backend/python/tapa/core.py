@@ -8,7 +8,9 @@ import tempfile
 from typing import (Any, BinaryIO, Dict, Iterator, List, Optional, Set, TextIO,
                     Tuple, Union)
 
+import toposort
 from haoda.backend import xilinx as hls
+
 from tapa import util
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
@@ -63,8 +65,9 @@ class Program:
       self.is_temp = False
     self.toplevel_ports = tuple(map(Port, obj['tasks'][self.top]['ports']))
     self._tasks: Dict[str, Task] = collections.OrderedDict(
-        (name, Task(name=name, **task))
-        for name, task in sorted(obj['tasks'].items(), key=lambda x: x[0]))
+        (name, Task(name=name, **obj['tasks'][name]))
+        for name in toposort.toposort_flatten(
+            {k: set(v.get('tasks', ())) for k, v in obj['tasks'].items()}))
     self.frt_interface = obj['tasks'][self.top].get('frt_interface')
 
   def __del__(self):
