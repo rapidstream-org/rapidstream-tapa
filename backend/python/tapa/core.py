@@ -192,6 +192,10 @@ class Program:
     if register_level:
       self.top_task.module.register_level = register_level
 
+    # populate tasks
+    for task in self._tasks.values():
+      self._populate_task(task)
+
     # instrument the upper-level RTL
     for task in self._tasks.values():
       if task.is_upper:
@@ -237,7 +241,7 @@ class Program:
 
     topology: Dict[str, Dict[str, List[str]]] = {}
 
-    for instance in self._generate_child_instances(self.top_task):
+    for instance in self.top_task.instances:
       for name, arg in instance.args.items():
         if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
           name = rtl.async_mmap_instance_name(name)
@@ -303,13 +307,11 @@ class Program:
         map(len, topology[instance_dict[self.ctrl_instance_name]].values())) + 1
     self.top_task.module.fifo_partition_count = fifo_partition_count
 
-  def _generate_child_instances(self, task: Task) -> Iterator[Instance]:
-    for task_name, instance_objs in task.tasks.items():
-      for instance_idx, instance_obj in enumerate(instance_objs):
-        yield Instance(self.get_task(task_name),
-                       verilog=rtl,
-                       instance_id=instance_idx,
-                       **instance_obj)
+  def _populate_task(self, task: Task) -> None:
+    task.instances = tuple(
+        Instance(self.get_task(name), verilog=rtl, instance_id=idx, **obj)
+        for name, objs in task.tasks.items()
+        for idx, obj in enumerate(objs))
 
   def _connect_fifos(self, task: Task) -> None:
     for fifo_name, fifo in task.fifos.items():
@@ -420,7 +422,7 @@ class Program:
     arg_table: Dict[str, rtl.Pipeline] = {}
     async_mmap_args: Dict[str, List[str]] = collections.OrderedDict()
 
-    for instance in self._generate_child_instances(task):
+    for instance in task.instances:
       child_port_set = set(instance.task.module.ports)
 
       # add signal delcarations

@@ -1,9 +1,9 @@
 import collections
 import enum
-from typing import Union
+from typing import Tuple, Union
 
 import tapa.verilog.xilinx
-from .instance import Port
+from .instance import Instance, Port
 
 
 class Task:
@@ -15,12 +15,13 @@ class Task:
     code: str, HLS C++ code of this task.
     tasks: A dict mapping child task names to json instance description objects.
     fifos: A dict mapping child fifo names to json FIFO description objects.
-    ports: A dict mapping port names to instance.Port objects for the current task.
+    ports: A dict mapping port names to Port objects for the current task.
     module: rtl.Module, should be attached after RTL code is generated.
 
   Properties:
     is_upper: bool, True if this task is an upper-level task.
     is_lower: bool, True if this task is an lower-level task.
+    instances: A tuple of Instance objects, children instances of this task.
   """
 
   class Level(enum.Enum):
@@ -50,6 +51,7 @@ class Task:
                  key=lambda x: x[0]))
       self.ports = {i.name: i for i in map(Port, kwargs.pop('ports'))}
     self.module = tapa.verilog.xilinx.Module('')
+    self._instances = ()
 
   @property
   def is_upper(self) -> bool:
@@ -58,3 +60,13 @@ class Task:
   @property
   def is_lower(self) -> bool:
     return self.level == Task.Level.LOWER
+
+  @property
+  def instances(self) -> Tuple[Instance, ...]:
+    if self._instances:
+      return self._instances
+    raise ValueError('instances not populated yet')
+
+  @instances.setter
+  def instances(self, instances: Tuple[Instance, ...]) -> None:
+    self._instances = instances
