@@ -215,15 +215,15 @@ class Program:
         with open(self.get_rtl(task.name), 'w') as rtl_code:
           rtl_code.write(task.module.code)
 
-      for name, content in rtl.OTHER_MODULES.items():
-        with open(self.get_rtl(name, prefix=False), 'w') as rtl_code:
-          rtl_code.write(content)
+    for name, content in rtl.OTHER_MODULES.items():
+      with open(self.get_rtl(name, prefix=False), 'w') as rtl_code:
+        rtl_code.write(content)
 
-      for file_name in ('async_mmap.v', 'detect_burst.v', 'generate_last.v',
-                        'relay_station.v'):
-        shutil.copy(
-            os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
-                         file_name), self.rtl_dir)
+    for file_name in ('async_mmap.v', 'detect_burst.v', 'generate_last.v',
+                      'relay_station.v'):
+      shutil.copy(
+          os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
+                        file_name), self.rtl_dir)
 
     return self
 
