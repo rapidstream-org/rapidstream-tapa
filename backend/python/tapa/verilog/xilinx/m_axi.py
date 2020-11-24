@@ -11,6 +11,7 @@ __all__ = [
     'M_AXI_PORT_WIDTHS',
     'M_AXI_ADDR_PORTS',
     'M_AXI_PORTS',
+    'M_AXI_INTERCONNECT_DISABLED_PORTS',
     'M_AXI_SUFFIXES',
     'M_AXI_PARAM_PREFIX',
     'M_AXI_PARAM_SUFFIXES',
@@ -91,6 +92,12 @@ M_AXI_PORTS: Dict[str, Tuple[Tuple[str, str], ...]] = collections.OrderedDict(
         ('USER', 'output'),
         ('VALID', 'output'),
     ),
+)
+
+M_AXI_INTERCONNECT_DISABLED_PORTS = dict(
+    USER={'AR', 'AW', 'R', 'W', 'B'},
+    REGION={'AR', 'AW'},
+    ID={'W'},
 )
 
 M_AXI_SUFFIXES = (

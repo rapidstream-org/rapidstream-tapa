@@ -38,6 +38,7 @@ class Program:
     toplevel_ports: Tuple of Port objects.
     _tasks: Dict mapping names of tasks to Task objects.
     frt_interface: Optional string of FRT interface code.
+    tcl_files: Dict mapping module names to TCL scripts that create the modules.
   """
 
   def __init__(self,
@@ -69,6 +70,7 @@ class Program:
         for name in toposort.toposort_flatten(
             {k: set(v.get('tasks', ())) for k, v in obj['tasks'].items()}))
     self.frt_interface = obj['tasks'][self.top].get('frt_interface')
+    self.tcl_files: Dict[str, str] = {}
 
   def __del__(self):
     if self.is_temp:
@@ -215,6 +217,10 @@ class Program:
         with open(self.get_rtl(task.name), 'w') as rtl_code:
           rtl_code.write(task.module.code)
 
+    for name, content in self.tcl_files.items():
+      with open(os.path.join(self.rtl_dir, name + '.tcl'), 'w') as tcl_file:
+        tcl_file.write(content)
+
     for name, content in rtl.OTHER_MODULES.items():
       with open(self.get_rtl(name, prefix=False), 'w') as rtl_code:
         rtl_code.write(content)
@@ -223,7 +229,7 @@ class Program:
                       'relay_station.v'):
       shutil.copy(
           os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
-                        file_name), self.rtl_dir)
+                       file_name), self.rtl_dir)
 
     return self
 
@@ -425,6 +431,8 @@ class Program:
     arg_table: Dict[str, rtl.Pipeline] = {}
     async_mmap_args: Dict[str, List[str]] = collections.OrderedDict()
 
+    mmap_arg_table = task.add_m_axi(width_table, self.tcl_files)
+
     for instance in task.instances:
       child_port_set = set(instance.task.module.ports)
 
@@ -461,10 +469,6 @@ class Program:
                 instance=instance,
             )) & child_port_set:
               async_mmap_args.setdefault(arg_name, []).append(tag)
-
-        # add m_axi ports to the upper tasks
-        if arg.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
-          task.module.add_m_axi(name=arg_name, data_width=width_table[arg_name])
 
         # declare wires or forward async_mmap ports
         for tag in async_mmap_args.get(arg_name, []):
@@ -582,6 +586,7 @@ class Program:
       portargs = list(rtl.generate_handshake_ports(instance, rst_q))
       for arg_name, arg in sorted((item for item in instance.args.items()),
                                   key=lambda x: x[0]):
+        mmap_arg_name = mmap_arg_table.get((arg_name, instance.name), arg_name)
         if arg.cat == Instance.Arg.Cat.SCALAR:
           portargs.append(
               ast.PortArg(portname=arg.port, argname=arg_table[arg_name][-1]))
@@ -599,7 +604,7 @@ class Program:
               rtl.generate_m_axi_ports(
                   module=instance.task.module,
                   port=arg.port,
-                  arg=arg_name,
+                  arg=mmap_arg_name,
                   arg_reg=arg_table[arg_name][-1].name,
               ))
         elif arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
@@ -608,7 +613,7 @@ class Program:
                 rtl.generate_async_mmap_ports(
                     tag=tag,
                     port=arg.port,
-                    arg=arg_name,
+                    arg=mmap_arg_name,
                     instance=instance,
                 ))
 
