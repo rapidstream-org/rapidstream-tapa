@@ -1,253 +1,24 @@
-"""Helpers for Xilinx verilog.
-
-This module defines constants and helper functions for verilog files generated
-for Xilinx devices.
-"""
-
 import collections
-import copy
 import itertools
 import logging
-import os
-import shutil
-import sys
-import tempfile
-from typing import (IO, BinaryIO, Callable, Dict, Iterable, Iterator, List,
-                    Optional, TextIO, Tuple, Union)
+from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple
 
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
-
-import tapa.instance
-from haoda.backend import xilinx as backend
 from tapa.verilog import ast
-
-from .util import (Pipeline, async_mmap_instance_name, match_array_name,
-                   sanitize_array_name, wire_name)
+# pylint: disable=wildcard-import,unused-wildcard-import
+from tapa.verilog.util import *
+from tapa.verilog.xilinx.async_mmap import *
+from tapa.verilog.xilinx.const import *
+from tapa.verilog.xilinx.m_axi import *
+from tapa.verilog.xilinx.typing import *
 
 _logger = logging.getLogger().getChild(__name__)
 
-# const strings
-
-RTL_SUFFIX = '.v'
-
-# width=0 means configurable
-M_AXI_PORT_WIDTHS = dict(
-    ADDR=0,
-    BURST=2,
-    CACHE=4,
-    DATA=0,
-    ID=1,
-    LAST=1,
-    LEN=8,
-    LOCK=1,
-    PROT=3,
-    QOS=4,
-    READY=1,
-    REGION=4,
-    RESP=2,
-    SIZE=3,
-    STRB=0,
-    USER=1,
-    VALID=1,
-)
-
-# [(name, direction), ...]
-M_AXI_ADDR_PORTS = (
-    ('ADDR', 'output'),
-    ('BURST', 'output'),
-    ('CACHE', 'output'),
-    ('ID', 'output'),
-    ('LEN', 'output'),
-    ('LOCK', 'output'),
-    ('PROT', 'output'),
-    ('QOS', 'output'),
-    ('READY', 'input'),
-    ('REGION', 'output'),
-    ('SIZE', 'output'),
-    ('USER', 'output'),
-    ('VALID', 'output'),
-)
-
-# {channel: [(name, direction), ...]}
-M_AXI_PORTS: Dict[str, Tuple[Tuple[str, str], ...]] = collections.OrderedDict(
-    AR=M_AXI_ADDR_PORTS,
-    AW=M_AXI_ADDR_PORTS,
-    B=(
-        ('ID', 'input'),
-        ('READY', 'output'),
-        ('RESP', 'input'),
-        ('USER', 'input'),
-        ('VALID', 'input'),
-    ),
-    R=(
-        ('DATA', 'input'),
-        ('ID', 'input'),
-        ('LAST', 'input'),
-        ('READY', 'output'),
-        ('RESP', 'input'),
-        ('USER', 'input'),
-        ('VALID', 'input'),
-    ),
-    W=(
-        ('DATA', 'output'),
-        ('ID', 'output'),
-        ('LAST', 'output'),
-        ('READY', 'input'),
-        ('STRB', 'output'),
-        ('USER', 'output'),
-        ('VALID', 'output'),
-    ),
-)
-
-M_AXI_PREFIX = backend.M_AXI_PREFIX
-
-M_AXI_SUFFIXES = (
-    '_ARADDR',
-    '_ARBURST',
-    '_ARCACHE',
-    '_ARID',
-    '_ARLEN',
-    '_ARLOCK',
-    '_ARPROT',
-    '_ARQOS',
-    '_ARREADY',
-    '_ARREGION',
-    '_ARSIZE',
-    '_ARUSER',
-    '_ARVALID',
-    '_AWADDR',
-    '_AWBURST',
-    '_AWCACHE',
-    '_AWID',
-    '_AWLEN',
-    '_AWLOCK',
-    '_AWPROT',
-    '_AWQOS',
-    '_AWREADY',
-    '_AWREGION',
-    '_AWSIZE',
-    '_AWUSER',
-    '_AWVALID',
-    '_BID',
-    '_BREADY',
-    '_BRESP',
-    '_BUSER',
-    '_BVALID',
-    '_RDATA',
-    '_RID',
-    '_RLAST',
-    '_RREADY',
-    '_RRESP',
-    '_RUSER',
-    '_RVALID',
-    '_WDATA',
-    '_WID',
-    '_WLAST',
-    '_WREADY',
-    '_WSTRB',
-    '_WUSER',
-    '_WVALID',
-)
-
-M_AXI_PARAM_PREFIX = 'C_M_AXI_'
-
-M_AXI_PARAM_SUFFIXES = (
-    '_ID_WIDTH',
-    '_ADDR_WIDTH',
-    '_DATA_WIDTH',
-    '_AWUSER_WIDTH',
-    '_ARUSER_WIDTH',
-    '_WUSER_WIDTH',
-    '_RUSER_WIDTH',
-    '_BUSER_WIDTH',
-    '_USER_VALUE',
-    '_PROT_VALUE',
-    '_CACHE_VALUE',
-    '_WSTRB_WIDTH',
-)
-
-M_AXI_PARAMS = ('C_M_AXI_DATA_WIDTH', 'C_M_AXI_WSTRB_WIDTH')
-
-ISTREAM_SUFFIXES = (
-    '_dout',
-    '_empty_n',
-    '_read',
-)
-
-OSTREAM_SUFFIXES = (
-    '_din',
-    '_full_n',
-    '_write',
-)
-
-# {channel_suffix: (name, direction)}
-STREAM_PORT_MAPPING = {
-    '_dout':    ('_fifo_V_dout',    'input'),
-    '_empty_n': ('_fifo_V_empty_n', 'input'),
-    '_read':    ('_fifo_V_read',    'output'),
-    '_din':     ('_fifo_V_din',     'output'),
-    '_full_n':  ('_fifo_V_full_n',  'input'),
-    '_write':   ('_fifo_V_write',   'output'),
-}
-
-FIFO_READ_PORTS = (
-    'if_dout',
-    'if_empty_n',
-    'if_read',
-    'if_read_ce',
-)
-
-FIFO_WRITE_PORTS = (
-    'if_din',
-    'if_full_n',
-    'if_write',
-    'if_write_ce',
-)
-
-HANDSHAKE_CLK = 'ap_clk'
-HANDSHAKE_RST = 'ap_rst_n_inv'
-HANDSHAKE_RST_N = 'ap_rst_n'
-HANDSHAKE_START = 'ap_start'
-HANDSHAKE_DONE = 'ap_done'
-HANDSHAKE_IDLE = 'ap_idle'
-HANDSHAKE_READY = 'ap_ready'
-
-HANDSHAKE_INPUT_PORTS = (
-    HANDSHAKE_CLK,
-    HANDSHAKE_RST_N,
-    HANDSHAKE_START,
-)
-HANDSHAKE_OUTPUT_PORTS = (
-    HANDSHAKE_DONE,
-    HANDSHAKE_IDLE,
-    HANDSHAKE_READY,
-)
-
-# const ast nodes
-
-START = ast.Identifier(HANDSHAKE_START)
-DONE = ast.Identifier(HANDSHAKE_DONE)
-IDLE = ast.Identifier(HANDSHAKE_IDLE)
-READY = ast.Identifier(HANDSHAKE_READY)
-TRUE = ast.IntConst("1'b1")
-FALSE = ast.IntConst("1'b0")
-SENS_TYPE = 'posedge'
-CLK = ast.Identifier(HANDSHAKE_CLK)
-RST = ast.Identifier(HANDSHAKE_RST)
-RST_N = ast.Identifier(HANDSHAKE_RST_N)
-CLK_SENS_LIST = ast.SensList((ast.Sens(CLK, type=SENS_TYPE),))
-ALL_SENS_LIST = ast.SensList((ast.Sens(None, type='all'),))
-STATE = ast.Identifier('tapa_state')
-
-# type aliases
-
-Directive = Tuple[int, str]
-IOPort = Union[ast.Input, ast.Output, ast.Inout]
-Signal = Union[ast.Reg, ast.Wire, ast.Pragma]
-Logic = Union[ast.Assign, ast.Always, ast.Initial]
-
-BUILTIN_INSTANCES = {'hmss_0'}
+__all__ = [
+    'Module',
+    'generate_m_axi_ports',
+]
 
 
 class Module:
@@ -608,18 +379,6 @@ class Module:
 
     for channel, ports in M_AXI_PORTS.items():
       for port, direction in ports:
-        width: Optional[int] = M_AXI_PORT_WIDTHS[port]
-        if width == 0:
-          if port == 'ADDR':
-            width = addr_width
-          elif port == 'DATA':
-            width = data_width
-          elif port == 'STRB':
-            width = data_width // 8
-        elif width == 1 and port not in {'ID', 'LOCK'}:
-          width = None
-        if width is not None:
-          width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
         portargs.append(
             ast.make_port_arg(port=f'{M_AXI_PREFIX}{channel}{port}',
                               arg=f'{M_AXI_PREFIX}{name}_{channel}{port}'))
@@ -657,28 +416,20 @@ class Module:
         return port_name
     return None
 
-  def add_m_axi(self,
-                name: str,
-                data_width: int,
-                addr_width: int = 64) -> 'Module':
+  def add_m_axi(
+      self,
+      name: str,
+      data_width: int,
+      addr_width: int = 64,
+      id_width: Optional[int] = None,
+  ) -> 'Module':
     for channel, ports in M_AXI_PORTS.items():
       io_ports = []
       for port, direction in ports:
-        width: Optional[int] = M_AXI_PORT_WIDTHS[port]
-        if width == 0:
-          if port == 'ADDR':
-            width = addr_width
-          elif port == 'DATA':
-            width = data_width
-          elif port == 'STRB':
-            width = data_width // 8
-        elif width == 1 and port != 'ID':
-          width = None
-        if width is not None:
-          width = ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
         io_ports.append((ast.Input if direction == 'input' else ast.Output)(
-            name=f'{M_AXI_PREFIX}{name}_{channel}{port}', width=width))
-
+            name=f'{M_AXI_PREFIX}{name}_{channel}{port}',
+            width=get_m_axi_port_width(port, data_width, addr_width, id_width),
+        ))
       self.add_ports(io_ports)
     return self
 
@@ -700,82 +451,6 @@ class Module:
             (HANDSHAKE_RST, HANDSHAKE_DONE, HANDSHAKE_IDLE, HANDSHAKE_READY)))
     self.add_pipeline(self.rst_n_q, init=RST_N)
     self.add_logics([ast.Assign(left=RST, right=ast.Unot(self.rst_n_q[-1]))])
-
-
-def ctrl_instance_name(top: str) -> str:
-  return f'{top}_control_s_axi_U'
-
-
-def is_data_port(port: str) -> bool:
-  return (port.endswith(ISTREAM_SUFFIXES[0]) or
-          port.endswith(OSTREAM_SUFFIXES[0]))
-
-
-def is_m_axi_port(port: Union[str, IOPort]) -> bool:
-  if not isinstance(port, str):
-    port = port.name
-  return (port.startswith(M_AXI_PREFIX) and
-          '_' + port.split('_')[-1] in M_AXI_SUFFIXES)
-
-
-def is_m_axi_param(param: Union[str, ast.Parameter]) -> bool:
-  if not isinstance(param, str):
-    param = param.name
-  param_split = param.split('_')
-  return (len(param_split) > 5 and param.startswith(M_AXI_PARAM_PREFIX) and
-          ''.join(map('_{}'.format, param_split[-2:])) in M_AXI_PARAM_SUFFIXES)
-
-
-def is_m_axi_unique_param(param: Union[str, ast.Parameter]) -> bool:
-  if not isinstance(param, str):
-    param = param.name
-  return param in M_AXI_PARAMS
-
-
-def rename_m_axi_name(mapping: Dict[str, str], name: str, idx1: int,
-                      idx2: int) -> str:
-  try:
-    name_snippets = name.split('_')
-    return '_'.join(name_snippets[:idx1] +
-                    [mapping['_'.join(name_snippets[idx1:idx2])]] +
-                    name_snippets[idx2:])
-  except KeyError:
-    pass
-  raise ValueError("'%s' is a result of renaming done by Vivado HLS; " %
-                   '_'.join(name_snippets[idx1:idx2]) +
-                   'please use a different variable name')
-
-
-def rename_m_axi_port(mapping: Dict[str, str], port: IOPort) -> IOPort:
-  new_port = copy.copy(port)
-  new_port.name = rename_m_axi_name(mapping, port.name, 2, -1)
-  if port.width is not None and isinstance(port.width.msb, ast.Minus):
-    new_port.width = copy.copy(new_port.width)
-    new_port.width.msb = copy.copy(new_port.width.msb)
-    new_port.width.msb.left = ast.Identifier(
-        rename_m_axi_name(mapping, port.width.msb.left.name, 3, -2))
-  return new_port
-
-
-def rename_m_axi_param(mapping: Dict[str, str],
-                       param: ast.Parameter) -> ast.Parameter:
-  new_param = copy.copy(param)
-  new_param.name = rename_m_axi_name(mapping, param.name, 3, -2)
-  return new_param
-
-
-def generate_handshake_ports(
-    instance: tapa.instance.Instance,
-    rst_q: Pipeline,
-) -> Iterator[ast.PortArg]:
-  yield ast.make_port_arg(port=HANDSHAKE_CLK, arg=CLK)
-  yield ast.make_port_arg(port=HANDSHAKE_RST_N, arg=rst_q[-1])
-  yield ast.make_port_arg(port=HANDSHAKE_START, arg=instance.start)
-  for port in HANDSHAKE_OUTPUT_PORTS:
-    yield ast.make_port_arg(
-        port=port,
-        arg="" if instance.is_autorun else wire_name(instance.name, port),
-    )
 
 
 def generate_m_axi_ports(
@@ -812,207 +487,3 @@ def generate_m_axi_ports(
       break
   else:
     raise ValueError(f'cannot find offset port for {port}')
-
-
-def fifo_port_name(fifo: str, suffix: str) -> str:
-  """Return the port name of the fifo generated via HLS.
-
-  Args:
-      fifo (str): Name of the fifo.
-      suffix (str): One of the suffixes in ISTREAM_SUFFIXES or OSTREAM_SUFFIXES.
-
-  Returns:
-      str: Port name of the fifo generated via HLS.
-  """
-  match = match_array_name(fifo)
-  if match is not None:
-    return f'{match[0]}_fifo_V_{match[1]}{suffix}'
-  return f'{fifo}_fifo_V{suffix}'
-
-
-def fifo_partition_name(name: str, idx: int) -> str:
-  return f'{name}/inst[{idx}].unit'
-
-
-def generate_istream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
-  for suffix in ISTREAM_SUFFIXES:
-    yield ast.make_port_arg(port=fifo_port_name(port, suffix),
-                            arg=wire_name(arg, suffix))
-
-
-def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
-  for suffix in OSTREAM_SUFFIXES:
-    yield ast.make_port_arg(port=fifo_port_name(port, suffix),
-                            arg=wire_name(arg, suffix))
-
-
-def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
-  match = match_array_name(port)
-  if match is not None:
-    port = f'{match[0]}_peek_val_{match[1]}'
-  else:
-    port = f'{port}_peek_val'
-  for suffix in verilog.ISTREAM_SUFFIXES[:1]:
-    yield ast.make_port_arg(port=port, arg=wire_name(arg, suffix))
-
-
-def async_mmap_suffixes(tag: str) -> Tuple[str, str, str]:
-  if tag in {'read_addr', 'write_addr', 'write_data'}:
-    return OSTREAM_SUFFIXES
-  if tag == 'read_data':
-    return ISTREAM_SUFFIXES
-  raise ValueError('invalid tag `%s`; tag must be one of `read_addr`, '
-                   '`read_data`, `write_addr`, or `write_data`' % tag)
-
-
-def async_mmap_arg_name(arg: str, tag: str, suffix: str) -> str:
-  return wire_name(f'{arg}_{tag}', suffix)
-
-
-def async_mmap_width(tag: str, suffix: str,
-                     data_width: int) -> Optional[ast.Width]:
-  if suffix in {ISTREAM_SUFFIXES[0], OSTREAM_SUFFIXES[0]}:
-    if tag.endswith('addr'):
-      data_width = 64
-    return ast.Width(msb=ast.Constant(data_width - 1), lsb=ast.Constant(0))
-  return None
-
-
-def generate_async_mmap_ports(
-    tag: str, port: str, arg: str,
-    instance: tapa.instance.Instance) -> Iterator[ast.PortArg]:
-  prefix = port + '_' + tag + '_V_'
-  for suffix in async_mmap_suffixes(tag):
-    port_name = instance.task.module.find_port(prefix=prefix, suffix=suffix)
-    if port_name is not None:
-      yield ast.make_port_arg(port=port_name,
-                              arg=async_mmap_arg_name(arg=arg,
-                                                      tag=tag,
-                                                      suffix=suffix))
-
-
-def generate_async_mmap_signals(tag: str, arg: str,
-                                data_width: int) -> Iterator[ast.Wire]:
-  for suffix in async_mmap_suffixes(tag):
-    yield ast.Wire(name=async_mmap_arg_name(arg=arg, tag=tag, suffix=suffix),
-                   width=async_mmap_width(tag=tag,
-                                          suffix=suffix,
-                                          data_width=data_width))
-
-
-def generate_async_mmap_ioports(tag: str, arg: str,
-                                data_width: int) -> Iterator[IOPort]:
-  for suffix in async_mmap_suffixes(tag):
-    if suffix in {ISTREAM_SUFFIXES[-1], *OSTREAM_SUFFIXES[::2]}:
-      ioport_type = ast.Output
-    else:
-      ioport_type = ast.Input
-    yield ioport_type(name=async_mmap_arg_name(arg=arg, tag=tag, suffix=suffix),
-                      width=async_mmap_width(tag=tag,
-                                             suffix=suffix,
-                                             data_width=data_width))
-
-
-def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
-         output_file: Union[str, BinaryIO]) -> None:
-  port_tuple = tuple(ports)
-  if isinstance(output_file, str):
-    xo_file = output_file
-  else:
-    xo_file = tempfile.mktemp(prefix='tapa_' + top_name + '_', suffix='.xo')
-  with tempfile.NamedTemporaryFile(mode='w+',
-                                   prefix='tapa_' + top_name + '_',
-                                   suffix='_kernel.xml') as kernel_xml_obj:
-    print_kernel_xml(name=top_name, ports=port_tuple, kernel_xml=kernel_xml_obj)
-    kernel_xml_obj.flush()
-    with backend.PackageXo(
-        xo_file=xo_file,
-        top_name=top_name,
-        kernel_xml=kernel_xml_obj.name,
-        hdl_dir=rtl_dir,
-        m_axi_names=(port.name for port in port_tuple if port.cat in {
-            tapa.instance.Instance.Arg.Cat.MMAP,
-            tapa.instance.Instance.Arg.Cat.ASYNC_MMAP
-        })) as proc:
-      stdout, stderr = proc.communicate()
-    if proc.returncode == 0 and os.path.exists(xo_file):
-      if not isinstance(output_file, str):
-        with open(xo_file, 'rb') as xo_obj:
-          shutil.copyfileobj(xo_obj, output_file)
-    else:
-      sys.stdout.write(stdout.decode('utf-8'))
-      sys.stderr.write(stderr.decode('utf-8'))
-  if not isinstance(output_file, str):
-    os.remove(xo_file)
-
-
-def print_constraints(instance_dict: Dict[str, str], output: TextIO) -> None:
-  directive_dict: Dict[str, List[str]] = {}
-  for instance, pblock in instance_dict.items():
-    directive_dict.setdefault(pblock, []).append(instance)
-
-  output.write('# partitioning constraints generated by tapac\n')
-  output.write('# modify only if you know what you are doing\n')
-  output.write('puts "applying partitioning constraints generated by tapac"\n')
-  for pblock, modules in directive_dict.items():
-    output.write(f'add_cells_to_pblock [get_pblocks {pblock}] '
-                 '[get_cells -regex {\n')
-    for module in modules:
-      module = module.replace('[', r'\\[').replace('.', r'\\.')
-      output.write(f'  pfm_top_i/dynamic_region/.*/inst/{module}\n')
-    output.write('}]\n')
-
-
-def print_kernel_xml(name: str, ports: Iterable[tapa.instance.Port],
-                     kernel_xml: IO[str]) -> None:
-  """Generate kernel.xml file.
-
-  Args:
-    name: name of the kernel.
-    ports: Iterable of tapa.instance.Port.
-    kernel_xml: file object to write to.
-  """
-  args = []
-  for port in ports:
-    if port.cat == tapa.instance.Instance.Arg.Cat.SCALAR:
-      cat = backend.Cat.SCALAR
-    elif port.cat in {
-        tapa.instance.Instance.Arg.Cat.MMAP,
-        tapa.instance.Instance.Arg.Cat.ASYNC_MMAP
-    }:
-      cat = backend.Cat.MMAP
-    elif port.cat == tapa.instance.Instance.Arg.Cat.ISTREAM:
-      cat = backend.Cat.ISTREAM
-    elif port.cat == tapa.instance.Instance.Arg.Cat.OSTREAM:
-      cat = backend.Cat.OSTREAM
-    else:
-      raise ValueError(f'unexpected port.cat: {port.cat}')
-
-    args.append(
-        backend.Arg(
-            cat=cat,
-            name=port.name,
-            port='',  # use defaults
-            ctype=port.ctype,
-            width=port.width,
-        ))
-  backend.print_kernel_xml(name, args, kernel_xml)
-
-
-OTHER_MODULES = {
-    'fifo_bram':
-        backend.BRAM_FIFO_TEMPLATE.format(name='fifo_bram',
-                                          width=32,
-                                          depth=32,
-                                          addr_width=(32 - 1).bit_length()),
-    'fifo_srl':
-        backend.SRL_FIFO_TEMPLATE.format(name='fifo_srl',
-                                         width=32,
-                                         depth=32,
-                                         addr_width=(32 - 1).bit_length()),
-    'fifo':
-        backend.AUTO_FIFO_TEMPLATE.format(name='fifo',
-                                          width=32,
-                                          depth=32,
-                                          addr_width=(32 - 1).bit_length()),
-}

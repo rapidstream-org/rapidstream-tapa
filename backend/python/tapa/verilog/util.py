@@ -3,6 +3,14 @@ from typing import Iterator, Optional, Tuple, Union
 
 from tapa.verilog import ast
 
+__all__ = [
+    'Pipeline',
+    'match_array_name',
+    'sanitize_array_name',
+    'wire_name',
+    'async_mmap_instance_name',
+]
+
 
 class Pipeline:
 
