@@ -17,6 +17,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <sys/mman.h>
+
 #if BOOST_VERSION >= 105900
 
 #ifndef BOOST_STACKTRACE_USE_NOOP
@@ -365,3 +367,19 @@ void task::schedule(bool detach, const std::function<void()>& f) {
 }  // namespace tapa
 
 #endif  // BOOST_VERSION >= 105900
+
+namespace tapa {
+namespace internal {
+
+void* allocate(size_t length) {
+  void* addr = ::mmap(nullptr, length, PROT_READ | PROT_WRITE,
+                      MAP_SHARED | MAP_ANONYMOUS, /*fd=*/-1, /*offset=*/0);
+  if (addr == MAP_FAILED) throw std::bad_alloc();
+  return addr;
+}
+void deallocate(void* addr, size_t length) {
+  if (::munmap(addr, length) != 0) throw std::bad_alloc();
+}
+
+}  // namespace internal
+}  // namespace tapa
