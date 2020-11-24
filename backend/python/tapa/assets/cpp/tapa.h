@@ -77,4 +77,10 @@ struct dummy {
 #include "tapa/synthesizable/util.h"
 #include "tapa/synthesizable/vec.h"
 
+namespace tapa {
+
+class task;
+
+}  // namespace tapa
+
 #endif  // TASK_LEVEL_PARALLELIZATION_H_

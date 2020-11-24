@@ -29,9 +29,6 @@
 
 namespace tapa {
 
-constexpr int join = 0;
-constexpr int detach = -1;
-
 struct task {
   task();
   task(task&&) = delete;

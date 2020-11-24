@@ -9,6 +9,8 @@
 
 namespace tapa {
 
+class stream;
+
 template <typename T>
 struct elem_t {
   T val;

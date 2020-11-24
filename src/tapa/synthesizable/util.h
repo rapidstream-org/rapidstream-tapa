@@ -7,6 +7,9 @@
 
 namespace tapa {
 
+constexpr int join = 0;
+constexpr int detach = -1;
+
 template <typename T>
 inline constexpr uint64_t widthof() {
   return sizeof(T) * CHAR_BIT;
