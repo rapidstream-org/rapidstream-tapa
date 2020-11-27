@@ -190,6 +190,15 @@ class Task:
 
       module_name = (f'axi_interconnect_{width_table[arg_name]}b_'
                      f'{s_axi_id_width}t_x{len(ports)}')
+      s_axi_data_width = ' \\\n  '.join(
+          f'CONFIG.S{idx:02d}_AXI_DATA_WIDTH {width_table[arg_name]}'
+          for idx in range(len(ports)))
+      s_axi_read_acceptance = ' \\\n  '.join(
+          f'CONFIG.S{idx:02d}_AXI_READ_ACCEPTANCE 16'
+          for idx in range(len(ports)))
+      s_axi_write_acceptance = ' \\\n  '.join(
+          f'CONFIG.S{idx:02d}_AXI_WRITE_ACCEPTANCE 16'
+          for idx in range(len(ports)))
       tcl_files.setdefault(
           module_name, f'''\
 create_ip \\
@@ -204,8 +213,11 @@ set_property -dict [list \\
   CONFIG.THREAD_ID_WIDTH {s_axi_id_width} \\
   CONFIG.INTERCONNECT_DATA_WIDTH {width_table[arg_name]} \\
   CONFIG.M00_AXI_DATA_WIDTH {width_table[arg_name]} \\
-  CONFIG.S00_AXI_DATA_WIDTH {width_table[arg_name]} \\
-  CONFIG.S01_AXI_DATA_WIDTH {width_table[arg_name]} \\
+  {s_axi_data_width} \\
+  CONFIG.M00_AXI_READ_ISSUING 16 \\
+  {s_axi_read_acceptance} \\
+  CONFIG.M00_AXI_WRITE_ISSUING 16 \\
+  {s_axi_write_acceptance} \\
   ] [get_ips {module_name}]
 set_property generate_synth_checkpoint false [get_files {module_name}.xci]
 generate_target {{synthesis simulation}} [get_files {module_name}.xci]
