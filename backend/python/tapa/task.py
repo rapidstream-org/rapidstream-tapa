@@ -188,10 +188,12 @@ class Task:
                 ))
         self.module.add_signals(wires)
 
-      module_name = (f'axi_interconnect_{width_table[arg_name]}b_'
+      data_width = max(width_table[arg_name], 32)
+      assert data_width in {32, 64, 128, 256, 512, 1024}
+      module_name = (f'axi_interconnect_{data_width}b_'
                      f'{s_axi_id_width}t_x{len(ports)}')
       s_axi_data_width = ' \\\n  '.join(
-          f'CONFIG.S{idx:02d}_AXI_DATA_WIDTH {width_table[arg_name]}'
+          f'CONFIG.S{idx:02d}_AXI_DATA_WIDTH {data_width}'
           for idx in range(len(ports)))
       s_axi_read_acceptance = ' \\\n  '.join(
           f'CONFIG.S{idx:02d}_AXI_READ_ACCEPTANCE 16'
@@ -211,8 +213,8 @@ set_property -dict [list \\
   CONFIG.AXI_ADDR_WIDTH 64 \\
   CONFIG.NUM_SLAVE_PORTS {len(ports)} \\
   CONFIG.THREAD_ID_WIDTH {s_axi_id_width} \\
-  CONFIG.INTERCONNECT_DATA_WIDTH {width_table[arg_name]} \\
-  CONFIG.M00_AXI_DATA_WIDTH {width_table[arg_name]} \\
+  CONFIG.INTERCONNECT_DATA_WIDTH {data_width} \\
+  CONFIG.M00_AXI_DATA_WIDTH {data_width} \\
   {s_axi_data_width} \\
   CONFIG.M00_AXI_READ_ISSUING 16 \\
   {s_axi_read_acceptance} \\
