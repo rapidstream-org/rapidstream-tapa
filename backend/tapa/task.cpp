@@ -398,7 +398,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         const bool arg_is_streams = IsTapaType(decl_ref, "streams");
         const auto op_call =
             dyn_cast<CXXOperatorCallExpr>(arg);  // element in an array
-        if (decl_ref || op_call || arg_is_int) {
+        const auto arg_is_seq = IsTapaType(arg, "seq");
+        if (decl_ref || op_call || arg_is_int || arg_is_seq) {
           string arg_name;
           if (decl_ref) {
             arg_name = decl_ref->getNameInfo().getName().getAsString();
@@ -497,6 +498,9 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                 register_producer(arg);
                 register_arg(arg, ArrayNameAt(param_name, i));
               }
+            } else if (arg_is_seq) {
+              param_cat = "scalar";
+              register_arg("64'd" + std::to_string(i_vec));
             } else {
               param_cat = "scalar";
               register_arg();

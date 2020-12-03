@@ -29,6 +29,8 @@
 
 namespace tapa {
 
+struct seq {};
+
 struct task {
   task();
   task(task&&) = delete;
@@ -71,6 +73,9 @@ struct task {
   static T& access(T& arg, uint64_t idx) {
     return arg;
   }
+
+  // sequence
+  static int access(seq, uint64_t idx) { return idx; }
 
   // access streams in vector invoke
   template <typename T, uint64_t length, uint64_t depth>

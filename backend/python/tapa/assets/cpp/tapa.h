@@ -80,6 +80,7 @@ struct dummy {
 namespace tapa {
 
 class task;
+class seq;
 
 }  // namespace tapa
 
