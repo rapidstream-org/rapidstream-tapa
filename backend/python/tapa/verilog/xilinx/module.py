@@ -336,7 +336,7 @@ class Module:
       buffer_size: Optional[int] = None,
       max_wait_time: int = 3,
       max_burst_len: Optional[int] = None,
-      reg_name: str = '',
+      offset_name: str = '',
   ) -> 'Module':
     rst_q = Pipeline(f'{name}__rst', level=self.register_level)
     self.add_pipeline(rst_q, init=ast.Unot(RST_N))
@@ -394,7 +394,7 @@ class Module:
                 addr_width - elem_size_bytes_m1.bit_length() - 1,
                 elem_size_bytes_m1.bit_length(),
                 arg=arg,
-                name=reg_name or name)
+                name=offset_name or name)
         else:
           if suffix.endswith('_read') or suffix.endswith('_write'):
             arg = "1'b0"

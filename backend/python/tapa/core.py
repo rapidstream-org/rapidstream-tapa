@@ -628,7 +628,7 @@ class Program:
       for arg_name in async_mmap_args:
         task.module.add_async_mmap_instance(
             name=arg_name,
-            reg_name=arg_table[arg_name][-1],
+            offset_name=arg_table[arg_name][-1],
             tags=async_mmap_args[arg_name],
             data_width=width_table[arg_name],
         )
