@@ -2,10 +2,10 @@
 #define TAPA_TASK_H_
 
 #include <memory>
+#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <queue>
 
 #include "clang/AST/AST.h"
 #include "clang/AST/RecursiveASTVisitor.h"

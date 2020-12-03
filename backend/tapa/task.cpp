@@ -248,14 +248,16 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         add_pragma(GetArrayElem(param_name, i));
       }
     } else if (IsStreamInterface(param)) {
-      replaced_body += "#pragma HLS data_pack variable = " + param_name + ".fifo\n";
+      replaced_body +=
+          "#pragma HLS data_pack variable = " + param_name + ".fifo\n";
       if (IsTapaType(param, "istream")) {
-        replaced_body += "#pragma HLS data_pack variable = " + param_name + ".peek_val\n";
+        replaced_body +=
+            "#pragma HLS data_pack variable = " + param_name + ".peek_val\n";
       }
+    } else if (*top_name == func->getNameAsString()) {
+      add_pragma();
     } else {
-      if (*top_name == func->getNameAsString()) {
-        add_pragma();
-      } // else, middle level scalars
+      // middle level scalars
     }
   }
   if (*top_name == func->getNameAsString()) {
@@ -271,8 +273,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         replaced_body += "{ auto val = " + param_name + ".read(); }\n";
       } else if (IsTapaType(param, "ostream")) {
         auto type = GetStreamElemType(param);
-        replaced_body += "{ static " + type + " val; " +
-                         param_name + ".write(val); }\n";
+        replaced_body +=
+            "{ static " + type + " val; " + param_name + ".write(val); }\n";
       }
     } else if (IsTapaType(param, "(async_)?mmaps")) {
       for (int i = 0; i < GetArraySize(param); ++i) {
