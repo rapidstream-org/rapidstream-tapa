@@ -1,5 +1,6 @@
 import collections
 import enum
+import logging
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 from tapa.verilog import xilinx as rtl
@@ -7,10 +8,12 @@ from tapa.verilog import ast
 
 from .instance import Instance, Port
 
+_logger = logging.getLogger().getChild(__name__)
+
 
 class MMapConnection(NamedTuple):
   id_width: int
-  ports: Tuple[Tuple[Instance, str], ...]
+  args: Tuple[Instance.Arg, ...]
 
 
 class Task:
@@ -81,20 +84,28 @@ class Task:
   def instances(self, instances: Tuple[Instance, ...]) -> None:
     self._instances = instances
 
-    mmaps: Dict[str, List[Tuple[Instance, str]]] = collections.defaultdict(list)
+    mmaps: Dict[str, List[Instance.Arg]] = collections.defaultdict(list)
     for instance in instances:
-      for arg_name, arg in instance.args.items():
+      for arg in instance.args:
         if arg.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
-          mmaps[arg_name].append((instance, arg.port))
+          mmaps[arg.name].append(arg)
 
     self._mmaps = {}
-    for arg_name, ports in mmaps.items():
+    for arg_name, args in mmaps.items():
       # width of the ID port is the sum of the widest slave port plus bits
       # required to multiplex the slaves
       id_width = max(
-          instance.task.get_id_width(port) or 0 for instance, port in ports)
-      id_width += (len(ports) - 1).bit_length()
-      self._mmaps[arg_name] = MMapConnection(id_width, ports=tuple(ports))
+          arg.instance.task.get_id_width(arg.port) or 0 for arg in args)
+      id_width += (len(args) - 1).bit_length()
+      self._mmaps[arg_name] = MMapConnection(id_width, args=tuple(args))
+      if len(args) > 1:
+        for arg in args:
+          arg.shared = True
+        _logger.debug(
+            "mmap argument '%s' is shared by %d ports",
+            arg_name,
+            len(args),
+        )
 
   @property
   def mmaps(self) -> Dict[str, MMapConnection]:
@@ -111,25 +122,23 @@ class Task:
       self,
       width_table: Dict[str, int],
       tcl_files: Dict[str, str],
-  ) -> Dict[Tuple[str, str], str]:
-    mmap_arg_table: Dict[Tuple[str, str], str] = {}
-
-    for arg_name, (m_axi_id_width, ports) in self.mmaps.items():
+  ) -> None:
+    for arg_name, (m_axi_id_width, args) in self.mmaps.items():
       # add m_axi ports to the arg list
       self.module.add_m_axi(
           name=arg_name,
           data_width=width_table[arg_name],
           id_width=m_axi_id_width or None,
       )
-      if len(ports) == 1:
+      if len(args) == 1:
         continue
 
       # add AXI interconnect if necessary
-      assert len(ports) <= 16, f'too many ports connected to {arg_name}'
+      assert len(args) <= 16, f'too many ports connected to {arg_name}'
       assert m_axi_id_width is not None
 
       s_axi_id_width = max(
-          instance.task.get_id_width(port) or 0 for instance, port in ports)
+          arg.instance.task.get_id_width(arg.port) or 0 for arg in args)
 
       portargs = [
           ast.make_port_arg(port='INTERCONNECT_ACLK', arg=rtl.HANDSHAKE_CLK),
@@ -157,10 +166,7 @@ class Task:
                   arg=m_axi_arg,
               ))
 
-      for idx, (instance, port) in enumerate(ports):
-        new_arg_name = f'{arg_name}___{instance.name}___{port}'
-        mmap_arg_table[arg_name, instance.name] = new_arg_name
-
+      for idx, arg in enumerate(args):
         portargs += (
             ast.make_port_arg(port=f'S{idx:02d}_AXI_ACLK',
                               arg=rtl.HANDSHAKE_CLK),
@@ -170,13 +176,14 @@ class Task:
         wires = []
         for axi_chan, axi_ports in rtl.M_AXI_PORTS.items():
           for axi_port, _ in axi_ports:
-            wire_name = f'{rtl.M_AXI_PREFIX}{new_arg_name}_{axi_chan}{axi_port}'
+            wire_name = (f'{rtl.M_AXI_PREFIX}{arg.mmap_name}_'
+                         f'{axi_chan}{axi_port}')
             wires.append(
                 ast.Wire(name=wire_name,
                          width=rtl.get_m_axi_port_width(
                              port=axi_port,
                              data_width=width_table[arg_name],
-                             id_width=instance.task.get_id_width(port),
+                             id_width=arg.instance.task.get_id_width(arg.port),
                          )))
             if axi_chan in rtl.M_AXI_INTERCONNECT_DISABLED_PORTS.get(
                 axi_port, {}):
@@ -191,16 +198,16 @@ class Task:
       data_width = max(width_table[arg_name], 32)
       assert data_width in {32, 64, 128, 256, 512, 1024}
       module_name = (f'axi_interconnect_{data_width}b_'
-                     f'{s_axi_id_width}t_x{len(ports)}')
+                     f'{s_axi_id_width}t_x{len(args)}')
       s_axi_data_width = ' \\\n  '.join(
           f'CONFIG.S{idx:02d}_AXI_DATA_WIDTH {data_width}'
-          for idx in range(len(ports)))
+          for idx in range(len(args)))
       s_axi_read_acceptance = ' \\\n  '.join(
           f'CONFIG.S{idx:02d}_AXI_READ_ACCEPTANCE 16'
-          for idx in range(len(ports)))
+          for idx in range(len(args)))
       s_axi_write_acceptance = ' \\\n  '.join(
           f'CONFIG.S{idx:02d}_AXI_WRITE_ACCEPTANCE 16'
-          for idx in range(len(ports)))
+          for idx in range(len(args)))
       tcl_files.setdefault(
           module_name, f'''\
 create_ip \\
@@ -211,7 +218,7 @@ create_ip \\
   -module_name {module_name}
 set_property -dict [list \\
   CONFIG.AXI_ADDR_WIDTH 64 \\
-  CONFIG.NUM_SLAVE_PORTS {len(ports)} \\
+  CONFIG.NUM_SLAVE_PORTS {len(args)} \\
   CONFIG.THREAD_ID_WIDTH {s_axi_id_width} \\
   CONFIG.INTERCONNECT_DATA_WIDTH {data_width} \\
   CONFIG.M00_AXI_DATA_WIDTH {data_width} \\
@@ -229,5 +236,3 @@ generate_target {{synthesis simulation}} [get_files {module_name}.xci]
           instance_name=f'{module_name}__{arg_name}',
           ports=portargs,
       )
-
-    return mmap_arg_table

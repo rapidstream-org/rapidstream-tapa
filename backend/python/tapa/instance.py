@@ -1,5 +1,5 @@
 import enum
-from typing import Dict, Iterator, Union
+from typing import Iterator, Tuple, Union
 
 from tapa import util
 from tapa.verilog import ast
@@ -40,7 +40,14 @@ class Instance:
       ISTREAM = STREAM | INPUT
       OSTREAM = STREAM | OUTPUT
 
-    def __init__(self, cat: Union[str, Cat], port: str, is_upper=False):
+    def __init__(self,
+                 name: str,
+                 instance: 'Instance',
+                 cat: Union[str, Cat],
+                 port: str,
+                 is_upper=False):
+      self.name = name
+      self.instance = instance
       if isinstance(cat, str):
         self.cat = {
             'istream': Instance.Arg.Cat.ISTREAM,
@@ -56,15 +63,32 @@ class Instance:
         self.cat = cat
       self.port = port
       self.width = None
+      self.shared = False  # only set for (async) mmaps
+
+    def __lt__(self, other):
+      if isinstance(other, Instance.Arg):
+        return self.name < other.name
+      return NotImplemented
+
+    @property
+    def mmap_name(self) -> str:
+      assert self.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}
+      if self.shared:
+        return f'{self.name}___{self.instance.name}___{self.port}'
+      return self.name
 
   def __init__(self, task: 'Task', instance_id: int, **kwargs):
     self.task = task
     self.instance_id = instance_id
     self.step = kwargs.pop('step')
-    self.args: Dict[str, Instance.Arg] = {
-        rtl.sanitize_array_name(k): Instance.Arg(is_upper=task.is_upper, **v)
-        for k, v in kwargs.pop('args').items()
-    }
+    self.args: Tuple[Instance.Arg, ...] = tuple(
+        sorted(
+            Instance.Arg(
+                name=rtl.sanitize_array_name(k),
+                instance=self,
+                is_upper=task.is_upper,
+                **v,
+            ) for k, v in kwargs.pop('args').items()))
 
   @property
   def name(self) -> str:

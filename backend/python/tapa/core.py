@@ -251,10 +251,9 @@ class Program:
     topology: Dict[str, Dict[str, List[str]]] = {}
 
     for instance in self.top_task.instances:
-      for name, arg in instance.args.items():
+      for arg in instance.args:
         if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-          name = rtl.async_mmap_instance_name(name)
-          instance_dict[name] = ''
+          instance_dict[rtl.async_mmap_instance_name(arg.name)] = ''
       instance_dict[instance.name] = ''
 
     # check that all non-FIFO instances are assigned to one and only one SLR
@@ -429,34 +428,33 @@ class Program:
   ) -> List[ast.Identifier]:
     is_done_signals: List[rtl.Pipeline] = []
     arg_table: Dict[str, rtl.Pipeline] = {}
-    async_mmap_args: Dict[str, List[str]] = collections.OrderedDict()
+    async_mmap_args: Dict[Instance.Arg, List[str]] = collections.OrderedDict()
 
-    mmap_arg_table = task.add_m_axi(width_table, self.tcl_files)
+    task.add_m_axi(width_table, self.tcl_files)
 
     for instance in task.instances:
       child_port_set = set(instance.task.module.ports)
 
       # add signal delcarations
-      for arg_name, arg in sorted((item for item in instance.args.items()),
-                                  key=lambda x: x[0]):
+      for arg in instance.args:
         if arg.cat not in {
             Instance.Arg.Cat.ISTREAM,
             Instance.Arg.Cat.OSTREAM,
         }:
           width = 64  # 64-bit address
           if arg.cat == Instance.Arg.Cat.SCALAR:
-            width = width_table.get(arg_name, 0)
+            width = width_table.get(arg.name, 0)
             if width == 0:
-              width = int(arg_name.split("'d")[0])
+              width = int(arg.name.split("'d")[0])
           q = rtl.Pipeline(
-              name=instance.get_instance_arg(arg_name),
+              name=instance.get_instance_arg(arg.name),
               level=self.register_level,
               width=width,
           )
-          arg_table[arg_name] = q
-          task.module.add_pipeline(q, init=ast.Identifier(arg_name))
+          arg_table[arg.name] = q
+          task.module.add_pipeline(q, init=ast.Identifier(arg.name))
 
-        # arg_name is the upper-level name
+        # arg.name is the upper-level name
         # arg.port is the lower-level name
 
         # check which ports are used for async_mmap
@@ -465,21 +463,27 @@ class Program:
             if set(x.portname for x in rtl.generate_async_mmap_ports(
                 tag=tag,
                 port=arg.port,
-                arg=arg_name,
+                arg=arg.name,
                 instance=instance,
             )) & child_port_set:
-              async_mmap_args.setdefault(arg_name, []).append(tag)
+              async_mmap_args.setdefault(arg, []).append(tag)
 
         # declare wires or forward async_mmap ports
-        for tag in async_mmap_args.get(arg_name, []):
+        for tag in async_mmap_args.get(arg, []):
           if task.is_upper and instance.task.is_lower:
             task.module.add_signals(
                 rtl.generate_async_mmap_signals(
-                    tag=tag, arg=arg_name, data_width=width_table[arg_name]))
+                    tag=tag,
+                    arg=arg.mmap_name,
+                    data_width=width_table[arg.name],
+                ))
           else:
             task.module.add_ports(
                 rtl.generate_async_mmap_ioports(
-                    tag=tag, arg=arg_name, data_width=width_table[arg_name]))
+                    tag=tag,
+                    arg=arg.name,
+                    data_width=width_table[arg.name],
+                ))
 
       # add reset registers
       rst_q = rtl.Pipeline(instance.rst_n, level=self.register_level)
@@ -584,36 +588,34 @@ class Program:
 
       # add task module instances
       portargs = list(rtl.generate_handshake_ports(instance, rst_q))
-      for arg_name, arg in sorted((item for item in instance.args.items()),
-                                  key=lambda x: x[0]):
-        mmap_arg_name = mmap_arg_table.get((arg_name, instance.name), arg_name)
+      for arg in instance.args:
         if arg.cat == Instance.Arg.Cat.SCALAR:
           portargs.append(
-              ast.PortArg(portname=arg.port, argname=arg_table[arg_name][-1]))
+              ast.PortArg(portname=arg.port, argname=arg_table[arg.name][-1]))
         elif arg.cat == Instance.Arg.Cat.ISTREAM:
           portargs.extend(
-              rtl.generate_istream_ports(port=arg.port, arg=arg_name))
+              rtl.generate_istream_ports(port=arg.port, arg=arg.name))
           portargs.extend(portarg for portarg in rtl.generate_peek_ports(
-              rtl, port=arg.port, arg=arg_name)
+              rtl, port=arg.port, arg=arg.name)
                           if portarg.portname in child_port_set)
         elif arg.cat == Instance.Arg.Cat.OSTREAM:
           portargs.extend(
-              rtl.generate_ostream_ports(port=arg.port, arg=arg_name))
+              rtl.generate_ostream_ports(port=arg.port, arg=arg.name))
         elif arg.cat == Instance.Arg.Cat.MMAP:
           portargs.extend(
               rtl.generate_m_axi_ports(
                   module=instance.task.module,
                   port=arg.port,
-                  arg=mmap_arg_name,
-                  arg_reg=arg_table[arg_name][-1].name,
+                  arg=arg.mmap_name,
+                  arg_reg=arg_table[arg.name][-1].name,
               ))
         elif arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-          for tag in async_mmap_args[arg_name]:
+          for tag in async_mmap_args[arg]:
             portargs.extend(
                 rtl.generate_async_mmap_ports(
                     tag=tag,
                     port=arg.port,
-                    arg=mmap_arg_name,
+                    arg=arg.mmap_name,
                     instance=instance,
                 ))
 
@@ -625,12 +627,12 @@ class Program:
 
     # instantiate async_mmap modules at the upper levels
     if task.is_upper:
-      for arg_name in async_mmap_args:
+      for arg in async_mmap_args:
         task.module.add_async_mmap_instance(
-            name=arg_name,
-            offset_name=arg_table[arg_name][-1],
-            tags=async_mmap_args[arg_name],
-            data_width=width_table[arg_name],
+            name=arg.mmap_name,
+            offset_name=arg_table[arg.name][-1],
+            tags=async_mmap_args[arg],
+            data_width=width_table[arg.name],
         )
 
     return is_done_signals
