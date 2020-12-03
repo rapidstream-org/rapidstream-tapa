@@ -152,9 +152,6 @@ class Task:
 
       for axi_chan, axi_ports in rtl.M_AXI_PORTS.items():
         for axi_port, direction in axi_ports:
-          if axi_chan in rtl.M_AXI_INTERCONNECT_DISABLED_PORTS.get(
-              axi_port, {}):
-            continue
           m_axi_arg = f'{rtl.M_AXI_PREFIX}{arg_name}_{axi_chan}{axi_port}'
 
           if axi_port == 'ID' and direction == 'input':
@@ -185,9 +182,6 @@ class Task:
                              data_width=width_table[arg_name],
                              id_width=arg.instance.task.get_id_width(arg.port),
                          )))
-            if axi_chan in rtl.M_AXI_INTERCONNECT_DISABLED_PORTS.get(
-                axi_port, {}):
-              continue
             portargs.append(
                 ast.make_port_arg(
                     port=f'S{idx:02d}_AXI_{axi_chan}{axi_port}',

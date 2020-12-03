@@ -28,8 +28,6 @@ module async_mmap #(
   output wire [3:0]           m_axi_AWCACHE,
   output wire [2:0]           m_axi_AWPROT,
   output wire [3:0]           m_axi_AWQOS,
-  output wire [3:0]           m_axi_AWREGION,
-  output wire                 m_axi_AWUSER,
 
   // axi write data channel
   output wire                   m_axi_WVALID,
@@ -37,15 +35,12 @@ module async_mmap #(
   output wire [DataWidth-1:0]   m_axi_WDATA,
   output wire [DataWidth/8-1:0] m_axi_WSTRB,
   output wire                   m_axi_WLAST,
-  output wire [0:0]             m_axi_WID,
-  output wire                   m_axi_WUSER,
 
   // axi write acknowledge channel
   input  wire       m_axi_BVALID,
   output wire       m_axi_BREADY,
   input  wire [1:0] m_axi_BRESP,
   input  wire [0:0] m_axi_BID,
-  input  wire       m_axi_BUSER,
 
   // axi read addr channel
   output wire                 m_axi_ARVALID,
@@ -59,8 +54,6 @@ module async_mmap #(
   output wire [3:0]           m_axi_ARCACHE,
   output wire [2:0]           m_axi_ARPROT,
   output wire [3:0]           m_axi_ARQOS,
-  output wire [3:0]           m_axi_ARREGION,
-  output wire                 m_axi_ARUSER,
 
   // axi read response channel
   input  wire                 m_axi_RVALID,
@@ -68,7 +61,6 @@ module async_mmap #(
   input  wire [DataWidth-1:0] m_axi_RDATA,
   input  wire                 m_axi_RLAST,
   input  wire [0:0]           m_axi_RID,
-  input  wire                 m_axi_RUSER,
   input  wire [1:0]           m_axi_RRESP,
 
   // push read addr here
@@ -284,16 +276,12 @@ module async_mmap #(
   assign m_axi_AWCACHE  = 4'b0011;  // Xilinx only supports 4'b0011
   assign m_axi_AWPROT   = 0;
   assign m_axi_AWQOS    = 0;
-  assign m_axi_AWREGION = 0;
-  assign m_axi_AWUSER   = 0;
 
   // W channel
   assign m_axi_WVALID = write_data_empty_n && burst_write_last_empty_n;
   assign m_axi_WDATA  = write_data_dout;
   assign m_axi_WSTRB  = {(DataWidth/8){1'b1}};  // assume every bit is valid
   assign m_axi_WLAST  = burst_write_last_dout;
-  assign m_axi_WID    = 0;
-  assign m_axi_WUSER  = 0;
 
   // B channel, discard all write acknowledgements
   assign m_axi_BREADY = 1'b1;
@@ -418,8 +406,6 @@ module async_mmap #(
   assign m_axi_ARCACHE        = 4'b0011;  // Xilinx only supports 4'b0011
   assign m_axi_ARPROT         = 0;
   assign m_axi_ARQOS          = 0;
-  assign m_axi_ARREGION       = 0;
-  assign m_axi_ARUSER         = 0;
 
   // R channel
   assign m_axi_RREADY    = read_data_full_n;
@@ -431,10 +417,8 @@ module async_mmap #(
     m_axi_BVALID,
     m_axi_BRESP,
     m_axi_BID,
-    m_axi_BUSER,
     m_axi_RLAST,
     m_axi_RID,
-    m_axi_RUSER,
     m_axi_RRESP,
     1'b0};
 
