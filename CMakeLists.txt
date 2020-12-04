@@ -103,11 +103,17 @@ install(
 set(CPACK_PACKAGE_NAME tapa)
 set(CPACK_PACKAGE_VERSION_MAJOR 0)
 set(CPACK_PACKAGE_VERSION_MINOR 0)
-set(CPACK_PACKAGE_VERSION_PATCH 20201203.2)
+set(CPACK_PACKAGE_VERSION_PATCH 20201203.3)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Task-Parallel High-Level Synthesis")
 
-string(JOIN ", " CPACK_DEBIAN_PACKAGE_DEPENDS "clang-8" "iverilog"
-       "libgoogle-glog-dev")
+string(
+  JOIN
+  ", "
+  CPACK_DEBIAN_PACKAGE_DEPENDS
+  "clang-8"
+  "g++"
+  "iverilog"
+  "libgoogle-glog-dev")
 if(Boost_FOUND)
   string(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
          ", libboost-coroutine-dev (>= 1.59), libboost-stacktrace-dev")
