@@ -386,8 +386,30 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     const FunctionDecl* task = nullptr;
     string task_name;
     auto get_name = [&](const string& name, uint64_t i,
-                        bool enable = true) -> string {
-      return enable && is_vec ? ArrayNameAt(name, i) : name;
+                        const DeclRefExpr* decl_ref) -> string {
+      if (is_vec && IsTapaType(decl_ref, "(async_mmaps|streams)")) {
+        const auto ts_type =
+            decl_ref->getType()->getAs<TemplateSpecializationType>();
+        assert(ts_type != nullptr);
+        assert(ts_type->getNumArgs() > 1);
+        const auto length = this->EvalAsInt(ts_type->getArg(1).getAsExpr());
+        if (i >= length) {
+          auto& diagnostics = context_.getDiagnostics();
+          static const auto diagnostic_id =
+              diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Remark,
+                                          "invocation #%0 accesses '%1[%2]'");
+          auto diagnostics_builder =
+              diagnostics.Report(decl_ref->getBeginLoc(), diagnostic_id);
+          diagnostics_builder.AddString(to_string(i));
+          diagnostics_builder.AddString(decl_ref->getNameInfo().getAsString());
+          diagnostics_builder.AddString(to_string(i % length));
+          diagnostics_builder.AddString(decl_ref->getType().getAsString());
+          diagnostics_builder.AddSourceRange(
+              GetCharSourceRange(decl_ref->getSourceRange()));
+        }
+        return ArrayNameAt(name, i % length);
+      }
+      return name;
     };
     for (uint64_t i_vec = 0; i_vec < vec_length; ++i_vec) {
       for (unsigned i = 0; i < invoke->getNumArgs(); ++i) {
@@ -396,8 +418,6 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         clang::Expr::EvalResult arg_eval_as_int_result;
         const bool arg_is_int =
             arg->EvaluateAsInt(arg_eval_as_int_result, this->context_);
-        const bool arg_is_async_mmaps = IsTapaType(decl_ref, "async_mmaps");
-        const bool arg_is_streams = IsTapaType(decl_ref, "streams");
         const auto op_call =
             dyn_cast<CXXOperatorCallExpr>(arg);  // element in an array
         const auto arg_is_seq = IsTapaType(arg, "seq");
@@ -469,21 +489,21 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             };
             if (IsTapaType(param, "mmap")) {
               param_cat = "mmap";
-              register_arg();
+              register_arg(get_name(arg_name, i_vec, decl_ref));
             } else if (IsTapaType(param, "async_mmap")) {
               param_cat = "async_mmap";
               // vector invocation can map async_mmaps to async_mmap
-              register_arg(get_name(arg_name, i_vec, arg_is_async_mmaps));
+              register_arg(get_name(arg_name, i_vec, decl_ref));
             } else if (IsTapaType(param, "istream")) {
               param_cat = "istream";
               // vector invocation can map istreams to istream
-              auto arg = get_name(arg_name, i_vec, arg_is_streams);
+              auto arg = get_name(arg_name, i_vec, decl_ref);
               register_consumer(arg);
               register_arg(arg);
             } else if (IsTapaType(param, "ostream")) {
               param_cat = "ostream";
               // vector invocation can map ostreams to ostream
-              auto arg = get_name(arg_name, i_vec, arg_is_streams);
+              auto arg = get_name(arg_name, i_vec, decl_ref);
               register_producer(arg);
               register_arg(arg);
             } else if (IsTapaType(param, "istreams")) {
