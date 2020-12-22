@@ -44,7 +44,7 @@ class Module:
       return
     self.ast: ast.Source
     self.directives: Tuple[Directive, ...]
-    self.ast, self.directives = parser.parse(files)
+    self.ast, self.directives = parser.parse(files, debug=False)
     self._handshake_output_ports: Dict[str, ast.Assign] = {}
     self._calculate_indices()
 
