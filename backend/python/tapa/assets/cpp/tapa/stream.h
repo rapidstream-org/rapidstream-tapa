@@ -10,6 +10,7 @@
 namespace tapa {
 
 class stream;
+class streams;
 
 template <typename T>
 struct elem_t {
