@@ -24,30 +24,11 @@ class mmap {
       : ptr_{vec.data()}, size_{vec.size()} {}
   operator T*() { return ptr_; }
 
-  // Dereference.
-  T& operator[](std::size_t idx) {
-    CHECK_GE(idx, 0);
-    CHECK_LT(idx, size_);
-    return ptr_[idx];
-  }
-  const T& operator[](std::size_t idx) const {
-    CHECK_GE(idx, 0);
-    CHECK_LT(idx, size_);
-    return ptr_[idx];
-  }
-  T& operator*() { return *ptr_; }
-  const T& operator*() const { return *ptr_; }
-
   // Increment / decrement.
   T& operator++() { return *++ptr_; }
   T& operator--() { return *--ptr_; }
   T operator++(int) { return *ptr_++; }
   T operator--(int) { return *ptr_--; }
-
-  // Arithmetic.
-  mmap<T> operator+(std::ptrdiff_t diff) { return ptr_ + diff; }
-  mmap<T> operator-(std::ptrdiff_t diff) { return ptr_ - diff; }
-  std::ptrdiff_t operator-(mmap<T> ptr) { return ptr_ - ptr; }
 
   // Convert to async_mmap.
   tapa::async_mmap<T> async_mmap() { return tapa::async_mmap<T>(*this); }
@@ -201,6 +182,16 @@ class async_mmaps {
   async_mmaps& operator=(async_mmaps&&) = default;
 
   async_mmap<T>& operator[](int idx) { return mmaps_[idx]; };
+
+  template <uint64_t offset, uint64_t length>
+  async_mmaps<T, length> slice() {
+    static_assert(offset + length < S, "invalid slice");
+    async_mmaps<T, length> result;
+    for (uint64_t i = 0; i < length; ++i) {
+      result.mmaps_[i] = this->mmaps_[offset + i];
+    }
+    return result;
+  }
 };
 
 template <typename T, uint64_t N>
