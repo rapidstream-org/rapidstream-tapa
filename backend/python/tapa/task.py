@@ -118,6 +118,24 @@ class Task:
       return self.mmaps[port].id_width or None
     return None
 
+  _DIR2CAT = {'produced_by': 'ostream', 'consumed_by': 'istream'}
+
+  def get_fifo_port(
+      self,
+      fifo_name: str,
+      direction: str,
+  ) -> Tuple[str, str, int]:
+    """Get port information to which a given FIFO is connected."""
+    if direction not in self._DIR2CAT:
+      raise ValueError(f'invalid direction: {direction}')
+    if direction not in self.fifos[fifo_name]:
+      raise ValueError(f'{fifo_name} is not {direction} any task')
+    task_name, task_idx = self.fifos[fifo_name][direction]
+    for port, arg in self.tasks[task_name][task_idx]['args'].items():
+      if arg['cat'] == self._DIR2CAT[direction] and arg['arg'] == fifo_name:
+        return task_name, task_idx, port
+    raise ValueError(f'task {self.name} has inconsistent metadata')
+
   def add_m_axi(
       self,
       width_table: Dict[str, int],

@@ -299,7 +299,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
   // Obtain the connection schema from the task.
   // metadata: {tasks, fifos}
-  // tasks: {task_name: [{step, {args: var_name: {var_type, port_name}}}]}
+  // tasks: {task_name: [{step, {args: port_name: {var_type, var_name}}}]}
   // fifos: {fifo_name: {depth, produced_by, consumed_by}}
   auto& metadata = GetMetadata();
   metadata["fifos"] = json::object();
@@ -454,8 +454,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
               if (arg.empty())
                 arg = arg_name;  // use global arg_name by default
               if (port.empty()) port = param_name;
-              (*metadata["tasks"][task_name].rbegin())["args"][arg] = {
-                  {"cat", param_cat}, {"port", port}};
+              (*metadata["tasks"][task_name].rbegin())["args"][port] = {
+                  {"cat", param_cat}, {"arg", arg}};
             };
 
             // regsiter stream info to task

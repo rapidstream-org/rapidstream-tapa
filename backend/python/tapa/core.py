@@ -333,8 +333,7 @@ class Program:
         if direction not in fifo:
           continue
 
-        task_name, task_idx = fifo[direction]
-        fifo_port = task.tasks[task_name][task_idx]['args'][fifo_name]['port']
+        task_name, _, fifo_port = task.get_fifo_port(fifo_name, direction)
         child_ports = self.get_task(task_name).module.ports
 
         for suffix in suffixes:
@@ -368,8 +367,7 @@ class Program:
         continue
 
       # add FIFO instances
-      task_name, task_idx = fifo['produced_by']
-      fifo_port = task.tasks[task_name][task_idx]['args'][fifo_name]['port']
+      task_name, _, fifo_port = task.get_fifo_port(fifo_name, 'produced_by')
       child_ports = self.get_task(task_name).module.ports
       width = child_ports[rtl.fifo_port_name(fifo_port,
                                              rtl.OSTREAM_SUFFIXES[0])].width

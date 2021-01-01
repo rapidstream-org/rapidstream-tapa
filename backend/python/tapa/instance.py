@@ -84,11 +84,12 @@ class Instance:
     self.args: Tuple[Instance.Arg, ...] = tuple(
         sorted(
             Instance.Arg(
-                name=rtl.sanitize_array_name(k),
+                name=rtl.sanitize_array_name(arg['arg']),
                 instance=self,
+                cat=arg['cat'],
+                port=port,
                 is_upper=task.is_upper,
-                **v,
-            ) for k, v in kwargs.pop('args').items()))
+            ) for port, arg in kwargs.pop('args').items()))
 
   @property
   def name(self) -> str:
