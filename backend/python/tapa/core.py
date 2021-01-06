@@ -250,6 +250,9 @@ class Program:
 
     topology: Dict[str, Dict[str, List[str]]] = {}
 
+    # list of strings that creates the pblocks, may be empty
+    pblock_tcl: List[str] = []
+
     for instance in self.top_task.instances:
       for arg in instance.args:
         if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
@@ -268,6 +271,7 @@ class Program:
           subset.add(instance_obj)
         else:
           topology[region] = instance_obj
+          pblock_tcl.append(instance_obj.pop('tcl', ''))
       intersect = subset & directive_instance_set
       if intersect:
         raise InputError('more than one region assignment: %s' % intersect)
@@ -309,7 +313,7 @@ class Program:
           instance_dict[rtl.fifo_partition_name(name, idx)] = region
         fifo_partition_count[name] = idx + 1
 
-    rtl.print_constraints(instance_dict, constraints)
+    rtl.print_constraints(instance_dict, constraints, pre=''.join(pblock_tcl))
 
     self.top_task.module.register_level = max(
         map(len, topology[instance_dict[self.ctrl_instance_name]].values())) + 1
