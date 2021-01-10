@@ -241,7 +241,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     auto add_pragma = [&](string port = "") {
       if (port.empty()) port = param_name;
       replaced_body += "#pragma HLS interface s_axilite port = " + port +
-                       " bundle = control\n";
+                       " bundle = control\n" +
+                       "#pragma HLS data_pack variable = " + port + "\n";
     };
     if (IsTapaType(param, "(async_)?mmaps")) {
       for (int i = 0; i < GetArraySize(param); ++i) {
@@ -605,6 +606,9 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
         InsertHlsPragma(func_body->getBeginLoc(), "array_partition",
                         {{"variable", peek_var}, {"complete", {}}});
       }
+    } else {
+      InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
+                      {{"variable", param->getNameAsString()}});
     }
   }
 
