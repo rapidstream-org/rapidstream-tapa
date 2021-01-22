@@ -368,15 +368,9 @@ class Program:
         continue
 
       # add FIFO instances
-      task_name, _, fifo_port = task.get_fifo_port(fifo_name, 'produced_by')
-      child_ports = self.get_task(task_name).module.ports
-      width = child_ports[rtl.fifo_port_name(fifo_port,
-                                             rtl.OSTREAM_SUFFIXES[0])].width
-      # TODO: err properly if not integer literals
-      fifo_width = int(width.msb.value) - int(width.lsb.value) + 1
       task.module.add_fifo_instance(
           name=fifo_name,
-          width=fifo_width,
+          width=self._get_fifo_width(task, fifo_name),
           depth=fifo['depth'],
       )
 
@@ -721,3 +715,10 @@ class Program:
 
     task.module.add_pipeline(self.start_q, init=rtl.START)
     task.module.add_pipeline(self.done_q, init=is_state(STATE10))
+
+  def _get_fifo_width(self, task: Task, fifo: str) -> int:
+    producer_task, _, fifo_port = task.get_fifo_port(fifo, 'produced_by')
+    fifo_data_port = rtl.fifo_port_name(fifo_port, rtl.OSTREAM_SUFFIXES[0])
+    width = self.get_task(producer_task).module.ports[fifo_data_port].width
+    # TODO: err properly if not integer literals
+    return int(width.msb.value) - int(width.lsb.value) + 1
