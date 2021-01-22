@@ -253,7 +253,7 @@ class Program:
     for instance in self.top_task.instances:
       for arg in instance.args:
         if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-          instance_dict[rtl.async_mmap_instance_name(arg.name)] = ''
+          instance_dict[rtl.async_mmap_instance_name(arg.mmap_name)] = ''
       instance_dict[instance.name] = ''
 
     # check that all non-FIFO instances are assigned to one and only one SLR
