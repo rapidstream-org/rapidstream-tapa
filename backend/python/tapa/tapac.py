@@ -2,6 +2,7 @@
 import argparse
 import io
 import json
+import logging
 import os
 import os.path
 import re
@@ -10,11 +11,31 @@ import subprocess
 from typing import Dict, List, Optional, TextIO, Tuple
 
 import haoda.backend.xilinx
+
 import tapa.core
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format=
+    '%(levelname).1s%(asctime)s.%(msecs)03d %(name)s:%(lineno)d] %(message)s',
+    datefmt='%m%d %H:%M:%S',
+)
+
+_logger = logging.getLogger().getChild(__name__)
 
 
 def main():
   parser = argparse.ArgumentParser(prog='tapac', description='TAPA compiler')
+  parser.add_argument('--verbose',
+                      '-v',
+                      action='count',
+                      dest='verbose',
+                      help='increase verbosity')
+  parser.add_argument('--quiet',
+                      '-q',
+                      action='count',
+                      dest='quiet',
+                      help='decrease verbosity')
   parser.add_argument('--tapacc',
                       type=str,
                       metavar='file',
@@ -105,6 +126,13 @@ def main():
                      help='package as Xilinx object')
 
   args = parser.parse_args()
+  verbose = 0 if args.verbose is None else args.verbose
+  quiet = 0 if args.quiet is None else args.quiet
+  logging_level = (quiet -
+                   verbose) * 10 + logging.getLogger().getEffectiveLevel()
+  logging_level = max(logging.DEBUG, min(logging.CRITICAL, logging_level))
+  logging.getLogger().setLevel(logging_level)
+  _logger.info('logging level set to %s', logging.getLevelName(logging_level))
 
   all_steps = True
   last_step = ''
