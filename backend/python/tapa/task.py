@@ -124,7 +124,7 @@ class Task:
       self,
       fifo_name: str,
       direction: str,
-  ) -> Tuple[str, str, int]:
+  ) -> Tuple[str, int, str]:
     """Get port information to which a given FIFO is connected."""
     if direction not in self._DIR2CAT:
       raise ValueError(f'invalid direction: {direction}')
