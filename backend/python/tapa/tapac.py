@@ -268,13 +268,7 @@ def main():
     program.extract_cpp()
 
   if all_steps or args.run_hls is not None:
-    program.run_hls(**haoda.backend.xilinx.parse_device_info(
-        parser,
-        args,
-        platform_name='platform',
-        part_num_name='part_num',
-        clock_period_name='clock_period',
-    ))
+    program.run_hls(**_get_device_info(parser, args))
 
   if all_steps or args.extract_rtl is not None:
     program.extract_rtl()
@@ -293,6 +287,25 @@ def main():
   if all_steps or args.pack_xo is not None:
     with open(args.output_file, 'wb') as packed_obj:
       program.pack_rtl(packed_obj)
+
+
+def _get_device_info(
+    parser: argparse.ArgumentParser,
+    args: argparse.Namespace,
+    # Intentionally parse device_info only once.
+    # pylint: disable=dangerous-default-value
+    device_info: Dict[str, str] = {},
+) -> Dict[str, str]:
+  if not device_info:
+    device_info.update(
+        haoda.backend.xilinx.parse_device_info(
+            parser,
+            args,
+            platform_name='platform',
+            part_num_name='part_num',
+            clock_period_name='clock_period',
+        ))
+  return device_info
 
 
 if __name__ == '__main__':
