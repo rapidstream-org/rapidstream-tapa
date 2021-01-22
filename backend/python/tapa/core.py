@@ -184,22 +184,19 @@ class Program:
     Returns:
         Program: Return self.
     """
-    # extract and parse RTL
+    # extract and parse RTL and populate tasks
+    oldcwd = os.getcwd()
+    os.chdir(self.work_dir)
     for task in self._tasks.values():
-      oldcwd = os.getcwd()
-      os.chdir(self.work_dir)
       task.module = rtl.Module([self.get_rtl(task.name)])
-      os.chdir(oldcwd)
+      self._populate_task(task)
+    os.chdir(oldcwd)
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
       self._process_partition_directive(directive[0], directive[1])
     if register_level:
       self.top_task.module.register_level = register_level
-
-    # populate tasks
-    for task in self._tasks.values():
-      self._populate_task(task)
 
     # instrument the upper-level RTL
     for task in self._tasks.values():
