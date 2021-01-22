@@ -31,9 +31,12 @@ class Task:
   Properties:
     is_upper: bool, True if this task is an upper-level task.
     is_lower: bool, True if this task is an lower-level task.
+
+  Properties unique to upper tasks:
     instances: A tuple of Instance objects, children instances of this task.
-    mmaps: A dict mapping mmap arg names to MMapConnection objects, populated
-        only for upper tasks.
+    args: A dict mapping arg names to lists of Arg objects that belong to the
+        children instances of this task.
+    mmaps: A dict mapping mmap arg names to MMapConnection objects.
   """
 
   class Level(enum.Enum):
@@ -64,6 +67,7 @@ class Task:
       self.ports = {i.name: i for i in map(Port, kwargs.pop('ports'))}
     self.module = rtl.Module('')
     self._instances: Optional[Tuple[Instance, ...]] = None
+    self._args: Optional[Dict[str, List[Instance.Arg]]] = None
     self._mmaps: Optional[Dict[str, MMapConnection]] = None
 
   @property
@@ -83,10 +87,12 @@ class Task:
   @instances.setter
   def instances(self, instances: Tuple[Instance, ...]) -> None:
     self._instances = instances
+    self._args = collections.defaultdict(list)
 
     mmaps: Dict[str, List[Instance.Arg]] = collections.defaultdict(list)
     for instance in instances:
       for arg in instance.args:
+        self._args[arg.name].append(arg)
         if arg.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
           mmaps[arg.name].append(arg)
 
@@ -106,6 +112,12 @@ class Task:
             arg_name,
             len(args),
         )
+
+  @property
+  def args(self) -> Dict[str, List[Instance.Arg]]:
+    if self._args is not None:
+      return self._args
+    raise ValueError(f'children of task {self.name} not populated')
 
   @property
   def mmaps(self) -> Dict[str, MMapConnection]:
