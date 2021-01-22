@@ -11,6 +11,7 @@ from typing import (Any, BinaryIO, Dict, Iterator, List, Optional, Set, TextIO,
 import toposort
 from haoda.backend import xilinx as hls
 
+import tapa.autobridge as autobridge
 from tapa import util
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
@@ -172,7 +173,7 @@ class Program:
 
   def instrument_rtl(
       self,
-      directive: Optional[Tuple[Dict[str, Any], TextIO]] = None,
+      directive: Optional[Dict[str, Any]] = None,
       register_level: int = 0,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
@@ -194,7 +195,16 @@ class Program:
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
-      self._process_partition_directive(directive[0], directive[1])
+      floorplan = directive.get('floorplan')
+      if floorplan is None:
+        floorplan = autobridge.generate_floorplan(
+            self.top_task,
+            self.work_dir,
+            self._get_fifo_width,
+            directive['connectivity'],
+            directive['part_num'],
+        )
+      self._process_partition_directive(floorplan, directive['constraint'])
     if register_level:
       self.top_task.module.register_level = register_level
 

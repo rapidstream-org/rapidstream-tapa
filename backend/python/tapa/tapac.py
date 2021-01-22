@@ -8,7 +8,7 @@ import os.path
 import re
 import shutil
 import subprocess
-from typing import Dict, List, Optional, TextIO, Tuple
+from typing import Any, Dict, Optional
 
 import haoda.backend.xilinx
 
@@ -79,21 +79,6 @@ def main():
                       dest='frt_interface',
                       metavar='file',
                       help='output FRT interface file')
-  parser.add_argument('--directive',
-                      type=argparse.FileType('r'),
-                      dest='directive',
-                      metavar='file',
-                      help='input partitioning directive json file')
-  parser.add_argument('--constraint',
-                      type=argparse.FileType('w'),
-                      dest='constraint',
-                      metavar='file',
-                      help='output partitioning constraint tcl file')
-  parser.add_argument('--register-level',
-                      type=int,
-                      dest='register_level',
-                      metavar='INT',
-                      help='override register level of top-level signals')
   parser.add_argument(type=str,
                       dest='input_file',
                       metavar='file',
@@ -124,6 +109,28 @@ def main():
                      action='count',
                      dest='pack_xo',
                      help='package as Xilinx object')
+
+  group = parser.add_argument_group('floorplanning')
+  group.add_argument('--connectivity',
+                     type=argparse.FileType('r'),
+                     dest='connectivity',
+                     metavar='file',
+                     help='input connectivity specification for mmaps')
+  group.add_argument('--directive',
+                     type=argparse.FileType('r'),
+                     dest='directive',
+                     metavar='file',
+                     help='input partitioning directive json file')
+  group.add_argument('--constraint',
+                     type=argparse.FileType('w'),
+                     dest='constraint',
+                     metavar='file',
+                     help='output partitioning constraint tcl file')
+  group.add_argument('--register-level',
+                     type=int,
+                     dest='register_level',
+                     metavar='INT',
+                     help='override register level of top-level signals')
 
   args = parser.parse_args()
   verbose = 0 if args.verbose is None else args.verbose
@@ -274,11 +281,25 @@ def main():
     program.extract_rtl()
 
   if all_steps or args.instrument_rtl is not None:
-    directive: Optional[Tuple[Dict[str, List[str]]], TextIO] = None
+    directive: Optional[Dict[str, Any]] = None
     if args.directive is not None and args.constraint is not None:
-      directive = json.load(args.directive), args.constraint
-    elif args.directive is not None or args.constraint is not None:
-      parser.error('only one of directive and constraint is given')
+      # Read floorplan from `args.directive` and write TCL commands to
+      # `args.constraint`.
+      directive = dict(
+          floorplan=json.load(args.directive),
+          constraint=args.constraint,
+      )
+    elif args.directive is not None:
+      parser.error('only directive given; constraint needed as output')
+    elif args.constraint is not None:
+      # Generate floorplan using AutoBridge, optionally with a connectivity file
+      # that is used for `v++ --link` to specify mmap connections, and write TCL
+      # commands to `args.constraint`.
+      directive = dict(
+          connectivity=args.connectivity,
+          part_num=_get_device_info(parser, args)['part_num'],
+          constraint=args.constraint,
+      )
     if args.register_level is not None:
       if args.register_level <= 0:
         parser.error('register level must be positive')

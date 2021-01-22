@@ -29,12 +29,13 @@ function(add_tapa_target target_name)
   # * CLOCK_PERIOD: Optional, override the clock period.
   # * PART_NUM: Optional, override the part number.
   # * DIRECTIVE: Optional, apply partitioning directives.
+  # * CONNECTIVITY: Optional, specifies DRAM connections using Xilinx's ini.
   # * CONSTRAINT: Optional if DIRECTIVE is not set, generate partitioning
   #   constraints.
   cmake_parse_arguments(
     TAPA
     ""
-    "OUTPUT;INPUT;TOP;PLATFORM;TAPAC;TAPACC;FRT_INTERFACE;CLOCK_PERIOD;PART_NUM;DIRECTIVE;CONSTRAINT"
+    "OUTPUT;INPUT;TOP;PLATFORM;TAPAC;TAPACC;FRT_INTERFACE;CLOCK_PERIOD;PART_NUM;DIRECTIVE;CONNECTIVITY;CONSTRAINT"
     "DRAM_MAPPING"
     ${ARGN})
   if(NOT TAPA_INPUT)
@@ -97,6 +98,9 @@ function(add_tapa_target target_name)
   endif()
   if(TAPA_DIRECTIVE)
     list(APPEND tapac_cmd --directive ${TAPA_DIRECTIVE})
+  endif()
+  if(TAPA_CONNECTIVITY)
+    list(APPEND tapac_cmd --connectivity ${TAPA_CONNECTIVITY})
   endif()
   if(TAPA_CONSTRAINT)
     list(APPEND tapac_cmd --constraint ${TAPA_CONSTRAINT})
