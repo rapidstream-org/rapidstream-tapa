@@ -1,5 +1,6 @@
 import collections
 import json
+import logging
 import os.path
 import shutil
 import sys
@@ -18,6 +19,8 @@ from tapa.verilog import xilinx as rtl
 
 from .instance import Instance, Port
 from .task import Task
+
+_logger = logging.getLogger().getChild(__name__)
 
 STATE00 = ast.IntConst("2'b00")
 STATE01 = ast.IntConst("2'b01")
@@ -323,7 +326,11 @@ class Program:
     rtl.print_constraints(instance_dict, constraints, pre=''.join(pblock_tcl))
 
     self.top_task.module.register_level = max(
-        map(len, topology[instance_dict[self.ctrl_instance_name]].values())) + 1
+        map(len, topology[instance_dict[self.ctrl_instance_name]].values()),
+        default=-1,
+    ) + 1
+    _logger.info('top task register level set to %d based on floorplan',
+                 self.top_task.module.register_level)
     self.top_task.module.fifo_partition_count = fifo_partition_count
 
   def _populate_task(self, task: Task) -> None:
