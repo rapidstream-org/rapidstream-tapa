@@ -17,7 +17,7 @@ jobs:
       run: |
         sudo apt install python3-pip libboost-coroutine-dev libgoogle-glog-dev -y
         sudo apt install libboost-stacktrace-dev -y || true
-        sudo -H python3 -m pip install --upgrade pip
+        sudo -H python3 -m pip install --upgrade pip==20.3.4
         sudo -H python3 -m pip install cmake
     - name: Configure myself
       run: cmake -S . -B build
