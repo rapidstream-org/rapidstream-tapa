@@ -380,8 +380,11 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         has_name = true;
       }
     } else {
-      ReportError(invoke->getCallee()->getBeginLoc(),
-                  "unexpected invocation: %0")
+      static const auto diagnostic_id =
+          this->context_.getDiagnostics().getCustomDiagID(
+              clang::DiagnosticsEngine::Error, "unexpected invocation: %0");
+      this->context_.getDiagnostics()
+          .Report(invoke->getCallee()->getBeginLoc(), diagnostic_id)
           .AddString(invoke->getStmtClassName());
     }
     const FunctionDecl* task = nullptr;
@@ -464,9 +467,13 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
               // use global arg_name by default
               if (arg.empty()) arg = arg_name;
               if (metadata["fifos"][arg].contains("consumed_by")) {
+                static const auto diagnostic_id =
+                    this->context_.getDiagnostics().getCustomDiagID(
+                        clang::DiagnosticsEngine::Error,
+                        "tapa::stream '%0' consumed more than once");
                 auto diagnostics_builder =
-                    ReportError(ast_arg->getBeginLoc(),
-                                "tapa::stream '%0' consumed more than once");
+                    this->context_.getDiagnostics().Report(
+                        ast_arg->getBeginLoc(), diagnostic_id);
                 diagnostics_builder.AddString(arg);
                 diagnostics_builder.AddSourceRange(GetCharSourceRange(ast_arg));
               }
@@ -477,9 +484,13 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
               // use global arg_name by default
               if (arg.empty()) arg = arg_name;
               if (metadata["fifos"][arg].contains("produced_by")) {
+                static const auto diagnostic_id =
+                    this->context_.getDiagnostics().getCustomDiagID(
+                        clang::DiagnosticsEngine::Error,
+                        "tapa::stream '%0' produced more than once");
                 auto diagnostics_builder =
-                    ReportError(ast_arg->getBeginLoc(),
-                                "tapa::stream '%0' produced more than once");
+                    this->context_.getDiagnostics().Report(
+                        ast_arg->getBeginLoc(), diagnostic_id);
                 diagnostics_builder.AddString(arg);
                 diagnostics_builder.AddSourceRange(GetCharSourceRange(ast_arg));
               }
@@ -535,8 +546,11 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             continue;
           }
         }
-        auto diagnostics_builder =
-            ReportError(arg->getBeginLoc(), "unexpected argument: %0");
+        static const auto diagnostic_id =
+            this->context_.getDiagnostics().getCustomDiagID(
+                clang::DiagnosticsEngine::Error, "unexpected argument: %0");
+        auto diagnostics_builder = this->context_.getDiagnostics().Report(
+            arg->getBeginLoc(), diagnostic_id);
         diagnostics_builder.AddString(arg->getStmtClassName());
         diagnostics_builder.AddSourceRange(GetCharSourceRange(arg));
       }
@@ -901,8 +915,12 @@ int64_t Visitor::EvalAsInt(const Expr* expr) {
   if (expr->EvaluateAsInt(result, this->context_)) {
     return result.Val.getInt().getExtValue();
   }
-  this->ReportError(expr->getBeginLoc(),
-                    "fail to evaluate as integer at compile time")
+  static const auto diagnostic_id =
+      this->context_.getDiagnostics().getCustomDiagID(
+          clang::DiagnosticsEngine::Error,
+          "fail to evaluate as integer at compile time");
+  this->context_.getDiagnostics()
+      .Report(expr->getBeginLoc(), diagnostic_id)
       .AddSourceRange(this->GetCharSourceRange(expr));
   return -1;
 }
