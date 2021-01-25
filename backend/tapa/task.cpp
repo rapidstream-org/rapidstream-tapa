@@ -545,10 +545,11 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     }
   }
 
-  for (auto& fifo : metadata["fifos"].items()) {
+  for (auto fifo = metadata["fifos"].begin();
+       fifo != metadata["fifos"].end();) {
     if (!fifo.value().contains("consumed_by") &&
         !fifo.value().contains("produced_by")) {
-      auto fifo_name = fifo.key();
+      auto& fifo_name = fifo.key();
       auto fifo_decl = fifo_decls[fifo_name];
       auto& diagnostics = context_.getDiagnostics();
       static const auto diagnostic_id = diagnostics.getCustomDiagID(
@@ -558,7 +559,9 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       diagnostics_builder.AddString(fifo_name);
       diagnostics_builder.AddSourceRange(
           GetCharSourceRange(fifo_decl->getSourceRange()));
-      metadata["fifos"].erase(fifo_name);
+      fifo = metadata["fifos"].erase(fifo);
+    } else {
+      ++fifo;
     }
   }
 
