@@ -460,30 +460,28 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             };
 
             // regsiter stream info to task
-            auto register_consumer = [&](string arg = "") {
+            auto register_consumer = [&, ast_arg = arg](string arg = "") {
               // use global arg_name by default
               if (arg.empty()) arg = arg_name;
               if (metadata["fifos"][arg].contains("consumed_by")) {
                 auto diagnostics_builder =
-                    ReportError(param->getLocation(),
+                    ReportError(ast_arg->getBeginLoc(),
                                 "tapa::stream '%0' consumed more than once");
                 diagnostics_builder.AddString(arg);
-                diagnostics_builder.AddSourceRange(
-                    CharSourceRange::getCharRange(param->getSourceRange()));
+                diagnostics_builder.AddSourceRange(GetCharSourceRange(ast_arg));
               }
               metadata["fifos"][arg]["consumed_by"] = {
                   task_name, metadata["tasks"][task_name].size() - 1};
             };
-            auto register_producer = [&](string arg = "") {
+            auto register_producer = [&, ast_arg = arg](string arg = "") {
               // use global arg_name by default
               if (arg.empty()) arg = arg_name;
               if (metadata["fifos"][arg].contains("produced_by")) {
                 auto diagnostics_builder =
-                    ReportError(param->getLocation(),
+                    ReportError(ast_arg->getBeginLoc(),
                                 "tapa::stream '%0' produced more than once");
                 diagnostics_builder.AddString(arg);
-                diagnostics_builder.AddSourceRange(
-                    CharSourceRange::getCharRange(param->getSourceRange()));
+                diagnostics_builder.AddSourceRange(GetCharSourceRange(ast_arg));
               }
               metadata["fifos"][arg]["produced_by"] = {
                   task_name, metadata["tasks"][task_name].size() - 1};
