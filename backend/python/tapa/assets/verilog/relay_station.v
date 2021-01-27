@@ -153,8 +153,30 @@ module fifo_almost_full #(
 );
 
 generate
-  if (DATA_WIDTH * DEPTH > THRESHOLD) begin : bram
+  if (DATA_WIDTH >= 36 && DEPTH >= 4096) begin : uram
     fifo_bram_almost_full #(
+      .MEM_STYLE   ("ultra"),
+      .DATA_WIDTH  (DATA_WIDTH),
+      .ADDR_WIDTH  (ADDR_WIDTH),
+      .DEPTH       (DEPTH),
+      .GRACE_PERIOD(GRACE_PERIOD)
+    ) unit (
+      .clk  (clk),
+      .reset(reset),
+
+      .if_full_n  (if_full_n),
+      .if_write_ce(if_write_ce),
+      .if_write   (if_write),
+      .if_din     (if_din),
+
+      .if_empty_n(if_empty_n),
+      .if_read_ce(if_read_ce),
+      .if_read   (if_read),
+      .if_dout   (if_dout)
+    );
+  end else if (DATA_WIDTH * DEPTH >= THRESHOLD) begin : bram
+    fifo_bram_almost_full #(
+      .MEM_STYLE ("block"),
       .DATA_WIDTH(DATA_WIDTH),
       .ADDR_WIDTH(ADDR_WIDTH),
       .DEPTH     (DEPTH),
