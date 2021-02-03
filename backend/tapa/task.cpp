@@ -559,21 +559,36 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
   for (auto fifo = metadata["fifos"].begin();
        fifo != metadata["fifos"].end();) {
-    if (!fifo.value().contains("consumed_by") &&
-        !fifo.value().contains("produced_by")) {
-      auto& fifo_name = fifo.key();
-      auto fifo_decl = fifo_decls[fifo_name];
-      auto& diagnostics = context_.getDiagnostics();
+    const auto is_consumed = fifo.value().contains("consumed_by");
+    const auto is_produced = fifo.value().contains("produced_by");
+    const auto& fifo_name = fifo.key();
+    const auto fifo_decl = fifo_decls.find(fifo_name);
+    auto& diagnostics = context_.getDiagnostics();
+    if (!is_consumed && !is_produced) {
       static const auto diagnostic_id = diagnostics.getCustomDiagID(
           clang::DiagnosticsEngine::Warning, "unused stream: %0");
       auto diagnostics_builder =
-          diagnostics.Report(fifo_decl->getBeginLoc(), diagnostic_id);
+          diagnostics.Report(fifo_decl->second->getBeginLoc(), diagnostic_id);
       diagnostics_builder.AddString(fifo_name);
       diagnostics_builder.AddSourceRange(
-          GetCharSourceRange(fifo_decl->getSourceRange()));
+          GetCharSourceRange(fifo_decl->second->getSourceRange()));
       fifo = metadata["fifos"].erase(fifo);
     } else {
       ++fifo;
+      if (fifo_decl != fifo_decls.end() && is_consumed != is_produced) {
+        static const auto consumed_diagnostic_id =
+            diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Error,
+                                        "consumed but not produced stream: %0");
+        static const auto produced_diagnostic_id =
+            diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Error,
+                                        "produced but not consumed stream: %0");
+        auto diagnostics_builder = diagnostics.Report(
+            fifo_decl->second->getBeginLoc(),
+            is_consumed ? consumed_diagnostic_id : produced_diagnostic_id);
+        diagnostics_builder.AddString(fifo_name);
+        diagnostics_builder.AddSourceRange(
+            GetCharSourceRange(fifo_decl->second->getSourceRange()));
+      }
     }
   }
 
