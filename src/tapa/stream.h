@@ -17,6 +17,18 @@
 
 namespace tapa {
 
+template <typename T>
+class istream;
+
+template <typename T>
+class ostream;
+
+template <typename T, uint64_t S>
+class istreams;
+
+template <typename T, uint64_t S>
+class ostreams;
+
 namespace internal {
 
 class base_queue {
@@ -134,29 +146,31 @@ struct elem_t {
 template <typename T>
 class base {
  public:
-  base(std::shared_ptr<queue<elem_t<T>>> ptr) : ptr(ptr) {}
-
   // debug helpers
   const std::string& get_name() const { return this->ptr->get_name(); }
   void set_name(const std::string& name) { ptr->set_name(name); }
   uint64_t get_depth() const { return this->ptr->get_depth(); }
 
  protected:
-  std::shared_ptr<queue<elem_t<T>>> ptr;
+  base(std::shared_ptr<queue<elem_t<T>>> ptr) : ptr(ptr) {}
 
- private:
-  template <typename U, uint64_t S, uint64_t M>
-  friend class streams;
+  std::shared_ptr<queue<elem_t<T>>> ptr;
 };
+
+template <typename T>
+class stream : public istream<T>, public ostream<T> {
+ protected:
+  stream() : base<T>(nullptr) {}
+};
+
+template <typename T, int S>
+class streams : public istreams<T, S>, public ostreams<T, S> {};
 
 }  // namespace internal
 
 template <typename T>
 class istream : virtual public internal::base<T> {
  public:
-  istream(std::shared_ptr<internal::queue<internal::elem_t<T>>> ptr)
-      : internal::base<T>(ptr) {}
-
   // default copy constructor
   istream(const istream&) = default;
   // default copy assignment operator
@@ -289,14 +303,14 @@ class istream : virtual public internal::base<T> {
     while (!try_open()) {
     }
   }
+
+ protected:
+  istream() : internal::base<T>(nullptr) {}
 };
 
 template <typename T>
 class ostream : virtual public internal::base<T> {
  public:
-  ostream(std::shared_ptr<internal::queue<internal::elem_t<T>>> ptr)
-      : internal::base<T>(ptr) {}
-
   // default copy constructor
   ostream(const ostream&) = default;
   // deleted move constructor
@@ -341,21 +355,21 @@ class ostream : virtual public internal::base<T> {
     while (!try_close()) {
     }
   }
+
+ protected:
+  ostream() : internal::base<T>(nullptr) {}
 };
 
 template <typename T, uint64_t N = 1>
-struct stream : public istream<T>, public ostream<T> {
+class stream : public internal::stream<T> {
+ public:
   stream()
       : internal::base<T>(
-            std::make_shared<internal::queue<internal::elem_t<T>>>(N)),
-        istream<T>(this->ptr),
-        ostream<T>(this->ptr) {}
+            std::make_shared<internal::queue<internal::elem_t<T>>>(N)) {}
   template <size_t S>
   stream(const char (&name)[S])
       : internal::base<T>(
-            std::make_shared<internal::queue<internal::elem_t<T>>>(N, name)),
-        istream<T>(this->ptr),
-        ostream<T>(this->ptr) {}
+            std::make_shared<internal::queue<internal::elem_t<T>>>(N, name)) {}
 
   constexpr static uint64_t depth{N};
 };
@@ -373,7 +387,7 @@ class ostreams {
 };
 
 template <typename T, uint64_t S, uint64_t N = 1>
-class streams : public istreams<T, S>, public ostreams<T, S> {
+class streams : public internal::streams<T, S> {
   stream<T, N> streams_[S];
 
  public:
@@ -394,7 +408,7 @@ class streams : public istreams<T, S>, public ostreams<T, S> {
   // default move assignment operator
   streams& operator=(streams&&) = default;
 
-  stream<T, N>& operator[](int idx) { return streams_[idx]; };
+  stream<T, N>& operator[](int idx) override { return streams_[idx]; };
 };
 
 }  // namespace tapa
