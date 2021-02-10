@@ -131,6 +131,7 @@ class Program:
 
   def extract_cpp(self) -> 'Program':
     """Extract HLS C++ files."""
+    _logger.info('extracting HLS C++ files')
     for task in self._tasks.values():
       with open(self.get_cpp(task.name), 'w') as src_code:
         src_code.write(util.clang_format(task.code))
@@ -144,6 +145,7 @@ class Program:
   def run_hls(self, clock_period: Union[int, float, str],
               part_num: str) -> 'Program':
     """Run HLS with extracted HLS C++ files and generate tarballs."""
+    _logger.info('running HLS')
 
     def worker(task: Task) -> Iterator[None]:
       with open(self.get_tar(task.name), 'wb') as tarfileobj:
@@ -169,6 +171,7 @@ class Program:
 
   def extract_rtl(self) -> 'Program':
     """Extract HDL files from tarballs generated from HLS."""
+    _logger.info('extracting RTL files')
     for task in self._tasks.values():
       with tarfile.open(self.get_tar(task.name), 'r') as tarfileobj:
         tarfileobj.extractall(path=self.work_dir)
@@ -189,15 +192,19 @@ class Program:
         Program: Return self.
     """
     # extract and parse RTL and populate tasks
+    _logger.info('parsing RTL files and populating tasks')
     oldcwd = os.getcwd()
     os.chdir(self.work_dir)
     for task in self._tasks.values():
+      _logger.debug('parsing %s', task.name)
       task.module = rtl.Module([self.get_rtl(task.name)])
+      _logger.debug('populating %s', task.name)
       self._populate_task(task)
     os.chdir(oldcwd)
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
+      _logger.info('generating partitioning constraints')
       floorplan = directive.get('floorplan')
       if floorplan is None:
         floorplan = autobridge.generate_floorplan(
@@ -212,6 +219,7 @@ class Program:
       self.top_task.module.register_level = register_level
 
     # instrument the upper-level RTL
+    _logger.info('instrumenting upper-level RTL')
     for task in self._tasks.values():
       if task.is_upper:
         task.module.cleanup()
@@ -227,6 +235,7 @@ class Program:
         with open(self.get_rtl(task.name), 'w') as rtl_code:
           rtl_code.write(task.module.code)
 
+    _logger.info('writing RTL files')
     for name, content in self.tcl_files.items():
       with open(os.path.join(self.rtl_dir, name + '.tcl'), 'w') as tcl_file:
         tcl_file.write(content)
@@ -244,6 +253,7 @@ class Program:
     return self
 
   def pack_rtl(self, output_file: BinaryIO) -> 'Program':
+    _logger.info('packaging RTL code')
     rtl.pack(top_name=self.top,
              ports=self.toplevel_ports,
              rtl_dir=self.rtl_dir,
