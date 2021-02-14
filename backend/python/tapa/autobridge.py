@@ -126,7 +126,9 @@ def get_port_region(part_num: str, port: str) -> str:
   if part_num.startswith('xcu280-'):
     if port_cat == 'HBM' and 0 <= port_id < 32:
       return f'COARSE_X{port_id // 16}Y0'
+    if port_cat == 'DDR' and 0 <= port_id < 2:
+      return f'COARSE_X1Y{port_id}'
   elif part_num.startswith('xcu250-'):
     if port_cat == 'DDR' and 0 <= port_id < 4:
-      return f'COARSE_X0Y{port_id}'
+      return f'COARSE_X1Y{port_id}'
   raise NotImplementedError(f'unknown port {port} for {part_num}')
