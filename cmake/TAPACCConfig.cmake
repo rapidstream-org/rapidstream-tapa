@@ -25,6 +25,7 @@ function(add_tapa_target target_name)
   #   gmem0:DDR[0]).
   # * TAPAC: Optional, path to the tapac executable.
   # * TAPACC: Optional, path to the tapacc executable.
+  # * CFLAGS: Optional, cflags for kernel, space separated.
   # * FRT_INTERFACE: Optional, output FRT interface filename.
   # * CLOCK_PERIOD: Optional, override the clock period.
   # * PART_NUM: Optional, override the part number.
@@ -35,7 +36,7 @@ function(add_tapa_target target_name)
   cmake_parse_arguments(
     TAPA
     ""
-    "OUTPUT;INPUT;TOP;PLATFORM;TAPAC;TAPACC;FRT_INTERFACE;CLOCK_PERIOD;PART_NUM;DIRECTIVE;CONNECTIVITY;CONSTRAINT"
+    "OUTPUT;INPUT;TOP;PLATFORM;TAPAC;TAPACC;CFLAGS;FRT_INTERFACE;CLOCK_PERIOD;PART_NUM;DIRECTIVE;CONNECTIVITY;CONSTRAINT"
     "DRAM_MAPPING"
     ${ARGN})
   if(NOT TAPA_INPUT)
@@ -87,6 +88,9 @@ function(add_tapa_target target_name)
   list(APPEND tapac_cmd --platform ${TAPA_PLATFORM})
   list(APPEND tapac_cmd --output ${TAPA_OUTPUT})
   list(APPEND tapac_cmd --work-dir ${TAPA_OUTPUT}.tapa)
+  if(TAPA_CFLAGS)
+    list(APPEND tapac_cmd --cflags=${TAPA_CFLAGS})
+  endif()
   if(TAPA_FRT_INTERFACE)
     list(APPEND tapac_cmd --frt-interface ${TAPA_FRT_INTERFACE})
   endif()
