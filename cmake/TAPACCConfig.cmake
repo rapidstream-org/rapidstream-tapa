@@ -21,8 +21,6 @@ function(add_tapa_target target_name)
   # Optional Named Arguments:
   #
   # * OUTPUT: Optional, output filename, default to ${TOP}.${PLATFORM}.hw.xo
-  # * DRAM_MAPPING: A list of mappings from variable name to DDR banks (e.g.
-  #   gmem0:DDR[0]).
   # * TAPAC: Optional, path to the tapac executable.
   # * TAPACC: Optional, path to the tapacc executable.
   # * CFLAGS: Optional, cflags for kernel, space separated.
@@ -37,7 +35,7 @@ function(add_tapa_target target_name)
     TAPA
     ""
     "OUTPUT;INPUT;TOP;PLATFORM;TAPAC;TAPACC;CFLAGS;FRT_INTERFACE;CLOCK_PERIOD;PART_NUM;DIRECTIVE;CONNECTIVITY;CONSTRAINT"
-    "DRAM_MAPPING"
+    ""
     ${ARGN})
   if(NOT TAPA_INPUT)
     message(FATAL_ERROR "INPUT not specified")
@@ -120,5 +118,5 @@ function(add_tapa_target target_name)
   set_target_properties(
     ${target_name}
     PROPERTIES FILE_NAME ${TAPA_OUTPUT} TARGET hw KERNEL ${TAPA_TOP}
-               PLATFORM ${TAPA_PLATFORM} DRAM_MAPPING "${TAPA_DRAM_MAPPING}")
+               PLATFORM ${TAPA_PLATFORM} DRAM_MAPPING "")
 endfunction()
