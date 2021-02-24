@@ -40,10 +40,10 @@ module detect_burst #(
   reg [WaitTimeWidth-1:0] wait_time_next;
 
   wire [AddrWidth-1:0] curr_addr = addr_dout;
-  wire [AddrWidth-1:0] next_addr = {
-      {(AddrWidth-BurstLenWidth-DataWidthBytesLog){1'b0}},
-      burst_len+8'd1, {DataWidthBytesLog{1'b0}}
-    } + base_addr;
+  wire [AddrWidth-1:0] next_addr =
+      base_addr +
+      ({{(AddrWidth-BurstLenWidth){1'b0}}, burst_len} << DataWidthBytesLog) +
+      ({{(AddrWidth-1){1'b0}}, 1'b1} << DataWidthBytesLog);
 
   assign addr_write = write_enable;
   assign burst_len_write = write_enable;
