@@ -5,7 +5,7 @@ __all__ = [
     'RTL_SUFFIX',
     'ISTREAM_SUFFIXES',
     'OSTREAM_SUFFIXES',
-    'STREAM_PORT_MAPPING',
+    'STREAM_PORT_DIRECTION',
     'FIFO_READ_PORTS',
     'FIFO_WRITE_PORTS',
     'HANDSHAKE_CLK',
@@ -50,14 +50,14 @@ OSTREAM_SUFFIXES = (
     '_write',
 )
 
-# {channel_suffix: (name, direction)}
-STREAM_PORT_MAPPING = {
-    '_dout': ('_fifo_V_dout', 'input'),
-    '_empty_n': ('_fifo_V_empty_n', 'input'),
-    '_read': ('_fifo_V_read', 'output'),
-    '_din': ('_fifo_V_din', 'output'),
-    '_full_n': ('_fifo_V_full_n', 'input'),
-    '_write': ('_fifo_V_write', 'output'),
+# {port_suffix: direction}
+STREAM_PORT_DIRECTION = {
+    '_dout': 'input',
+    '_empty_n': 'input',
+    '_read': 'output',
+    '_din': 'output',
+    '_full_n': 'input',
+    '_write': 'output',
 }
 
 FIFO_READ_PORTS = (

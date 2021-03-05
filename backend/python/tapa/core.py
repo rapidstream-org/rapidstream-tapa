@@ -373,10 +373,8 @@ class Program:
 
           # if this FIFO is not declared, connect it directly to ports
           if 'depth' not in fifo:
-            port_suffix, port_direction = rtl.STREAM_PORT_MAPPING[suffix]
-            port_name = fifo_name + port_suffix
-            port = ast.Wire(name=port_name, width=wire_width)
-            task.module.add_signals([port])
+            port_name = rtl.fifo_port_name(fifo_name, suffix)
+            port_direction = rtl.STREAM_PORT_DIRECTION[suffix]
             if port_direction == 'input':
               task.module.add_logics([
                   ast.Assign(left=ast.Identifier(wire_name),
@@ -387,6 +385,8 @@ class Program:
                   ast.Assign(left=ast.Identifier(port_name),
                              right=ast.Identifier(wire_name))
               ])
+            _logger.debug('%s: %s connected to external signal %s', task.name,
+                          wire_name, port_name)
 
   def _instantiate_fifos(self, task: Task) -> None:
     for fifo_name, fifo in task.fifos.items():
