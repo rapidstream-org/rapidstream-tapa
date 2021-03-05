@@ -255,6 +255,16 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         replaced_body +=
             "#pragma HLS data_pack variable = " + param_name + ".peek_val\n";
       }
+    } else if (IsTapaType(param, "(i|o)streams")) {
+      replaced_body +=
+          "#pragma HLS data_pack variable = " + param_name + "._[0].fifo\n";
+      if (IsTapaType(param, "istreams")) {
+        replaced_body += "#pragma HLS data_pack variable = " + param_name +
+                         "._[0].peek_val\n";
+        replaced_body +=
+            "#pragma HLS array_partition variable = " + param_name +
+            "._[0].peek_val complete\n";
+      }
     } else if (*top_name == func->getNameAsString()) {
       add_pragma();
     } else {
@@ -273,9 +283,18 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       if (IsTapaType(param, "istream")) {
         replaced_body += "{ auto val = " + param_name + ".read(); }\n";
       } else if (IsTapaType(param, "ostream")) {
-        auto type = GetStreamElemType(param);
         replaced_body +=
-            "{ static " + type + " val; " + param_name + ".write(val); }\n";
+            param_name + ".write(" + GetStreamElemType(param) + "());\n";
+      }
+    } else if (IsTapaType(param, "istreams")) {
+      for (int i = 0; i < GetArraySize(param); ++i) {
+        replaced_body +=
+            "{ auto val = " + ArrayNameAt(param_name, i) + ".read(); }\n";
+      }
+    } else if (IsTapaType(param, "ostreams")) {
+      for (int i = 0; i < GetArraySize(param); ++i) {
+        replaced_body += ArrayNameAt(param_name, i) + ".write(" +
+                         GetStreamElemType(param) + "());\n";
       }
     } else if (IsTapaType(param, "(async_)?mmaps")) {
       for (int i = 0; i < GetArraySize(param); ++i) {
