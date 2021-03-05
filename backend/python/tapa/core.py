@@ -664,6 +664,16 @@ class Program:
   ) -> None:
     # global state machine
 
+    task.module.add_pipeline(self.start_q, init=rtl.START)
+
+    if not is_done_signals:  # all children are detached
+      task.module.add_logics([
+          ast.Assign(left=rtl.IDLE, right=rtl.TRUE),
+          ast.Assign(left=rtl.DONE, right=rtl.TRUE),
+          ast.Assign(left=rtl.READY, right=rtl.TRUE),
+      ])
+      return
+
     def is_state(state: ast.IntConst) -> ast.Eq:
       return ast.Eq(left=rtl.STATE, right=state)
 
@@ -740,7 +750,6 @@ class Program:
         ast.Assign(left=rtl.READY, right=self.done_q[0]),
     ])
 
-    task.module.add_pipeline(self.start_q, init=rtl.START)
     task.module.add_pipeline(self.done_q, init=is_state(STATE10))
 
   def _get_fifo_width(self, task: Task, fifo: str) -> int:
