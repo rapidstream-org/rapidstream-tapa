@@ -148,7 +148,7 @@ inline bool IsStream(T obj) {
 }
 
 inline std::string GetStreamElemType(const clang::ParmVarDecl* param) {
-  if (IsStreamInterface(param->getType())) {
+  if (IsTapaType(param, "(i|o)streams?")) {
     if (auto arg = GetTemplateArg(param->getType(), 0)) {
       return GetTemplateArgName(*arg);
     }
