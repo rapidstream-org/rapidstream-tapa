@@ -4,7 +4,7 @@ This module is designed as a drop-in replacement for `pyverilog.vparser.ast`
 with convenient utilities.
 """
 
-from typing import Iterable, Optional, Type, Union
+from typing import Iterable, Optional, Tuple, Type, Union
 
 # pylint: disable=unused-import
 from pyverilog.vparser.ast import (
@@ -177,6 +177,20 @@ def make_if_with_block(
   return IfStatement(cond=cond,
                      true_statement=make_block(true),
                      false_statement=false)
+
+
+def make_case_with_block(
+    comp: Node,
+    cases: Iterable[Tuple[Union[Iterable[Node], Node], Union[Iterable[Node],
+                                                             Node]]],
+) -> CaseStatement:
+  return CaseStatement(
+      comp=comp,
+      caselist=(Case(
+          cond=(cond,) if isinstance(cond, Node) else cond,
+          statement=make_block(statement),
+      ) for cond, statement in cases),
+  )
 
 
 def make_width(width: int) -> Optional[Width]:

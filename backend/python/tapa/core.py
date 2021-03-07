@@ -690,46 +690,49 @@ class Program:
           true=state01_action,
       )
 
-    global_fsm = [
-        ast.make_if_with_block(
-            cond=is_state(STATE00),
-            true=ast.make_if_with_block(
-                cond=self.start_q[-1],
-                true=set_state(STATE01),
+    global_fsm = ast.make_case_with_block(
+        comp=rtl.STATE,
+        cases=[
+            (
+                STATE00,
+                ast.make_if_with_block(
+                    cond=self.start_q[-1],
+                    true=set_state(STATE01),
+                ),
             ),
-        ),
-        ast.make_if_with_block(
-            cond=is_state(STATE01),
-            true=state01_action,
-        ),
-        ast.make_if_with_block(
-            cond=is_state(STATE10),
-            true=ast.make_block([
-                set_state(STATE11 if self.register_level else STATE00),
-                ast.NonblockingSubstitution(
-                    left=countdown,
-                    right=ast.make_int(max(0, self.register_level - 1)),
-                ),
-            ]),
-        ),
-        ast.make_if_with_block(
-            cond=is_state(STATE11),
-            true=ast.make_if_with_block(
-                cond=ast.Eq(
-                    left=countdown,
-                    right=ast.make_int(0, width=countdown_width),
-                ),
-                true=set_state(STATE00),
-                false=ast.NonblockingSubstitution(
-                    left=countdown,
-                    right=ast.Minus(
+            (
+                STATE01,
+                state01_action,
+            ),
+            (
+                STATE10,
+                [
+                    set_state(STATE11 if self.register_level else STATE00),
+                    ast.NonblockingSubstitution(
                         left=countdown,
-                        right=ast.make_int(1, width=countdown_width),
+                        right=ast.make_int(max(0, self.register_level - 1)),
+                    ),
+                ],
+            ),
+            (
+                STATE11,
+                ast.make_if_with_block(
+                    cond=ast.Eq(
+                        left=countdown,
+                        right=ast.make_int(0, width=countdown_width),
+                    ),
+                    true=set_state(STATE00),
+                    false=ast.NonblockingSubstitution(
+                        left=countdown,
+                        right=ast.Minus(
+                            left=countdown,
+                            right=ast.make_int(1, width=countdown_width),
+                        ),
                     ),
                 ),
             ),
-        ),
-    ]
+        ],
+    )
 
     task.module.add_logics([
         ast.Always(
@@ -738,7 +741,7 @@ class Program:
                 ast.make_if_with_block(
                     cond=rtl.RST,
                     true=set_state(STATE00),
-                    false=ast.make_block(global_fsm),
+                    false=global_fsm,
                 )),
         ),
         ast.Assign(left=rtl.IDLE, right=is_state(STATE00)),
