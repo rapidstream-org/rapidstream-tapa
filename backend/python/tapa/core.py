@@ -389,11 +389,17 @@ class Program:
                           wire_name, port_name)
 
   def _instantiate_fifos(self, task: Task) -> None:
-    for fifo_name, fifo in task.fifos.items():
-      # skip instantiating if the fifo is not declared in this task
-      if 'depth' not in fifo:
-        continue
+    # skip instantiating if the fifo is not declared in this task
+    fifos = {name: fifo for name, fifo in task.fifos.items() if 'depth' in fifo}
+    if not fifos:
+      return
 
+    col_width = max(
+        max(len(name), len(util.get_instance_name(fifo['consumed_by'])),
+            len(util.get_instance_name(fifo['produced_by'])))
+        for name, fifo in fifos.items())
+
+    for fifo_name, fifo in fifos.items():
       # add FIFO instances
       task.module.add_fifo_instance(
           name=fifo_name,
@@ -403,10 +409,6 @@ class Program:
 
       # print debugging info
       debugging_blocks = []
-      col_width = max(
-          max(len(name), len(util.get_instance_name(fifo['consumed_by'])),
-              len(util.get_instance_name(fifo['produced_by'])))
-          for name, fifo in task.fifos.items())
       fmtargs = {
           'fifo_prefix': '\\033[97m',
           'fifo_suffix': '\\033[0m',
