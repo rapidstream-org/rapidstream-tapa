@@ -246,8 +246,8 @@ class thread_pool {
   }
 
   void add_task(bool detach, const function<void()>& f) {
-    it->add_task(detach, f);
     unique_lock lock(this->worker_mtx);
+    it->add_task(detach, f);
     ++it;
     if (it == this->workers.end()) it = this->workers.begin();
   }
