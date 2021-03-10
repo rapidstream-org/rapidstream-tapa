@@ -26,8 +26,9 @@ struct vec_t {
   vec_t() {}
   T get(uint64_t idx) const {
 #pragma HLS inline
-    return reinterpret_cast<T&&>(static_cast<ap_uint<widthof<T>()>>(
-        data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>())));
+    const auto elem = static_cast<ap_uint<widthof<T>()>>(
+        data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>()));
+    return reinterpret_cast<const T&>(elem);
   }
   void set(uint64_t idx, T val) {
 #pragma HLS inline
