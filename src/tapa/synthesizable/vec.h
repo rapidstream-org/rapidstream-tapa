@@ -150,7 +150,7 @@ struct vec_t {
 
   // shift all elements by 1, put val at [N-1], and through away [0]
   void shift(const T& val) {
-#pragma inline
+#pragma HLS inline
     for (int i = 1; i < N; ++i) {
 #pragma HLS unroll
       set(i - 1, get(i));
@@ -160,7 +160,7 @@ struct vec_t {
 
   // return true if and only if val exists
   bool has(const T& val) {
-#pragma inline
+#pragma HLS inline
     bool result = false;
     for (int i = 0; i < N; ++i) {
 #pragma HLS unroll
