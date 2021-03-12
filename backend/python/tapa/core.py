@@ -266,6 +266,8 @@ class Program:
       directive: Dict[str, List[Union[str, Dict[str, List[str]]]]],
       constraints: TextIO,
   ) -> None:
+    _logger.info('processing partition directive')
+
     # mapping instance names to region names
     instance_dict = {self.ctrl_instance_name: ''}
 
@@ -351,6 +353,7 @@ class Program:
         for idx, obj in enumerate(objs))
 
   def _connect_fifos(self, task: Task) -> None:
+    _logger.debug("  connecting %s's children tasks", task.name)
     for fifo_name, fifo in task.fifos.items():
       directions = {
           'consumed_by': rtl.ISTREAM_SUFFIXES,
@@ -386,10 +389,10 @@ class Program:
                   ast.Assign(left=ast.Identifier(port_name),
                              right=ast.Identifier(wire_name))
               ])
-            _logger.debug('%s: %s connected to external signal %s', task.name,
-                          wire_name, port_name)
 
   def _instantiate_fifos(self, task: Task) -> None:
+    _logger.debug('  instantiating FIFOs in %s', task.name)
+
     # skip instantiating if the fifo is not declared in this task
     fifos = {name: fifo for name, fifo in task.fifos.items() if 'depth' in fifo}
     if not fifos:
@@ -401,6 +404,8 @@ class Program:
         for name, fifo in fifos.items())
 
     for fifo_name, fifo in fifos.items():
+      _logger.debug('    instantiating %s.%s', task.name, fifo_name)
+
       # add FIFO instances
       task.module.add_fifo_instance(
           name=fifo_name,
