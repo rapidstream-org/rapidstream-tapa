@@ -71,6 +71,13 @@ struct StreamInfo : public ObjectInfo {
   static std::string ProceedVar() { return "tapa_proceed"; }
 };
 
+inline std::string GetPeekVar(const std::string& name) {
+  return name + "._peek";
+}
+inline std::string GetFifoVar(const std::string& name) {
+  return name + "._";
+}
+
 StreamOpEnum GetStreamOp(const clang::CXXMemberCallExpr* call_expr);
 
 void GetStreamInfo(clang::Stmt* root, std::vector<StreamInfo>& streams,

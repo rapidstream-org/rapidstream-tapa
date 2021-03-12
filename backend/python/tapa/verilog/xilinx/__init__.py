@@ -57,8 +57,8 @@ def fifo_port_name(fifo: str, suffix: str) -> str:
   """
   match = match_array_name(fifo)
   if match is not None:
-    return f'{match[0]}_fifo_V_{match[1]}{suffix}'
-  return f'{fifo}_fifo_V{suffix}'
+    return f'{match[0]}_{match[1]}{suffix}'
+  return f'{fifo}_V{suffix}'
 
 
 def fifo_partition_name(name: str, idx: int) -> str:
@@ -79,12 +79,16 @@ def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
 
 def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
   match = match_array_name(port)
-  if match is not None:
-    port = f'{match[0]}_peek_val_{match[1]}'
+  if match is None:
+    port = f'{port}_peek_V'
   else:
-    port = f'{port}_peek_val'
-  for suffix in verilog.ISTREAM_SUFFIXES[:1]:
-    yield ast.make_port_arg(port=port, arg=wire_name(arg, suffix))
+    port = f'{match[0]}_peek_V_{match[1]}'
+  for suffix in verilog.ISTREAM_SUFFIXES:
+    if verilog.STREAM_PORT_DIRECTION[suffix] == 'input':
+      arg_name = wire_name(arg, suffix)
+    else:
+      arg_name = ''
+    yield ast.make_port_arg(port=port + suffix, arg=arg_name)
 
 
 def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],

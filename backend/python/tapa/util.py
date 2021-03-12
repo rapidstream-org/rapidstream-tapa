@@ -27,4 +27,4 @@ def get_instance_name(item: Tuple[str, int]) -> str:
 
 
 def get_module_name(module: str) -> str:
-  return f'{module}_{module}'
+  return f'{module}'

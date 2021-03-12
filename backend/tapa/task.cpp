@@ -170,6 +170,41 @@ vector<const Stmt*> GetInnermostLoops(const Stmt* stmt) {
 
 thread_local const FunctionDecl* Visitor::current_task{nullptr};
 
+namespace {
+
+void AddPragmaForStream(
+    const clang::ParmVarDecl* param,
+    const std::function<void(initializer_list<StringRef>)>& add) {
+  assert(IsTapaType(param, "(i|o)streams?"));
+  const auto name = param->getNameAsString();
+  add({"disaggregate variable =", name});
+
+  vector<string> names;
+  if (IsTapaType(param, "(i|o)streams")) {
+    add({"array_partition variable =", name, "complete"});
+    const int64_t array_size = GetArraySize(param);
+    names.reserve(array_size);
+    for (int64_t i = 0; i < array_size; ++i) {
+      names.push_back(ArrayNameAt(name, i));
+    }
+  } else {
+    names.push_back(name);
+  }
+
+  for (const auto& name : names) {
+    const auto fifo_var = GetFifoVar(name);
+    add({"interface ap_fifo port =", fifo_var});
+    add({"aggregate variable =", fifo_var, "bit"});
+    if (IsTapaType(param, "istreams?")) {
+      const auto peek_var = GetPeekVar(name);
+      add({"interface ap_fifo port =", peek_var});
+      add({"aggregate variable =", peek_var, "bit"});
+    }
+  }
+}
+
+}  // namespace
+
 // Apply tapa s2s transformations on a function.
 bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
   if (func->hasBody() && func->isGlobal() &&
@@ -218,7 +253,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                     const FunctionDecl* func) {
   const auto func_body = func->getBody();
   // TODO: implement qdma streams
-  vector<StreamInfo> streams;
+
+  // Replace mmaps arguments with 64-bit base addresses.
   for (const auto param : func->parameters()) {
     const string param_name = param->getNameAsString();
     if (IsTapaType(param, "(async_)?mmap")) {
@@ -235,41 +271,37 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     }
   }
 
-  string replaced_body{"{\n"};
+  // Add pragmas.
+  string replaced_body{"{\n"};  // TODO: replace with vector<string> lines
   for (const auto param : func->parameters()) {
     auto param_name = param->getNameAsString();
     auto add_pragma = [&](string port = "") {
       if (port.empty()) port = param_name;
       replaced_body += "#pragma HLS interface s_axilite port = " + port +
-                       " bundle = control\n" +
-                       "#pragma HLS data_pack variable = " + port + "\n";
+                       " bundle = control\n";
     };
-    if (IsTapaType(param, "(async_)?mmaps")) {
-      for (int i = 0; i < GetArraySize(param); ++i) {
-        add_pragma(GetArrayElem(param_name, i));
-      }
-    } else if (IsStreamInterface(param)) {
-      replaced_body +=
-          "#pragma HLS data_pack variable = " + param_name + ".fifo\n";
-      if (IsTapaType(param, "istream")) {
-        replaced_body +=
-            "#pragma HLS data_pack variable = " + param_name + ".peek_val\n";
-      }
-    } else if (IsTapaType(param, "(i|o)streams")) {
-      replaced_body +=
-          "#pragma HLS data_pack variable = " + param_name + "._[0].fifo\n";
-      if (IsTapaType(param, "istreams")) {
-        replaced_body += "#pragma HLS data_pack variable = " + param_name +
-                         "._[0].peek_val\n";
-        replaced_body +=
-            "#pragma HLS array_partition variable = " + param_name +
-            "._[0].peek_val complete\n";
-      }
+    if (IsTapaType(param, "(i|o)streams?")) {
+      AddPragmaForStream(
+          param, [&replaced_body](initializer_list<StringRef> args) {
+            replaced_body += "#pragma HLS " + join(args, " ") + "\n";
+          });
     } else if (*top_name == func->getNameAsString()) {
-      add_pragma();
+      if (IsTapaType(param, "(async_)?mmaps")) {
+        // For top-level mmaps and scalars, generate AXI base addresses.
+        for (int i = 0; i < GetArraySize(param); ++i) {
+          add_pragma(GetArrayElem(param_name, i));
+        }
+      } else {
+        add_pragma();
+      }
     } else {
-      // middle level scalars
+      // Make sure ap_clk and ap_rst_n are generated for middle-level mmaps and
+      // scalars.
+      replaced_body +=
+          "#pragma HLS interface ap_none port = " + param_name + " register\n";
     }
+
+    replaced_body += "\n";  // Separate pragmas for each parameter.
   }
   if (*top_name == func->getNameAsString()) {
     replaced_body +=
@@ -277,6 +309,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   }
   replaced_body += "\n";
 
+  // Add dummy reads and/or writes.
   for (const auto param : func->parameters()) {
     auto param_name = param->getNameAsString();
     if (IsStreamInterface(param)) {
@@ -621,97 +654,29 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
 // Apply tapa s2s transformations on a lower-level task.
 void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
-  const auto func_body = func->getBody();
-
-  // Find interface streams.
-  vector<StreamInfo> streams;
-  vector<MmapInfo> mmaps;
-  vector<AsyncMmapInfo> async_mmaps;
   for (const auto param : func->parameters()) {
-    if (IsStreamInterface(param)) {
-      auto elem_type = GetStreamElemType(param);
-      streams.emplace_back(param->getNameAsString(),
-                           elem_type, /*is_producer= */
-                           IsTapaType(param, "ostream"),
-                           /* is_consumer= */
-                           IsTapaType(param, "istream"));
-    } else if (IsTapaType(param, "mmap")) {
-      auto elem_type = GetMmapElemType(param);
-      mmaps.emplace_back(param->getNameAsString(), elem_type);
+    vector<string> lines = {""};  // Make sure pragmas start with a new line.
+    auto add = [&lines](initializer_list<StringRef> args) {
+      lines.push_back("#pragma HLS " + join(args, " "));
+    };
+
+    const auto name = param->getNameAsString();
+    if (IsTapaType(param, "(i|o)streams?")) {
+      AddPragmaForStream(param, add);
     } else if (IsTapaType(param, "async_mmap")) {
-      auto elem_type = GetMmapElemType(param);
-      AsyncMmapInfo async_mmap(param->getNameAsString(), elem_type);
-      async_mmap.GetAsyncMmapInfo(func_body, context_.getDiagnostics());
-      async_mmaps.push_back(async_mmap);
-    } else if (IsTapaType(param, "(i|o)streams")) {
-      InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                      {{"variable", param->getNameAsString() + "._[0].fifo"}});
-      if (IsTapaType(param, "istreams")) {
-        auto peek_var = param->getNameAsString() + "._[0].peek_val";
-        InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                        {{"variable", peek_var}});
-        InsertHlsPragma(func_body->getBeginLoc(), "interface",
-                        {{"ap_stable", {}}, {"port", peek_var}});
-        InsertHlsPragma(func_body->getBeginLoc(), "array_partition",
-                        {{"variable", peek_var}, {"complete", {}}});
+      add({"disaggregate variable =", name});
+      for (auto tag : {"read_addr", "read_data", "read_peek", "write_addr",
+                       "write_data"}) {
+        add({"interface ap_fifo port =", name, ".", tag});
+        add({"aggregate variable =", name, " . ", tag, " bit"});
       }
-    } else {
-      InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                      {{"variable", param->getNameAsString()}});
+    } else if (IsTapaType(param, "mmap")) {
+      add({"interface m_axi port =", name, "offset = direct bundle =", name});
     }
-  }
 
-  // Retrieve stream information.
-  GetStreamInfo(func_body, streams, context_.getDiagnostics());
-
-  // Insert interface pragmas.
-  for (const auto& mmap : mmaps) {
-    InsertHlsPragma(func_body->getBeginLoc(), "interface",
-                    {{"m_axi", {}},
-                     {"port", mmap.name},
-                     {"offset", "direct"},
-                     {"bundle", mmap.name}});
-  }
-
-  // Before the original function body, insert data_pack pragmas.
-  for (const auto& stream : streams) {
-    InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                    {{"variable", stream.FifoVar()}});
-    if (stream.is_consumer) {
-      InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                      {{"variable", stream.PeekVar()}});
-      if (!stream.need_peeking) {
-        InsertHlsPragma(func_body->getBeginLoc(), "interface",
-                        {{"ap_stable", {}}, {"port", stream.PeekVar()}});
-      }
-    }
-  }
-  for (const auto& mmap : mmaps) {
-    InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                    {{"variable", mmap.name}});
-  }
-  for (const auto& async_mmap : async_mmaps) {
-    if (async_mmap.is_data) {
-      if (async_mmap.is_write) {
-        InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                        {{"variable", async_mmap.WriteDataVar()}});
-      }
-      if (async_mmap.is_read) {
-        InsertHlsPragma(func_body->getBeginLoc(), "data_pack",
-                        {{"variable", async_mmap.ReadDataVar()}});
-      }
-    }
-  }
-  if (!streams.empty()) {
-    GetRewriter().InsertTextAfterToken(func_body->getBeginLoc(), "\n\n");
-  }
-
-  // Rewrite stream operations via DFS.
-  unordered_map<const CXXMemberCallExpr*, const StreamInfo*> stream_table;
-  for (const auto& stream : streams) {
-    for (auto call_expr : stream.call_exprs) {
-      stream_table[call_expr] = &stream;
-    }
+    lines.push_back("");  // Make sure pragmas finish with a new line.
+    GetRewriter().InsertTextAfterToken(func->getBody()->getBeginLoc(),
+                                       join(lines, "\n"));
   }
 }
 

@@ -156,6 +156,7 @@ class Program:
             clock_period=clock_period,
             part_num=part_num,
             auto_prefix=True,
+            hls='vitis_hls',
         ) as proc:
           yield
           stdout, stderr = proc.communicate()
