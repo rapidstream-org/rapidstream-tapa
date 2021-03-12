@@ -49,22 +49,11 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   clang::Rewriter& GetRewriter() { return rewriters_[current_task]; }
   nlohmann::json& GetMetadata() { return metadata_[current_task]; }
 
-  bool InsertHlsPragma(
-      const clang::SourceLocation& loc, const std::string& pragma,
-      const std::vector<std::pair<std::string, std::string>>& args);
-
   void ProcessUpperLevelTask(const clang::ExprWithCleanups* task,
                              const clang::FunctionDecl* func);
 
   void ProcessLowerLevelTask(const clang::FunctionDecl* func);
   std::string GetFrtInterface(const clang::FunctionDecl* func);
-
-  void RewriteStreams(
-      const clang::Stmt* stmt,
-      std::unordered_map<const clang::CXXMemberCallExpr*, const StreamInfo*>
-          stream_table);
-  void RewriteStream(const clang::CXXMemberCallExpr* call_expr,
-                     const StreamInfo& stream);
 
   clang::CharSourceRange GetCharSourceRange(const clang::Stmt* stmt);
   clang::CharSourceRange GetCharSourceRange(clang::SourceRange range);

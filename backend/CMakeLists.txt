@@ -70,20 +70,12 @@ target_sources(
   PRIVATE tapa/mmap.cpp)
 target_link_libraries(mmap PUBLIC type)
 
-add_library(async_mmap)
-target_sources(
-  async_mmap
-  PUBLIC tapa/async_mmap.h
-  PRIVATE tapa/async_mmap.cpp)
-target_link_libraries(async_mmap PUBLIC type stream mmap)
-
 add_library(task)
 target_sources(
   task
   PUBLIC tapa/task.h
   PRIVATE tapa/task.cpp)
-target_link_libraries(task PUBLIC stream mmap async_mmap
-                                  nlohmann_json::nlohmann_json)
+target_link_libraries(task PUBLIC stream mmap nlohmann_json::nlohmann_json)
 
 add_executable(tapacc)
 target_sources(tapacc PRIVATE tapacc.cpp)

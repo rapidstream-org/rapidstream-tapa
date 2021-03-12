@@ -1,11 +1,8 @@
 #include "task.h"
 
-#include <algorithm>
-#include <array>
 #include <regex>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "clang/AST/AST.h"
@@ -13,17 +10,10 @@
 
 #include "nlohmann/json.hpp"
 
-#include "async_mmap.h"
 #include "mmap.h"
 #include "stream.h"
 
-using std::array;
-using std::binary_search;
 using std::initializer_list;
-using std::make_shared;
-using std::pair;
-using std::shared_ptr;
-using std::sort;
 using std::string;
 using std::to_string;
 using std::unordered_map;
@@ -33,22 +23,12 @@ using clang::CharSourceRange;
 using clang::CXXMemberCallExpr;
 using clang::CXXMethodDecl;
 using clang::CXXOperatorCallExpr;
-using clang::DeclGroupRef;
 using clang::DeclRefExpr;
 using clang::DeclStmt;
-using clang::DoStmt;
-using clang::ElaboratedType;
 using clang::Expr;
 using clang::ExprWithCleanups;
-using clang::ForStmt;
 using clang::FunctionDecl;
-using clang::FunctionProtoType;
-using clang::IntegerLiteral;
 using clang::Lexer;
-using clang::LValueReferenceType;
-using clang::MemberExpr;
-using clang::PrintingPolicy;
-using clang::RecordType;
 using clang::SourceLocation;
 using clang::SourceRange;
 using clang::Stmt;
@@ -56,7 +36,6 @@ using clang::StringLiteral;
 using clang::TemplateArgument;
 using clang::TemplateSpecializationType;
 using clang::VarDecl;
-using clang::WhileStmt;
 
 using llvm::dyn_cast;
 using llvm::join;
@@ -68,54 +47,6 @@ namespace tapa {
 namespace internal {
 
 extern const string* top_name;
-
-// Get a string representation of the function signature a stream operation.
-std::string GetSignature(const CXXMemberCallExpr* call_expr) {
-  auto target = call_expr->getDirectCallee();
-  assert(target != nullptr);
-
-  if (const auto instantiated = target->getTemplateInstantiationPattern()) {
-    target = instantiated;
-  }
-
-  string signature{target->getQualifiedNameAsString()};
-
-  signature += "(";
-
-  for (auto param : target->parameters()) {
-    PrintingPolicy policy{{}};
-    policy.Bool = true;
-    signature.append(param->getType().getAsString(policy));
-    signature += ", ";
-  }
-
-  if (target->isVariadic()) {
-    signature += ("...");
-  } else if (target->getNumParams() > 0) {
-    signature.resize(signature.size() - 2);
-  }
-  signature += ")";
-
-  if (auto target_type =
-          dyn_cast<FunctionProtoType>(target->getType().getTypePtr())) {
-    if (target_type->isConst()) signature.append(" const");
-    if (target_type->isVolatile()) signature.append(" volatile");
-    if (target_type->isRestrict()) signature.append(" restrict");
-
-    switch (target_type->getRefQualifier()) {
-      case clang::RQ_LValue:
-        signature.append(" &");
-        break;
-      case clang::RQ_RValue:
-        signature.append(" &&");
-        break;
-      default:
-        break;
-    }
-  }
-
-  return signature;
-}
 
 // Given a Stmt, find the first tapa::task in its children.
 const ExprWithCleanups* GetTapaTask(const Stmt* stmt) {
@@ -148,24 +79,6 @@ vector<const CXXMemberCallExpr*> GetTapaInvokes(const Stmt* stmt) {
   vector<const CXXMemberCallExpr*> invokes;
   GetTapaInvokes(stmt, invokes);
   return invokes;
-}
-
-// Return all loops that do not contain other loops but do contain FIFO
-// operations.
-void GetInnermostLoops(const Stmt* stmt, vector<const Stmt*>& loops) {
-  for (auto child : stmt->children()) {
-    if (child != nullptr) {
-      GetInnermostLoops(child, loops);
-    }
-  }
-  if (RecursiveInnermostLoopsVisitor().IsInnermostLoop(stmt)) {
-    loops.push_back(stmt);
-  }
-}
-vector<const Stmt*> GetInnermostLoops(const Stmt* stmt) {
-  vector<const Stmt*> loops;
-  GetInnermostLoops(stmt, loops);
-  return loops;
 }
 
 thread_local const FunctionDecl* Visitor::current_task{nullptr};
@@ -232,20 +145,6 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
   }
   // Let the recursion continue.
   return true;
-}
-
-// Insert `#pragma HLS ...` after the token specified by loc.
-bool Visitor::InsertHlsPragma(const SourceLocation& loc, const string& pragma,
-                              const vector<pair<string, string>>& args) {
-  string line{"\n#pragma HLS " + pragma};
-  for (const auto& arg : args) {
-    line += " " + arg.first;
-    if (!arg.second.empty()) {
-      line += " = " + arg.second;
-    }
-  }
-  line += "\n";
-  return GetRewriter().InsertTextAfterToken(loc, line);
 }
 
 // Apply tapa s2s transformations on a upper-level task.

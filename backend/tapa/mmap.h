@@ -7,13 +7,7 @@
 
 #include "type.h"
 
-struct MmapInfo : public ObjectInfo {
-  MmapInfo(const std::string& name, const std::string& type)
-      : ObjectInfo(name, type) {}
-};
-
-// Does NOT include tapa::async_mmap.
-std::vector<const clang::CXXOperatorCallExpr*> GetTapaMmapOps(
-    const clang::Stmt* stmt);
+// Works for both mmap and async_mmap.
+std::string GetMmapElemType(const clang::ParmVarDecl* param);
 
 #endif  // TAPA_MMAP_H_
