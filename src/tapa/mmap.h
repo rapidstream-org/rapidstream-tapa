@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "tapa/coroutine.h"
+#include "tapa/synthesizable/vec.h"
 
 namespace tapa {
 
@@ -34,8 +35,13 @@ class mmap {
   tapa::async_mmap<T> async_mmap() { return tapa::async_mmap<T>(*this); }
 
   // Host-only APIs.
-  T* get() { return ptr_; }
-  uint64_t size() { return size_; }
+  T* get() const { return ptr_; }
+  uint64_t size() const { return size_; }
+  template <int64_t N>
+  mmap<vec_t<T, N>> vectorized() const {
+    CHECK_EQ(size_ % N, 0) << "size must be a multiple of N";
+    return mmap<vec_t<T, N>>(reinterpret_cast<vec_t<T, N>*>(ptr_), size_ / N);
+  }
 
  protected:
   T* ptr_;
@@ -190,6 +196,20 @@ class mmaps {
     }
     return result;
   }
+
+  // Host-only APIs.
+  template <int64_t N>
+  mmaps<vec_t<T, N>, S> vectorized() const {
+    std::array<vec_t<T, N>*, S> ptrs;
+    std::array<uint64_t, S> sizes;
+    for (uint64_t i = 0; i < S; ++i) {
+      CHECK_EQ(mmaps_[i].size() % N, 0)
+          << "size[" << i << "] must be a multiple of N";
+      ptrs[i] = reinterpret_cast<vec_t<T, N>*>(mmaps_[i].get());
+      sizes[i] = mmaps_[i].size() / N;
+    }
+    return mmaps<vec_t<T, N>, S>(ptrs, sizes);
+  }
 };
 
 // Host-only mmap types that must have correct size.
@@ -197,61 +217,54 @@ template <typename T>
 class placeholder_mmap : public mmap<T> {
   using mmap<T>::mmap;
   placeholder_mmap(T* ptr) : mmap<T>(ptr) {}
+
+ public:
+  template <int64_t N>
+  placeholder_mmap<vec_t<T, N>> vectorized() const {
+    CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";
+    return placeholder_mmap<vec_t<T, N>>(
+        reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N);
+  }
 };
 template <typename T>
 class read_only_mmap : public mmap<T> {
   using mmap<T>::mmap;
   read_only_mmap(T* ptr) : mmap<T>(ptr) {}
+
+ public:
+  template <int64_t N>
+  read_only_mmap<vec_t<T, N>> vectorized() const {
+    CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";
+    return read_only_mmap<vec_t<T, N>>(
+        reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N);
+  }
 };
 template <typename T>
 class write_only_mmap : public mmap<T> {
   using mmap<T>::mmap;
   write_only_mmap(T* ptr) : mmap<T>(ptr) {}
+
+ public:
+  template <int64_t N>
+  write_only_mmap<vec_t<T, N>> vectorized() const {
+    CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";
+    return write_only_mmap<vec_t<T, N>>(
+        reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N);
+  }
 };
 template <typename T>
 class read_write_mmap : public mmap<T> {
   using mmap<T>::mmap;
   read_write_mmap(T* ptr) : mmap<T>(ptr) {}
+
+ public:
+  template <int64_t N>
+  read_write_mmap<vec_t<T, N>> vectorized() const {
+    CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";
+    return read_write_mmap<vec_t<T, N>>(
+        reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N);
+  }
 };
-
-template <typename T, uint64_t N>
-struct vec_t;
-
-template <typename T, uint64_t N, typename Allocator>
-inline mmap<vec_t<T, N>> make_vec_mmap(
-    std::vector<typename std::remove_const<T>::type, Allocator>& vec) {
-  if (vec.size() % N != 0) {
-    throw std::runtime_error("vector must be aligned to make mmap vec");
-  }
-  return mmap<vec_t<T, N>>(reinterpret_cast<vec_t<T, N>*>(vec.data()),
-                           vec.size() / N);
-}
-
-template <typename T, uint64_t N, typename Allocator>
-inline async_mmap<vec_t<T, N>> make_vec_async_mmap(
-    std::vector<typename std::remove_const<T>::type, Allocator>& vec) {
-  if (vec.size() % N != 0) {
-    throw std::runtime_error("vector must be aligned to make async_mmap vec");
-  }
-  return async_mmap<vec_t<T, N>>(reinterpret_cast<vec_t<T, N>*>(vec.data()),
-                                 vec.size() / N);
-}
-
-template <typename T, uint64_t N, uint64_t S, typename Allocator>
-inline mmaps<vec_t<T, N>, S> make_vec_mmaps(
-    std::array<std::vector<typename std::remove_const<T>::type, Allocator>, S>&
-        vec) {
-  std::array<vec_t<T, N>*, S> ptrs;
-  std::array<uint64_t, S> sizes;
-  for (int i = 0; i < S; ++i) {
-    ptrs[i] = reinterpret_cast<vec_t<T, N>*>(vec[i].data());
-    sizes[i] = vec[i].size() / N;
-    if (vec[i].size() % N != 0) {
-      throw std::runtime_error("vector must be aligned to make async_mmap vec");
-    }
-  }
-  return mmaps<vec_t<T, N>, S>(ptrs, sizes);
-}
 
 }  // namespace tapa
 
