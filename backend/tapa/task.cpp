@@ -261,7 +261,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     auto add_mmap_meta = [&](const string& name) {
       metadata["ports"].push_back(
           {{"name", name},
-           {"cat", IsTapaType(param, "async_mmaps?") ? "async_mmap" : "mmap"},
+           {"cat", IsTapaType(param, "async_mmap") ? "async_mmap" : "mmap"},
            {"width",
             context_
                 .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
@@ -270,7 +270,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     };
     if (IsTapaType(param, "(async_)?mmap")) {
       add_mmap_meta(param_name);
-    } else if (IsTapaType(param, "(async_)?mmaps")) {
+    } else if (IsTapaType(param, "mmaps")) {
       for (int i = 0; i < GetArraySize(param); ++i) {
         add_mmap_meta(param_name + "[" + to_string(i) + "]");
       }
@@ -342,7 +342,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     string task_name;
     auto get_name = [&](const string& name, uint64_t i,
                         const DeclRefExpr* decl_ref) -> string {
-      if (is_vec && IsTapaType(decl_ref, "(async_mmaps|streams)")) {
+      if (is_vec && IsTapaType(decl_ref, "(mmaps|streams)")) {
         const auto ts_type =
             decl_ref->getType()->getAs<TemplateSpecializationType>();
         assert(ts_type != nullptr);
@@ -450,10 +450,11 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             };
             if (IsTapaType(param, "mmap")) {
               param_cat = "mmap";
+              // vector invocation can map mmaps to mmap
               register_arg(get_name(arg_name, i_vec, decl_ref));
             } else if (IsTapaType(param, "async_mmap")) {
               param_cat = "async_mmap";
-              // vector invocation can map async_mmaps to async_mmap
+              // vector invocation can map mmaps to async_mmap
               register_arg(get_name(arg_name, i_vec, decl_ref));
             } else if (IsTapaType(param, "istream")) {
               param_cat = "istream";

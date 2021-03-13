@@ -9,8 +9,7 @@
 template <typename T>
 using vector = std::vector<T, tapa::aligned_allocator<T>>;
 
-void Bandwidth(tapa::async_mmaps<Elem, kBankCount> chan, uint64_t n,
-               uint64_t flags);
+void Bandwidth(tapa::mmaps<Elem, kBankCount> chan, uint64_t n, uint64_t flags);
 
 int main(int argc, char* argv[]) {
   const uint64_t n = argc > 1 ? atoll(argv[1]) : 1024 * 1024;

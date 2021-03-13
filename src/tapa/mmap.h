@@ -140,53 +140,51 @@ class async_mmap : public mmap<T> {
 };
 
 template <typename T, uint64_t S>
-class async_mmaps {
-  std::vector<async_mmap<T>> mmaps_;
+class mmaps {
+  std::vector<mmap<T>> mmaps_;
 
  public:
   // constructors
-  async_mmaps(const std::array<T*, S>& ptrs) {
+  mmaps(const std::array<T*, S>& ptrs) {
     for (uint64_t i = 0; i < S; ++i) {
       mmaps_.emplace_back(ptrs[i]);
     }
   }
-  async_mmaps(const std::array<T*, S>& ptrs,
-              const std::array<uint64_t, S>& sizes) {
+  mmaps(const std::array<T*, S>& ptrs, const std::array<uint64_t, S>& sizes) {
     for (uint64_t i = 0; i < S; ++i) {
       mmaps_.emplace_back(ptrs[i], sizes[i]);
     }
   }
   template <typename Allocator>
-  async_mmaps(
+  mmaps(
       std::vector<typename std::remove_const<T>::type, Allocator> (&vecs)[S]) {
     for (uint64_t i = 0; i < S; ++i) {
       mmaps_.emplace_back(vecs[i]);
     }
   }
   template <typename Allocator>
-  async_mmaps(
-      std::array<std::vector<typename std::remove_const<T>::type, Allocator>,
-                 S>& vecs) {
+  mmaps(std::array<std::vector<typename std::remove_const<T>::type, Allocator>,
+                   S>& vecs) {
     for (uint64_t i = 0; i < S; ++i) {
       mmaps_.emplace_back(vecs[i]);
     }
   }
 
   // defaultd copy constructor
-  async_mmaps(const async_mmaps&) = default;
+  mmaps(const mmaps&) = default;
   // default move constructor
-  async_mmaps(async_mmaps&&) = default;
+  mmaps(mmaps&&) = default;
   // defaultd copy assignment operator
-  async_mmaps& operator=(const async_mmaps&) = default;
+  mmaps& operator=(const mmaps&) = default;
   // default move assignment operator
-  async_mmaps& operator=(async_mmaps&&) = default;
+  mmaps& operator=(mmaps&&) = default;
 
-  async_mmap<T>& operator[](int idx) { return mmaps_[idx]; };
+  mmap<T>& operator[](int idx) { return mmaps_[idx]; };
 
   template <uint64_t offset, uint64_t length>
-  async_mmaps<T, length> slice() {
+  mmaps<T, length> slice() {
     static_assert(offset + length < S, "invalid slice");
-    async_mmaps<T, length> result;
+    mmaps<T, length> result;
     for (uint64_t i = 0; i < length; ++i) {
       result.mmaps_[i] = this->mmaps_[offset + i];
     }
@@ -240,7 +238,7 @@ inline async_mmap<vec_t<T, N>> make_vec_async_mmap(
 }
 
 template <typename T, uint64_t N, uint64_t S, typename Allocator>
-inline async_mmaps<vec_t<T, N>, S> make_vec_async_mmaps(
+inline mmaps<vec_t<T, N>, S> make_vec_mmaps(
     std::array<std::vector<typename std::remove_const<T>::type, Allocator>, S>&
         vec) {
   std::array<vec_t<T, N>*, S> ptrs;
@@ -252,7 +250,7 @@ inline async_mmaps<vec_t<T, N>, S> make_vec_async_mmaps(
       throw std::runtime_error("vector must be aligned to make async_mmap vec");
     }
   }
-  return async_mmaps<vec_t<T, N>, S>(ptrs, sizes);
+  return mmaps<vec_t<T, N>, S>(ptrs, sizes);
 }
 
 }  // namespace tapa

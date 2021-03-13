@@ -87,9 +87,9 @@ struct task {
     return arg[idx];
   }
 
-  // access async_mmaps in vector invoke
+  // access mmaps in vector invoke
   template <typename T, uint64_t length>
-  static async_mmap<T>& access(async_mmaps<T, length>& arg, uint64_t idx) {
+  static mmap<T>& access(mmaps<T, length>& arg, uint64_t idx) {
     LOG_IF(INFO, idx >= length) << "invocation #" << idx << " accesses "
                                 << "async_mmap #" << idx % length;
     return arg[idx % length];
