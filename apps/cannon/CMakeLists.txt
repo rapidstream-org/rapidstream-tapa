@@ -5,8 +5,8 @@ target_sources(cannon PRIVATE cannon-host.cpp cannon.cpp)
 target_link_libraries(cannon PRIVATE ${TAPA})
 add_test(NAME cannon COMMAND cannon)
 
-find_package(FRT)
-if(FRT_FOUND)
+find_package(SDx)
+if(SDx_FOUND)
   add_tapa_target(
     cannon-hw-xo
     INPUT cannon.cpp

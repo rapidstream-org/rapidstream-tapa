@@ -194,6 +194,28 @@ class async_mmaps {
   }
 };
 
+// Host-only mmap types that must have correct size.
+template <typename T>
+class placeholder_mmap : public mmap<T> {
+  using mmap<T>::mmap;
+  placeholder_mmap(T* ptr) : mmap<T>(ptr) {}
+};
+template <typename T>
+class read_only_mmap : public mmap<T> {
+  using mmap<T>::mmap;
+  read_only_mmap(T* ptr) : mmap<T>(ptr) {}
+};
+template <typename T>
+class write_only_mmap : public mmap<T> {
+  using mmap<T>::mmap;
+  write_only_mmap(T* ptr) : mmap<T>(ptr) {}
+};
+template <typename T>
+class read_write_mmap : public mmap<T> {
+  using mmap<T>::mmap;
+  read_write_mmap(T* ptr) : mmap<T>(ptr) {}
+};
+
 template <typename T, uint64_t N>
 struct vec_t;
 

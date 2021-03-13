@@ -5,8 +5,8 @@ target_sources(nested-vadd PRIVATE vadd-host.cpp vadd.cpp)
 target_link_libraries(nested-vadd PRIVATE ${TAPA})
 add_test(NAME nested-vadd COMMAND nested-vadd)
 
-find_package(FRT)
-if(FRT_FOUND)
+find_package(SDx)
+if(SDx_FOUND)
   add_tapa_target(
     nested-vadd-hw-xo
     INPUT vadd.cpp

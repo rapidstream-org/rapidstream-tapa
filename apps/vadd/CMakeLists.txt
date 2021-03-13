@@ -5,8 +5,8 @@ target_sources(vadd PRIVATE vadd-host.cpp vadd.cpp)
 target_link_libraries(vadd PRIVATE ${TAPA})
 add_test(NAME vadd COMMAND vadd)
 
-find_package(FRT)
-if(FRT_FOUND)
+find_package(SDx)
+if(SDx_FOUND)
   add_tapa_target(
     vadd-hw-xo
     INPUT vadd.cpp

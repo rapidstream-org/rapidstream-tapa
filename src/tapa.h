@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <frt.h>
 #include <glog/logging.h>
 
 #include "tapa/mmap.h"
@@ -108,9 +109,55 @@ inline std::ostream& operator<<(std::ostream& os, const vec_t<T, N>& obj) {
 }
 
 namespace internal {
+
 void* allocate(size_t length);
 void deallocate(void* addr, size_t length);
+
+// functions cannot be specialized so use classes
+template <typename T>
+struct dispatcher {
+  static T&& forward(typename std::remove_reference<T>::type& arg) {
+    return static_cast<T&&>(arg);
+  }
+};
+template <typename T>
+struct dispatcher<placeholder_mmap<T>> {
+  static fpga::PlaceholderBuffer<T> forward(placeholder_mmap<T> arg) {
+    return fpga::Placeholder(arg.get(), arg.size());
+  }
+};
+// read/write are with respect to the kernel in tapa but host in frt
+template <typename T>
+struct dispatcher<read_only_mmap<T>> {
+  static fpga::WriteOnlyBuffer<T> forward(read_only_mmap<T> arg) {
+    return fpga::WriteOnly(arg.get(), arg.size());
+  }
+};
+template <typename T>
+struct dispatcher<write_only_mmap<T>> {
+  static fpga::ReadOnlyBuffer<T> forward(write_only_mmap<T> arg) {
+    return fpga::ReadOnly(arg.get(), arg.size());
+  }
+};
+template <typename T>
+struct dispatcher<read_write_mmap<T>> {
+  static fpga::ReadWriteBuffer<T> forward(read_write_mmap<T> arg) {
+    return fpga::ReadWrite(arg.get(), arg.size());
+  }
+};
+// TODO: dispatch stream correctly
+
 }  // namespace internal
+
+// host-only invoke that takes path to a bistream file as an argument
+template <typename Func, typename... Args>
+inline void invoke(Func&& f, const std::string& bitstream, Args&&... args) {
+  if (bitstream.empty()) {
+    f(std::forward<Args>(args)...);
+  } else {
+    fpga::Invoke(bitstream, internal::dispatcher<Args>::forward(args)...);
+  }
+}
 
 template <typename T>
 struct aligned_allocator {

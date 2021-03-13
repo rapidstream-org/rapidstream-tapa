@@ -5,8 +5,8 @@ target_sources(network PRIVATE network-host.cpp network.cpp)
 target_link_libraries(network PRIVATE ${TAPA})
 add_test(NAME network COMMAND network)
 
-find_package(FRT)
-if(FRT_FOUND)
+find_package(SDx)
+if(SDx_FOUND)
   add_tapa_target(
     network-hw-xo
     INPUT network.cpp

@@ -5,8 +5,8 @@ target_sources(bandwidth PRIVATE bandwidth-host.cpp bandwidth.cpp)
 target_link_libraries(bandwidth PUBLIC ${TAPA})
 add_test(NAME bandwidth COMMAND bandwidth)
 
-find_package(FRT)
-if(FRT_FOUND)
+find_package(SDx)
+if(SDx_FOUND)
   add_tapa_target(
     bandwidth-hw-xo
     INPUT bandwidth.cpp

@@ -16,8 +16,8 @@ execute_process(
   OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/facebook.txt)
 add_test(NAME graph COMMAND graph ${CMAKE_CURRENT_BINARY_DIR}/facebook.txt 512)
 
-find_package(FRT)
-if(FRT_FOUND)
+find_package(SDx)
+if(SDx_FOUND)
   add_tapa_target(
     graph-hw-xo
     INPUT graph.cpp

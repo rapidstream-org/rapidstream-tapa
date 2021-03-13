@@ -15,6 +15,7 @@ project(tapa)
 add_subdirectory(backend)
 
 find_package(Boost 1.59 COMPONENTS coroutine stacktrace_backtrace)
+find_package(FRT REQUIRED)
 
 add_library(tapa_static STATIC)
 add_library(tapa ALIAS tapa_static)
@@ -61,12 +62,12 @@ target_include_directories(
 target_link_libraries(
   tapa_static
   PRIVATE ${Boost_LIBRARIES}
-  INTERFACE glog
+  INTERFACE glog frt::frt
   PUBLIC pthread)
 target_link_libraries(
   tapa_shared
   PRIVATE ${Boost_LIBRARIES}
-  INTERFACE glog
+  INTERFACE glog frt::frt
   PUBLIC pthread)
 set_target_properties(tapa_static tapa_shared
                       PROPERTIES OUTPUT_NAME tapa POSITION_INDEPENDENT_CODE ON)

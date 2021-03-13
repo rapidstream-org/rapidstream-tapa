@@ -5,8 +5,8 @@ target_sources(jacobi PRIVATE jacobi-host.cpp jacobi.cpp)
 target_link_libraries(jacobi PRIVATE ${TAPA})
 add_test(NAME jacobi COMMAND jacobi)
 
-find_package(FRT)
-if(FRT_FOUND)
+find_package(SDx)
+if(SDx_FOUND)
   add_tapa_target(
     jacobi-hw-xo
     INPUT jacobi.cpp
