@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#include <gflags/gflags.h>
 #include <tapa.h>
 
 #include "bandwidth.h"
@@ -11,7 +12,11 @@ using vector = std::vector<T, tapa::aligned_allocator<T>>;
 
 void Bandwidth(tapa::mmaps<Elem, kBankCount> chan, uint64_t n, uint64_t flags);
 
+DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
+
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   const uint64_t n = argc > 1 ? atoll(argv[1]) : 1024 * 1024;
   const uint64_t flags = argc > 2 ? atoll(argv[2]) : 6LL;
 
@@ -23,8 +28,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  Bandwidth(tapa::mmaps<float, kBankCount>(chan).vectorized<Elem::length>(), n,
-            flags);
+  tapa::invoke(Bandwidth, FLAGS_bitstream,
+               tapa::read_write_mmaps<float, kBankCount>(chan)
+                   .vectorized<Elem::length>(),
+               n, flags);
 
   if (!((flags & kRead) && (flags & kWrite))) return 0;
 
