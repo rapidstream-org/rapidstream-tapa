@@ -8,6 +8,7 @@
 #include <random>
 #include <vector>
 
+#include <gflags/gflags.h>
 #include <tapa.h>
 
 using std::abs;
@@ -19,11 +20,16 @@ using std::chrono::high_resolution_clock;
 
 using pkt_t = uint64_t;
 constexpr int kN = 8;  // kN x kN network
+using pkt_vec_t = tapa::vec_t<pkt_t, kN>;
 
-void Network(tapa::mmap<tapa::vec_t<pkt_t, kN>> input,
-             tapa::mmap<tapa::vec_t<pkt_t, kN>> output, uint64_t n);
+void Network(tapa::mmap<pkt_vec_t> input, tapa::mmap<pkt_vec_t> output,
+             uint64_t n);
+
+DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   uint64_t n = 1ULL << 15;
 
   vector<pkt_t> input(n);
@@ -38,8 +44,9 @@ int main(int argc, char* argv[]) {
 
   const auto start = high_resolution_clock::now();
 
-  Network({(tapa::vec_t<pkt_t, kN>*)input.data(), n / kN},
-          {(tapa::vec_t<pkt_t, kN>*)output.data(), n / kN}, n / kN);
+  tapa::invoke(Network, FLAGS_bitstream,
+               tapa::read_only_mmap<pkt_t>(input).vectorized<kN>(),
+               tapa::write_only_mmap<pkt_t>(output).vectorized<kN>(), n / kN);
 
   const auto stop = high_resolution_clock::now();
 

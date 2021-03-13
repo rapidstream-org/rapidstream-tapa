@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(network)
 target_sources(network PRIVATE network-host.cpp network.cpp)
-target_link_libraries(network PRIVATE ${TAPA})
+target_link_libraries(network PRIVATE ${TAPA} frt::frt gflags)
 add_test(NAME network COMMAND network)
 
 find_package(SDx)
@@ -10,7 +10,6 @@ if(SDx_FOUND)
   add_tapa_target(
     network-hw-xo
     INPUT network.cpp
-    FRT_INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/network.frt.cpp
     TOP Network
     PLATFORM xilinx_u250_xdma_201830_2)
 
@@ -22,24 +21,17 @@ if(SDx_FOUND)
     HW_XCLBIN
     hw_xclbin)
 
-  add_executable(network-frt)
-  target_include_directories(network-frt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_sources(
-    network-frt PRIVATE network-host.cpp
-                        ${CMAKE_CURRENT_BINARY_DIR}/network.frt.cpp)
-  target_link_libraries(network-frt PRIVATE ${TAPA} frt::frt)
-
   add_custom_target(
     network-cosim
-    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
-            $<TARGET_FILE:network-frt>
-    DEPENDS network-frt ${hw_emu_xclbin}
+    COMMAND $<TARGET_FILE:network>
+            --bitstream=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
+    DEPENDS network ${hw_emu_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   add_custom_target(
     network-hw
-    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
-            $<TARGET_FILE:network-frt>
-    DEPENDS network-frt ${hw_xclbin}
+    COMMAND $<TARGET_FILE:network>
+            --bitstream=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
+    DEPENDS network ${hw_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   add_test(NAME network-cosim
