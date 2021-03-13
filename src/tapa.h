@@ -116,36 +116,50 @@ void deallocate(void* addr, size_t length);
 // functions cannot be specialized so use classes
 template <typename T>
 struct dispatcher {
-  static T&& forward(typename std::remove_reference<T>::type& arg) {
-    return static_cast<T&&>(arg);
+  static void set_arg(fpga::Instance& instance, int& idx,
+                      typename std::remove_reference<T>::type& arg) {
+    instance.SetArg(idx, static_cast<T&&>(arg));
+    ++idx;
   }
 };
-template <typename T>
-struct dispatcher<placeholder_mmap<T>> {
-  static fpga::PlaceholderBuffer<T> forward(placeholder_mmap<T> arg) {
-    return fpga::Placeholder(arg.get(), arg.size());
+#define TAPA_DEFINE_DISPATCHER(tag, frt_tag)                   \
+  template <typename T>                                        \
+  struct dispatcher<tag##_mmap<T>> {                           \
+    static void set_arg(fpga::Instance& instance, int& idx,    \
+                        tag##_mmap<T> arg) {                   \
+      auto buf = fpga::frt_tag(arg.get(), arg.size());         \
+      instance.AllocBuf(idx, buf);                             \
+      instance.SetArg(idx, buf);                               \
+      ++idx;                                                   \
+    }                                                          \
+  };                                                           \
+  template <typename T, int64_t S>                             \
+  struct dispatcher<tag##_mmaps<T, S>> {                       \
+    static void set_arg(fpga::Instance& instance, int& idx,    \
+                        tag##_mmaps<T, S> arg) {               \
+      for (uint64_t i = 0; i < S; ++i) {                       \
+        auto buf = fpga::frt_tag(arg[i].get(), arg[i].size()); \
+        instance.AllocBuf(idx, buf);                           \
+        instance.SetArg(idx, buf);                             \
+        ++idx;                                                 \
+      }                                                        \
+    }                                                          \
   }
-};
+TAPA_DEFINE_DISPATCHER(placeholder, Placeholder);
 // read/write are with respect to the kernel in tapa but host in frt
-template <typename T>
-struct dispatcher<read_only_mmap<T>> {
-  static fpga::WriteOnlyBuffer<T> forward(read_only_mmap<T> arg) {
-    return fpga::WriteOnly(arg.get(), arg.size());
-  }
-};
-template <typename T>
-struct dispatcher<write_only_mmap<T>> {
-  static fpga::ReadOnlyBuffer<T> forward(write_only_mmap<T> arg) {
-    return fpga::ReadOnly(arg.get(), arg.size());
-  }
-};
-template <typename T>
-struct dispatcher<read_write_mmap<T>> {
-  static fpga::ReadWriteBuffer<T> forward(read_write_mmap<T> arg) {
-    return fpga::ReadWrite(arg.get(), arg.size());
-  }
-};
+TAPA_DEFINE_DISPATCHER(read_only, WriteOnly);
+TAPA_DEFINE_DISPATCHER(write_only, ReadOnly);
+TAPA_DEFINE_DISPATCHER(read_write, ReadWrite);
 // TODO: dispatch stream correctly
+#undef TAPA_DEFINE_DISPATCHER
+
+inline void set_args(fpga::Instance& instance, int idx) {}
+template <typename Arg, typename... Args>
+inline void set_args(fpga::Instance& instance, int idx, Arg&& arg,
+                     Args&&... args) {
+  internal::dispatcher<Arg>::set_arg(instance, idx, arg);
+  set_args(instance, idx, std::forward<Args>(args)...);
+}
 
 }  // namespace internal
 
@@ -155,7 +169,12 @@ inline void invoke(Func&& f, const std::string& bitstream, Args&&... args) {
   if (bitstream.empty()) {
     f(std::forward<Args>(args)...);
   } else {
-    fpga::Invoke(bitstream, internal::dispatcher<Args>::forward(args)...);
+    auto instance = fpga::Instance(bitstream);
+    internal::set_args(instance, 0, std::forward<Args>(args)...);
+    instance.WriteToDevice();
+    instance.Exec();
+    instance.ReadFromDevice();
+    instance.Finish();
   }
 }
 

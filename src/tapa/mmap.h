@@ -147,6 +147,7 @@ class async_mmap : public mmap<T> {
 
 template <typename T, uint64_t S>
 class mmaps {
+ protected:
   std::vector<mmap<T>> mmaps_;
 
  public:
@@ -213,58 +214,50 @@ class mmaps {
 };
 
 // Host-only mmap types that must have correct size.
-template <typename T>
-class placeholder_mmap : public mmap<T> {
-  using mmap<T>::mmap;
-  placeholder_mmap(T* ptr) : mmap<T>(ptr) {}
-
- public:
-  template <int64_t N>
-  placeholder_mmap<vec_t<T, N>> vectorized() const {
-    CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";
-    return placeholder_mmap<vec_t<T, N>>(
-        reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N);
+#define TAPA_DEFINE_MMAP(tag)                                           \
+  template <typename T>                                                 \
+  class tag##_mmap : public mmap<T> {                                   \
+    using mmap<T>::mmap;                                                \
+    tag##_mmap(T* ptr) : mmap<T>(ptr) {}                                \
+                                                                        \
+   public:                                                              \
+    template <int64_t N>                                                \
+    tag##_mmap<vec_t<T, N>> vectorized() const {                        \
+      CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";   \
+      return tag##_mmap<vec_t<T, N>>(                                   \
+          reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N); \
+    }                                                                   \
   }
-};
-template <typename T>
-class read_only_mmap : public mmap<T> {
-  using mmap<T>::mmap;
-  read_only_mmap(T* ptr) : mmap<T>(ptr) {}
-
- public:
-  template <int64_t N>
-  read_only_mmap<vec_t<T, N>> vectorized() const {
-    CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";
-    return read_only_mmap<vec_t<T, N>>(
-        reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N);
+TAPA_DEFINE_MMAP(placeholder);
+TAPA_DEFINE_MMAP(read_only);
+TAPA_DEFINE_MMAP(write_only);
+TAPA_DEFINE_MMAP(read_write);
+#undef TAPA_DEFINE_MMAP
+#define TAPA_DEFINE_MMAPS(tag)                                           \
+  template <typename T, int64_t S>                                       \
+  class tag##_mmaps : public mmaps<T, S> {                               \
+    using mmaps<T, S>::mmaps;                                            \
+    tag##_mmaps(const std::array<T*, S>& ptrs) : mmaps<T, S>(ptrs){};    \
+                                                                         \
+   public:                                                               \
+    template <int64_t N>                                                 \
+    tag##_mmaps<vec_t<T, N>, S> vectorized() const {                     \
+      std::array<vec_t<T, N>*, S> ptrs;                                  \
+      std::array<uint64_t, S> sizes;                                     \
+      for (uint64_t i = 0; i < S; ++i) {                                 \
+        CHECK_EQ(this->mmaps_[i].size() % N, 0)                          \
+            << "size[" << i << "] must be a multiple of N";              \
+        ptrs[i] = reinterpret_cast<vec_t<T, N>*>(this->mmaps_[i].get()); \
+        sizes[i] = this->mmaps_[i].size() / N;                           \
+      }                                                                  \
+      return tag##_mmaps<vec_t<T, N>, S>(ptrs, sizes);                   \
+    }                                                                    \
   }
-};
-template <typename T>
-class write_only_mmap : public mmap<T> {
-  using mmap<T>::mmap;
-  write_only_mmap(T* ptr) : mmap<T>(ptr) {}
-
- public:
-  template <int64_t N>
-  write_only_mmap<vec_t<T, N>> vectorized() const {
-    CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";
-    return write_only_mmap<vec_t<T, N>>(
-        reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N);
-  }
-};
-template <typename T>
-class read_write_mmap : public mmap<T> {
-  using mmap<T>::mmap;
-  read_write_mmap(T* ptr) : mmap<T>(ptr) {}
-
- public:
-  template <int64_t N>
-  read_write_mmap<vec_t<T, N>> vectorized() const {
-    CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";
-    return read_write_mmap<vec_t<T, N>>(
-        reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N);
-  }
-};
+TAPA_DEFINE_MMAPS(placeholder);
+TAPA_DEFINE_MMAPS(read_only);
+TAPA_DEFINE_MMAPS(write_only);
+TAPA_DEFINE_MMAPS(read_write);
+#undef TAPA_DEFINE_MMAPS
 
 }  // namespace tapa
 
