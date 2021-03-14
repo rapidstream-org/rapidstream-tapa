@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include <chrono>
 #include <functional>
 #include <iostream>
 #include <iterator>
@@ -191,10 +192,14 @@ inline int64_t invoke(const std::string& bitstream, Args&&... args) {
 }
 
 template <typename Func, typename... Args>
-inline void invoke(bool run_in_new_process, Func&& f,
-                   const std::string& bitstream, Args&&... args) {
+inline int64_t invoke(bool run_in_new_process, Func&& f,
+                      const std::string& bitstream, Args&&... args) {
   if (bitstream.empty()) {
+    const auto tic = std::chrono::steady_clock::now();
     f(std::forward<Args>(args)...);
+    const auto toc = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(toc - tic)
+        .count();
   } else {
     if (run_in_new_process) {
       auto kernel_time_ns_raw = allocate(sizeof(int64_t));
@@ -208,41 +213,36 @@ inline void invoke(bool run_in_new_process, Func&& f,
         CHECK_EQ(wait(&status), pid);
         CHECK(WIFEXITED(status));
         CHECK_EQ(WEXITSTATUS(status), EXIT_SUCCESS);
-
-        setenv("TAPA_KERNEL_TIME_NS", std::to_string(*kernel_time_ns).c_str(),
-               /*replace=*/1);
-        return;
+        return *kernel_time_ns;
       }
 
       // Child.
       *kernel_time_ns = invoke(bitstream, std::forward<Args>(args)...);
       exit(EXIT_SUCCESS);
     } else {
-      setenv("TAPA_KERNEL_TIME_NS",
-             std::to_string(invoke(bitstream, std::forward<Args>(args)...))
-                 .c_str(),
-             /*replace=*/1);
+      return invoke(bitstream, std::forward<Args>(args)...);
     }
   }
 }
 
 }  // namespace internal
 
-// host-only invoke that takes path to a bistream file as an argument
+// Host-only invoke that takes path to a bistream file as an argument. Returns
+// the kernel time in nanoseconds.
 template <typename Func, typename... Args>
-inline void invoke(Func&& f, const std::string& bitstream, Args&&... args) {
-  internal::invoke(/*run_in_new_process*/ false, f, bitstream,
-                   std::forward<Args>(args)...);
+inline int64_t invoke(Func&& f, const std::string& bitstream, Args&&... args) {
+  return internal::invoke(/*run_in_new_process*/ false, f, bitstream,
+                          std::forward<Args>(args)...);
 }
 
 // Workaround for the fact that Xilinx's cosim cannot run for more than once in
 // each process. The mmap pointers MUST be allocated via mmap, or the updates
 // won't be seen by the caller process!
 template <typename Func, typename... Args>
-inline void invoke_in_new_process(Func&& f, const std::string& bitstream,
-                                  Args&&... args) {
-  internal::invoke(/*run_in_new_process*/ true, f, bitstream,
-                   std::forward<Args>(args)...);
+inline int64_t invoke_in_new_process(Func&& f, const std::string& bitstream,
+                                     Args&&... args) {
+  return internal::invoke(/*run_in_new_process*/ true, f, bitstream,
+                          std::forward<Args>(args)...);
 }
 
 template <typename T>
