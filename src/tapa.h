@@ -15,9 +15,13 @@
 #include <iterator>
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include <frt.h>
 #include <glog/logging.h>
@@ -171,8 +175,55 @@ inline void set_args(fpga::Instance& instance, int idx) {}
 template <typename Arg, typename... Args>
 inline void set_args(fpga::Instance& instance, int idx, Arg&& arg,
                      Args&&... args) {
-  internal::dispatcher<Arg>::set_arg(instance, idx, arg);
+  dispatcher<Arg>::set_arg(instance, idx, arg);
   set_args(instance, idx, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline int64_t invoke(const std::string& bitstream, Args&&... args) {
+  auto instance = fpga::Instance(bitstream);
+  set_args(instance, 0, std::forward<Args>(args)...);
+  instance.WriteToDevice();
+  instance.Exec();
+  instance.ReadFromDevice();
+  instance.Finish();
+  return instance.ComputeTimeNanoSeconds();
+}
+
+template <typename Func, typename... Args>
+inline void invoke(bool run_in_new_process, Func&& f,
+                   const std::string& bitstream, Args&&... args) {
+  if (bitstream.empty()) {
+    f(std::forward<Args>(args)...);
+  } else {
+    if (run_in_new_process) {
+      auto kernel_time_ns_raw = allocate(sizeof(int64_t));
+      auto deleter = [](int64_t* p) { deallocate(p, sizeof(int64_t)); };
+      std::unique_ptr<int64_t, decltype(deleter)> kernel_time_ns(
+          reinterpret_cast<int64_t*>(kernel_time_ns_raw), deleter);
+      if (pid_t pid = fork()) {
+        // Parent.
+        PCHECK(pid != -1);
+        int status = 0;
+        CHECK_EQ(wait(&status), pid);
+        CHECK(WIFEXITED(status));
+        CHECK_EQ(WEXITSTATUS(status), EXIT_SUCCESS);
+
+        setenv("TAPA_KERNEL_TIME_NS", std::to_string(*kernel_time_ns).c_str(),
+               /*replace=*/1);
+        return;
+      }
+
+      // Child.
+      *kernel_time_ns = invoke(bitstream, std::forward<Args>(args)...);
+      exit(EXIT_SUCCESS);
+    } else {
+      setenv("TAPA_KERNEL_TIME_NS",
+             std::to_string(invoke(bitstream, std::forward<Args>(args)...))
+                 .c_str(),
+             /*replace=*/1);
+    }
+  }
 }
 
 }  // namespace internal
@@ -180,16 +231,18 @@ inline void set_args(fpga::Instance& instance, int idx, Arg&& arg,
 // host-only invoke that takes path to a bistream file as an argument
 template <typename Func, typename... Args>
 inline void invoke(Func&& f, const std::string& bitstream, Args&&... args) {
-  if (bitstream.empty()) {
-    f(std::forward<Args>(args)...);
-  } else {
-    auto instance = fpga::Instance(bitstream);
-    internal::set_args(instance, 0, std::forward<Args>(args)...);
-    instance.WriteToDevice();
-    instance.Exec();
-    instance.ReadFromDevice();
-    instance.Finish();
-  }
+  internal::invoke(/*run_in_new_process*/ false, f, bitstream,
+                   std::forward<Args>(args)...);
+}
+
+// Workaround for the fact that Xilinx's cosim cannot run for more than once in
+// each process. The mmap pointers MUST be allocated via mmap, or the updates
+// won't be seen by the caller process!
+template <typename Func, typename... Args>
+inline void invoke_in_new_process(Func&& f, const std::string& bitstream,
+                                  Args&&... args) {
+  internal::invoke(/*run_in_new_process*/ true, f, bitstream,
+                   std::forward<Args>(args)...);
 }
 
 template <typename T>
