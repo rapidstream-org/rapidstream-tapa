@@ -133,7 +133,7 @@ struct dispatcher {
       ++idx;                                                   \
     }                                                          \
   };                                                           \
-  template <typename T, int64_t S>                             \
+  template <typename T, uint64_t S>                            \
   struct dispatcher<tag##_mmaps<T, S>> {                       \
     static void set_arg(fpga::Instance& instance, int& idx,    \
                         tag##_mmaps<T, S> arg) {               \

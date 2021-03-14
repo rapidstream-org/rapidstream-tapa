@@ -37,7 +37,7 @@ class mmap {
   // Host-only APIs.
   T* get() const { return ptr_; }
   uint64_t size() const { return size_; }
-  template <int64_t N>
+  template <uint64_t N>
   mmap<vec_t<T, N>> vectorized() const {
     CHECK_EQ(size_ % N, 0) << "size must be a multiple of N";
     return mmap<vec_t<T, N>>(reinterpret_cast<vec_t<T, N>*>(ptr_), size_ / N);
@@ -199,7 +199,7 @@ class mmaps {
   }
 
   // Host-only APIs.
-  template <int64_t N>
+  template <uint64_t N>
   mmaps<vec_t<T, N>, S> vectorized() const {
     std::array<vec_t<T, N>*, S> ptrs;
     std::array<uint64_t, S> sizes;
@@ -221,7 +221,7 @@ class mmaps {
     tag##_mmap(T* ptr) : mmap<T>(ptr) {}                                \
                                                                         \
    public:                                                              \
-    template <int64_t N>                                                \
+    template <uint64_t N>                                               \
     tag##_mmap<vec_t<T, N>> vectorized() const {                        \
       CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";   \
       return tag##_mmap<vec_t<T, N>>(                                   \
@@ -234,13 +234,13 @@ TAPA_DEFINE_MMAP(write_only);
 TAPA_DEFINE_MMAP(read_write);
 #undef TAPA_DEFINE_MMAP
 #define TAPA_DEFINE_MMAPS(tag)                                           \
-  template <typename T, int64_t S>                                       \
+  template <typename T, uint64_t S>                                      \
   class tag##_mmaps : public mmaps<T, S> {                               \
     using mmaps<T, S>::mmaps;                                            \
     tag##_mmaps(const std::array<T*, S>& ptrs) : mmaps<T, S>(ptrs){};    \
                                                                          \
    public:                                                               \
-    template <int64_t N>                                                 \
+    template <uint64_t N>                                                \
     tag##_mmaps<vec_t<T, N>, S> vectorized() const {                     \
       std::array<vec_t<T, N>*, S> ptrs;                                  \
       std::array<uint64_t, S> sizes;                                     \
