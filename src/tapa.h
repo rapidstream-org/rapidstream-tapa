@@ -152,6 +152,20 @@ TAPA_DEFINE_DISPATCHER(write_only, ReadOnly);
 TAPA_DEFINE_DISPATCHER(read_write, ReadWrite);
 // TODO: dispatch stream correctly
 #undef TAPA_DEFINE_DISPATCHER
+template <typename T>
+struct dispatcher<mmap<T>> {
+  static_assert(!std::is_same<T, T>::value,
+                "must use one of "
+                "placeholder_mmap/read_only_mmap/write_only_mmap/"
+                "read_write_mmap in tapa::invoke");
+};
+template <typename T, int64_t S>
+struct dispatcher<mmaps<T, S>> {
+  static_assert(!std::is_same<T, T>::value,
+                "must use one of "
+                "placeholder_mmaps/read_only_mmaps/write_only_mmaps/"
+                "read_write_mmaps in tapa::invoke");
+};
 
 inline void set_args(fpga::Instance& instance, int idx) {}
 template <typename Arg, typename... Args>
