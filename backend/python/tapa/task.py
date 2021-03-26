@@ -69,6 +69,7 @@ class Task:
     self._instances: Optional[Tuple[Instance, ...]] = None
     self._args: Optional[Dict[str, List[Instance.Arg]]] = None
     self._mmaps: Optional[Dict[str, MMapConnection]] = None
+    self._self_area = {}
 
   @property
   def is_upper(self) -> bool:
@@ -124,6 +125,26 @@ class Task:
     if self._mmaps is not None:
       return self._mmaps
     raise ValueError(f'children of task {self.name} not populated')
+
+  @property
+  def self_area(self) -> Dict[str, int]:
+    if self._self_area:
+      return self._self_area
+    raise ValueError(f'area of task {self.name} not populated')
+
+  @self_area.setter
+  def self_area(self, area: Dict[str, int]) -> None:
+    if self._self_area:
+      raise ValueError(f'area of task {self.name} already populated')
+    self._self_area = area
+
+  @property
+  def total_area(self) -> Dict[str, int]:
+    area = dict(self.self_area)
+    for instance in self.instances:
+      for key in area:
+        area[key] += instance.task.total_area[key]
+    return area
 
   def get_id_width(self, port: str) -> Optional[int]:
     if port in self.mmaps:

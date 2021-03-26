@@ -6,6 +6,7 @@ import shutil
 import sys
 import tarfile
 import tempfile
+import xml.etree.ElementTree as ET
 from typing import (Any, BinaryIO, Dict, Iterator, List, Optional, Set, TextIO,
                     Tuple, Union)
 
@@ -129,6 +130,11 @@ class Program:
                         (util.get_module_name(name) if prefix else name) +
                         rtl.RTL_SUFFIX)
 
+  def get_area(self, name: str) -> Dict[str, int]:
+    filename = os.path.join(self.work_dir, 'report', f'{name}_csynth.xml')
+    node = ET.parse(filename).find('./AreaEstimates/Resources')
+    return {x.tag: int(x.text) for x in sorted(node, key=lambda x: x.tag)}
+
   def extract_cpp(self) -> 'Program':
     """Extract HLS C++ files."""
     _logger.info('extracting HLS C++ files')
@@ -199,6 +205,7 @@ class Program:
     for task in self._tasks.values():
       _logger.debug('parsing %s', task.name)
       task.module = rtl.Module([self.get_rtl(task.name)])
+      task.self_area = self.get_area(task.name)
       _logger.debug('populating %s', task.name)
       self._populate_task(task)
     os.chdir(oldcwd)

@@ -22,17 +22,27 @@ def generate_floorplan(
     part_num: str,
 ) -> Dict[str, Any]:
   # pylint: disable=import-outside-toplevel
-  import autoparallel.FE.tapa.TapaManager as autobridge
+  import autobridge.HLSParser.tapa as autobridge
 
   vertices = {x.name: x.task.name for x in top_task.instances}
   edges = {}
+
+  # Self area for top task represents mainly the control_s_axi instance.
+  area = {top_task.name: make_autobridge_area(top_task.self_area)}
+  for instance in top_task.instances:
+    if instance.task.name not in area:
+      # Total area handles hierarchical designs for AutoBridge.
+      task_area = make_autobridge_area(instance.task.total_area)
+      area[instance.task.name] = task_area
+      _logger.debug('area of %s: %s', instance.task.name, task_area)
+
   config = {
       'CompiledBy': 'TAPA',
       'Board': part_num.split('-')[0][2:].upper(),
-      'ProjectPath': work_dir,
       'OptionalFloorplan': collections.defaultdict(list),
       'Vertices': vertices,
       'Edges': edges,
+      'Area': area,
   }
 
   # Set floorplans for tasks connected to MMAP and the ctrl instance.
@@ -64,6 +74,13 @@ def generate_floorplan(
       if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
         floorplan_vertex_name = rtl.async_mmap_instance_name(arg.mmap_name)
         vertices[floorplan_vertex_name] = floorplan_vertex_name
+        area[floorplan_vertex_name] = {
+            'BRAM': 0,
+            'DSP': 0,
+            'FF': 0,
+            'LUT': 0,
+            'URAM': 0,
+        }
 
   # Generate edges for scalar connections from the ctrl instance.
   for port in top_task.ports.values():
@@ -90,13 +107,17 @@ def generate_floorplan(
     json.dump(config, fp, indent=2)
 
   # Generate floorplan using AutoBridge.
-  floorplan = autobridge.TapaManager(config).generateTAPAConstraints()
+  floorplan = autobridge.generate_constraints(config)
 
   # Dump the output from AutoBridge.
   with open(os.path.join(work_dir, 'autobridge_floorplan.json'), 'w') as fp:
     json.dump(floorplan, fp, indent=2)
 
   return floorplan
+
+
+def make_autobridge_area(area: Dict[str, int]) -> Dict[str, int]:
+  return {{'BRAM_18K': 'BRAM'}.get(k, k): v for k, v in area.items()}
 
 
 def parse_connectivity(fp: TextIO) -> List[str]:
