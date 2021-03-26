@@ -768,6 +768,8 @@ class Program:
   def _get_fifo_width(self, task: Task, fifo: str) -> int:
     producer_task, _, fifo_port = task.get_fifo_port(fifo, 'produced_by')
     fifo_data_port = rtl.fifo_port_name(fifo_port, rtl.OSTREAM_SUFFIXES[0])
-    width = self.get_task(producer_task).module.ports[fifo_data_port].width
+    port = self.get_task(producer_task).module.ports.get(fifo_data_port)
+    if port is None:
+      raise ValueError(f'port {fifo_data_port} not found in {producer_task}')
     # TODO: err properly if not integer literals
-    return int(width.msb.value) - int(width.lsb.value) + 1
+    return int(port.width.msb.value) - int(port.width.lsb.value) + 1
