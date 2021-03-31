@@ -5,6 +5,7 @@
 
 namespace tapa {
 namespace internal {
+void schedule(bool detach, const std::function<void()>&);
 void yield(const std::string& msg);
 }  // namespace internal
 }  // namespace tapa

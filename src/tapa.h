@@ -53,7 +53,8 @@ struct task {
 
   template <int step, typename Function, typename... Args, size_t S>
   task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
-    schedule(/* detach= */ step < 0, std::bind(f, std::forward<Args>(args)...));
+    internal::schedule(/* detach= */ step < 0,
+                       std::bind(f, std::forward<Args>(args)...));
     return *this;
   }
 
@@ -99,8 +100,6 @@ struct task {
                                 << "async_mmap #" << idx % length;
     return arg[idx % length];
   }
-
-  void schedule(bool detach, const std::function<void()>&);
 };
 
 template <typename T, uint64_t N>

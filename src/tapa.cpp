@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <atomic>
 #include <condition_variable>
+#include <deque>
 #include <functional>
 #include <list>
 #include <memory>
@@ -15,7 +16,6 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
-#include <vector>
 
 #include <sys/mman.h>
 
@@ -39,7 +39,6 @@ using std::mutex;
 using std::runtime_error;
 using std::string;
 using std::unordered_map;
-using std::vector;
 
 using unique_lock = std::unique_lock<mutex>;
 
@@ -297,6 +296,10 @@ void signal_handler(int signal) {
 
 }  // namespace
 
+void schedule(bool detach, const function<void()>& f) {
+  pool->add_task(detach, f);
+}
+
 }  // namespace internal
 
 task::task() {
@@ -316,10 +319,6 @@ task::~task() {
   }
 }
 
-void task::schedule(bool detach, const function<void()>& f) {
-  internal::pool->add_task(detach, f);
-}
-
 }  // namespace tapa
 
 #else  // BOOST_VERSION >= 105900
@@ -331,37 +330,58 @@ void yield(const std::string& msg) { std::this_thread::yield(); }
 
 namespace {
 
-std::unordered_map<const task*, std::vector<std::thread>> threads;
+std::deque<std::thread>* threads = nullptr;
+const task* top_task = nullptr;
+int active_task_count = 0;
 std::mutex mtx;
 
 }  // namespace
-}  // namespace internal
 
-task::task() {}
-
-task::~task() {
-  std::vector<std::thread>* threads;
-  {
-    std::unique_lock<std::mutex> lock(internal::mtx);
-    threads = &internal::threads[this];
-  }
-  for (auto& t : *threads) t.join();
-
-  std::unique_lock<std::mutex> lock(internal::mtx);
-  internal::threads.erase(this);
-}
-
-void task::schedule(bool detach, const std::function<void()>& f) {
+void schedule(bool detach, const std::function<void()>& f) {
   if (detach) {
     std::thread(f).detach();
   } else {
-    std::vector<std::thread>* threads;
-    {
-      std::unique_lock<std::mutex> lock(internal::mtx);
-      threads = &internal::threads[this];
-    }
+    std::unique_lock<std::mutex> lock(internal::mtx);
     threads->emplace_back(f);
   }
+}
+
+}  // namespace internal
+
+task::task() {
+  std::unique_lock<std::mutex> lock(internal::mtx);
+  ++internal::active_task_count;
+  if (internal::top_task == nullptr) {
+    internal::top_task = this;
+  }
+  if (internal::threads == nullptr) {
+    internal::threads = new std::deque<std::thread>;
+  }
+}
+
+task::~task() {
+  if (this == internal::top_task) {
+    for (;;) {
+      std::thread t;
+      {
+        std::unique_lock<std::mutex> lock(internal::mtx, std::defer_lock);
+        if (internal::active_task_count == 1 && lock.try_lock()) {
+          if (internal::threads->empty()) {
+            break;
+          }
+          t = std::move(internal::threads->front());
+          internal::threads->pop_front();
+        }
+      }
+      if (t.joinable()) {
+        t.join();
+      }
+      std::this_thread::yield();
+    }
+    internal::top_task = nullptr;
+  }
+  std::unique_lock<std::mutex> lock(internal::mtx);
+  --internal::active_task_count;
 }
 
 }  // namespace tapa
