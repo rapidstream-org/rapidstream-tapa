@@ -123,17 +123,20 @@ class istream {
     return succeeded ? elem.val : default_val;
   }
 
-  void try_open() {
+  bool try_open() {
 #pragma HLS inline
 #pragma HLS latency max = 0
     elem_t<T> elem;
-    assert(!_.read_nb(elem) || elem.eos);
+    const bool succeeded = _.read_nb(elem);
+    assert(!succeeded || elem.eos);
+    return succeeded;
   }
 
   void open() {
 #pragma HLS inline
 #pragma HLS latency max = 0
-    assert(_.read().eos);
+    const auto elem = _.read();
+    assert(elem.eos);
   }
 
   hls::stream<elem_t<T>> _;
