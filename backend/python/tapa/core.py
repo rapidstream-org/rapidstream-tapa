@@ -494,7 +494,7 @@ class Program:
 
         # check which ports are used for async_mmap
         if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-          for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
+          for tag in rtl.ASYNC_MMAP_SUFFIXES:
             if set(x.portname for x in rtl.generate_async_mmap_ports(
                 tag=tag,
                 port=arg.port,

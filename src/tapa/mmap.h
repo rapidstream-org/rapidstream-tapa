@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "tapa/coroutine.h"
+#include "tapa/stream.h"
 #include "tapa/synthesizable/vec.h"
 
 namespace tapa {
@@ -51,72 +52,34 @@ class mmap {
 template <typename T>
 class async_mmap : public mmap<T> {
   using super = mmap<T>;
+  using addr_t = int64_t;
+  using resp_t = uint8_t;
+
+  tapa::stream<addr_t, 64> read_addr_q_{"read_addr"};
+  tapa::stream<T, 64> read_data_q_{"read_data"};
+  tapa::stream<addr_t, 64> write_addr_q_{"write_addr"};
+  tapa::stream<T, 64> write_data_q_{"write_data"};
+  tapa::stream<resp_t, 64> write_resp_q_{"write_resp"};
 
  public:
   async_mmap(super&& mem) : super(mem) {}
-  async_mmap(const super& mem) : super(mem) {}
+  async_mmap(const super& mem) : super(mem) {
+    internal::schedule(/*detach=*/true, [this] {
+      worker(this->get(), this->size(), read_addr_q_, read_data_q_,
+             write_addr_q_, write_data_q_, write_resp_q_);
+    });
+  }
   async_mmap(T* ptr) : super(ptr) {}
   async_mmap(T* ptr, uint64_t size) : super(ptr, size) {}
   template <typename Allocator>
   async_mmap(std::vector<typename std::remove_const<T>::type, Allocator>& vec)
       : super(vec) {}
 
-  // Read operations.
-  void read_addr_write(uint64_t addr) {
-    CHECK_GE(addr, 0);
-    CHECK_LT(addr, super::size_);
-    read_addr_q_.push(addr);
-  }
-  bool read_addr_try_write(uint64_t addr) {
-    read_addr_write(addr);
-    return true;
-  }
-  bool read_data_empty() {
-    bool is_empty = read_addr_q_.empty();
-    if (is_empty) {
-      internal::yield("read data channel is empty");
-    }
-    return is_empty;
-  }
-  bool read_data_try_read(T& resp) {
-    if (read_data_empty()) {
-      return false;
-    }
-    resp = super::ptr_[read_addr_q_.front()];
-    read_addr_q_.pop();
-    return true;
-  };
-
-  // Write operations.
-  void write_addr_write(uint64_t addr) {
-    CHECK_GE(addr, 0);
-    CHECK_LT(addr, super::size_);
-    if (write_data_q_.empty()) {
-      write_addr_q_.push(addr);
-    } else {
-      super::ptr_[addr] = write_data_q_.front();
-      write_data_q_.pop();
-    }
-  }
-  bool write_addr_try_write(uint64_t addr) {
-    write_addr_write(addr);
-    return true;
-  }
-  void write_data_write(const T& data) {
-    if (write_addr_q_.empty()) {
-      write_data_q_.push(data);
-    } else {
-      super::ptr_[write_addr_q_.front()] = data;
-      write_addr_q_.pop();
-    }
-  }
-  bool write_data_try_write(const T& data) {
-    write_data_write(data);
-    return true;
-  }
-
-  // Waits until no operations are pending or on-going.
-  void fence() {}
+  tapa::ostream<addr_t>& read_addr{read_addr_q_};
+  tapa::istream<T>& read_data{read_data_q_};
+  tapa::ostream<addr_t>& write_addr{write_addr_q_};
+  tapa::ostream<T>& write_data{write_data_q_};
+  tapa::istream<resp_t>& write_resp{write_resp_q_};
 
  private:
   // Must be operated via the read/write addr/data stream APIs.
@@ -139,10 +102,39 @@ class async_mmap : public mmap<T> {
   async_mmap<T> operator-(std::ptrdiff_t diff) { return super::ptr_ - diff; }
   std::ptrdiff_t operator-(async_mmap<T> ptr) { return super::ptr_ - ptr; }
 
-  // The software simulator queues pending operations.
-  std::queue<uint64_t> read_addr_q_;
-  std::queue<uint64_t> write_addr_q_;
-  std::queue<T> write_data_q_;
+  // Copy of all arguments so that the worker can run after async_mmap is
+  // deconstructed.
+  static void worker(T* ptr, uint64_t size, decltype(read_addr_q_) read_addr_q,
+                     decltype(read_data_q_) read_data_q,
+                     decltype(write_addr_q_) write_addr_q,
+                     decltype(write_data_q_) write_data_q,
+                     decltype(write_resp_q_) write_resp_q) {
+    int16_t write_count = 0;
+    for (;;) {
+      if (!read_addr_q.empty() && !read_data_q.full()) {
+        const auto addr = read_addr_q.read();
+        CHECK_GE(addr, 0);
+        if (addr != 0) {
+          CHECK_LT(addr, size);
+        }
+        read_data_q.write(ptr[addr]);
+      }
+      if (write_count != 256 && !write_addr_q.empty() &&
+          !write_data_q.empty()) {
+        const auto addr = write_addr_q.read();
+        CHECK_GE(addr, 0);
+        if (addr != 0) {
+          CHECK_LT(addr, size);
+        }
+        ptr[addr] = write_data_q.read();
+        ++write_count;
+      } else if (write_count > 0 &&
+                 write_resp_q.try_write(resp_t(write_count - 1))) {
+        CHECK_LE(write_count, 256);
+        write_count = 0;
+      }
+    }
+  }
 };
 
 template <typename T, uint64_t S>

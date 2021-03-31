@@ -565,10 +565,17 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
       AddPragmaForStream(param, add);
     } else if (IsTapaType(param, "async_mmap")) {
       add({"disaggregate variable =", name});
-      for (auto tag : {"read_addr", "read_data", "read_peek", "write_addr",
-                       "write_data"}) {
-        add({"interface ap_fifo port =", name, ".", tag});
-        add({"aggregate variable =", name, " . ", tag, " bit"});
+      for (auto tag : {".read_addr", ".read_data", ".write_addr", ".write_data",
+                       ".write_resp"}) {
+        const auto fifo_var = GetFifoVar(name + tag);
+        add({"interface ap_fifo port =", fifo_var});
+        add({"aggregate variable =", fifo_var, " bit"});
+      }
+      for (auto tag : {".read_data", ".write_resp"}) {
+        add({"disaggregate variable =", name, tag});
+        const auto peek_var = GetPeekVar(name + tag);
+        add({"interface ap_fifo port =", peek_var});
+        add({"aggregate variable =", peek_var, "bit"});
       }
     } else if (IsTapaType(param, "mmap")) {
       add({"interface m_axi port =", name, "offset = direct bundle =", name});

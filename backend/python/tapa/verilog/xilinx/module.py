@@ -384,8 +384,8 @@ class Module:
                               arg=f'{M_AXI_PREFIX}{name}_{channel}{port}'))
 
     tags = set(tags)
-    for tag in 'read_addr', 'read_data', 'write_addr', 'write_data':
-      for suffix in async_mmap_suffixes(tag=tag):
+    for tag in ASYNC_MMAP_SUFFIXES:
+      for suffix in ASYNC_MMAP_SUFFIXES[tag]:
         if tag in tags:
           arg = async_mmap_arg_name(arg=name, tag=tag, suffix=suffix)
           if tag.endswith('_addr') and suffix.endswith('_din'):

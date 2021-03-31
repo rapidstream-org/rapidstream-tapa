@@ -44,8 +44,8 @@ void Mmap2Stream_internal(
 #pragma HLS pipeline II = 1
     float elem;
     if (rq_i < n_int && rq_i < rs_i + 50 &&  // TODO: resolve the DRAM lock issue
-        mmap_int.read_addr_try_write(rq_i)) rq_i++;
-    if (mmap_int.read_data_try_read(elem)) {
+        mmap_int.read_addr.try_write(rq_i)) rq_i++;
+    if (mmap_int.read_data.try_read(elem)) {
       stream_int.write(elem);
       rs_i++;
     }
@@ -63,8 +63,8 @@ void Mmap2Stream(
 }
 
 void Load(
-        tapa::async_mmap<float> a_array,
-        tapa::async_mmap<float> b_array,
+        tapa::mmap<float> a_array,
+        tapa::mmap<float> b_array,
         tapa::ostream<float>&   a_stream,
         tapa::ostream<float>&   b_stream,
         uint64_t n) {
