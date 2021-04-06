@@ -7,8 +7,9 @@ import sys
 import tarfile
 import tempfile
 import xml.etree.ElementTree as ET
-from typing import (Any, BinaryIO, Dict, Iterator, List, Optional, Set, TextIO,
-                    Tuple, Union)
+from concurrent import futures
+from typing import (Any, BinaryIO, Dict, List, Optional, Set, TextIO, Tuple,
+                    Union)
 
 import toposort
 from haoda.backend import xilinx as hls
@@ -153,7 +154,7 @@ class Program:
     """Run HLS with extracted HLS C++ files and generate tarballs."""
     _logger.info('running HLS')
 
-    def worker(task: Task) -> Iterator[None]:
+    def worker(task: Task) -> None:
       with open(self.get_tar(task.name), 'wb') as tarfileobj:
         with hls.RunHls(
             tarfileobj,
@@ -164,15 +165,14 @@ class Program:
             auto_prefix=True,
             hls='vitis_hls',
         ) as proc:
-          yield
           stdout, stderr = proc.communicate()
         if proc.returncode != 0:
           sys.stdout.write(stdout.decode('utf-8'))
           sys.stderr.write(stderr.decode('utf-8'))
           raise RuntimeError('HLS failed for {}'.format(task.name))
-      yield
 
-    tuple(zip(*map(worker, self._tasks.values())))
+    with futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+      futures.wait([executor.submit(worker, x) for x in self._tasks.values()])
 
     return self
 
