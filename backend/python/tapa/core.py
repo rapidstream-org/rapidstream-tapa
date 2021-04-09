@@ -171,7 +171,10 @@ class Program:
           sys.stderr.write(stderr.decode('utf-8'))
           raise RuntimeError('HLS failed for {}'.format(task.name))
 
-    with futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    # Vitis HLS often fails with "Pre-synthesis failed" when the load is high.
+    # Use a simple heuristic to avoid that.
+    max_workers = max(1, os.cpu_count() - int(os.getloadavg()[0]))
+    with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
       futures.wait([executor.submit(worker, x) for x in self._tasks.values()])
 
     return self
