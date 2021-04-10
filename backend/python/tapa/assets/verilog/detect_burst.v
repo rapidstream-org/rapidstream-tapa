@@ -21,9 +21,13 @@ module detect_burst #(
   input  wire                               addr_full_n,
   output wire                               addr_write,
 
-  output reg  [BurstLenWidth-1:0] burst_len_din,
-  input  wire                     burst_len_full_n,
-  output wire                     burst_len_write
+  output reg  [BurstLenWidth-1:0] burst_len_0_din,
+  input  wire                     burst_len_0_full_n,
+  output wire                     burst_len_0_write,
+
+  output reg  [BurstLenWidth-1:0] burst_len_1_din,
+  input  wire                     burst_len_1_full_n,
+  output wire                     burst_len_1_write
 );
 
   // state
@@ -46,7 +50,8 @@ module detect_burst #(
       ({{(AddrWidth-1){1'b0}}, 1'b1} << DataWidthBytesLog);
 
   assign addr_write = write_enable;
-  assign burst_len_write = write_enable;
+  assign burst_len_0_write = write_enable;
+  assign burst_len_1_write = write_enable;
 
   always @* begin
     // defaults
@@ -56,7 +61,7 @@ module detect_burst #(
     base_valid_next = base_valid;
     wait_time_next = wait_time;
     burst_len_next = burst_len;
-    if (!addr_full_n || !burst_len_full_n) begin
+    if (!addr_full_n || !burst_len_0_full_n || !burst_len_1_full_n) begin
       // output FIFO full, do nothing
     end else if (addr_empty_n) begin
       // read new item if non-empty
@@ -78,7 +83,8 @@ module detect_burst #(
         end else begin
           // no more burst detected
           addr_din = {burst_len, base_addr};
-          burst_len_din = burst_len;
+          burst_len_0_din = burst_len;
+          burst_len_1_din = burst_len;
           write_enable = 1'b1;
           burst_len_next = 0;
           base_addr_next = curr_addr;
@@ -97,7 +103,8 @@ module detect_burst #(
         burst_len_next = burst_len;
       end else begin
         addr_din = {burst_len, base_addr};
-        burst_len_din = burst_len;
+        burst_len_0_din = burst_len;
+        burst_len_1_din = burst_len;
         write_enable = 1'b1;
         wait_time_next = 0;
         base_valid_next = 1'b0;

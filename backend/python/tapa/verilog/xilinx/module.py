@@ -369,13 +369,9 @@ class Module:
     if max_burst_len is None:
       max_burst_len = max(0, 4096 // data_width - 1)
     paramargs.append(
-        ast.ParamArg(paramname='BurstLenWidth',
-                     argname=ast.Constant(max(1, max_burst_len.bit_length()))))
+        ast.ParamArg(paramname='BurstLenWidth', argname=ast.Constant(8)))
     portargs.append(
-        ast.make_port_arg(port='max_burst_len',
-                          arg="{}'d{}".format(
-                              max(1, max_burst_len.bit_length()),
-                              max_burst_len)))
+        ast.make_port_arg(port='max_burst_len', arg=f"8'd{max_burst_len}"))
 
     for channel, ports in M_AXI_PORTS.items():
       for port, direction in ports:

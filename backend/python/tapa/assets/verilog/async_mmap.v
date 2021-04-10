@@ -129,6 +129,13 @@ module async_mmap #(
   wire                      burst_write_len_empty_n;
   wire                      burst_write_len_read;
 
+  wire [BurstLenWidth-1:0] write_req_din;
+  wire                     write_req_write;
+  wire                     write_req_full_n;
+  wire [BurstLenWidth-1:0] write_req_dout;
+  wire                     write_req_read;
+  wire                     write_req_empty_n;
+
   wire burst_write_last_din;
   wire burst_write_last_full_n;
   wire burst_write_last_write;
@@ -158,9 +165,14 @@ module async_mmap #(
     .addr_write (burst_write_addr_write),
 
     // output: used to generate the "last" signals
-    .burst_len_din   (burst_write_len_din),
-    .burst_len_full_n(burst_write_len_full_n),
-    .burst_len_write (burst_write_len_write)
+    .burst_len_0_din   (burst_write_len_din),
+    .burst_len_0_full_n(burst_write_len_full_n),
+    .burst_len_0_write (burst_write_len_write),
+
+    // output: used to generate write responses
+    .burst_len_1_din   (write_req_din),
+    .burst_len_1_full_n(write_req_full_n),
+    .burst_len_1_write (write_req_write)
   );
 
   fifo #(
@@ -221,6 +233,28 @@ module async_mmap #(
     .last_write (burst_write_last_write)
   );
 
+  // write req buffer that remembers the burst length of each write transaction
+  fifo #(
+    .DATA_WIDTH(BurstLenWidth),
+    .ADDR_WIDTH(BufferSizeLog),
+    .DEPTH     (BufferSize)
+  ) write_req (
+    .clk  (clk),
+    .reset(rst),
+
+    // from burst detector
+    .if_full_n  (write_req_full_n),
+    .if_write_ce(1'b1),
+    .if_write   (write_req_write),
+    .if_din     (write_req_din),
+
+    // to write resp buffer
+    .if_empty_n(write_req_empty_n),
+    .if_read_ce(1'b1),
+    .if_read   (write_req_read),
+    .if_dout   (write_req_dout)
+  );
+
   // this fifo should be synchronized with the wr_data fifo
   fifo #(
     .DATA_WIDTH(1),
@@ -269,40 +303,12 @@ module async_mmap #(
     .if_dout   (write_data_dout)
   );
 
-  // write req buffer that remembers the burst length of each write transaction
-  wire [7:0] write_req_din     = m_axi_AWLEN;
-  wire       write_req_write   = burst_write_addr_empty_n;
-  wire       write_req_full_n;
-  wire [7:0] write_req_dout;
-  wire       write_req_read    = m_axi_BVALID && write_resp_full_n;
-  wire       write_req_empty_n;
-  fifo #(
-    .DATA_WIDTH(8),
-    .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
-  ) write_req (
-    .clk  (clk),
-    .reset(rst),
-
-    // from burst detector
-    .if_full_n  (write_req_full_n),
-    .if_write_ce(1'b1),
-    .if_write   (write_req_write),
-    .if_din     (write_req_din),
-
-    // to write resp buffer
-    .if_empty_n(write_req_empty_n),
-    .if_read_ce(1'b1),
-    .if_read   (write_req_read),
-    .if_dout   (write_req_dout)
-  );
-
   // write resp buffer
-  wire [7:0] write_resp_din = write_req_dout;
-  wire       write_resp_write = m_axi_BVALID && write_req_empty_n;
-  wire       write_resp_full_n;
+  wire [BurstLenWidth-1:0] write_resp_din   = write_req_dout;
+  wire                     write_resp_write = m_axi_BVALID && write_req_empty_n;
+  wire                     write_resp_full_n;
   fifo #(
-    .DATA_WIDTH(8),
+    .DATA_WIDTH(BurstLenWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize)
   ) write_resp (
@@ -323,8 +329,8 @@ module async_mmap #(
   );
 
   // AW channel
-  assign burst_write_addr_read = m_axi_AWREADY && write_req_full_n;
-  assign m_axi_AWVALID  = burst_write_addr_empty_n && write_req_full_n;
+  assign burst_write_addr_read = m_axi_AWREADY;
+  assign m_axi_AWVALID  = burst_write_addr_empty_n;
   assign m_axi_AWADDR   = burst_write_addr_dout_addr;
   assign m_axi_AWID     = 0;
   assign m_axi_AWLEN    = burst_write_addr_dout_burst_len;
@@ -342,7 +348,8 @@ module async_mmap #(
   assign m_axi_WLAST  = burst_write_last_dout;
 
   // B channel
-  assign m_axi_BREADY = write_req_empty_n && write_resp_full_n;
+  assign m_axi_BREADY   = write_resp_full_n && write_req_empty_n;
+  assign write_req_read = write_resp_full_n && m_axi_BVALID;
 
   // read addr buffer, from user to burst detector
   wire [AddrWidth-1:0] read_addr_dout;
@@ -422,9 +429,14 @@ module async_mmap #(
     .addr_write (burst_read_addr_write),
 
     // output: used to generate the "last" signals, unused
-    .burst_len_din   (),
-    .burst_len_full_n(1'b1),
-    .burst_len_write ()
+    .burst_len_0_din   (),
+    .burst_len_0_full_n(1'b1),
+    .burst_len_0_write (),
+
+    // output: used to generate write responses, unused
+    .burst_len_1_din   (),
+    .burst_len_1_full_n(1'b1),
+    .burst_len_1_write ()
   );
 
   // read resp buffer
