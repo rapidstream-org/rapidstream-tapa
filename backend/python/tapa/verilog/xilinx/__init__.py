@@ -45,36 +45,8 @@ def generate_handshake_ports(
     )
 
 
-def fifo_port_name(fifo: str, suffix: str) -> str:
-  """Return the port name of the fifo generated via HLS.
-
-  Args:
-      fifo (str): Name of the fifo.
-      suffix (str): One of the suffixes in ISTREAM_SUFFIXES or OSTREAM_SUFFIXES.
-
-  Returns:
-      str: Port name of the fifo generated via HLS.
-  """
-  match = match_array_name(fifo)
-  if match is not None:
-    return f'{match[0]}_{match[1]}{suffix}'
-  return f'{fifo}_V{suffix}'
-
-
 def fifo_partition_name(name: str, idx: int) -> str:
   return f'{name}/inst[{idx}].unit'
-
-
-def generate_istream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
-  for suffix in ISTREAM_SUFFIXES:
-    yield ast.make_port_arg(port=fifo_port_name(port, suffix),
-                            arg=wire_name(arg, suffix))
-
-
-def generate_ostream_ports(port: str, arg: str) -> Iterator[ast.PortArg]:
-  for suffix in OSTREAM_SUFFIXES:
-    yield ast.make_port_arg(port=fifo_port_name(port, suffix),
-                            arg=wire_name(arg, suffix))
 
 
 def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:

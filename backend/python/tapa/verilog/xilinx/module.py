@@ -133,6 +133,49 @@ class Module:
         for x in itertools.chain.from_iterable(port_lists)
         if isinstance(x, (ast.Input, ast.Output, ast.Inout)))
 
+  def get_port_of(self, fifo: str, suffix: str) -> IOPort:
+    """Return the IOPort of the given fifo with the given suffix.
+
+    Args:
+      fifo (str): Name of the fifo.
+      suffix (str): One of the suffixes in ISTREAM_SUFFIXES or OSTREAM_SUFFIXES.
+
+    Raises:
+      ValueError: Module does not have the port.
+
+    Returns:
+      IOPort.
+    """
+    ports = self.ports
+    sanitized_fifo = sanitize_array_name(fifo)
+    for name in f'{sanitized_fifo}_V{suffix}', f'{sanitized_fifo}{suffix}':
+      port = ports.get(name)
+      if port is not None:
+        return port
+    raise ValueError(f'module {self.name} does not have port {fifo}.{suffix}')
+
+  def generate_istream_ports(
+      self,
+      port: str,
+      arg: str,
+  ) -> Iterator[ast.PortArg]:
+    for suffix in ISTREAM_SUFFIXES:
+      yield ast.make_port_arg(
+          port=self.get_port_of(port, suffix).name,
+          arg=wire_name(arg, suffix),
+      )
+
+  def generate_ostream_ports(
+      self,
+      port: str,
+      arg: str,
+  ) -> Iterator[ast.PortArg]:
+    for suffix in OSTREAM_SUFFIXES:
+      yield ast.make_port_arg(
+          port=self.get_port_of(port, suffix).name,
+          arg=wire_name(arg, suffix),
+      )
+
   @property
   def params(self) -> Dict[str, ast.Parameter]:
     param_lists = (

@@ -375,19 +375,19 @@ class Program:
         if direction not in fifo:
           continue
 
-        task_name, _, fifo_port = task.get_fifo_port(fifo_name, direction)
-        child_ports = self.get_task(task_name).module.ports
+        task_name, _, fifo_port = task.get_connection_to(fifo_name, direction)
 
         for suffix in suffixes:
           # declare wires for FIFOs
           wire_name = rtl.wire_name(fifo_name, suffix)
-          wire_width = child_ports[rtl.fifo_port_name(fifo_port, suffix)].width
+          wire_width = self.get_task(task_name).module.get_port_of(
+              fifo_port, suffix).width
           wire = ast.Wire(name=wire_name, width=wire_width)
           task.module.add_signals([wire])
 
           # if this FIFO is not declared, connect it directly to ports
           if 'depth' not in fifo:
-            port_name = rtl.fifo_port_name(fifo_name, suffix)
+            port_name = task.module.get_port_of(fifo_name, suffix).name
             port_direction = rtl.STREAM_PORT_DIRECTION[suffix]
             if port_direction == 'input':
               task.module.add_logics([
@@ -632,13 +632,19 @@ class Program:
               ast.PortArg(portname=arg.port, argname=arg_table[arg.name][-1]))
         elif arg.cat == Instance.Arg.Cat.ISTREAM:
           portargs.extend(
-              rtl.generate_istream_ports(port=arg.port, arg=arg.name))
+              instance.task.module.generate_istream_ports(
+                  port=arg.port,
+                  arg=arg.name,
+              ))
           portargs.extend(portarg for portarg in rtl.generate_peek_ports(
               rtl, port=arg.port, arg=arg.name)
                           if portarg.portname in child_port_set)
         elif arg.cat == Instance.Arg.Cat.OSTREAM:
           portargs.extend(
-              rtl.generate_ostream_ports(port=arg.port, arg=arg.name))
+              instance.task.module.generate_ostream_ports(
+                  port=arg.port,
+                  arg=arg.name,
+              ))
         elif arg.cat == Instance.Arg.Cat.MMAP:
           portargs.extend(
               rtl.generate_m_axi_ports(
@@ -769,10 +775,8 @@ class Program:
     task.module.add_pipeline(self.done_q, init=is_state(STATE10))
 
   def _get_fifo_width(self, task: Task, fifo: str) -> int:
-    producer_task, _, fifo_port = task.get_fifo_port(fifo, 'produced_by')
-    fifo_data_port = rtl.fifo_port_name(fifo_port, rtl.OSTREAM_SUFFIXES[0])
-    port = self.get_task(producer_task).module.ports.get(fifo_data_port)
-    if port is None:
-      raise ValueError(f'port {fifo_data_port} not found in {producer_task}')
+    producer_task, _, fifo_port = task.get_connection_to(fifo, 'produced_by')
+    port = self.get_task(producer_task).module.get_port_of(
+        fifo_port, rtl.OSTREAM_SUFFIXES[0])
     # TODO: err properly if not integer literals
     return int(port.width.msb.value) - int(port.width.lsb.value) + 1

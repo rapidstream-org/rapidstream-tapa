@@ -153,7 +153,7 @@ class Task:
 
   _DIR2CAT = {'produced_by': 'ostream', 'consumed_by': 'istream'}
 
-  def get_fifo_port(
+  def get_connection_to(
       self,
       fifo_name: str,
       direction: str,
