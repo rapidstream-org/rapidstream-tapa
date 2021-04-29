@@ -60,6 +60,9 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   clang::SourceLocation GetEndOfLoc(clang::SourceLocation loc);
 
   int64_t EvalAsInt(const clang::Expr* expr);
+  int GetTypeWidth(const clang::QualType type) {
+    return context_.getTypeInfo(type).Width;
+  }
 };
 
 // Find for a given upper-level task, return all direct children tasks (e.g.
