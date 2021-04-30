@@ -182,7 +182,10 @@ class Program:
     # Use a simple heuristic to avoid that.
     max_workers = max(1, os.cpu_count() - int(os.getloadavg()[0]))
     with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-      futures.wait([executor.submit(worker, x) for x in self._tasks.values()])
+      tasks = [executor.submit(worker, x) for x in self._tasks.values()]
+      futures.wait(tasks)
+      for task in tasks:
+        task.result()
 
     return self
 
