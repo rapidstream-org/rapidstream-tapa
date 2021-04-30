@@ -166,17 +166,17 @@ class Program:
             hls='vitis_hls',
         ) as proc:
           stdout, stderr = proc.communicate()
-        if proc.returncode != 0:
-          if b'Pre-synthesis failed.' in stdout:
-            _logger.error(
-                'HLS failed for %s, but the failure may be flaky; retrying',
-                task.name,
-            )
-            worker(task)
-            return
-          sys.stdout.write(stdout.decode('utf-8'))
-          sys.stderr.write(stderr.decode('utf-8'))
-          raise RuntimeError('HLS failed for {}'.format(task.name))
+      if proc.returncode != 0:
+        if b'Pre-synthesis failed.' in stdout:
+          _logger.error(
+              'HLS failed for %s, but the failure may be flaky; retrying',
+              task.name,
+          )
+          worker(task)
+          return
+        sys.stdout.write(stdout.decode('utf-8'))
+        sys.stderr.write(stderr.decode('utf-8'))
+        raise RuntimeError('HLS failed for {}'.format(task.name))
 
     # Vitis HLS often fails with "Pre-synthesis failed" when the load is high.
     # Use a simple heuristic to avoid that.
