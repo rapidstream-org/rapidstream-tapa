@@ -167,7 +167,7 @@ class Program:
         ) as proc:
           stdout, stderr = proc.communicate()
       if proc.returncode != 0:
-        if b'Pre-synthesis failed.' in stdout:
+        if b'Pre-synthesis failed.' in stdout and b'\nERROR:' not in stdout:
           _logger.error(
               'HLS failed for %s, but the failure may be flaky; retrying',
               task.name,
