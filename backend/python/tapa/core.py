@@ -374,20 +374,11 @@ class Program:
 
   def _connect_fifos(self, task: Task) -> None:
     _logger.debug("  connecting %s's children tasks", task.name)
-    for fifo_name, fifo in task.fifos.items():
-      directions = {
-          'consumed_by': rtl.ISTREAM_SUFFIXES,
-          'produced_by': rtl.OSTREAM_SUFFIXES
-      }
-
-      for direction, suffixes in directions.items():
-        # skip if not in this direction
-        if direction not in fifo:
-          continue
-
+    for fifo_name in task.fifos:
+      for direction in task.get_fifo_directions(fifo_name):
         task_name, _, fifo_port = task.get_connection_to(fifo_name, direction)
 
-        for suffix in suffixes:
+        for suffix in task.get_fifo_suffixes(direction):
           # declare wires for FIFOs
           wire_name = rtl.wire_name(fifo_name, suffix)
           wire_width = self.get_task(task_name).module.get_port_of(
@@ -395,20 +386,8 @@ class Program:
           wire = ast.Wire(name=wire_name, width=wire_width)
           task.module.add_signals([wire])
 
-          # if this FIFO is not declared, connect it directly to ports
-          if 'depth' not in fifo:
-            port_name = task.module.get_port_of(fifo_name, suffix).name
-            port_direction = rtl.STREAM_PORT_DIRECTION[suffix]
-            if port_direction == 'input':
-              task.module.add_logics([
-                  ast.Assign(left=ast.Identifier(wire_name),
-                             right=ast.Identifier(port_name))
-              ])
-            elif port_direction == 'output':
-              task.module.add_logics([
-                  ast.Assign(left=ast.Identifier(port_name),
-                             right=ast.Identifier(wire_name))
-              ])
+      if task.is_fifo_external(fifo_name):
+        task.connect_fifo_externally(fifo_name)
 
   def _instantiate_fifos(self, task: Task) -> None:
     _logger.debug('  instantiating FIFOs in %s', task.name)

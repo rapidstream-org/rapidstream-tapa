@@ -169,6 +169,41 @@ class Task:
         return task_name, task_idx, port
     raise ValueError(f'task {self.name} has inconsistent metadata')
 
+  def get_fifo_directions(self, fifo_name: str) -> List[str]:
+    directions = []
+    for direction in ['consumed_by', 'produced_by']:
+      if direction in self.fifos[fifo_name]:
+        directions.append(direction)
+    return directions
+
+  def get_fifo_suffixes(self, direction: str) -> List[str]:
+    suffixes = { 'consumed_by': rtl.ISTREAM_SUFFIXES,
+                 'produced_by': rtl.OSTREAM_SUFFIXES }
+    return suffixes[direction]
+
+  def is_fifo_external(self, fifo_name: str) -> bool:
+    return 'depth' not in self.fifos[fifo_name]
+
+  def connect_fifo_externally(self, fifo_name: str) -> None:
+    assert len(self.get_fifo_directions(fifo_name)) == 1, \
+        "externally connected fifos should have one direction"
+    direction = self.get_fifo_directions(fifo_name)[0]
+
+    for suffix in self.get_fifo_suffixes(direction):
+      wire_name = rtl.wire_name(fifo_name, suffix)
+      port_name = rtl.fifo_port_name(fifo_name, suffix)
+      port_direction = rtl.STREAM_PORT_DIRECTION[suffix]
+      if port_direction == 'input':
+        self.module.add_logics([
+            ast.Assign(left=ast.Identifier(wire_name),
+                       right=ast.Identifier(port_name))
+        ])
+      elif port_direction == 'output':
+        self.module.add_logics([
+            ast.Assign(left=ast.Identifier(port_name),
+                       right=ast.Identifier(wire_name))
+        ])
+
   def add_m_axi(
       self,
       width_table: Dict[str, int],
