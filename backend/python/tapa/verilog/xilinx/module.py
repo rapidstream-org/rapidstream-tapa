@@ -1,7 +1,7 @@
 import collections
 import itertools
 import logging
-from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple
+from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple, Union
 
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
@@ -177,6 +177,15 @@ class Module:
       )
 
   @property
+  def signals(self) -> Dict[str, Union[ast.Wire, ast.Reg]]:
+    signal_lists = (
+        x.list for x in self._module_def.items if isinstance(x, ast.Decl))
+    return collections.OrderedDict(
+        (x.name, x)
+        for x in itertools.chain.from_iterable(signal_lists)
+        if isinstance(x, (ast.Wire, ast.Reg)))
+
+  @property
   def params(self) -> Dict[str, ast.Parameter]:
     param_lists = (
         x.list for x in self._module_def.items if isinstance(x, ast.Decl))
@@ -314,6 +323,16 @@ class Module:
       return True
 
     self._filter(func, 'param')
+
+  def del_instances(self, prefix: str = '', suffix: str = '') -> None:
+    def func(item: ast.Node) -> bool:
+      if isinstance(item, ast.InstanceList) and \
+          item.module.startswith(prefix) and \
+          item.module.endswith(suffix):
+        return False
+      return True
+
+    self._filter(func, 'instance')
 
   def del_pragmas(self, pragma: Iterable[str]) -> None:
 
@@ -479,11 +498,14 @@ class Module:
     self.del_signals(suffix='_read')
     self.del_signals(suffix='_write')
     self.del_signals(suffix='_blk_n')
+    self.del_signals(suffix='_regslice')
+    self.del_signals(prefix='regslice_')
     self.del_signals(HANDSHAKE_RST)
     self.del_signals(HANDSHAKE_DONE)
     self.del_signals(HANDSHAKE_IDLE)
     self.del_signals(HANDSHAKE_READY)
     self.del_logics()
+    self.del_instances(suffix='_regslice_both')
     self.del_pragmas('fsm_encoding')
     self.add_signals(
         map(ast.Wire,

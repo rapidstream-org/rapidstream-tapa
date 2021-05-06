@@ -387,7 +387,7 @@ class Program:
           task.module.add_signals([wire])
 
       if task.is_fifo_external(fifo_name):
-        task.connect_fifo_externally(fifo_name)
+        task.connect_fifo_externally(fifo_name, task.name == self.top)
 
   def _instantiate_fifos(self, task: Task) -> None:
     _logger.debug('  instantiating FIFOs in %s', task.name)

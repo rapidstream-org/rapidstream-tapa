@@ -16,6 +16,7 @@ from tapa.verilog import ast
 # pylint: disable=wildcard-import,unused-wildcard-import
 from tapa.verilog.util import *
 from tapa.verilog.xilinx.async_mmap import *
+from tapa.verilog.xilinx.axis import *
 from tapa.verilog.xilinx.const import *
 from tapa.verilog.xilinx.m_axi import *
 from tapa.verilog.xilinx.module import *
