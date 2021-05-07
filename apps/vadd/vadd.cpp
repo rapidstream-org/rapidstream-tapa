@@ -35,8 +35,8 @@ void VecAdd(tapa::mmap<const float> a_array, tapa::mmap<const float> b_array,
   tapa::stream<float, 8> c_stream("c");
 
   tapa::task()
-      .invoke<tapa::join>(Mmap2Stream, a_array, n, a_stream)
-      .invoke<tapa::join>(Mmap2Stream, b_array, n, b_stream)
-      .invoke<tapa::join>(Add, a_stream, b_stream, c_stream)
-      .invoke<tapa::join>(Stream2Mmap, c_stream, c_array, n);
+      .invoke(Mmap2Stream, a_array, n, a_stream)
+      .invoke(Mmap2Stream, b_array, n, b_stream)
+      .invoke(Add, a_stream, b_stream, c_stream)
+      .invoke(Stream2Mmap, c_stream, c_array, n);
 }

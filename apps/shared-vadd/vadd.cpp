@@ -3,7 +3,6 @@
 #include <tapa.h>
 
 using tapa::istream;
-using tapa::join;
 using tapa::mmap;
 using tapa::ostream;
 using tapa::stream;
@@ -34,12 +33,12 @@ void Stream2Mmap(istream<float>& stream, mmap<float> mmap, int offset,
 
 void Load(mmap<float> srcs, uint64_t n, ostream<float>& a, ostream<float>& b) {
   task()
-      .invoke<join>(Mmap2Stream, srcs, 0, n, a)
-      .invoke<join>(Mmap2Stream, srcs, 1, n, b);
+      .invoke(Mmap2Stream, srcs, 0, n, a)
+      .invoke(Mmap2Stream, srcs, 1, n, b);
 }
 
 void Store(istream<float>& stream, mmap<float> mmap, uint64_t n) {
-  task().invoke<join>(Stream2Mmap, stream, mmap, 2, n);
+  task().invoke(Stream2Mmap, stream, mmap, 2, n);
 }
 
 void VecAdd(mmap<float> data, uint64_t n) {
@@ -48,11 +47,11 @@ void VecAdd(mmap<float> data, uint64_t n) {
   stream<float, 8> c("c");
 
   task()
-      .invoke<join>(Load, data, n, a, b)
-      .invoke<join>(Add, a, b, c)
-      .invoke<join>(Store, c, data, n);
+      .invoke(Load, data, n, a, b)
+      .invoke(Add, a, b, c)
+      .invoke(Store, c, data, n);
 }
 
 void VecAddShared(mmap<float> elems, uint64_t n) {
-  task().invoke<join>(VecAdd, elems, n);
+  task().invoke(VecAdd, elems, n);
 }

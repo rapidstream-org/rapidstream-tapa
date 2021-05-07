@@ -361,8 +361,12 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     uint64_t vec_length = 1;
     if (const auto method = dyn_cast<CXXMethodDecl>(invoke->getCalleeDecl())) {
       auto args = method->getTemplateSpecializationArgs()->asArray();
-      step =
-          *reinterpret_cast<const int*>(args[0].getAsIntegral().getRawData());
+      if (args.size() > 0 && args[0].getKind() == TemplateArgument::Integral) {
+        step =
+            *reinterpret_cast<const int*>(args[0].getAsIntegral().getRawData());
+      } else {
+        step = 0;  // default to join
+      }
       if (args.size() > 1 && args[1].getKind() == TemplateArgument::Integral) {
         is_vec = true;
         vec_length = *args[1].getAsIntegral().getRawData();

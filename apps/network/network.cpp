@@ -3,7 +3,6 @@
 using tapa::detach;
 using tapa::istream;
 using tapa::istreams;
-using tapa::join;
 using tapa::mmap;
 using tapa::ostream;
 using tapa::ostreams;
@@ -97,9 +96,9 @@ void Network(mmap<vec_t<pkt_t, kN>> mmap_in, mmap<vec_t<pkt_t, kN>> mmap_out,
   streams<pkt_t, kN, 4096> q3("q3");
 
   task()
-      .invoke<join>(Produce, mmap_in, n, q0)
-      .invoke<join>(Stage, 2, q0, q1)
-      .invoke<join>(Stage, 1, q1, q2)
-      .invoke<join>(Stage, 0, q2, q3)
-      .invoke<join>(Consume, mmap_out, n, q3);
+      .invoke(Produce, mmap_in, n, q0)
+      .invoke(Stage, 2, q0, q1)
+      .invoke(Stage, 1, q1, q2)
+      .invoke(Stage, 0, q2, q3)
+      .invoke(Consume, mmap_out, n, q3);
 }

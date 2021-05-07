@@ -46,9 +46,19 @@ struct task {
   task& operator=(task&&) = delete;
   task& operator=(const task&) = delete;
 
+  template <typename Function, typename... Args>
+  task& invoke(Function&& f, Args&&... args) {
+    return invoke<join>(f, "", args...);
+  }
+
   template <int step, typename Function, typename... Args>
   task& invoke(Function&& f, Args&&... args) {
     return invoke<step>(f, "", args...);
+  }
+
+  template <typename Function, typename... Args, size_t S>
+  task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
+    return invoke<join>(f, name, args...);
   }
 
   template <int step, typename Function, typename... Args, size_t S>
