@@ -1,3 +1,5 @@
+from typing import Optional
+
 import haoda.backend.xilinx
 from tapa.verilog import ast
 
@@ -6,6 +8,8 @@ __all__ = [
     'ISTREAM_SUFFIXES',
     'OSTREAM_SUFFIXES',
     'STREAM_PORT_DIRECTION',
+    'STREAM_PORT_OPPOSITE',
+    'STREAM_PORT_WIDTH',
     'FIFO_READ_PORTS',
     'FIFO_WRITE_PORTS',
     'HANDSHAKE_CLK',
@@ -32,6 +36,7 @@ __all__ = [
     'STATE',
     'BUILTIN_INSTANCES',
     'OTHER_MODULES',
+    'get_stream_width',
 ]
 
 # const strings
@@ -52,12 +57,32 @@ OSTREAM_SUFFIXES = (
 
 # {port_suffix: direction}
 STREAM_PORT_DIRECTION = {
-    '_dout': 'input',
+    '_dout':    'input',
     '_empty_n': 'input',
-    '_read': 'output',
-    '_din': 'output',
-    '_full_n': 'input',
-    '_write': 'output',
+    '_read':    'output',
+    '_din':     'output',
+    '_full_n':  'input',
+    '_write':   'output',
+}
+
+# {port_suffix: opposite_suffix}
+STREAM_PORT_OPPOSITE = {
+    '_dout':    '_din',
+    '_empty_n': '_full_n',
+    '_read':    '_write',
+    '_din':     '_dout',
+    '_full_n':  '_empty_n',
+    '_write':   '_read',
+}
+
+# {port_suffix: width}, 0 is variable
+STREAM_PORT_WIDTH = {
+    '_dout':    0,
+    '_empty_n': 1,
+    '_read':    1,
+    '_din':     0,
+    '_full_n':  1,
+    '_write':   1,
 }
 
 FIFO_READ_PORTS = (
@@ -134,3 +159,12 @@ OTHER_MODULES = {
             addr_width=(32 - 1).bit_length(),
         ),
 }
+
+def get_stream_width(port: str, data_width: int) -> Optional[ast.Width]:
+  width = STREAM_PORT_WIDTH[port]
+  if width == 0:
+    width = data_width + 1  # for eos
+  if width == 1:
+    return None
+  else:
+    return ast.Width(msb=ast.Constant(width-1), lsb=ast.Constant(0))

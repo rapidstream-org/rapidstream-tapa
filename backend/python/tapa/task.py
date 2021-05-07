@@ -184,48 +184,82 @@ class Task:
   def is_fifo_external(self, fifo_name: str) -> bool:
     return 'depth' not in self.fifos[fifo_name]
 
-  def connect_fifo_externally(self, fifo_name: str, top: bool) -> None:
-    assert len(self.get_fifo_directions(fifo_name)) == 1, \
-        "externally connected fifos should have one direction"
-    direction = self.get_fifo_directions(fifo_name)[0]
-    data_width = self.ports[fifo_name].width
+  def assign_directional(self, a, b, a_direction: str) -> None:
+    if a_direction == 'input':
+      self.module.add_logics([ast.Assign(left=a, right=b)])
+    elif a_direction == 'output':
+      self.module.add_logics([ast.Assign(left=b, right=a)])
 
-    if top and direction == 'produced_by':
-      # add constant outputs
-      for suffix, bit in rtl.AXIS_CONSTANTS.items():
-        port_name = self.module.find_port(fifo_name, suffix)
-        width = rtl.get_axis_port_width_int(suffix, data_width)
+  def convert_axis_to_fifo(self, axis_name: str) -> str:
+    assert len(self.get_fifo_directions(axis_name)) == 1, \
+        "axis interfaces should have one direction"
+    direction_axis = {
+        'consumed_by': 'produced_by',
+        'produced_by': 'consumed_by',
+    }[self.get_fifo_directions(axis_name)[0]]
+    data_width = self.ports[axis_name].width
+
+    # add FIFO registerings to provide timing isolation
+    fifo_name = 'tapa_fifo_' + axis_name
+    self.module.add_fifo_instance(name=fifo_name,
+        width=data_width+1, depth=2)
+
+    # add FIFO's wires
+    for suffix in rtl.STREAM_PORT_DIRECTION:
+      wire_name = rtl.wire_name(fifo_name, suffix)
+      wire_width = rtl.get_stream_width(suffix, data_width)
+      self.module.add_signals([ast.Wire(name=wire_name, width=wire_width)])
+
+    # add constant outputs for AXIS output ports
+    if direction_axis == 'consumed_by':
+      for axis_suffix, bit in rtl.AXIS_CONSTANTS.items():
+        port_name = self.module.find_port(axis_name, axis_suffix)
+        width = rtl.get_axis_port_width_int(axis_suffix, data_width)
+
         self.module.add_logics([
             ast.Assign(left=ast.Identifier(port_name),
                        right=ast.IntConst("%d'b%s"%(width, str(bit)*width)))])
 
+    # connect the FIFO to the AXIS interface
+    for suffix in self.get_fifo_suffixes(direction_axis):
+      wire_name = rtl.wire_name(fifo_name, suffix)
+
+      offset = 0
+      for axis_suffix in rtl.STREAM_TO_AXIS[suffix]:
+        port_name = self.module.find_port(axis_name, axis_suffix)
+        width = rtl.get_axis_port_width_int(axis_suffix, data_width)
+
+        if len(rtl.STREAM_TO_AXIS[suffix]) > 1:
+          wire = ast.Partselect(ast.Identifier(wire_name),
+              ast.IntConst(str(offset + width - 1)),
+              ast.IntConst(str(offset)))
+        else:
+          wire = ast.Identifier(wire_name)
+
+        self.assign_directional(
+            ast.Identifier(port_name), wire,
+            rtl.STREAM_PORT_DIRECTION[suffix])
+
+        offset += width
+
+    return fifo_name
+
+  def connect_fifo_externally(self, internal_name: str, top: bool) -> None:
+    assert len(self.get_fifo_directions(internal_name)) == 1, \
+        "externally connected fifos should have one direction"
+    direction = self.get_fifo_directions(internal_name)[0]
+    external_name = self.convert_axis_to_fifo(internal_name) \
+        if top else internal_name
+
     # connect fifo with external ports
     for suffix in self.get_fifo_suffixes(direction):
-      wire_name = rtl.wire_name(fifo_name, suffix)
-      wire_direction = rtl.STREAM_PORT_DIRECTION[suffix]
-
-      def add_logic(wire, port):
-        if wire_direction == 'input':
-          self.module.add_logics([ast.Assign(left=wire, right=port)])
-        elif wire_direction == 'output':
-          self.module.add_logics([ast.Assign(left=port, right=wire)])
-
-      if top:
-        offset = 0
-        for axis_suffix in rtl.STREAM_TO_AXIS[suffix]:
-          port_name = self.module.find_port(fifo_name, axis_suffix)
-          width = rtl.get_axis_port_width_int(axis_suffix, data_width)
-          if len(rtl.STREAM_TO_AXIS[suffix]) > 1:
-            wire = ast.Partselect(ast.Identifier(wire_name),
-                ast.IntConst(str(offset + width - 1)),
-                ast.IntConst(str(offset)))
-          else:
-            wire = ast.Identifier(wire_name)
-          add_logic(wire, ast.Identifier(port_name))
-          offset += width
-      else:
-        port_name = rtl.fifo_port_name(fifo_name, suffix)
-        add_logic(ast.Identifier(wire_name), ast.Identifier(port_name))
+      self.assign_directional(
+          ast.Identifier(rtl.wire_name(internal_name, suffix)),
+          ast.Identifier(
+              self.module.get_port_of(external_name, suffix).name
+              if external_name == internal_name
+              else rtl.wire_name(external_name, suffix)),
+          rtl.STREAM_PORT_DIRECTION[suffix])
 
   def add_m_axi(
       self,
