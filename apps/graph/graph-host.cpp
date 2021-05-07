@@ -113,7 +113,12 @@ int main(int argc, char* argv[]) {
     VLOG(10) << e.src << " -> " << e.dst;
   }
   VLOG(10) << "updates: " << updates.size();
-  Graph(num_partitions, num_vertices, num_edges, vertices, edges, updates);
+  Graph(num_partitions,
+        tapa::read_only_mmap<const Vid>(num_vertices),
+        tapa::read_only_mmap<const Eid>(num_edges),
+        tapa::read_only_mmap<VertexAttr>(vertices),
+        tapa::read_only_mmap<const Edge>(edges),
+        tapa::write_only_mmap<Update>(updates));
   Graph(base_vid, vertices_baseline, edges);
   VLOG(10) << "vertices: ";
   for (auto v : vertices) {

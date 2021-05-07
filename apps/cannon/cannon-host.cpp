@@ -57,7 +57,9 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  Cannon(a_buf, b_buf, c_buf, n);
+  Cannon(tapa::read_only_mmap<const float>(a_buf),
+         tapa::read_only_mmap<const float>(b_buf),
+         tapa::write_only_mmap<float>(c_buf), n);
 
   for (uint64_t i = 0; i < p; ++i) {
     for (uint64_t j = 0; j < p; ++j) {

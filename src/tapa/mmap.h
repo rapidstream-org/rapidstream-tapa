@@ -21,7 +21,7 @@ class mmap {
  public:
   mmap(T* ptr) : ptr_{ptr}, size_{0} {}
   mmap(T* ptr, uint64_t size) : ptr_{ptr}, size_{size} {}
-  template <typename Allocator>
+  template <typename Allocator> explicit
   mmap(std::vector<typename std::remove_const<T>::type, Allocator>& vec)
       : ptr_{vec.data()}, size_{vec.size()} {}
   operator T*() { return ptr_; }
@@ -71,7 +71,7 @@ class async_mmap : public mmap<T> {
   }
   async_mmap(T* ptr) : super(ptr) {}
   async_mmap(T* ptr, uint64_t size) : super(ptr, size) {}
-  template <typename Allocator>
+  template <typename Allocator> explicit
   async_mmap(std::vector<typename std::remove_const<T>::type, Allocator>& vec)
       : super(vec) {}
 
@@ -154,14 +154,14 @@ class mmaps {
       mmaps_.emplace_back(ptrs[i], sizes[i]);
     }
   }
-  template <typename Allocator>
+  template <typename Allocator> explicit
   mmaps(
       std::vector<typename std::remove_const<T>::type, Allocator> (&vecs)[S]) {
     for (uint64_t i = 0; i < S; ++i) {
       mmaps_.emplace_back(vecs[i]);
     }
   }
-  template <typename Allocator>
+  template <typename Allocator> explicit
   mmaps(std::array<std::vector<typename std::remove_const<T>::type, Allocator>,
                    S>& vecs) {
     for (uint64_t i = 0; i < S; ++i) {

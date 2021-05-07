@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     c[i] = 0.f;
   }
   auto start = high_resolution_clock::now();
-  VecAddShared(data, n);
+  VecAddShared(tapa::read_write_mmap<float>(data), n);
   auto stop = high_resolution_clock::now();
   duration<double> elapsed = stop - start;
   clog << "elapsed time: " << elapsed.count() << " s" << endl;
