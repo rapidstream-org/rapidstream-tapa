@@ -32,7 +32,7 @@ class istream {
 #pragma HLS latency max = 0
     elem_t<T> peek_val;
     _peek.read_nb(peek_val);
-    return empty() ? false : (eos = peek_val.eos, true);
+    return empty() ? false : (void(eos = peek_val.eos), true);
   }
 
   bool eos(bool& succeeded) const {
@@ -56,7 +56,7 @@ class istream {
 #pragma HLS latency max = 0
     elem_t<T> peek_val;
     _peek.read_nb(peek_val);
-    return empty() ? false : (val = peek_val.val, true);
+    return empty() ? false : (void(val = peek_val.val), true);
   }
 
   T peek(bool& succeeded) const {
@@ -89,7 +89,7 @@ class istream {
 #pragma HLS inline
 #pragma HLS latency max = 0
     elem_t<T> elem;
-    return _.read_nb(elem) && (val = elem.val, true);
+    return _.read_nb(elem) && (void(val = elem.val), true);
   }
 
   T read() {
