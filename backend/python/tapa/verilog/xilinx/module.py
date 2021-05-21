@@ -382,8 +382,10 @@ class Module:
         ports=ports(),
         params=(
             ast.ParamArg(paramname='DATA_WIDTH', argname=ast.Constant(width)),
-            ast.ParamArg(paramname='ADDR_WIDTH',
-                         argname=ast.Constant((depth - 1).bit_length())),
+            ast.ParamArg(
+                paramname='ADDR_WIDTH',
+                argname=ast.Constant(max(1, (depth - 1).bit_length())),
+            ),
             ast.ParamArg(paramname='DEPTH', argname=ast.Constant(depth)),
             *level,
         ),
