@@ -64,7 +64,7 @@ class Task:
       self.fifos = collections.OrderedDict(
           sorted((item for item in kwargs.pop('fifos').items()),
                  key=lambda x: x[0]))
-      self.ports = {i.name: i for i in map(Port, kwargs.pop('ports'))}
+      self.ports = {i.name: i for i in map(Port, kwargs.pop('ports', ()))}
     self.module = rtl.Module('')
     self._instances: Optional[Tuple[Instance, ...]] = None
     self._args: Optional[Dict[str, List[Instance.Arg]]] = None
