@@ -46,7 +46,7 @@ class Program:
     toplevel_ports: Tuple of Port objects.
     _tasks: Dict mapping names of tasks to Task objects.
     frt_interface: Optional string of FRT interface code.
-    tcl_files: Dict mapping module names to TCL scripts that create the modules.
+    files: Dict mapping file names to contents that appear in the HDL directory.
   """
 
   def __init__(self,
@@ -78,7 +78,7 @@ class Program:
         for name in toposort.toposort_flatten(
             {k: set(v.get('tasks', ())) for k, v in obj['tasks'].items()}))
     self.frt_interface = obj['tasks'][self.top].get('frt_interface')
-    self.tcl_files: Dict[str, str] = {}
+    self.files: Dict[str, str] = {}
 
   def __del__(self):
     if self.is_temp:
@@ -322,8 +322,8 @@ class Program:
     # self.files won't be populated until all tasks are instrumented
     _logger.info('writing generated auxiliary RTL files')
     for name, content in self.files.items():
-      with open(os.path.join(self.rtl_dir, name), 'w') as tcl_file:
-        tcl_file.write(content)
+      with open(os.path.join(self.rtl_dir, name), 'w') as fp:
+        fp.write(content)
 
     return self
 
@@ -511,7 +511,7 @@ class Program:
     arg_table: Dict[str, rtl.Pipeline] = {}
     async_mmap_args: Dict[Instance.Arg, List[str]] = collections.OrderedDict()
 
-    task.add_m_axi(width_table, self.tcl_files)
+    task.add_m_axi(width_table, self.files)
 
     for instance in task.instances:
       child_port_set = set(instance.task.module.ports)

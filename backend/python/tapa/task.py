@@ -274,7 +274,7 @@ class Task:
   def add_m_axi(
       self,
       width_table: Dict[str, int],
-      tcl_files: Dict[str, str],
+      files: Dict[str, str],
   ) -> None:
     for arg_name, (m_axi_id_width, args) in self.mmaps.items():
       # add m_axi ports to the arg list
@@ -355,8 +355,8 @@ class Task:
       s_axi_write_acceptance = ' \\\n  '.join(
           f'CONFIG.S{idx:02d}_AXI_WRITE_ACCEPTANCE 16'
           for idx in range(len(args)))
-      tcl_files.setdefault(
-          module_name, f'''\
+      files.setdefault(
+          f'{module_name}.tcl', f'''\
 create_ip \\
   -name axi_interconnect \\
   -vendor xilinx.com \\
