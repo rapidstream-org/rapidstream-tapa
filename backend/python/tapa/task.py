@@ -4,8 +4,8 @@ import enum
 import logging
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
+from tapa.verilog import ast, axi_xbar
 from tapa.verilog import xilinx as rtl
-from tapa.verilog import ast
 
 from .instance import Instance, Port
 
@@ -14,6 +14,7 @@ _logger = logging.getLogger().getChild(__name__)
 
 class MMapConnection(NamedTuple):
   id_width: int
+  thread_count: int
   args: Tuple[Instance.Arg, ...]
 
 
@@ -105,16 +106,35 @@ class Task:
       # width of the ID port is the sum of the widest slave port plus bits
       # required to multiplex the slaves
       id_width = max(
-          arg.instance.task.get_id_width(arg.port) or 0 for arg in args)
+          arg.instance.task.get_id_width(arg.port) or 1 for arg in args)
       id_width += (len(args) - 1).bit_length()
-      self._mmaps[arg_name] = MMapConnection(id_width, args=tuple(args))
+      thread_count = sum(
+          arg.instance.task.get_thread_count(arg.port) for arg in args)
+      mmap = MMapConnection(id_width, thread_count, tuple(args))
+      self._mmaps[arg_name] = mmap
       if len(args) > 1:
+        _logger.debug(
+            "mmap argument '%s.%s' (id_width=%d, thread_count=%d)"
+            " is shared by %d ports:",
+            self.name,
+            arg_name,
+            mmap.id_width,
+            mmap.thread_count,
+            len(args),
+        )
         for arg in args:
           arg.shared = True
+          _logger.debug('  %s.%s', arg.instance.name, arg.port)
+      else:
         _logger.debug(
-            "mmap argument '%s' is shared by %d ports",
+            "mmap argument '%s.%s' (id_width=%d, thread_count=%d)"
+            " is connected to port '%s.%s'",
+            self.name,
             arg_name,
-            len(args),
+            mmap.id_width,
+            mmap.thread_count,
+            args[0].instance.name,
+            args[0].port,
         )
 
   @property
@@ -216,6 +236,11 @@ class Task:
     if port in self.mmaps:
       return self.mmaps[port].id_width or None
     return None
+
+  def get_thread_count(self, port: str) -> int:
+    if port in self.mmaps:
+      return self.mmaps[port].thread_count
+    return 1
 
   _DIR2CAT = {'produced_by': 'ostream', 'consumed_by': 'istream'}
 
@@ -347,7 +372,8 @@ class Task:
       width_table: Dict[str, int],
       files: Dict[str, str],
   ) -> None:
-    for arg_name, (m_axi_id_width, args) in self.mmaps.items():
+    for arg_name, mmap in self.mmaps.items():
+      m_axi_id_width, m_axi_thread_count, args = mmap
       # add m_axi ports to the arg list
       self.module.add_m_axi(
           name=arg_name,
@@ -358,45 +384,31 @@ class Task:
         continue
 
       # add AXI interconnect if necessary
-      assert len(args) <= 16, f'too many ports connected to {arg_name}'
       assert m_axi_id_width is not None
+      assert m_axi_thread_count > 1
 
+      # S_ID_WIDTH must be at least 1
       s_axi_id_width = max(
-          arg.instance.task.get_id_width(arg.port) or 0 for arg in args)
+          arg.instance.task.get_id_width(arg.port) or 1 for arg in args)
 
       portargs = [
-          ast.make_port_arg(port='INTERCONNECT_ACLK', arg=rtl.HANDSHAKE_CLK),
-          ast.make_port_arg(
-              port='INTERCONNECT_ARESETN',
-              arg=rtl.HANDSHAKE_RST_N,
-          ),
-          ast.make_port_arg(port='M00_AXI_ACLK', arg=rtl.HANDSHAKE_CLK),
-          ast.make_port_arg(port='M00_AXI_ARESET_OUT_N', arg=''),
+          ast.make_port_arg(port='clk', arg=rtl.HANDSHAKE_CLK),
+          ast.make_port_arg(port='rst', arg=rtl.HANDSHAKE_RST),
       ]
 
       for axi_chan, axi_ports in rtl.M_AXI_PORTS.items():
         for axi_port, direction in axi_ports:
-          m_axi_arg = f'{rtl.M_AXI_PREFIX}{arg_name}_{axi_chan}{axi_port}'
-
-          if axi_port == 'ID' and direction == 'input':
-            m_axi_arg = (f"{{{s_axi_id_width + 4 - m_axi_id_width}'d0, "
-                         f"{m_axi_arg}}}")
           portargs.append(
               ast.make_port_arg(
-                  port=f'M00_AXI_{axi_chan}{axi_port}',
-                  arg=m_axi_arg,
+                  port=f'm00_axi_{axi_chan.lower()}{axi_port.lower()}',
+                  arg=f'{rtl.M_AXI_PREFIX}{arg_name}_{axi_chan}{axi_port}',
               ))
 
       for idx, arg in enumerate(args):
-        portargs += (
-            ast.make_port_arg(port=f'S{idx:02d}_AXI_ACLK',
-                              arg=rtl.HANDSHAKE_CLK),
-            ast.make_port_arg(port=f'S{idx:02d}_AXI_ARESET_OUT_N', arg=''),
-        )
-
         wires = []
+        id_width = arg.instance.task.get_id_width(arg.port)
         for axi_chan, axi_ports in rtl.M_AXI_PORTS.items():
-          for axi_port, _ in axi_ports:
+          for axi_port, direction in axi_ports:
             wire_name = (f'{rtl.M_AXI_PREFIX}{arg.mmap_name}_'
                          f'{axi_chan}{axi_port}')
             wires.append(
@@ -404,53 +416,45 @@ class Task:
                          width=rtl.get_m_axi_port_width(
                              port=axi_port,
                              data_width=width_table[arg_name],
-                             id_width=arg.instance.task.get_id_width(arg.port),
+                             id_width=id_width,
                          )))
+            if axi_port == 'ID':
+              id_width = id_width or 1
+              if id_width != s_axi_id_width and direction == 'output':
+                # make sure inputs to s_axi of interconnect won't be X
+                wire_name = f"{{{s_axi_id_width - id_width}'d0, {wire_name}}}"
             portargs.append(
                 ast.make_port_arg(
-                    port=f'S{idx:02d}_AXI_{axi_chan}{axi_port}',
+                    port=f's{idx:02d}_axi_{axi_chan.lower()}{axi_port.lower()}',
                     arg=wire_name,
                 ))
         self.module.add_signals(wires)
 
       data_width = max(width_table[arg_name], 32)
       assert data_width in {32, 64, 128, 256, 512, 1024}
-      module_name = (f'axi_interconnect_{data_width}b_'
-                     f'{s_axi_id_width}t_x{len(args)}')
-      s_axi_data_width = ' \\\n  '.join(
-          f'CONFIG.S{idx:02d}_AXI_DATA_WIDTH {data_width}'
-          for idx in range(len(args)))
-      s_axi_read_acceptance = ' \\\n  '.join(
-          f'CONFIG.S{idx:02d}_AXI_READ_ACCEPTANCE 16'
-          for idx in range(len(args)))
-      s_axi_write_acceptance = ' \\\n  '.join(
-          f'CONFIG.S{idx:02d}_AXI_WRITE_ACCEPTANCE 16'
-          for idx in range(len(args)))
-      files.setdefault(
-          f'{module_name}.tcl', f'''\
-create_ip \\
-  -name axi_interconnect \\
-  -vendor xilinx.com \\
-  -library ip \\
-  -version 1.7 \\
-  -module_name {module_name}
-set_property -dict [list \\
-  CONFIG.AXI_ADDR_WIDTH 64 \\
-  CONFIG.NUM_SLAVE_PORTS {len(args)} \\
-  CONFIG.THREAD_ID_WIDTH {s_axi_id_width} \\
-  CONFIG.INTERCONNECT_DATA_WIDTH {data_width} \\
-  CONFIG.M00_AXI_DATA_WIDTH {data_width} \\
-  {s_axi_data_width} \\
-  CONFIG.M00_AXI_READ_ISSUING 16 \\
-  {s_axi_read_acceptance} \\
-  CONFIG.M00_AXI_WRITE_ISSUING 16 \\
-  {s_axi_write_acceptance} \\
-  ] [get_ips {module_name}]
-set_property generate_synth_checkpoint false [get_files {module_name}.xci]
-generate_target {{synthesis simulation}} [get_files {module_name}.xci]
-''')
+      module_name = (f'axi_interconnect_x{len(args)}')
+      if f'{module_name}.v' not in files:
+        files[f'{module_name}.v'] = axi_xbar.generate(
+            ports=(len(args), 1),
+            name=module_name,
+        )
+
+      paramargs = [
+          ast.ParamArg('DATA_WIDTH', ast.Constant(data_width)),
+          ast.ParamArg('ADDR_WIDTH', ast.Constant(64)),
+          ast.ParamArg('S_ID_WIDTH', ast.Constant(s_axi_id_width)),
+          ast.ParamArg('M_ID_WIDTH', ast.Constant(m_axi_id_width)),
+          ast.ParamArg('M00_ADDR_WIDTH', ast.Constant(64)),
+          ast.ParamArg('M00_ISSUE', ast.Constant(16)),
+      ]
+      paramargs.extend(
+          ast.ParamArg(
+              f'S{idx:02d}_THREADS',
+              ast.Constant(arg.instance.task.get_thread_count(arg.port)),
+          ) for idx, arg in enumerate(args))
       self.module.add_instance(
           module_name=module_name,
           instance_name=f'{module_name}__{arg_name}',
           ports=portargs,
+          params=paramargs,
       )

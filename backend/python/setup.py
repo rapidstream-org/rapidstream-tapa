@@ -40,6 +40,7 @@ setup(
         'autobridge>=0.0.20220512.dev1',
         'coloredlogs>=9.3',
         'haoda>=0.0.20220507.dev1',
+        'jinja2',
         'pyverilog>=1.2.0',
         'pyyaml>=5.1',
         'tapa-fast-cosim>=0.0.20220514.dev1',

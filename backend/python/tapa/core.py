@@ -240,14 +240,22 @@ class Program:
         tarfileobj.extractall(path=self.work_dir)
 
     for file_name in (
+        'arbiter.v',
         'async_mmap.v',
         'axi_pipeline.v',
+        'axi_crossbar_addr.v',
+        'axi_crossbar_rd.v',
+        'axi_crossbar_wr.v',
+        'axi_crossbar.v',
+        'axi_register_rd.v',
+        'axi_register_wr.v',
         'detect_burst.v',
         'fifo.v',
         'fifo_bram.v',
         'fifo_fwd.v',
         'fifo_srl.v',
         'generate_last.v',
+        'priority_encoder.v',
         'relay_station.v',
         'a_axi_write_broadcastor_1_to_3.v',
         'a_axi_write_broadcastor_1_to_4.v',

@@ -1,28 +1,13 @@
-#!/usr/bin/env python
 """
 Generates an AXI crossbar wrapper with the specified number of ports
 """
 
 import argparse
+import logging
 from jinja2 import Template
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.strip())
-    parser.add_argument('-p', '--ports',  type=int, default=[4], nargs='+', help="number of ports")
-    parser.add_argument('-n', '--name',   type=str, help="module name")
-    parser.add_argument('-o', '--output', type=str, help="output file name")
-
-    args = parser.parse_args()
-
-    try:
-        generate(**args.__dict__)
-    except IOError as ex:
-        print(ex)
-        exit(1)
-
-
-def generate(ports=4, name=None, output=None):
+def generate(ports=4, name=None):
     if type(ports) is int:
         m = n = ports
     elif len(ports) == 1:
@@ -32,11 +17,6 @@ def generate(ports=4, name=None, output=None):
 
     if name is None:
         name = "axi_crossbar_wrap_{0}x{1}".format(m, n)
-
-    if output is None:
-        output = name + ".v"
-
-    print("Generating {0}x{1} port AXI crossbar wrapper {2}...".format(m, n, name))
 
     cm = (m-1).bit_length()
     cn = (n-1).bit_length()
@@ -433,20 +413,4 @@ endmodule
 
 """)
 
-    print(f"Writing file '{output}'...")
-
-    with open(output, 'w') as f:
-        f.write(t.render(
-            m=m,
-            n=n,
-            cm=cm,
-            cn=cn,
-            name=name
-        ))
-        f.flush()
-
-    print("Done")
-
-
-if __name__ == "__main__":
-    main()
+    return t.render(m=m, n=n, cm=cm, cn=cn, name=name)
