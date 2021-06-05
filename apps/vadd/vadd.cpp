@@ -30,9 +30,9 @@ void Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,
 
 void VecAdd(tapa::mmap<const float> a_array, tapa::mmap<const float> b_array,
             tapa::mmap<float> c_array, uint64_t n) {
-  tapa::stream<float, 8> a_stream("a");
-  tapa::stream<float, 8> b_stream("b");
-  tapa::stream<float, 8> c_stream("c");
+  tapa::stream<float, 1> a_stream("a");
+  tapa::stream<float, 1> b_stream("b");
+  tapa::stream<float, 1> c_stream("c");
 
   tapa::task()
       .invoke(Mmap2Stream, a_array, n, a_stream)

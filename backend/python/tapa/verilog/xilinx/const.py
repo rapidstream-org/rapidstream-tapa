@@ -151,13 +151,6 @@ OTHER_MODULES = {
             depth=32,
             addr_width=(32 - 1).bit_length(),
         ),
-    'fifo':
-        haoda.backend.xilinx.AUTO_FIFO_TEMPLATE.format(
-            name='fifo',
-            width=32,
-            depth=32,
-            addr_width=(32 - 1).bit_length(),
-        ),
 }
 
 def get_stream_width(port: str, data_width: int) -> Optional[ast.Width]:
