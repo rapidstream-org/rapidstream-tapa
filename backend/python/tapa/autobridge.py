@@ -20,6 +20,7 @@ def generate_floorplan(
     fifo_width_getter: Callable[[Task, str], int],
     connectivity_fp: Optional[TextIO],
     part_num: str,
+    max_usage: Optional[float],
 ) -> Dict[str, Any]:
   # pylint: disable=import-outside-toplevel
   import autobridge.HLSParser.tapa as autobridge
@@ -44,6 +45,8 @@ def generate_floorplan(
       'Edges': edges,
       'Area': area,
   }
+  if max_usage is not None:
+    config['MaxUsage'] = max_usage
 
   # Set floorplans for tasks connected to MMAP and the ctrl instance.
   vertices[rtl.ctrl_instance_name(top_task.name)] = top_task.name

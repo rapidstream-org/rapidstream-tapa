@@ -131,6 +131,15 @@ def main():
                      dest='register_level',
                      metavar='INT',
                      help='override register level of top-level signals')
+  group.add_argument('--enable-synth-util',
+                     dest='enable_synth_util',
+                     action='store_true',
+                     help='enable post-synthesis resource utilization report')
+  group.add_argument('--disable-synth-util',
+                     dest='enable_synth_util',
+                     action='store_false',
+                     help='disable post-synthesis resource utilization report')
+  group.set_defaults(enable_synth_util=False)
 
   args = parser.parse_args()
   verbose = 0 if args.verbose is None else args.verbose
@@ -303,7 +312,11 @@ def main():
     if args.register_level is not None:
       if args.register_level <= 0:
         parser.error('register level must be positive')
-    program.instrument_rtl(directive, args.register_level or 0)
+    program.instrument_rtl(
+        directive,
+        args.register_level or 0,
+        args.enable_synth_util,
+    )
 
   if all_steps or args.pack_xo is not None:
     with open(args.output_file, 'wb') as packed_obj:

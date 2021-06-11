@@ -2,6 +2,7 @@ import collections
 import json
 import logging
 import os.path
+import os
 import shutil
 import sys
 import tarfile
@@ -13,6 +14,7 @@ from typing import (Any, BinaryIO, Dict, List, Optional, Set, TextIO, Tuple,
 
 import toposort
 from haoda.backend import xilinx as hls
+from haoda.report.xilinx import rtl as report
 
 import tapa.autobridge as autobridge
 from tapa import util
@@ -201,6 +203,7 @@ class Program:
       self,
       directive: Optional[Dict[str, Any]] = None,
       register_level: int = 0,
+      enable_synth_util: bool = False,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
 
@@ -211,56 +214,8 @@ class Program:
     Returns:
         Program: Return self.
     """
-    # extract and parse RTL and populate tasks
-    _logger.info('parsing RTL files and populating tasks')
-    oldcwd = os.getcwd()
-    os.chdir(self.work_dir)
-    for task in self._tasks.values():
-      _logger.debug('parsing %s', task.name)
-      task.module = rtl.Module([self.get_rtl(task.name)])
-      task.self_area = self.get_area(task.name)
-      _logger.debug('populating %s', task.name)
-      self._populate_task(task)
-    os.chdir(oldcwd)
-
-    # generate partitioning constraints if partitioning directive is given
-    if directive is not None:
-      _logger.info('generating partitioning constraints')
-      floorplan = directive.get('floorplan')
-      if floorplan is None:
-        floorplan = autobridge.generate_floorplan(
-            self.top_task,
-            self.work_dir,
-            self._get_fifo_width,
-            directive['connectivity'],
-            directive['part_num'],
-        )
-      self._process_partition_directive(floorplan, directive['constraint'])
-    if register_level:
-      self.top_task.module.register_level = register_level
-
-    # instrument the upper-level RTL
-    _logger.info('instrumenting upper-level RTL')
-    for task in self._tasks.values():
-      if task.is_upper:
-        task.module.cleanup()
-        self._instantiate_fifos(task)
-        self._connect_fifos(task)
-        width_table = {port.name: port.width for port in task.ports.values()}
-        is_done_signals = self._instantiate_children_tasks(task, width_table)
-        self._instantiate_global_fsm(task, is_done_signals)
-
-        if task.name == self.top:
-          task.module.name = task.name
-
-        with open(self.get_rtl(task.name), 'w') as rtl_code:
-          rtl_code.write(task.module.code)
-
-    _logger.info('writing RTL files')
-    for name, content in self.tcl_files.items():
-      with open(os.path.join(self.rtl_dir, name + '.tcl'), 'w') as tcl_file:
-        tcl_file.write(content)
-
+    # these files are needed before running RTL synthesis for resource report
+    _logger.info('writing basic auxiliary RTL files')
     for name, content in rtl.OTHER_MODULES.items():
       with open(self.get_rtl(name, prefix=False), 'w') as rtl_code:
         rtl_code.write(content)
@@ -276,6 +231,99 @@ class Program:
       shutil.copy(
           os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
                        file_name), self.rtl_dir)
+
+    # extract and parse RTL and populate tasks
+    _logger.info('parsing RTL files and populating tasks')
+    oldcwd = os.getcwd()
+    os.chdir(self.work_dir)
+    for task in self._tasks.values():
+      _logger.debug('parsing %s', task.name)
+      task.module = rtl.Module([self.get_rtl(task.name)])
+      task.self_area = self.get_area(task.name)
+      _logger.debug('populating %s', task.name)
+      self._populate_task(task)
+    os.chdir(oldcwd)
+
+    # instrument the upper-level RTL except the top-level
+    _logger.info('instrumenting upper-level RTL')
+    for task in self._tasks.values():
+      if task.is_upper and task.name != self.top:
+        self._instrument_task(task)
+
+    # generate partitioning constraints if partitioning directive is given
+    if directive is not None:
+
+      def worker(module_name: str) -> report.HierarchicalUtilization:
+        _logger.debug('synthesizing %s', module_name)
+        rpt_path = f'{self.work_dir}/report/{module_name}.hier.util.rpt'
+
+        rpt_path_mtime = 0.
+        if os.path.isfile(rpt_path):
+          rpt_path_mtime = os.path.getmtime(rpt_path)
+
+        # generate report if and only if C++ source is newer than report.
+        if os.path.getmtime(self.get_cpp(module_name)) > rpt_path_mtime:
+          with report.ReportDirUtil(
+              self.rtl_dir,
+              rpt_path,
+              module_name,
+              directive['part_num'],
+          ) as proc:
+            stdout, stderr = proc.communicate()
+
+          # err if output report does not exist or is not newer than previous
+          if (not os.path.isfile(rpt_path) or
+              os.path.getmtime(rpt_path) <= rpt_path_mtime):
+            sys.stdout.write(stdout.decode('utf-8'))
+            sys.stderr.write(stderr.decode('utf-8'))
+            raise InputError(f'failed to generate report for {module_name}')
+
+        with open(rpt_path) as rpt_file:
+          return report.parse_hierarchical_utilization_report(rpt_file)
+
+      max_usage = None  # use AutoBridge's default
+      if enable_synth_util:
+        _logger.info('generating post-synthesis resource utilization reports')
+        max_workers = max(1, (os.cpu_count() - int(os.getloadavg()[0])))
+        with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+          for utilization in executor.map(
+              worker,
+              {x.task.name for x in self.top_task.instances},
+          ):
+            # override self_area populated from HLS report
+            bram = int(utilization['RAMB36']) * 2 + int(utilization['RAMB18'])
+            self.get_task(utilization.instance).total_area = {
+                'BRAM_18K': bram,
+                'DSP': int(utilization['DSP Blocks']),
+                'FF': int(utilization['FFs']),
+                'LUT': int(utilization['Total LUTs']),
+                'URAM': int(utilization['URAM']),
+            }
+
+      _logger.info('generating partitioning constraints')
+      floorplan = directive.get('floorplan')
+      if floorplan is None:
+        floorplan = autobridge.generate_floorplan(
+            self.top_task,
+            self.work_dir,
+            self._get_fifo_width,
+            directive['connectivity'],
+            directive['part_num'],
+            max_usage,
+        )
+      self._process_partition_directive(floorplan, directive['constraint'])
+    if register_level:
+      self.top_task.module.register_level = register_level
+
+    # instrument the top-level RTL
+    _logger.info('instrumenting top-level RTL')
+    self._instrument_task(self.top_task)
+
+    # self.files won't be populated until all tasks are instrumented
+    _logger.info('writing generated auxiliary RTL files')
+    for name, content in self.files.items():
+      with open(os.path.join(self.rtl_dir, name), 'w') as tcl_file:
+        tcl_file.write(content)
 
     return self
 
@@ -768,6 +816,18 @@ class Program:
 
     task.module.add_pipeline(self.start_q, init=rtl.START)
     task.module.add_pipeline(self.done_q, init=is_state(STATE10))
+
+  def _instrument_task(self, task: Task) -> None:
+    assert task.is_upper
+    task.module.cleanup()
+    self._instantiate_fifos(task)
+    self._connect_fifos(task)
+    width_table = {port.name: port.width for port in task.ports.values()}
+    is_done_signals = self._instantiate_children_tasks(task, width_table)
+    self._instantiate_global_fsm(task, is_done_signals)
+
+    with open(self.get_rtl(task.name), 'w') as rtl_code:
+      rtl_code.write(task.module.code)
 
   def _get_fifo_width(self, task: Task, fifo: str) -> int:
     producer_task, _, fifo_port = task.get_connection_to(fifo, 'produced_by')

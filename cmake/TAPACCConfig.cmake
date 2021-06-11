@@ -107,6 +107,7 @@ function(add_tapa_target target_name)
   if(TAPA_CONSTRAINT)
     list(APPEND tapac_cmd --constraint ${TAPA_CONSTRAINT})
   endif()
+  list(APPEND tapac_cmd ${TAPA_UNPARSED_ARGUMENTS})
 
   add_custom_command(
     OUTPUT ${TAPA_OUTPUT} ${TAPA_FRT_INTERFACE}

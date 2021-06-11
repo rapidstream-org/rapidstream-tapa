@@ -70,6 +70,7 @@ class Task:
     self._args: Optional[Dict[str, List[Instance.Arg]]] = None
     self._mmaps: Optional[Dict[str, MMapConnection]] = None
     self._self_area = {}
+    self._total_area = {}
 
   @property
   def is_upper(self) -> bool:
@@ -140,11 +141,20 @@ class Task:
 
   @property
   def total_area(self) -> Dict[str, int]:
+    if self._total_area:
+      return self._total_area
+
     area = dict(self.self_area)
     for instance in self.instances:
       for key in area:
         area[key] += instance.task.total_area[key]
     return area
+
+  @total_area.setter
+  def total_area(self, area: Dict[str, int]) -> None:
+    if self._total_area:
+      raise ValueError(f'total area of task {self.name} already populated')
+    self._total_area = area
 
   def get_id_width(self, port: str) -> Optional[int]:
     if port in self.mmaps:
