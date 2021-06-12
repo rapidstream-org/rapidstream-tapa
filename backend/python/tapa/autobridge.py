@@ -81,7 +81,7 @@ def generate_floorplan(
             'BRAM': 0,
             'DSP': 0,
             'FF': 0,
-            'LUT': 0,
+            'LUT': 2000,
             'URAM': 0,
         }
 
