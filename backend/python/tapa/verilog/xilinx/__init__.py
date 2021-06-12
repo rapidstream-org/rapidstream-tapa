@@ -24,7 +24,7 @@ from tapa.verilog.xilinx.typing import *
 
 
 def ctrl_instance_name(top: str) -> str:
-  return f'{top}_control_s_axi_U'
+  return 'control_s_axi_U'
 
 
 def is_data_port(port: str) -> bool:
