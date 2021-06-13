@@ -411,7 +411,17 @@ class Program:
           instance_dict[rtl.fifo_partition_name(name, idx)] = region
         fifo_partition_count[name] = idx + 1
 
-    rtl.print_constraints(instance_dict, constraints, pre=''.join(pblock_tcl))
+    rtl.print_constraints(
+        instance_dict,
+        constraints,
+        pre=''.join(pblock_tcl),
+        post='\n'.join([
+            'foreach pblock [get_pblocks] {',
+            '  report_utilization -pblocks $pblock '
+            f'-file {self.work_dir}/report/$pblock.rpt',
+            '}',
+        ]),
+    )
 
     self.top_task.module.register_level = max(
         map(len, topology[instance_dict[self.ctrl_instance_name]].values()),
