@@ -166,9 +166,9 @@ def main():
     parser.error('output file must be set if pack xo is the last step')
   if not all_steps and last_step != 'run_tapacc' and args.work_dir is None:
     parser.error("steps beyond run tapacc won't work with --work-dir unset")
-  cflag_list = []
+  cflag_list = ['-std=c++17']
   if args.cflags is not None:
-    cflag_list = args.cflags.strip().split()
+    cflag_list += args.cflags.strip().split()
 
   if all_steps or args.run_tapacc is not None:
     tapacc_cmd = []

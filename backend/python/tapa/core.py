@@ -166,6 +166,7 @@ class Program:
             part_num=part_num,
             auto_prefix=True,
             hls='vitis_hls',
+            std='c++17',
         ) as proc:
           stdout, stderr = proc.communicate()
       if proc.returncode != 0:
