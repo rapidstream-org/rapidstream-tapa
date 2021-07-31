@@ -91,14 +91,15 @@ namespace {
 
 void AddPragmaForStream(
     const clang::ParmVarDecl* param,
-    const std::function<void(initializer_list<StringRef>)>& add) {
+    const std::function<void(StringRef)>& add_line,
+    const std::function<void(initializer_list<StringRef>)>& add_pragma) {
   assert(IsTapaType(param, "(i|o)streams?"));
   const auto name = param->getNameAsString();
-  add({"disaggregate variable =", name});
+  add_pragma({"disaggregate variable =", name});
 
   vector<string> names;
   if (IsTapaType(param, "(i|o)streams")) {
-    add({"array_partition variable =", name, "complete"});
+    add_pragma({"array_partition variable =", name, "complete"});
     const int64_t array_size = GetArraySize(param);
     names.reserve(array_size);
     for (int64_t i = 0; i < array_size; ++i) {
@@ -110,12 +111,16 @@ void AddPragmaForStream(
 
   for (const auto& name : names) {
     const auto fifo_var = GetFifoVar(name);
-    add({"interface ap_fifo port =", fifo_var});
-    add({"aggregate variable =", fifo_var, "bit"});
+    add_pragma({"interface ap_fifo port =", fifo_var});
+    add_pragma({"aggregate variable =", fifo_var, "bit"});
     if (IsTapaType(param, "istreams?")) {
       const auto peek_var = GetPeekVar(name);
-      add({"interface ap_fifo port =", peek_var});
-      add({"aggregate variable =", peek_var, "bit"});
+      add_pragma({"interface ap_fifo port =", peek_var});
+      add_pragma({"aggregate variable =", peek_var, "bit"});
+      add_line("void(" + name + "._.empty());");
+      add_line("void(" + name + "._peek.empty());");
+    } else {
+      add_line("void(" + name + "._.full());");
     }
   }
 }
@@ -201,7 +206,12 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     if (IsTapaType(param, "(i|o)streams?")) {
       if (!IsTapaTopLevel(func)) {
         AddPragmaForStream(
-            param, [&replaced_body](initializer_list<StringRef> args) {
+            param,
+            [&replaced_body](StringRef line) {
+              replaced_body += line;
+              replaced_body += "\n";
+            },
+            [&replaced_body](initializer_list<StringRef> args) {
               replaced_body += "#pragma HLS " + join(args, " ") + "\n";
             });
       } else {
@@ -600,29 +610,38 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   for (const auto param : func->parameters()) {
     vector<string> lines = {""};  // Make sure pragmas start with a new line.
-    auto add = [&lines](initializer_list<StringRef> args) {
+    auto add_line = [&lines](StringRef line) { lines.push_back(line); };
+    auto add_pragma = [&lines](initializer_list<StringRef> args) {
       lines.push_back("#pragma HLS " + join(args, " "));
     };
 
     const auto name = param->getNameAsString();
     if (IsTapaType(param, "(i|o)streams?")) {
-      AddPragmaForStream(param, add);
+      AddPragmaForStream(param, add_line, add_pragma);
     } else if (IsTapaType(param, "async_mmap")) {
-      add({"disaggregate variable =", name});
+      add_pragma({"disaggregate variable =", name});
       for (auto tag : {".read_addr", ".read_data", ".write_addr", ".write_data",
                        ".write_resp"}) {
         const auto fifo_var = GetFifoVar(name + tag);
-        add({"interface ap_fifo port =", fifo_var});
-        add({"aggregate variable =", fifo_var, " bit"});
+        add_pragma({"interface ap_fifo port =", fifo_var});
+        add_pragma({"aggregate variable =", fifo_var, " bit"});
       }
       for (auto tag : {".read_data", ".write_resp"}) {
-        add({"disaggregate variable =", name, tag});
+        add_pragma({"disaggregate variable =", name, tag});
         const auto peek_var = GetPeekVar(name + tag);
-        add({"interface ap_fifo port =", peek_var});
-        add({"aggregate variable =", peek_var, "bit"});
+        add_pragma({"interface ap_fifo port =", peek_var});
+        add_pragma({"aggregate variable =", peek_var, "bit"});
       }
+      add_line("void(" + name + ".read_addr._.full());");
+      add_line("void(" + name + ".read_data._.empty());");
+      add_line("void(" + name + ".read_data._peek.empty());");
+      add_line("void(" + name + ".write_addr._.full());");
+      add_line("void(" + name + ".write_data._.full());");
+      add_line("void(" + name + ".write_resp._.empty());");
+      add_line("void(" + name + ".write_resp._peek.empty());");
     } else if (IsTapaType(param, "mmap")) {
-      add({"interface m_axi port =", name, "offset = direct bundle =", name});
+      add_pragma(
+          {"interface m_axi port =", name, "offset = direct bundle =", name});
     }
 
     lines.push_back("");  // Make sure pragmas finish with a new line.
