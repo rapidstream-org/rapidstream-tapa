@@ -16,12 +16,12 @@ inline constexpr uint64_t widthof() {
 }
 
 template <uint64_t N>
-uint64_t round_up_div(uint64_t i) {
+inline constexpr uint64_t round_up_div(uint64_t i) {
   return ((i - 1) / N + 1);
 }
 
 template <uint64_t N>
-uint64_t round_up(uint64_t i) {
+inline constexpr uint64_t round_up(uint64_t i) {
   return ((i - 1) / N + 1) * N;
 }
 
