@@ -30,57 +30,52 @@ class istream {
   bool try_eos(bool& eos) const {
 #pragma HLS inline
 #pragma HLS latency max = 0
-    elem_t<T> peek_val;
-    _peek.read_nb(peek_val);
-    return empty() ? false : (void(eos = peek_val.eos), true);
+    elem_t<T> elem;
+    return !empty() && _peek.read_nb(elem) && (void(eos = elem.eos), true);
   }
 
   bool eos(bool& succeeded) const {
 #pragma HLS inline
 #pragma HLS latency max = 0
-    elem_t<T> peek_val;
-    _peek.read_nb(peek_val);
-    return (succeeded = !empty()) && peek_val.eos;
+    bool eos;
+    succeeded = try_eos(eos);
+    return eos;
   }
 
   bool eos(std::nullptr_t) const {
 #pragma HLS inline
 #pragma HLS latency max = 0
-    elem_t<T> peek_val;
-    _peek.read_nb(peek_val);
-    return !empty() && peek_val.eos;
+    bool succeeded;
+    return eos(succeeded) && succeeded;
   }
 
   bool try_peek(T& val) const {
 #pragma HLS inline
 #pragma HLS latency max = 0
-    elem_t<T> peek_val;
-    _peek.read_nb(peek_val);
-    return empty() ? false : (void(val = peek_val.val), true);
+    elem_t<T> elem;
+    return !empty() && _peek.read_nb(elem) && (void(val = elem.val), true);
   }
 
   T peek(bool& succeeded) const {
 #pragma HLS inline
 #pragma HLS latency max = 0
-    elem_t<T> elem;
-    (succeeded = !empty()) && _peek.read_nb(elem);
-    return elem.val;
+    T val;
+    succeeded = try_peek(val);
+    return val;
   }
 
   T peek(std::nullptr_t) const {
 #pragma HLS inline
 #pragma HLS latency max = 0
-    elem_t<T> peek_val;
-    _peek.read_nb(peek_val);
-    return peek_val.val;
+    bool succeeded;
+    return peek(succeeded);
   }
 
   T peek(bool& succeeded, bool& is_eos) const {
 #pragma HLS inline
 #pragma HLS latency max = 0
-    succeeded = !empty();
     elem_t<T> peek_val;
-    _peek.read_nb(peek_val);
+    (succeeded = !empty()) && _peek.read_nb(peek_val);
     is_eos = peek_val.eos && succeeded;
     return peek_val.val;
   }
