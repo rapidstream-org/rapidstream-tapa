@@ -32,27 +32,13 @@ struct dummy {
 #define DLOG_IF(level, cond) dummy()
 #define DLOG_EVERY_N(level, n) dummy()
 
-#define CHECK(cond) \
-  assert(cond);     \
-  dummy()
-#define CHECK_NE(lhs, rhs) \
-  assert((lhs) != (rhs));  \
-  dummy()
-#define CHECK_EQ(lhs, rhs) \
-  assert((lhs) != (rhs));  \
-  dummy()
-#define CHECK_GE(lhs, rhs) \
-  assert((lhs) >= (rhs));  \
-  dummy()
-#define CHECK_GT(lhs, rhs) \
-  assert((lhs) > (rhs));   \
-  dummy()
-#define CHECK_LE(lhs, rhs) \
-  assert((lhs) <= (rhs));  \
-  dummy()
-#define CHECK_LT(lhs, rhs) \
-  assert((lhs) < (rhs));   \
-  dummy()
+#define CHECK(cond) dummy()
+#define CHECK_NE(lhs, rhs) dummy()
+#define CHECK_EQ(lhs, rhs) dummy()
+#define CHECK_GE(lhs, rhs) dummy()
+#define CHECK_GT(lhs, rhs) dummy()
+#define CHECK_LE(lhs, rhs) dummy()
+#define CHECK_LT(lhs, rhs) dummy()
 #define CHECK_NOTNULL(ptr) (ptr)
 #define CHECK_STREQ(lhs, rhs) dummy()
 #define CHECK_STRNE(lhs, rhs) dummy()
