@@ -5,11 +5,6 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.15.0")
   cmake_policy(SET CMP0093 NEW)
 endif()
 
-find_program(CLANG_TIDY clang-tidy)
-if(CLANG_TIDY)
-  set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY})
-endif()
-
 project(tapa)
 
 add_subdirectory(backend)
