@@ -19,6 +19,8 @@ if(NOT llvm_POPULATED)
     set(LLVM_ENABLE_PROJECTS
         clang
         CACHE STRING "enable clang in llvm")
+    set(LLVM_APPEND_VC_REV OFF)
+    set(LLVM_ENABLE_BINDINGS OFF)
     set(LLVM_TARGETS_TO_BUILD X86)
     set(LLVM_INCLUDE_TOOLS ON)
     set(LLVM_INCLUDE_EXAMPLES OFF)
