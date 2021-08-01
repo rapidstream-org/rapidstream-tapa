@@ -1,3 +1,5 @@
+/.cache/
 /.cmake-format
 /.vscode
 /build/
+/compile_commands.json
