@@ -173,9 +173,25 @@ class Module:
       arg: str,
   ) -> Iterator[ast.PortArg]:
     for suffix in ISTREAM_SUFFIXES:
+      arg_name = wire_name(arg, suffix)
+
+      # read port
       yield ast.make_port_arg(
           port=self.get_port_of(port, suffix).name,
-          arg=wire_name(arg, suffix),
+          arg=arg_name,
+      )
+      if STREAM_PORT_DIRECTION[suffix] == 'output':
+        arg_name = ''
+
+      # peek port
+      match = match_array_name(port)
+      if match is None:
+        peek_port = f'{port}_peek'
+      else:
+        peek_port = f'{match[0]}_peek[{match[1]}]'
+      yield ast.make_port_arg(
+          port=self.get_port_of(peek_port, suffix).name,
+          arg=arg_name,
       )
 
   def generate_ostream_ports(

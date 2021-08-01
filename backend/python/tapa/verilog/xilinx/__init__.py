@@ -50,20 +50,6 @@ def fifo_partition_name(name: str, idx: int) -> str:
   return f'{name}/inst[{idx}].unit'
 
 
-def generate_peek_ports(verilog, port: str, arg: str) -> Iterator[ast.PortArg]:
-  match = match_array_name(port)
-  if match is None:
-    port = f'{port}_peek_V'
-  else:
-    port = f'{match[0]}_peek_V_{match[1]}'
-  for suffix in verilog.ISTREAM_SUFFIXES:
-    if verilog.STREAM_PORT_DIRECTION[suffix] == 'input':
-      arg_name = wire_name(arg, suffix)
-    else:
-      arg_name = ''
-    yield ast.make_port_arg(port=port + suffix, arg=arg_name)
-
-
 def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
          output_file: Union[str, BinaryIO]) -> None:
   port_tuple = tuple(ports)

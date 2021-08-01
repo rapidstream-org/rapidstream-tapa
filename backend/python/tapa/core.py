@@ -679,9 +679,6 @@ class Program:
                   port=arg.port,
                   arg=arg.name,
               ))
-          portargs.extend(portarg for portarg in rtl.generate_peek_ports(
-              rtl, port=arg.port, arg=arg.name)
-                          if portarg.portname in child_port_set)
         elif arg.cat == Instance.Arg.Cat.OSTREAM:
           portargs.extend(
               instance.task.module.generate_ostream_ports(
