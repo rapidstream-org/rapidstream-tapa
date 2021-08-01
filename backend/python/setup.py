@@ -43,7 +43,7 @@ setup(
     packages=find_packages(),
     python_requires='>=3.6',
     install_requires=[
-        'haoda>=0.0.20200507.dev1',
+        'haoda>=0.0.20210801.dev1',
         'pyverilog>=1.2.0',
         'toposort',
     ],
