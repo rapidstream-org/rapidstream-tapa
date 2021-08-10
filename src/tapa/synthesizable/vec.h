@@ -192,6 +192,22 @@ inline vec_t<T, length> truncated(const vec_t<T, N>& vec) {
   return truncated<0, length>(vec);
 }
 
+// return vec[begin:begin+len]
+template <uint64_t len, typename T, uint64_t N>
+inline vec_t<T, len> truncated(const vec_t<T, N>& vec, uint64_t begin) {
+  static_assert(len <= N, "cannot enlarge vector");
+  uint64_t end = begin + len;
+  assertm(begin >= 0, "cannot truncate before 0");
+  assertm(end <= N, "cannot truncate after N");
+  vec_t<T, len> result;
+#pragma HLS inline
+  for (uint64_t i = 0; i < end - begin; ++i) {
+#pragma HLS unroll
+    result.set(i, vec[begin + i]);
+  }
+  return result;
+}
+
 // return vec[:] + [val]
 template <typename T, uint64_t N>
 inline vec_t<T, N + 1> cat(const vec_t<T, N>& vec, const T& val) {

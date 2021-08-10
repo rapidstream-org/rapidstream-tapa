@@ -1,6 +1,7 @@
 #ifndef TAPA_UTIL_H_
 #define TAPA_UTIL_H_
 
+#include <cassert>
 #include <iostream>
 
 #include "../stream.h"
@@ -66,5 +67,7 @@ inline std::ostream& operator<<(std::ostream& os,
        (!fifo3.eos(tapa_##fifo3##_valid) || !tapa_##fifo3##_valid);)          \
   _Pragma("HLS pipeline II = 1")                                              \
     if (tapa_##fifo1##_valid && tapa_##fifo2##_valid && tapa_##fifo3##_valid)
+
+#define assertm(exp, msg) assert(((void)msg, exp))
 
 #endif  // TAPA_UTIL_H_
