@@ -1,6 +1,7 @@
 #ifndef TAPA_COROUTINE_H_
 #define TAPA_COROUTINE_H_
 
+#include <functional>
 #include <string>
 
 namespace tapa {
