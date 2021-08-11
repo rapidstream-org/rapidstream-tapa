@@ -112,16 +112,6 @@ struct task {
   }
 };
 
-template <typename T, uint64_t N>
-inline std::ostream& operator<<(std::ostream& os, const vec_t<T, N>& obj) {
-  os << "{";
-  for (uint64_t i = 0; i < N; ++i) {
-    if (i > 0) os << ", ";
-    os << "[" << i << "]: " << obj[i];
-  }
-  return os << "}";
-}
-
 namespace internal {
 
 void* allocate(size_t length);

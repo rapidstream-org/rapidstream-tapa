@@ -7,62 +7,72 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <functional>
+#include <ostream>
 
 #include "./util.h"
 
 namespace tapa {
 
-template <typename T, uint64_t N>
-struct vec_t {
+template <typename T, int N>
+struct vec_t : std::array<T, N> {
+ private:
+  using base_type = std::array<T, N>;
+
+ public:
   // static constexpr metadata
-  static constexpr uint64_t length = N;
-  static constexpr uint64_t bytes = length * sizeof(T);
-  static constexpr uint64_t bits = bytes * CHAR_BIT;
+  static constexpr int length = N;
+  static constexpr int width = widthof<T>() * N;
 
-  // part that differs on the kernel and the host
-#ifdef __SYNTHESIS__
-  ap_uint<bits> data;
-  vec_t() {}
-  T get(uint64_t idx) const {
-#pragma HLS inline
-    const auto elem = static_cast<ap_uint<widthof<T>()>>(
-        data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>()));
-    return reinterpret_cast<const T&>(elem);
-  }
-  void set(uint64_t idx, T val) {
-#pragma HLS inline
-    data.range((idx + 1) * widthof<T>() - 1, idx * widthof<T>()) =
-        reinterpret_cast<ap_uint<widthof<T>()>&>(val);
-  }
-#else   // __SYNTHESIS__
-  T data[N];
-  vec_t() { memset(data, 0xcc, sizeof(data)); }
-  T get(uint64_t idx) const { return data[idx]; }
-  void set(uint64_t idx, T val) { data[idx] = val; }
-#endif  // __SYNTHESIS__
+  // public type alias
+  using size_type = int;
+  using typename base_type::const_iterator;
+  using typename base_type::const_pointer;
+  using typename base_type::const_reference;
+  using typename base_type::const_reverse_iterator;
+  using typename base_type::difference_type;
+  using typename base_type::iterator;
+  using typename base_type::pointer;
+  using typename base_type::reference;
+  using typename base_type::reverse_iterator;
+  using typename base_type::value_type;
 
-  // constructors and operators
+  // bit-aggregate vec_t objects
+  ~vec_t() {
+#pragma HLS aggregate variable = this bit
+  }
+
+  // single-element getter and setter
+  constexpr reference get(size_type pos) const { return *this[pos]; }
+  void set(size_type pos, const T& value) { (*this)[pos] = value; }
+
+  // default constructors and copy assignment operators
+  vec_t() = default;
   vec_t(const vec_t&) = default;
   vec_t(vec_t&&) = default;
   vec_t& operator=(const vec_t&) = default;
   vec_t& operator=(vec_t&&) = default;
+
+  // constructors from base_type
+  explicit vec_t(const base_type& other) : base_type(other) {}
+  explicit vec_t(base_type&& other) : base_type(other) {}
+
+  // static cast to vec_t of another type
   template <typename U>
-  operator vec_t<U, N>() {
+  explicit operator vec_t<U, N>() const {
 #pragma HLS inline
     vec_t<U, N> result;
-    for (uint64_t i = 0; i < N; ++i) {
+    for (size_type i = 0; i < N; ++i) {
       result.set(i, static_cast<U>(get(i)));
     }
     return result;
   }
-  T operator[](uint64_t idx) const {
-#pragma HLS inline
-    return get(idx);
-  }
+
+  // all-element setter
   void set(T val) {
 #pragma HLS inline
-    for (uint64_t i = 0; i < N; ++i) {
+    for (size_type i = 0; i < N; ++i) {
 #pragma HLS unroll
       set(i, val);
     }
@@ -73,7 +83,7 @@ struct vec_t {
   template <typename T2>                                 \
   vec_t<T, N>& operator op##=(const vec_t<T2, N>& rhs) { \
     _Pragma("HLS inline");                               \
-    for (uint64_t i = 0; i < N; ++i) {                   \
+    for (size_type i = 0; i < N; ++i) {                  \
       _Pragma("HLS unroll");                             \
       set(i, get(i) op rhs[i]);                          \
     }                                                    \
@@ -82,7 +92,7 @@ struct vec_t {
   template <typename T2>                                 \
   vec_t<T, N>& operator op##=(const T2& rhs) {           \
     _Pragma("HLS inline");                               \
-    for (uint64_t i = 0; i < N; ++i) {                   \
+    for (size_type i = 0; i < N; ++i) {                  \
       _Pragma("HLS unroll");                             \
       set(i, get(i) op rhs);                             \
     }                                                    \
@@ -101,14 +111,14 @@ struct vec_t {
 #undef DEFINE_OP
 
 // unary arithemetic operators
-#define DEFINE_OP(op)                  \
-  vec_t<T, N> operator op() {          \
-    _Pragma("HLS inline");             \
-    for (uint64_t i = 0; i < N; ++i) { \
-      _Pragma("HLS unroll");           \
-      set(i, op get(i));               \
-    }                                  \
-    return *this;                      \
+#define DEFINE_OP(op)                   \
+  vec_t<T, N> operator op() {           \
+    _Pragma("HLS inline");              \
+    for (size_type i = 0; i < N; ++i) { \
+      _Pragma("HLS unroll");            \
+      set(i, op get(i));                \
+    }                                   \
+    return *this;                       \
   }
   DEFINE_OP(+)
   DEFINE_OP(-)
@@ -121,7 +131,7 @@ struct vec_t {
   vec_t<T, N> operator op(const vec_t<T2, N>& rhs) { \
     _Pragma("HLS inline");                           \
     vec_t<T, N> result;                              \
-    for (uint64_t i = 0; i < N; ++i) {               \
+    for (size_type i = 0; i < N; ++i) {              \
       _Pragma("HLS unroll");                         \
       result.set(i, get(i) op rhs[i]);               \
     }                                                \
@@ -131,7 +141,7 @@ struct vec_t {
   vec_t<T, N> operator op(const T2& rhs) {           \
     _Pragma("HLS inline");                           \
     vec_t<T, N> result;                              \
-    for (uint64_t i = 0; i < N; ++i) {               \
+    for (size_type i = 0; i < N; ++i) {              \
       _Pragma("HLS unroll");                         \
       result.set(i, get(i) op rhs);                  \
     }                                                \
@@ -152,7 +162,7 @@ struct vec_t {
   // shift all elements by 1, put val at [N-1], and through away [0]
   void shift(const T& val) {
 #pragma HLS inline
-    for (int i = 1; i < N; ++i) {
+    for (size_type i = 1; i < N; ++i) {
 #pragma HLS unroll
       set(i - 1, get(i));
     }
@@ -163,7 +173,7 @@ struct vec_t {
   bool has(const T& val) {
 #pragma HLS inline
     bool result = false;
-    for (int i = 0; i < N; ++i) {
+    for (size_type i = 0; i < N; ++i) {
 #pragma HLS unroll
       if (val == get(i)) result |= true;
     }
@@ -172,13 +182,13 @@ struct vec_t {
 };
 
 // return vec[begin:end]
-template <uint64_t begin, uint64_t end, typename T, uint64_t N>
+template <int begin, int end, typename T, int N>
 inline vec_t<T, end - begin> truncated(const vec_t<T, N>& vec) {
   static_assert(begin >= 0, "cannot truncate before 0");
   static_assert(end <= N, "cannot truncate after N");
   vec_t<T, end - begin> result;
 #pragma HLS inline
-  for (uint64_t i = 0; i < end - begin; ++i) {
+  for (int i = 0; i < end - begin; ++i) {
 #pragma HLS unroll
     result.set(i, vec[begin + i]);
   }
@@ -186,22 +196,22 @@ inline vec_t<T, end - begin> truncated(const vec_t<T, N>& vec) {
 }
 
 // return vec[:length]
-template <uint64_t length, typename T, uint64_t N>
+template <int length, typename T, int N>
 inline vec_t<T, length> truncated(const vec_t<T, N>& vec) {
 #pragma HLS inline
   return truncated<0, length>(vec);
 }
 
 // return vec[begin:begin+len]
-template <uint64_t len, typename T, uint64_t N>
-inline vec_t<T, len> truncated(const vec_t<T, N>& vec, uint64_t begin) {
+template <int len, typename T, int N>
+inline vec_t<T, len> truncated(const vec_t<T, N>& vec, int begin) {
   static_assert(len <= N, "cannot enlarge vector");
-  uint64_t end = begin + len;
+  int end = begin + len;
   CHECK_GE(begin, 0) << "cannot truncate before 0";
   CHECK_LT(end, N) << "cannot truncate after N";
   vec_t<T, len> result;
 #pragma HLS inline
-  for (uint64_t i = 0; i < end - begin; ++i) {
+  for (int i = 0; i < end - begin; ++i) {
 #pragma HLS unroll
     result.set(i, vec[begin + i]);
   }
@@ -209,11 +219,11 @@ inline vec_t<T, len> truncated(const vec_t<T, N>& vec, uint64_t begin) {
 }
 
 // return vec[:] + [val]
-template <typename T, uint64_t N>
+template <typename T, int N>
 inline vec_t<T, N + 1> cat(const vec_t<T, N>& vec, const T& val) {
   vec_t<T, N + 1> result;
 #pragma HLS inline
-  for (uint64_t i = 0; i < N; ++i) {
+  for (int i = 0; i < N; ++i) {
 #pragma HLS unroll
     result.set(i, vec[i]);
   }
@@ -222,12 +232,12 @@ inline vec_t<T, N + 1> cat(const vec_t<T, N>& vec, const T& val) {
 }
 
 // return [val] + vec[:]
-template <typename T, uint64_t N>
+template <typename T, int N>
 inline vec_t<T, N + 1> cat(const T& val, const vec_t<T, N>& vec) {
   vec_t<T, N + 1> result;
 #pragma HLS inline
   result.set(0, val);
-  for (uint64_t i = 0; i < N; ++i) {
+  for (int i = 0; i < N; ++i) {
 #pragma HLS unroll
     result.set(i + 1, vec[i]);
   }
@@ -235,15 +245,15 @@ inline vec_t<T, N + 1> cat(const T& val, const vec_t<T, N>& vec) {
 }
 
 // return v1[:] + v2[:]
-template <typename T, uint64_t N1, uint64_t N2>
+template <typename T, int N1, int N2>
 inline vec_t<T, N1 + N2> cat(const vec_t<T, N1>& v1, const vec_t<T, N2>& v2) {
   vec_t<T, N1 + N2> result;
 #pragma HLS inline
-  for (uint64_t i = 0; i < N1; ++i) {
+  for (int i = 0; i < N1; ++i) {
 #pragma HLS unroll
     result.set(i, v1[i]);
   }
-  for (uint64_t i = 0; i < N2; ++i) {
+  for (int i = 0; i < N2; ++i) {
 #pragma HLS unroll
     result.set(i + N1, v2[i]);
   }
@@ -260,11 +270,11 @@ inline auto cat(T arg, Args... args) {
 
 // binary arithemetic operators, vector on the right-hand side
 #define DEFINE_OP(op)                                              \
-  template <typename T, uint64_t N, typename T2>                   \
+  template <typename T, int N, typename T2>                        \
   vec_t<T, N> operator op(const T2& lhs, const vec_t<T, N>& rhs) { \
     _Pragma("HLS inline");                                         \
     vec_t<T, N> result;                                            \
-    for (uint64_t i = 0; i < N; ++i) {                             \
+    for (int i = 0; i < N; ++i) {                                  \
       _Pragma("HLS unroll");                                       \
       result.set(i, lhs op rhs[i]);                                \
     }                                                              \
@@ -282,7 +292,7 @@ DEFINE_OP(<<)
 DEFINE_OP(>>)
 #undef DEFINE_OP
 
-template <uint64_t N, typename T>
+template <int N, typename T>
 vec_t<T, N> make_vec(T val) {
 #pragma HLS inline
   vec_t<T, N> result;
@@ -291,15 +301,15 @@ vec_t<T, N> make_vec(T val) {
 }
 
 // unary operation functions
-#define DEFINE_FUNC(func)              \
-  template <typename T, uint64_t N>    \
-  vec_t<T, N> func(vec_t<T, N> vec) {  \
-    _Pragma("HLS inline");             \
-    for (uint64_t i = 0; i < N; ++i) { \
-      _Pragma("HLS unroll");           \
-      vec.set(i, std::func(vec[i]));   \
-    }                                  \
-    return vec;                        \
+#define DEFINE_FUNC(func)             \
+  template <typename T, int N>        \
+  vec_t<T, N> func(vec_t<T, N> vec) { \
+    _Pragma("HLS inline");            \
+    for (int i = 0; i < N; ++i) {     \
+      _Pragma("HLS unroll");          \
+      vec.set(i, std::func(vec[i]));  \
+    }                                 \
+    return vec;                       \
   }
 DEFINE_FUNC(exp)
 DEFINE_FUNC(exp2)
@@ -312,21 +322,21 @@ DEFINE_FUNC(log2)
 
 // binary operation functions
 #define DEFINE_FUNC(func)                                            \
-  template <typename T, uint64_t N>                                  \
+  template <typename T, int N>                                       \
   vec_t<T, N> func(const vec_t<T, N>& lhs, const vec_t<T, N>& rhs) { \
     _Pragma("HLS inline");                                           \
     vec_t<T, N> result;                                              \
-    for (uint64_t i = 0; i < N; ++i) {                               \
+    for (int i = 0; i < N; ++i) {                                    \
       _Pragma("HLS unroll");                                         \
       result.set(i, std::func(lhs[i], rhs[i]));                      \
     }                                                                \
     return result;                                                   \
   }                                                                  \
-  template <typename T, uint64_t N>                                  \
+  template <typename T, int N>                                       \
   vec_t<T, N> func(const T& lhs, const vec_t<T, N>& rhs) {           \
     _Pragma("HLS inline") return func(make_vec<N>(lhs), rhs);        \
   }                                                                  \
-  template <typename T, uint64_t N>                                  \
+  template <typename T, int N>                                       \
   vec_t<T, N> func(const vec_t<T, N>& lhs, const T& rhs) {           \
     _Pragma("HLS inline") return func(lhs, make_vec<N>(rhs));        \
   }
@@ -341,7 +351,7 @@ DEFINE_FUNC(min)
     _Pragma("HLS inline");                                                \
     return vec[0];                                                        \
   }                                                                       \
-  template <typename T, uint64_t N>                                       \
+  template <typename T, int N>                                            \
   T func(const vec_t<T, N>& vec) {                                        \
     _Pragma("HLS inline");                                                \
     return func(truncated<N / 2>(vec)) op func(truncated<N / 2, N>(vec)); \
@@ -349,6 +359,16 @@ DEFINE_FUNC(min)
 DEFINE_FUNC(sum, +)
 DEFINE_FUNC(product, *)
 #undef DEFINE_FUNC
+
+template <typename T, int N>
+inline std::ostream& operator<<(std::ostream& os, const vec_t<T, N>& obj) {
+  os << "{";
+  for (int i = 0; i < N; ++i) {
+    if (i > 0) os << ", ";
+    os << "[" << i << "]: " << obj[i];
+  }
+  return os << "}";
+}
 
 }  // namespace tapa
 
