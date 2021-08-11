@@ -4,6 +4,10 @@ FetchContent_Declare(
   URL "https://github.com/llvm/llvm-project/archive/llvmorg-8.0.1.tar.gz"
   URL_HASH
     "SHA512=6098efa217d6c5fcdf6d6cbc6051020e728bdbf6190ca3d5be90e9fc382b8d666f1649506f7b4b70abff6084481799eba0fb0a44ad82a0bedfab98ee855e8d22"
+  PATCH_COMMAND
+    ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/Attr.td clang/include/clang/Basic/Attr.td
+  COMMAND
+    ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/SemaDeclAttr.cpp clang/lib/Sema/SemaDeclAttr.cpp
 )
 
 FetchContent_Declare(

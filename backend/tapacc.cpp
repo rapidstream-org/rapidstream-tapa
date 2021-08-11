@@ -137,6 +137,16 @@ class Consumer : public ASTConsumer {
       code["tasks"][task_name]["code"] = code_table[task];
       bool is_upper = GetTapaTask(task->getBody()) != nullptr;
       code["tasks"][task_name]["level"] = is_upper ? "upper" : "lower";
+      if (auto attr = task->getAttr<clang::TapaTargetAttr>()) {
+        code["tasks"][task_name]["target"] = attr->getTarget();
+        code["tasks"][task_name]["vendor"] = attr->getVendor();
+        if (code["tasks"][task_name]["vendor"] == "") {
+          code["tasks"][task_name]["vendor"] = "xilinx";
+        }
+      } else {
+        code["tasks"][task_name]["target"] = "hls";
+        code["tasks"][task_name]["vendor"] = "xilinx";
+      }
       if (is_upper) {
         code["tasks"][task_name].update(metadata_[task]);
       }
