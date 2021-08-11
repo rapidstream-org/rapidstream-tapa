@@ -146,8 +146,9 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
           } else {
             ProcessLowerLevelTask(func);
           }
-        } else {
-          GetRewriter().RemoveText(func->getSourceRange());
+        } else if (func->hasBody()) {
+          auto range = func->getBody()->getSourceRange();
+          GetRewriter().ReplaceText(range, ";");
         }
       }
     }
