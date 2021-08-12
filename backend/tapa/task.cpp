@@ -146,9 +146,12 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
           } else {
             ProcessLowerLevelTask(func);
           }
-        } else if (func->hasBody()) {
-          auto range = func->getBody()->getSourceRange();
-          GetRewriter().ReplaceText(range, ";");
+        } else {
+          RewriteFuncArguments(func);
+          if (func->hasBody()) {
+            auto range = func->getBody()->getSourceRange();
+            GetRewriter().ReplaceText(range, ";");
+          }
         }
       }
     }
@@ -162,38 +165,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                     const FunctionDecl* func) {
   const auto func_body = func->getBody();
 
-  bool qdma_header_inserted = false;
-
-  // Replace mmaps arguments with 64-bit base addresses.
-  for (const auto param : func->parameters()) {
-    const string param_name = param->getNameAsString();
-    if (IsTapaType(param, "(async_)?mmap")) {
-      GetRewriter().ReplaceText(
-          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "uint64_t");
-    } else if (IsTapaType(param, "(async_)?mmaps")) {
-      string rewritten_text;
-      for (int i = 0; i < GetArraySize(param); ++i) {
-        if (!rewritten_text.empty()) rewritten_text += ", ";
-        rewritten_text += "uint64_t " + GetArrayElem(param_name, i);
-      }
-      GetRewriter().ReplaceText(param->getSourceRange(), rewritten_text);
-    } else if (IsTapaTopLevel(func) && IsTapaType(param, "(i|o)stream")) {
-      // TODO: support streams
-      int width = GetTypeWidth(
-          GetTemplateArg(param->getType(), 0)->getAsType());
-      GetRewriter().ReplaceText(
-          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "hls::stream<qdma_axis<" + to_string(width) + ", 0, 0, 0> >&");
-      if (!qdma_header_inserted) {
-        GetRewriter().InsertText(
-          func->getBeginLoc(),
-          "#include \"ap_axi_sdata.h\"\n"
-          "#include \"hls_stream.h\"\n\n", true);
-        qdma_header_inserted = true;
-      }
-    }
-  }
+  RewriteFuncArguments(func);
 
   // Add pragmas.
   string replaced_body{"{\n"};  // TODO: replace with vector<string> lines
@@ -604,6 +576,41 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     GetRewriter().InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
     GetRewriter().InsertTextAfterToken(func->getEndLoc(),
                                        "\n\n}  // extern \"C\"\n");
+  }
+}
+
+void Visitor::RewriteFuncArguments(const clang::FunctionDecl* func) {
+  bool qdma_header_inserted = false;
+
+  // Replace mmaps arguments with 64-bit base addresses.
+  for (const auto param : func->parameters()) {
+    const string param_name = param->getNameAsString();
+    if (IsTapaType(param, "(async_)?mmap")) {
+      GetRewriter().ReplaceText(
+          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+          "uint64_t");
+    } else if (IsTapaType(param, "(async_)?mmaps")) {
+      string rewritten_text;
+      for (int i = 0; i < GetArraySize(param); ++i) {
+        if (!rewritten_text.empty()) rewritten_text += ", ";
+        rewritten_text += "uint64_t " + GetArrayElem(param_name, i);
+      }
+      GetRewriter().ReplaceText(param->getSourceRange(), rewritten_text);
+    } else if (IsTapaTopLevel(func) && IsTapaType(param, "(i|o)stream")) {
+      // TODO: support streams
+      int width = GetTypeWidth(
+          GetTemplateArg(param->getType(), 0)->getAsType());
+      GetRewriter().ReplaceText(
+          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+          "hls::stream<qdma_axis<" + to_string(width) + ", 0, 0, 0> >&");
+      if (!qdma_header_inserted) {
+        GetRewriter().InsertText(
+          func->getBeginLoc(),
+          "#include \"ap_axi_sdata.h\"\n"
+          "#include \"hls_stream.h\"\n\n", true);
+        qdma_header_inserted = true;
+      }
+    }
   }
 }
 

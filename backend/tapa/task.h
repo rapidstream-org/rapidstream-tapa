@@ -51,6 +51,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
 
   void ProcessUpperLevelTask(const clang::ExprWithCleanups* task,
                              const clang::FunctionDecl* func);
+  void RewriteFuncArguments(const clang::FunctionDecl* func);
 
   void ProcessLowerLevelTask(const clang::FunctionDecl* func);
   std::string GetFrtInterface(const clang::FunctionDecl* func);
