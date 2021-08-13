@@ -2,6 +2,7 @@
 #define TAPA_STREAM_H_
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 
 #include <array>
@@ -11,6 +12,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <glog/logging.h>
 
@@ -31,6 +33,9 @@ template <typename T, uint64_t S>
 class ostreams;
 
 namespace internal {
+
+template <typename Param, typename Arg>
+struct accessor;
 
 class base_queue {
  public:
@@ -144,39 +149,59 @@ struct elem_t {
   bool eos;
 };
 
+// shared pointer of a queue
 template <typename T>
-class base {
+class basic_stream {
  public:
   // debug helpers
   const std::string& get_name() const { return this->ptr->get_name(); }
   void set_name(const std::string& name) { ptr->set_name(name); }
   uint64_t get_depth() const { return this->ptr->get_depth(); }
 
- protected:
-  base(std::shared_ptr<queue<elem_t<T>>> ptr) : ptr(ptr) {}
+  // not protected since we'll use std::vector<basic_stream<T>>
+  basic_stream(const std::shared_ptr<queue<elem_t<T>>>& ptr) : ptr(ptr) {}
+  basic_stream(const basic_stream&) = default;
+  basic_stream(basic_stream&&) = default;
+  basic_stream& operator=(const basic_stream&) = default;
+  basic_stream& operator=(basic_stream&&) = delete;
 
+ protected:
   std::shared_ptr<queue<elem_t<T>>> ptr;
 };
 
+// shared pointer of multiple queues
 template <typename T>
-class stream : public istream<T>, public ostream<T> {
+class basic_streams {
  protected:
-  stream() : base<T>(nullptr) {}
+  basic_streams(const std::shared_ptr<std::vector<basic_stream<T>>>& ptr)
+      : ptr(ptr) {}
+  basic_streams(const basic_streams&) = default;
+  basic_streams(basic_streams&&) = default;
+  basic_streams& operator=(const basic_streams&) = default;
+  basic_streams& operator=(basic_streams&&) = delete;
+
+  std::shared_ptr<std::vector<basic_stream<T>>> ptr;
 };
 
+// stream without a bound depth; can be default-constructed by a derived class
+template <typename T>
+class unbound_stream : public istream<T>, public ostream<T> {
+ protected:
+  unbound_stream() : basic_stream<T>(nullptr) {}
+};
+
+// streams without a bound depth; can be default-constructed by a derived class
 template <typename T, int S>
-class streams : public istreams<T, S>, public ostreams<T, S> {};
+class unbound_streams : public istreams<T, S>, public ostreams<T, S> {
+ protected:
+  unbound_streams() : basic_streams<T>(nullptr) {}
+};
 
 }  // namespace internal
 
 template <typename T>
-class istream : virtual public internal::base<T> {
+class istream : virtual public internal::basic_stream<T> {
  public:
-  // default copy constructor
-  istream(const istream&) = default;
-  // default copy assignment operator
-  istream& operator=(const istream&) = default;
-
   // consumer const operations
 
   // whether stream is empty
@@ -306,17 +331,22 @@ class istream : virtual public internal::base<T> {
   }
 
  protected:
-  istream() : internal::base<T>(nullptr) {}
+  // allow derived class to omit initialization
+  istream() : internal::basic_stream<T>(nullptr) {}
+
+ private:
+  // allow istreams and streams to return istream
+  template <typename U, uint64_t S>
+  friend class istreams;
+  template <typename U, uint64_t S, uint64_t N>
+  friend class streams;
+  istream(const internal::basic_stream<T>& base)
+      : internal::basic_stream<T>(base) {}
 };
 
 template <typename T>
-class ostream : virtual public internal::base<T> {
+class ostream : virtual public internal::basic_stream<T> {
  public:
-  // default copy constructor
-  ostream(const ostream&) = default;
-  // deleted move constructor
-  ostream& operator=(const ostream&) = default;
-
   // producer const operations
 
   // whether stream is full
@@ -358,59 +388,206 @@ class ostream : virtual public internal::base<T> {
   }
 
  protected:
-  ostream() : internal::base<T>(nullptr) {}
+  // allow derived class to omit initialization
+  ostream() : internal::basic_stream<T>(nullptr) {}
+
+ private:
+  // allow ostreams and streams to return ostream
+  template <typename U, uint64_t S>
+  friend class ostreams;
+  template <typename U, uint64_t S, uint64_t N>
+  friend class streams;
+  ostream(const internal::basic_stream<T>& base)
+      : internal::basic_stream<T>(base) {}
 };
 
-template <typename T, uint64_t N = 1>
-class stream : public internal::stream<T> {
+template <typename T, uint64_t N>
+class stream : public internal::unbound_stream<T> {
  public:
+  constexpr static int depth = N;
+
   stream()
-      : internal::base<T>(
+      : internal::basic_stream<T>(
             std::make_shared<internal::queue<internal::elem_t<T>>>(N)) {}
   template <size_t S>
   stream(const char (&name)[S])
-      : internal::base<T>(
+      : internal::basic_stream<T>(
             std::make_shared<internal::queue<internal::elem_t<T>>>(N, name)) {}
 
-  constexpr static uint64_t depth{N};
+ private:
+  template <typename U, uint64_t friend_length, uint64_t friend_depth>
+  friend class streams;
+  stream(const internal::basic_stream<T>& base)
+      : internal::basic_stream<T>(base) {}
+};
+
+template <typename T, uint64_t depth>
+using channel = stream<T, depth>;
+
+template <typename T, uint64_t S>
+class istreams : virtual public internal::basic_streams<T> {
+ public:
+  constexpr static int length = S;
+
+  istream<T> operator[](int pos) const {
+    CHECK_NOTNULL(this->ptr);
+    CHECK_GE(pos, 0);
+    CHECK_LT(pos, this->ptr->size());
+    return (*this->ptr)[pos];
+  }
+
+ protected:
+  // allow derived class to omit initialization
+  istreams() : internal::basic_streams<T>(nullptr) {}
+
+  // allow streams of any length to return istreams
+  template <typename U, uint64_t friend_length, uint64_t friend_depth>
+  friend class streams;
 };
 
 template <typename T, uint64_t S>
-class istreams {
+class ostreams : virtual public internal::basic_streams<T> {
  public:
-  virtual istream<T>& operator[](int idx) = 0;
+  constexpr static int length = S;
+
+  ostream<T> operator[](int pos) const {
+    CHECK_NOTNULL(this->ptr);
+    CHECK_GE(pos, 0);
+    CHECK_LT(pos, this->ptr->size());
+    return (*this->ptr)[pos];
+  }
+
+ protected:
+  // allow derived class to omit initialization
+  ostreams() : internal::basic_streams<T>(nullptr) {}
+
+  // allow streams of any length to return ostreams
+  template <typename U, uint64_t friend_length, uint64_t friend_depth>
+  friend class streams;
 };
 
-template <typename T, uint64_t S>
-class ostreams {
+template <typename T, uint64_t S, uint64_t N>
+class streams : public internal::unbound_streams<T, S> {
  public:
-  virtual ostream<T>& operator[](int idx) = 0;
-};
+  constexpr static int length = S;
+  constexpr static int depth = N;
 
-template <typename T, uint64_t S, uint64_t N = 1>
-class streams : public internal::streams<T, S> {
-  stream<T, N> streams_[S];
-
- public:
-  // constructors
-  streams() {}
-  template <size_t SS>
-  streams(const char (&name)[SS]) {
+  streams()
+      : internal::basic_streams<T>(
+            std::make_shared<std::vector<internal::basic_stream<T>>>()) {
     for (int i = 0; i < S; ++i) {
-      streams_[i].set_name(std::string(name) + "[" + std::to_string(i) + "]");
+      this->ptr->emplace_back(
+          std::make_shared<internal::queue<internal::elem_t<T>>>(N));
     }
   }
-  // deleted copy constructor
-  streams(const streams&) = default;
-  // default move constructor
-  streams(streams&&) = default;
-  // deleted copy assignment operator
-  streams& operator=(const streams&) = default;
-  // default move assignment operator
-  streams& operator=(streams&&) = default;
 
-  stream<T, N>& operator[](int idx) override { return streams_[idx]; };
+  template <size_t name_length>
+  streams(const char (&name)[name_length])
+      : internal::basic_streams<T>(
+            std::make_shared<std::vector<internal::basic_stream<T>>>()),
+        name(name) {
+    for (int i = 0; i < S; ++i) {
+      this->ptr->emplace_back(
+          std::make_shared<internal::queue<internal::elem_t<T>>>(
+              N, this->name + "[" + std::to_string(i) + "]"));
+    }
+  }
+
+  stream<T, N> operator[](int pos) const {
+    CHECK_NOTNULL(this->ptr);
+    CHECK_GE(pos, 0);
+    CHECK_LT(pos, this->ptr->size());
+    return (*this->ptr)[pos];
+  };
+
+  ~streams() {
+    LOG_IF(ERROR, istream_access_pos_ != ostream_access_pos_)
+        << "channels '" << name << "' accessed as istream for "
+        << istream_access_pos_ << " times but as ostream for "
+        << ostream_access_pos_;
+  }
+
+ private:
+  std::string name;
+
+  template <typename Param, typename Arg>
+  friend struct internal::accessor;
+
+  int istream_access_pos_ = 0;
+  int ostream_access_pos_ = 0;
+
+  istream<T> access_as_istream() {
+    CHECK_LT(istream_access_pos_, this->ptr->size());
+    return (*this->ptr)[istream_access_pos_++];
+  }
+  ostream<T> access_as_ostream() {
+    CHECK_LT(ostream_access_pos_, this->ptr->size());
+    return (*this->ptr)[ostream_access_pos_++];
+  }
+  template <uint64_t length>
+  istreams<T, length> access_as_istreams() {
+    CHECK_NOTNULL(this->ptr);
+    istreams<T, length> result;
+    result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
+    result.ptr->reserve(length);
+    for (int i = 0; i < length; ++i) {
+      CHECK_LT(istream_access_pos_, this->ptr->size())
+          << "channels '" << name << "' accessed as istream for "
+          << istream_access_pos_ << " times but it only contains "
+          << this->ptr->size() << " channels";
+      result.ptr->emplace_back((*this->ptr)[istream_access_pos_++]);
+    }
+    return result;
+  }
+  template <uint64_t length>
+  ostreams<T, length> access_as_ostreams() {
+    CHECK_NOTNULL(this->ptr);
+    ostreams<T, length> result;
+    result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
+    result.ptr->reserve(length);
+    for (int i = 0; i < length; ++i) {
+      CHECK_LT(ostream_access_pos_, this->ptr->size())
+          << "channels '" << name << "' accessed as ostream for "
+          << ostream_access_pos_ << " times but it only contains "
+          << this->ptr->size() << " channels";
+      result.ptr->emplace_back((*this->ptr)[ostream_access_pos_++]);
+    }
+    return result;
+  }
 };
+
+template <typename T, uint64_t S, uint64_t N>
+using channels = streams<T, S, N>;
+
+namespace internal {
+
+#define TAPA_DEFINE_ACCESSER(io, reference)                              \
+  template <typename T, uint64_t length, uint64_t depth>                 \
+  struct accessor<io##stream<T> reference, streams<T, length, depth>&> { \
+    static io##stream<T> access(streams<T, length, depth>& arg) {        \
+      return arg.access_as_##io##stream();                               \
+    }                                                                    \
+  };                                                                     \
+  template <typename T, uint64_t param_length, uint64_t arg_length,      \
+            uint64_t depth>                                              \
+  struct accessor<io##streams<T, param_length> reference,                \
+                  streams<T, arg_length, depth>&> {                      \
+    static io##streams<T, param_length> access(                          \
+        streams<T, arg_length, depth>& arg) {                            \
+      return arg.template access_as_##io##streams<param_length>();       \
+    }                                                                    \
+  };
+
+TAPA_DEFINE_ACCESSER(i, )
+TAPA_DEFINE_ACCESSER(i, &)
+TAPA_DEFINE_ACCESSER(i, &&)
+TAPA_DEFINE_ACCESSER(o, )
+TAPA_DEFINE_ACCESSER(o, &)
+TAPA_DEFINE_ACCESSER(o, &&)
+
+#undef TAPA_DEFINE_ACCESSER
+
+}  // namespace internal
 
 }  // namespace tapa
 

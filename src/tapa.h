@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <sys/types.h>
@@ -37,6 +38,23 @@ namespace tapa {
 
 struct seq {};
 
+namespace internal {
+
+template <typename T>
+struct invoker;
+
+template <typename... Params>
+struct invoker<void (&)(Params...)> {
+  template <typename... Args>
+  static void invoke(bool detach, void (&f)(Params...), Args&&... args) {
+    // std::bind creates a copy of args
+    internal::schedule(detach, std::bind(f, accessor<Params, Args>::access(
+                                                std::forward<Args>(args))...));
+  }
+};
+
+}  // namespace internal
+
 struct task {
   task();
   task(task&&) = delete;
@@ -46,73 +64,54 @@ struct task {
   task& operator=(task&&) = delete;
   task& operator=(const task&) = delete;
 
-  template <typename Function, typename... Args>
-  task& invoke(Function&& f, Args&&... args) {
-    return invoke<join>(f, "", args...);
+  template <typename Func, typename... Args>
+  task& invoke(Func&& f, Args&&... args) {
+    return invoke<join>(std::forward<Func>(f), "", std::forward<Args>(args)...);
   }
 
-  template <int step, typename Function, typename... Args>
-  task& invoke(Function&& f, Args&&... args) {
-    return invoke<step>(f, "", args...);
+  template <int step, typename Func, typename... Args>
+  task& invoke(Func&& f, Args&&... args) {
+    return invoke<step>(std::forward<Func>(f), "", std::forward<Args>(args)...);
   }
 
-  template <typename Function, typename... Args, size_t S>
-  task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
-    return invoke<join>(f, name, args...);
+  template <typename Func, typename... Args, size_t name_size>
+  task& invoke(Func&& f, const char (&name)[name_size], Args&&... args) {
+    return invoke<join>(std::forward<Func>(f), name,
+                        std::forward<Args>(args)...);
   }
 
-  template <int step, typename Function, typename... Args, size_t S>
-  task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
-    internal::schedule(/* detach= */ step < 0,
-                       std::bind(f, std::forward<Args>(args)...));
+  template <int step, typename Func, typename... Args, size_t name_size>
+  task& invoke(Func&& f, const char (&name)[name_size], Args&&... args) {
+    internal::invoker<Func>::template invoke<Args...>(
+        /* detach= */ step < 0, std::forward<Func>(f),
+        std::forward<Args>(args)...);
     return *this;
   }
 
   // invoke task vector without a name
-  template <int step, uint64_t length, typename Function, typename... Args>
-  task& invoke(Function&& f, Args&&... args) {
-    return invoke<step, length>(f, "", args...);
+  template <int step, uint64_t length, typename Func, typename... Args>
+  task& invoke(Func&& f, Args&&... args) {
+    return invoke<step, length>(std::forward<Func>(f), "",
+                                std::forward<Args>(args)...);
   }
 
   // invoke task vector with a name
-  template <int step, uint64_t length, typename Function, typename... Args,
-            size_t S>
-  task& invoke(Function&& f, const char (&name)[S], Args&&... args) {
-    for (uint64_t i = 0; i < length; ++i) {
-      this->invoke<step>(f, access(args, i)...);
+  template <int step, uint64_t length, typename Func, typename... Args,
+            size_t name_size>
+  task& invoke(Func&& f, const char (&name)[name_size], Args&&... args) {
+    for (int i = 0; i < length; ++i) {
+      invoke<step>(std::forward<Func>(f), std::forward<Args>(args)...);
     }
     return *this;
-  }
-
- private:
-  // scalar
-  template <typename T>
-  static T& access(T& arg, uint64_t idx) {
-    return arg;
-  }
-
-  // sequence
-  static int access(seq, uint64_t idx) { return idx; }
-
-  // access streams in vector invoke
-  template <typename T, uint64_t length, uint64_t depth>
-  static stream<T, depth>& access(streams<T, length, depth>& arg,
-                                  uint64_t idx) {
-    LOG_IF(INFO, idx >= length) << "invocation #" << idx << " accesses "
-                                << "stream #" << idx % length;
-    return arg[idx];
-  }
-
-  // access mmaps in vector invoke
-  template <typename T, uint64_t length>
-  static mmap<T>& access(mmaps<T, length>& arg, uint64_t idx) {
-    LOG_IF(INFO, idx >= length) << "invocation #" << idx << " accesses "
-                                << "async_mmap #" << idx % length;
-    return arg[idx % length];
   }
 };
 
 namespace internal {
+
+template <typename Param, typename Arg>
+struct accessor {
+  static Param access(Arg&& arg) { return arg; }
+};
 
 void* allocate(size_t length);
 void deallocate(void* addr, size_t length);
@@ -230,8 +229,8 @@ inline int64_t invoke(bool run_in_new_process, Func&& f,
 // the kernel time in nanoseconds.
 template <typename Func, typename... Args>
 inline int64_t invoke(Func&& f, const std::string& bitstream, Args&&... args) {
-  return internal::invoke(/*run_in_new_process*/ false, f, bitstream,
-                          std::forward<Args>(args)...);
+  return internal::invoke(/*run_in_new_process*/ false, std::forward<Func>(f),
+                          bitstream, std::forward<Args>(args)...);
 }
 
 // Workaround for the fact that Xilinx's cosim cannot run for more than once in
@@ -240,8 +239,8 @@ inline int64_t invoke(Func&& f, const std::string& bitstream, Args&&... args) {
 template <typename Func, typename... Args>
 inline int64_t invoke_in_new_process(Func&& f, const std::string& bitstream,
                                      Args&&... args) {
-  return internal::invoke(/*run_in_new_process*/ true, f, bitstream,
-                          std::forward<Args>(args)...);
+  return internal::invoke(/*run_in_new_process*/ true, std::forward<Func>(f),
+                          bitstream, std::forward<Args>(args)...);
 }
 
 template <typename T>
