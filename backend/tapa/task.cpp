@@ -188,8 +188,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
               replaced_body += "#pragma HLS " + join(args, " ") + "\n";
             });
       } else {
-        replaced_body += "#pragma HLS interface axis port = " +
-            param_name + "\n";
+        replaced_body +=
+            "#pragma HLS interface axis port = " + param_name + "\n";
       }
     } else if (IsTapaTopLevel(func)) {
       if (IsTapaType(param, "(async_)?mmaps")) {
@@ -224,12 +224,11 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       } else if (IsTapaType(param, "ostream")) {
         auto type = GetStreamElemType(param);
         if (IsTapaTopLevel(func)) {
-          int width = GetTypeWidth(
-              GetTemplateArg(param->getType(), 0)->getAsType());
+          int width =
+              GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType());
           type = "qdma_axis<" + to_string(width) + ", 0, 0, 0>";
         }
-        replaced_body +=
-            param_name + ".write(" + type + "());\n";
+        replaced_body += param_name + ".write(" + type + "());\n";
       }
     } else if (IsTapaType(param, "istreams")) {
       for (int i = 0; i < GetArraySize(param); ++i) {
@@ -276,20 +275,17 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           {{"name", name},
            {"cat", IsTapaType(param, "async_mmap") ? "async_mmap" : "mmap"},
            {"width",
-            GetTypeWidth(
-                GetTemplateArg(param->getType(), 0)->getAsType())},
+            GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
            {"type", GetMmapElemType(param) + "*"}});
     };
     // TODO: extend to support streams as well
     auto add_stream_meta = [&](const string& name) {
-      metadata["ports"].push_back({
-        {"name", name},
-        {"cat", IsTapaType(param, "istream") ? "istream" : "ostream"},
-        {"width",
-          GetTypeWidth(
-              GetTemplateArg(param->getType(), 0)->getAsType())},
-        {"type", GetStreamElemType(param)}
-      });
+      metadata["ports"].push_back(
+          {{"name", name},
+           {"cat", IsTapaType(param, "istream") ? "istream" : "ostream"},
+           {"width",
+            GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
+           {"type", GetStreamElemType(param)}});
     };
     if (IsTapaType(param, "(async_)?mmap")) {
       add_mmap_meta(param_name);
@@ -300,11 +296,10 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     } else if (IsStreamInterface(param)) {
       add_stream_meta(param_name);
     } else {
-      metadata["ports"].push_back(
-          {{"name", param_name},
-           {"cat", "scalar"},
-           {"width", GetTypeWidth(param->getType())},
-           {"type", param->getType().getAsString()}});
+      metadata["ports"].push_back({{"name", param_name},
+                                   {"cat", "scalar"},
+                                   {"width", GetTypeWidth(param->getType())},
+                                   {"type", param->getType().getAsString()}});
     }
   }
 
@@ -598,16 +593,16 @@ void Visitor::RewriteFuncArguments(const clang::FunctionDecl* func) {
       GetRewriter().ReplaceText(param->getSourceRange(), rewritten_text);
     } else if (IsTapaTopLevel(func) && IsTapaType(param, "(i|o)stream")) {
       // TODO: support streams
-      int width = GetTypeWidth(
-          GetTemplateArg(param->getType(), 0)->getAsType());
+      int width =
+          GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType());
       GetRewriter().ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           "hls::stream<qdma_axis<" + to_string(width) + ", 0, 0, 0> >&");
       if (!qdma_header_inserted) {
-        GetRewriter().InsertText(
-          func->getBeginLoc(),
-          "#include \"ap_axi_sdata.h\"\n"
-          "#include \"hls_stream.h\"\n\n", true);
+        GetRewriter().InsertText(func->getBeginLoc(),
+                                 "#include \"ap_axi_sdata.h\"\n"
+                                 "#include \"hls_stream.h\"\n\n",
+                                 true);
         qdma_header_inserted = true;
       }
     }
