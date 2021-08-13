@@ -20,6 +20,7 @@ using std::unordered_map;
 using std::vector;
 
 using clang::CharSourceRange;
+using clang::CXXBindTemporaryExpr;
 using clang::CXXMemberCallExpr;
 using clang::CXXMethodDecl;
 using clang::CXXOperatorCallExpr;
@@ -28,7 +29,9 @@ using clang::DeclStmt;
 using clang::Expr;
 using clang::ExprWithCleanups;
 using clang::FunctionDecl;
+using clang::ImplicitCastExpr;
 using clang::Lexer;
+using clang::MaterializeTemporaryExpr;
 using clang::SourceLocation;
 using clang::SourceRange;
 using clang::Stmt;
@@ -395,8 +398,22 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         clang::Expr::EvalResult arg_eval_as_int_result;
         const bool arg_is_int =
             arg->EvaluateAsInt(arg_eval_as_int_result, this->context_);
-        const auto op_call =
-            dyn_cast<CXXOperatorCallExpr>(arg);  // element in an array
+
+        // element in an array
+        auto op_call = dyn_cast<CXXOperatorCallExpr>(arg);
+        if (op_call == nullptr) {
+          const auto materialize_temporary =
+              dyn_cast<MaterializeTemporaryExpr>(arg);
+          if (materialize_temporary) {
+            const auto bind_temporary = dyn_cast<CXXBindTemporaryExpr>(
+                materialize_temporary->GetTemporaryExpr());
+            if (bind_temporary) {
+              op_call =
+                  dyn_cast<CXXOperatorCallExpr>(bind_temporary->getSubExpr());
+            }
+          }
+        }
+
         const auto arg_is_seq = IsTapaType(arg, "seq");
         if (decl_ref || op_call || arg_is_int || arg_is_seq) {
           string arg_name;
@@ -404,10 +421,16 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             arg_name = decl_ref->getNameInfo().getName().getAsString();
           }
           if (op_call) {
-            const auto array_name = dyn_cast<DeclRefExpr>(op_call->getArg(0))
-                                        ->getNameInfo()
-                                        .getName()
-                                        .getAsString();
+            auto decl_ref = dyn_cast<DeclRefExpr>(op_call->getArg(0));
+            if (decl_ref == nullptr) {
+              const auto implicit_cast =
+                  dyn_cast<ImplicitCastExpr>(op_call->getArg(0));
+              if (implicit_cast) {
+                decl_ref = dyn_cast<DeclRefExpr>(implicit_cast->getSubExpr());
+              }
+            }
+            const auto array_name =
+                decl_ref->getNameInfo().getName().getAsString();
             const auto array_idx = this->EvalAsInt(op_call->getArg(1));
             arg_name = ArrayNameAt(array_name, array_idx);
           }
