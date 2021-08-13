@@ -36,8 +36,6 @@
 
 namespace tapa {
 
-struct seq {};
-
 namespace internal {
 
 template <typename T>
@@ -106,11 +104,20 @@ struct task {
   }
 };
 
+struct seq {
+  int pos = 0;
+};
+
 namespace internal {
 
 template <typename Param, typename Arg>
 struct accessor {
   static Param access(Arg&& arg) { return arg; }
+};
+
+template <typename T>
+struct accessor<T, seq> {
+  static T access(seq&& arg) { return arg.pos++; }
 };
 
 void* allocate(size_t length);
