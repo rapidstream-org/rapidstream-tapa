@@ -443,6 +443,35 @@ class istreams : virtual public internal::basic_streams<T> {
   // allow streams of any length to return istreams
   template <typename U, uint64_t friend_length, uint64_t friend_depth>
   friend class streams;
+
+  // allow istreams of any length to return istreams
+  template <typename U, uint64_t friend_length>
+  friend class istreams;
+
+ private:
+  template <typename Param, typename Arg>
+  friend struct internal::accessor;
+
+  int access_pos_ = 0;
+
+  istream<T> access() {
+    CHECK_LT(access_pos_, this->ptr->size());
+    return (*this->ptr)[access_pos_++];
+  }
+  template <uint64_t length>
+  istreams<T, length> access() {
+    CHECK_NOTNULL(this->ptr);
+    istreams<T, length> result;
+    result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
+    result.ptr->reserve(length);
+    for (int i = 0; i < length; ++i) {
+      CHECK_LT(access_pos_, this->ptr->size())
+          << "istreams accessed for " << access_pos_
+          << " times but it only contains " << this->ptr->size() << " istreams";
+      result.ptr->emplace_back((*this->ptr)[access_pos_++]);
+    }
+    return result;
+  }
 };
 
 template <typename T, uint64_t S>
@@ -464,6 +493,35 @@ class ostreams : virtual public internal::basic_streams<T> {
   // allow streams of any length to return ostreams
   template <typename U, uint64_t friend_length, uint64_t friend_depth>
   friend class streams;
+
+  // allow ostreams of any length to return istreams
+  template <typename U, uint64_t friend_length>
+  friend class ostreams;
+
+ private:
+  template <typename Param, typename Arg>
+  friend struct internal::accessor;
+
+  int access_pos_ = 0;
+
+  ostream<T> access() {
+    CHECK_LT(access_pos_, this->ptr->size());
+    return (*this->ptr)[access_pos_++];
+  }
+  template <uint64_t length>
+  ostreams<T, length> access() {
+    CHECK_NOTNULL(this->ptr);
+    ostreams<T, length> result;
+    result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
+    result.ptr->reserve(length);
+    for (int i = 0; i < length; ++i) {
+      CHECK_LT(access_pos_, this->ptr->size())
+          << "ostreams accessed for " << access_pos_
+          << " times but it only contains " << this->ptr->size() << " ostreams";
+      result.ptr->emplace_back((*this->ptr)[access_pos_++]);
+    }
+    return result;
+  }
 };
 
 template <typename T, uint64_t S, uint64_t N>
@@ -499,13 +557,6 @@ class streams : public internal::unbound_streams<T, S> {
     CHECK_LT(pos, this->ptr->size());
     return (*this->ptr)[pos];
   };
-
-  ~streams() {
-    LOG_IF(ERROR, istream_access_pos_ != ostream_access_pos_)
-        << "channels '" << name << "' accessed as istream for "
-        << istream_access_pos_ << " times but as ostream for "
-        << ostream_access_pos_;
-  }
 
  private:
   std::string name;
@@ -562,12 +613,23 @@ using channels = streams<T, S, N>;
 namespace internal {
 
 #define TAPA_DEFINE_ACCESSER(io, reference)                              \
+  /* param = i/ostream, arg = streams */                                 \
   template <typename T, uint64_t length, uint64_t depth>                 \
   struct accessor<io##stream<T> reference, streams<T, length, depth>&> { \
     static io##stream<T> access(streams<T, length, depth>& arg) {        \
       return arg.access_as_##io##stream();                               \
     }                                                                    \
   };                                                                     \
+                                                                         \
+  /* param = i/ostream, arg = i/ostreams */                              \
+  template <typename T, uint64_t length>                                 \
+  struct accessor<io##stream<T> reference, io##streams<T, length>&> {    \
+    static io##stream<T> access(io##streams<T, length>& arg) {           \
+      return arg.access();                                               \
+    }                                                                    \
+  };                                                                     \
+                                                                         \
+  /* param = i/ostreams, arg = streams */                                \
   template <typename T, uint64_t param_length, uint64_t arg_length,      \
             uint64_t depth>                                              \
   struct accessor<io##streams<T, param_length> reference,                \
@@ -575,6 +637,16 @@ namespace internal {
     static io##streams<T, param_length> access(                          \
         streams<T, arg_length, depth>& arg) {                            \
       return arg.template access_as_##io##streams<param_length>();       \
+    }                                                                    \
+  };                                                                     \
+                                                                         \
+  /* param = i/ostreams, arg = i/ostreams */                             \
+  template <typename T, uint64_t param_length, uint64_t arg_length>      \
+  struct accessor<io##streams<T, param_length> reference,                \
+                  io##streams<T, arg_length>&> {                         \
+    static io##streams<T, param_length> access(                          \
+        io##streams<T, arg_length>& arg) {                               \
+      return arg.template access<param_length>();                        \
     }                                                                    \
   };
 
