@@ -335,10 +335,14 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   // Instanciate tasks.
   vector<const CXXMemberCallExpr*> invokes = GetTapaInvokes(task);
 
+  unordered_map<string, int> istreams_access_pos;
+  unordered_map<string, int> ostreams_access_pos;
+  unordered_map<string, int> mmaps_access_pos;
+  unordered_map<const Expr*, int> seq_access_pos;
+
   for (auto invoke : invokes) {
     int step = -1;
     bool has_name = false;
-    bool is_vec = false;
     uint64_t vec_length = 1;
     if (const auto method = dyn_cast<CXXMethodDecl>(invoke->getCalleeDecl())) {
       auto args = method->getTemplateSpecializationArgs()->asArray();
@@ -349,7 +353,6 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         step = 0;  // default to join
       }
       if (args.size() > 1 && args[1].getKind() == TemplateArgument::Integral) {
-        is_vec = true;
         vec_length = *args[1].getAsIntegral().getRawData();
       }
       if (args.rbegin()->getKind() == TemplateArgument::Integral) {
@@ -367,7 +370,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     string task_name;
     auto get_name = [&](const string& name, uint64_t i,
                         const DeclRefExpr* decl_ref) -> string {
-      if (is_vec && IsTapaType(decl_ref, "(mmaps|streams)")) {
+      if (IsTapaType(decl_ref, "(mmaps|(i|o)?streams)")) {
         const auto ts_type =
             decl_ref->getType()->getAs<TemplateSpecializationType>();
         assert(ts_type != nullptr);
@@ -496,40 +499,47 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             if (IsTapaType(param, "mmap")) {
               param_cat = "mmap";
               // vector invocation can map mmaps to mmap
-              register_arg(get_name(arg_name, i_vec, decl_ref));
+              register_arg(
+                  get_name(arg_name, mmaps_access_pos[arg_name]++, decl_ref));
+
             } else if (IsTapaType(param, "async_mmap")) {
               param_cat = "async_mmap";
               // vector invocation can map mmaps to async_mmap
-              register_arg(get_name(arg_name, i_vec, decl_ref));
+              register_arg(
+                  get_name(arg_name, mmaps_access_pos[arg_name]++, decl_ref));
             } else if (IsTapaType(param, "istream")) {
               param_cat = "istream";
               // vector invocation can map istreams to istream
-              auto arg = get_name(arg_name, i_vec, decl_ref);
+              auto arg =
+                  get_name(arg_name, istreams_access_pos[arg_name]++, decl_ref);
               register_consumer(arg);
               register_arg(arg);
             } else if (IsTapaType(param, "ostream")) {
               param_cat = "ostream";
               // vector invocation can map ostreams to ostream
-              auto arg = get_name(arg_name, i_vec, decl_ref);
+              auto arg =
+                  get_name(arg_name, ostreams_access_pos[arg_name]++, decl_ref);
               register_producer(arg);
               register_arg(arg);
             } else if (IsTapaType(param, "istreams")) {
               param_cat = "istream";
               for (int i = 0; i < GetArraySize(param); ++i) {
-                auto arg = ArrayNameAt(arg_name, i);
+                auto arg = get_name(arg_name, istreams_access_pos[arg_name]++,
+                                    decl_ref);
                 register_consumer(arg);
                 register_arg(arg, ArrayNameAt(param_name, i));
               }
             } else if (IsTapaType(param, "ostreams")) {
               param_cat = "ostream";
               for (int i = 0; i < GetArraySize(param); ++i) {
-                auto arg = ArrayNameAt(arg_name, i);
+                auto arg = get_name(arg_name, ostreams_access_pos[arg_name]++,
+                                    decl_ref);
                 register_producer(arg);
                 register_arg(arg, ArrayNameAt(param_name, i));
               }
             } else if (arg_is_seq) {
               param_cat = "scalar";
-              register_arg("64'd" + std::to_string(i_vec));
+              register_arg("64'd" + std::to_string(seq_access_pos[arg]++));
             } else {
               param_cat = "scalar";
               register_arg();
