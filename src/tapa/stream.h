@@ -466,7 +466,7 @@ class istreams : virtual public internal::basic_streams<T> {
     result.ptr->reserve(length);
     for (int i = 0; i < length; ++i) {
       CHECK_LT(access_pos_, this->ptr->size())
-          << "istreams accessed for " << access_pos_
+          << "istreams accessed for " << access_pos_ + 1
           << " times but it only contains " << this->ptr->size() << " istreams";
       result.ptr->emplace_back((*this->ptr)[access_pos_++]);
     }
@@ -516,7 +516,7 @@ class ostreams : virtual public internal::basic_streams<T> {
     result.ptr->reserve(length);
     for (int i = 0; i < length; ++i) {
       CHECK_LT(access_pos_, this->ptr->size())
-          << "ostreams accessed for " << access_pos_
+          << "ostreams accessed for " << access_pos_ + 1
           << " times but it only contains " << this->ptr->size() << " ostreams";
       result.ptr->emplace_back((*this->ptr)[access_pos_++]);
     }
@@ -584,7 +584,7 @@ class streams : public internal::unbound_streams<T, S> {
     for (int i = 0; i < length; ++i) {
       CHECK_LT(istream_access_pos_, this->ptr->size())
           << "channels '" << name << "' accessed as istream for "
-          << istream_access_pos_ << " times but it only contains "
+          << istream_access_pos_ + 1 << " times but it only contains "
           << this->ptr->size() << " channels";
       result.ptr->emplace_back((*this->ptr)[istream_access_pos_++]);
     }
@@ -599,7 +599,7 @@ class streams : public internal::unbound_streams<T, S> {
     for (int i = 0; i < length; ++i) {
       CHECK_LT(ostream_access_pos_, this->ptr->size())
           << "channels '" << name << "' accessed as ostream for "
-          << ostream_access_pos_ << " times but it only contains "
+          << ostream_access_pos_ + 1 << " times but it only contains "
           << this->ptr->size() << " channels";
       result.ptr->emplace_back((*this->ptr)[ostream_access_pos_++]);
     }
