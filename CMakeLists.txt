@@ -1,15 +1,14 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.14)
 cmake_policy(SET CMP0076 NEW)
-
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.15.0")
-  cmake_policy(SET CMP0093 NEW)
+if(POLICY CMP0111)
+  cmake_policy(SET CMP0111 NEW)
 endif()
 
 project(tapa)
 
 add_subdirectory(backend)
 
-find_package(Boost 1.59 COMPONENTS coroutine stacktrace_backtrace)
+find_package(Boost 1.59 COMPONENTS coroutine stacktrace_basic)
 find_package(FRT REQUIRED)
 
 add_library(tapa_static STATIC)
@@ -19,53 +18,44 @@ target_sources(tapa_static PRIVATE src/tapa.cpp)
 target_sources(tapa_shared PRIVATE src/tapa.cpp)
 target_compile_features(tapa_static PUBLIC cxx_std_11)
 target_compile_features(tapa_shared PUBLIC cxx_std_11)
-if(Boost_FOUND)
-  if(${CMAKE_VERSION} VERSION_LESS "3.15.0")
-    target_compile_definitions(tapa_static
-                               PRIVATE BOOST_VERSION=${Boost_VERSION})
-    target_compile_definitions(tapa_shared
-                               PRIVATE BOOST_VERSION=${Boost_VERSION})
-  else()
-    target_compile_definitions(tapa_static
-                               PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
-    target_compile_definitions(tapa_shared
-                               PRIVATE BOOST_VERSION=${Boost_VERSION_MACRO})
-  endif()
-endif()
-
-if(Boost_stacktrace_backtrace_FOUND)
-  find_library(BACKTRACE_LIBRARY backtrace REQUIRED
-               PATHS /usr/lib/gcc/x86_64-linux-gnu/*)
-  get_filename_component(BACKTRACE_INCLUDEDIR ${BACKTRACE_LIBRARY} DIRECTORY)
-  target_include_directories(tapa_static
-                             PRIVATE ${BACKTRACE_INCLUDEDIR}/include)
-  target_include_directories(tapa_shared
-                             PRIVATE ${BACKTRACE_INCLUDEDIR}/include)
-  target_link_libraries(tapa_static PUBLIC ${BACKTRACE_LIBRARY} dl)
-  target_link_libraries(tapa_shared PUBLIC ${BACKTRACE_LIBRARY} dl)
-else()
-  target_compile_definitions(tapa_static PRIVATE BOOST_STACKTRACE_USE_NOOP)
-  target_compile_definitions(tapa_shared PRIVATE BOOST_STACKTRACE_USE_NOOP)
-endif()
-
 target_include_directories(
-  tapa_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-                     ${Boost_INCLUDE_DIRS})
+  tapa_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 target_include_directories(
-  tapa_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-                     ${Boost_INCLUDE_DIRS})
+  tapa_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 target_link_libraries(
   tapa_static
-  PRIVATE ${Boost_LIBRARIES}
-  INTERFACE glog frt::frt
-  PUBLIC pthread)
+  INTERFACE frt::frt
+  PUBLIC glog pthread)
 target_link_libraries(
   tapa_shared
-  PRIVATE ${Boost_LIBRARIES}
-  INTERFACE glog frt::frt
-  PUBLIC pthread)
+  INTERFACE frt::frt
+  PUBLIC glog pthread)
 set_target_properties(tapa_static tapa_shared
                       PROPERTIES OUTPUT_NAME tapa POSITION_INDEPENDENT_CODE ON)
+
+if(Boost_COROUTINE_FOUND)
+  message(STATUS "Building TAPA with coroutine")
+  target_compile_definitions(tapa_static PRIVATE TAPA_ENABLE_COROUTINE=1)
+  target_compile_definitions(tapa_shared PRIVATE TAPA_ENABLE_COROUTINE=1)
+  target_link_libraries(tapa_static PRIVATE ${Boost_COROUTINE_LIBRARY}
+                                            ${Boost_CONTEXT_LIBRARY})
+  target_link_libraries(tapa_shared PRIVATE ${Boost_COROUTINE_LIBRARY}
+                                            ${Boost_CONTEXT_LIBRARY})
+  list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
+       "libboost-coroutine-dev(>=${Boost_VERSION_STRING})")
+endif()
+
+if(Boost_STACKTRACE_BASIC_FOUND)
+  message(STATUS "Building TAPA with stacktrace")
+  target_compile_definitions(tapa_static PRIVATE TAPA_ENABLE_STACKTRACE=1)
+  target_compile_definitions(tapa_shared PRIVATE TAPA_ENABLE_STACKTRACE=1)
+  target_link_libraries(tapa_static PRIVATE ${Boost_STACKTRACE_BASIC_LIBRARY}
+                                            dl)
+  target_link_libraries(tapa_shared PRIVATE ${Boost_STACKTRACE_BASIC_LIBRARY}
+                                            dl)
+  list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
+       "libboost-stacktrace-dev(>=${Boost_VERSION_STRING})")
+endif()
 
 include(GNUInstallDirs)
 install(
@@ -102,19 +92,17 @@ set(CPACK_PACKAGE_VERSION_MINOR 0)
 set(CPACK_PACKAGE_VERSION_PATCH 20210801.1)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Task-Parallel High-Level Synthesis")
 
-string(
-  JOIN
-  ", "
+list(
+  APPEND
   CPACK_DEBIAN_PACKAGE_DEPENDS
   "clang-8"
   "g++"
   "iverilog"
+  "libfrt-dev"
   "libgoogle-glog-dev")
-if(Boost_FOUND)
-  string(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
-         ", libboost-coroutine-dev (>= 1.59), libboost-stacktrace-dev")
-endif()
-set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "libfrt-dev")
+list(SORT CPACK_DEBIAN_PACKAGE_DEPENDS)
+list(JOIN CPACK_DEBIAN_PACKAGE_DEPENDS ", " CPACK_DEBIAN_PACKAGE_DEPENDS)
+
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Blaok Chi")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)

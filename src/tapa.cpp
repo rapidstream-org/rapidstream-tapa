@@ -19,16 +19,12 @@
 
 #include <sys/mman.h>
 
-#if BOOST_VERSION >= 105900
-
-#ifndef BOOST_STACKTRACE_USE_NOOP
-#define BOOST_STACKTRACE_USE_BACKTRACE
-#include <boost/stacktrace.hpp>
-#endif  // BOOST_STACKTRACE_USE_NOOP
+#if TAPA_ENABLE_COROUTINE
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/coroutine2/coroutine.hpp>
 #include <boost/coroutine2/fixedsize_stack.hpp>
+#include <boost/stacktrace.hpp>
 
 #include <sys/resource.h>
 #include <time.h>
@@ -65,7 +61,7 @@ void yield(const string& msg) {
   if (debug) {
     unique_lock l(debug_mtx);
     LOG(INFO) << msg;
-#ifndef BOOST_STACKTRACE_USE_NOOP
+#if TAPA_ENABLE_STACKTRACE
     for (auto& frame : boost::stacktrace::stacktrace()) {
       const auto line = frame.source_line();
       const auto file = frame.source_file();
@@ -85,7 +81,7 @@ void yield(const string& msg) {
       if (space_pos != string::npos) name = name.substr(space_pos + 1);
       LOG(INFO) << "  in " << name << "(...) from " << file << ":" << line;
     }
-#endif  // BOOST_STACKTRACE_USE_NOOP
+#endif  // TAPA_ENABLE_STACKTRACE
   }
   (*current_handle)();
 }
@@ -321,7 +317,7 @@ task::~task() {
 
 }  // namespace tapa
 
-#else  // BOOST_VERSION >= 105900
+#else  // TAPA_ENABLE_COROUTINE
 
 namespace tapa {
 namespace internal {
@@ -386,7 +382,7 @@ task::~task() {
 
 }  // namespace tapa
 
-#endif  // BOOST_VERSION >= 105900
+#endif  // TAPA_ENABLE_COROUTINE
 
 namespace tapa {
 namespace internal {
