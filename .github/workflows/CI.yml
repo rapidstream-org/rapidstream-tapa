@@ -15,16 +15,7 @@ jobs:
       uses: actions/checkout@v1
     - name: Install dependencies
       run: |
-        sudo apt-get install -y \
-          libboost-coroutine-dev \
-          libboost-stacktrace-dev \
-          libgflags-dev \
-          libgoogle-glog-dev \
-          python3-pip \
-
-        sudo -H python3 -m pip install --upgrade pip==20.3.4
-        sudo -H python3 -m pip install cmake
-        wget -O - https://raw.githubusercontent.com/Blaok/fpga-runtime/master/install.sh | bash
+        ./.github/scripts/install-build-deps.sh
     - name: Configure myself
       run: cmake -S . -B build
     - name: Cache llvm-src
