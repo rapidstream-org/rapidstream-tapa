@@ -157,53 +157,10 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   current_target->RewriteFuncArguments(func, GetRewriter(),
                                        IsTapaTopLevel(func));
 
-  vector<string> lines = {""};
-  auto add_line = [&lines](StringRef line) { lines.push_back(line); };
-  auto add_pragma = [&lines](initializer_list<StringRef> args) {
-    lines.push_back("#pragma " + join(args, " "));
-  };
-
-  for (const auto param : func->parameters()) {
-    if (IsTapaType(param, "(i|o)streams?")) {
-      if (IsTapaTopLevel(func)) {
-        current_target->AddCodeForTopLevelStream(param, add_line, add_pragma);
-      } else {
-        current_target->AddCodeForMiddleLevelStream(param, add_line,
-                                                    add_pragma);
-      }
-    } else if (IsTapaType(param, "async_mmaps?")) {
-      if (IsTapaTopLevel(func)) {
-        current_target->AddCodeForTopLevelAsyncMmap(param, add_line,
-                                                    add_pragma);
-      } else {
-        current_target->AddCodeForMiddleLevelAsyncMmap(param, add_line,
-                                                       add_pragma);
-      }
-    } else if (IsTapaType(param, "mmaps?")) {
-      if (IsTapaTopLevel(func)) {
-        current_target->AddCodeForTopLevelMmap(param, add_line, add_pragma);
-      } else {
-        current_target->AddCodeForMiddleLevelMmap(param, add_line, add_pragma);
-      }
-    } else {
-      if (IsTapaTopLevel(func)) {
-        current_target->AddCodeForTopLevelScalar(param, add_line, add_pragma);
-      } else {
-        current_target->AddCodeForMiddleLevelScalar(param, add_line,
-                                                    add_pragma);
-      }
-    }
-
-    add_line("");  // Separate each parameter.
-  }
-
   if (IsTapaTopLevel(func)) {
-    current_target->AddCodeForTopLevelFunc(func, add_line, add_pragma,
-                                           GetRewriter());
-    add_line("");
-    current_target->RewriteTopLevelFuncBody(func, GetRewriter(), lines);
+    current_target->RewriteTopLevelFunc(func, GetRewriter());
   } else {
-    current_target->RewriteMiddleLevelFuncBody(func, GetRewriter(), lines);
+    current_target->RewriteMiddleLevelFunc(func, GetRewriter());
   }
 
   // Obtain the connection schema from the task.
@@ -544,28 +501,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
 // Apply tapa s2s transformations on a lower-level task.
 void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
-  for (const auto param : func->parameters()) {
-    vector<string> lines = {""};  // Make sure pragmas start with a new line.
-    auto add_line = [&lines](StringRef line) { lines.push_back(line); };
-    auto add_pragma = [&lines](initializer_list<StringRef> args) {
-      lines.push_back("#pragma " + join(args, " "));
-    };
-
-    const auto name = param->getNameAsString();
-    if (IsTapaType(param, "(i|o)streams?")) {
-      current_target->AddCodeForLowerLevelStream(param, add_line, add_pragma);
-    } else if (IsTapaType(param, "async_mmaps?")) {
-      current_target->AddCodeForLowerLevelAsyncMmap(param, add_line,
-                                                    add_pragma);
-    } else if (IsTapaType(param, "mmaps?")) {
-      current_target->AddCodeForLowerLevelMmap(param, add_line, add_pragma);
-    } else {
-      current_target->AddCodeForLowerLevelScalar(param, add_line, add_pragma);
-    }
-
-    add_line("");  // Make sure pragmas finish with a new line.
-    current_target->RewriteLowerLevelFuncBody(func, GetRewriter(), lines);
-  }
+  current_target->RewriteLowerLevelFunc(func, GetRewriter());
 }
 
 string Visitor::GetFrtInterface(const FunctionDecl* func) {

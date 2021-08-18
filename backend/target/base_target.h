@@ -9,7 +9,7 @@
   const clang::FunctionDecl *func,                                      \
       const std::function<void(llvm::StringRef)> &add_line,             \
       const std::function<void(std::initializer_list<llvm::StringRef>)> \
-          &add_pragma, clang::Rewriter &rewriter
+          &add_pragma
 
 #define ADD_FOR_PARAMS_ARGS_DEF                                         \
   const clang::ParmVarDecl *param,                                      \
@@ -52,14 +52,9 @@ class Target {
   virtual void AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForLowerLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
-  virtual void RewriteFuncBody(REWRITE_FUNC_ARGS_DEF,
-                               std::vector<std::string> lines) = 0;
-  virtual void RewriteTopLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                       std::vector<std::string> lines) = 0;
-  virtual void RewriteMiddleLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                          std::vector<std::string> lines) = 0;
-  virtual void RewriteLowerLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                         std::vector<std::string> lines) = 0;
+  virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
+  virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
+  virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top) = 0;
 
   static tapa::internal::Target *GetInstance() = delete;
@@ -94,14 +89,16 @@ class BaseTarget : public Target {
   virtual void AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForLowerLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
 
-  virtual void RewriteFuncBody(REWRITE_FUNC_ARGS_DEF,
-                               std::vector<std::string> lines);
-  virtual void RewriteTopLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                       std::vector<std::string> lines);
-  virtual void RewriteMiddleLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                          std::vector<std::string> lines);
-  virtual void RewriteLowerLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                         std::vector<std::string> lines);
+  virtual std::vector<std::string> GenerateCodeForTopLevelFunc(
+      const clang::FunctionDecl *func);
+  virtual std::vector<std::string> GenerateCodeForMiddleLevelFunc(
+      const clang::FunctionDecl *func);
+  virtual std::vector<std::string> GenerateCodeForLowerLevelFunc(
+      const clang::FunctionDecl *func);
+
+  virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF);
 
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
 

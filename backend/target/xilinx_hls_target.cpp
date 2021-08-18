@@ -69,9 +69,7 @@ static void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {
 
 void XilinxHLSTarget::AddCodeForTopLevelFunc(ADD_FOR_FUNC_ARGS_DEF) {
   add_pragma({"HLS interface s_axilite port = return bundle = control"});
-  // SDAccel only works with extern C kernels.
-  rewriter.InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
-  rewriter.InsertTextAfterToken(func->getEndLoc(), "\n\n}  // extern \"C\"\n");
+  add_line("");
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
@@ -197,14 +195,19 @@ void XilinxHLSTarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
       {"HLS interface m_axi port =", name, "offset = direct bundle =", name});
 }
 
-void XilinxHLSTarget::RewriteTopLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                              std::vector<std::string> lines) {
-  RewriteMiddleLevelFuncBody(REWRITE_FUNC_ARGS, lines);
+void XilinxHLSTarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {
+  // We need a empty shell.
+  auto lines = GenerateCodeForTopLevelFunc(func);
+  rewriter.ReplaceText(func->getBody()->getSourceRange(),
+                       "{\n" + llvm::join(lines, "\n") + "}\n");
+
+  // SDAccel only works with extern C kernels.
+  rewriter.InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
+  rewriter.InsertTextAfterToken(func->getEndLoc(), "\n\n}  // extern \"C\"\n");
 }
 
-void XilinxHLSTarget::RewriteMiddleLevelFuncBody(
-    REWRITE_FUNC_ARGS_DEF, std::vector<std::string> lines) {
-  // We need a empty shell.
+void XilinxHLSTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
+  auto lines = GenerateCodeForMiddleLevelFunc(func);
   rewriter.ReplaceText(func->getBody()->getSourceRange(),
                        "{\n" + llvm::join(lines, "\n") + "}\n");
 }

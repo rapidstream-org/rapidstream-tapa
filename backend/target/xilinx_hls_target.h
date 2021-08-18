@@ -20,10 +20,8 @@ class XilinxHLSTarget : public BaseTarget {
   virtual void AddCodeForLowerLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
-  virtual void RewriteTopLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                       std::vector<std::string> lines);
-  virtual void RewriteMiddleLevelFuncBody(REWRITE_FUNC_ARGS_DEF,
-                                          std::vector<std::string> lines);
+  virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
 
   static tapa::internal::Target *GetInstance() {
