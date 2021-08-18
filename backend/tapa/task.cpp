@@ -49,6 +49,13 @@ using nlohmann::json;
 namespace tapa {
 namespace internal {
 
+static std::map<std::string, std::map<std::string, Target*>> target_map{
+    {"xilinx",
+     {
+         {"hls", XilinxHLSTarget::GetInstance()},
+     }},
+};
+
 extern const string* top_name;
 
 // Given a Stmt, find the first tapa::task in its children.
@@ -89,46 +96,26 @@ bool IsTapaTopLevel(const FunctionDecl* func) {
 }
 
 thread_local const FunctionDecl* Visitor::current_task{nullptr};
+thread_local Target* Visitor::current_target{nullptr};
 
-namespace {
+void Visitor::VisitTask(const clang::FunctionDecl* func) {
+  current_task = func;
 
-void AddPragmaForStream(
-    const clang::ParmVarDecl* param,
-    const std::function<void(StringRef)>& add_line,
-    const std::function<void(initializer_list<StringRef>)>& add_pragma) {
-  assert(IsTapaType(param, "(i|o)streams?"));
-  const auto name = param->getNameAsString();
-  add_pragma({"disaggregate variable =", name});
-
-  vector<string> names;
-  if (IsTapaType(param, "(i|o)streams")) {
-    add_pragma({"array_partition variable =", name, "complete"});
-    const int64_t array_size = GetArraySize(param);
-    names.reserve(array_size);
-    for (int64_t i = 0; i < array_size; ++i) {
-      names.push_back(ArrayNameAt(name, i));
-    }
+  auto& metadata = GetMetadata();
+  if (auto attr = func->getAttr<clang::TapaTargetAttr>()) {
+    metadata["target"] = attr->getTarget();
+    metadata["vendor"] = attr->getVendor();
   } else {
-    names.push_back(name);
+    metadata["target"] = "hls";
+  }
+  if (metadata["vendor"].is_null() || metadata["vendor"] == "") {
+    metadata["vendor"] = "xilinx";
   }
 
-  for (const auto& name : names) {
-    const auto fifo_var = GetFifoVar(name);
-    add_pragma({"interface ap_fifo port =", fifo_var});
-    add_pragma({"aggregate variable =", fifo_var, "bit"});
-    if (IsTapaType(param, "istreams?")) {
-      const auto peek_var = GetPeekVar(name);
-      add_pragma({"interface ap_fifo port =", peek_var});
-      add_pragma({"aggregate variable =", peek_var, "bit"});
-      add_line("void(" + name + "._.empty());");
-      add_line("void(" + name + "._peek.empty());");
-    } else {
-      add_line("void(" + name + "._.full());");
-    }
-  }
+  current_target = target_map[metadata["vendor"]][metadata["target"]];
+
+  TraverseDecl(func->getASTContext().getTranslationUnitDecl());
 }
-
-}  // namespace
 
 // Apply tapa s2s transformations on a function.
 bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
@@ -143,14 +130,15 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
             // Run this before "extern C" is injected by
             // `ProcessUpperLevelTask`.
             if (IsTapaTopLevel(func)) {
-              metadata_[func]["frt_interface"] = GetFrtInterface(func);
+              GetMetadata()["frt_interface"] = GetFrtInterface(func);
             }
             ProcessUpperLevelTask(task, func);
           } else {
             ProcessLowerLevelTask(func);
           }
         } else {
-          RewriteFuncArguments(func);
+          current_target->RewriteFuncArguments(func, GetRewriter(),
+                                               IsTapaTopLevel(func));
           if (func->hasBody()) {
             auto range = func->getBody()->getSourceRange();
             GetRewriter().ReplaceText(range, ";");
@@ -166,103 +154,57 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
 // Apply tapa s2s transformations on a upper-level task.
 void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                     const FunctionDecl* func) {
-  const auto func_body = func->getBody();
+  current_target->RewriteFuncArguments(func, GetRewriter(),
+                                       IsTapaTopLevel(func));
 
-  RewriteFuncArguments(func);
+  vector<string> lines = {""};
+  auto add_line = [&lines](StringRef line) { lines.push_back(line); };
+  auto add_pragma = [&lines](initializer_list<StringRef> args) {
+    lines.push_back("#pragma " + join(args, " "));
+  };
 
-  // Add pragmas.
-  string replaced_body{"{\n"};  // TODO: replace with vector<string> lines
   for (const auto param : func->parameters()) {
-    auto param_name = param->getNameAsString();
-    auto add_pragma = [&](string port = "") {
-      if (port.empty()) port = param_name;
-      replaced_body += "#pragma HLS interface s_axilite port = " + port +
-                       " bundle = control\n";
-    };
     if (IsTapaType(param, "(i|o)streams?")) {
-      if (!IsTapaTopLevel(func)) {
-        AddPragmaForStream(
-            param,
-            [&replaced_body](StringRef line) {
-              replaced_body += line;
-              replaced_body += "\n";
-            },
-            [&replaced_body](initializer_list<StringRef> args) {
-              replaced_body += "#pragma HLS " + join(args, " ") + "\n";
-            });
+      if (IsTapaTopLevel(func)) {
+        current_target->AddCodeForTopLevelStream(param, add_line, add_pragma);
       } else {
-        replaced_body +=
-            "#pragma HLS interface axis port = " + param_name + "\n";
+        current_target->AddCodeForMiddleLevelStream(param, add_line,
+                                                    add_pragma);
       }
-    } else if (IsTapaTopLevel(func)) {
-      if (IsTapaType(param, "(async_)?mmaps")) {
-        // For top-level mmaps and scalars, generate AXI base addresses.
-        for (int i = 0; i < GetArraySize(param); ++i) {
-          add_pragma(GetArrayElem(param_name, i));
-        }
+    } else if (IsTapaType(param, "async_mmaps?")) {
+      if (IsTapaTopLevel(func)) {
+        current_target->AddCodeForTopLevelAsyncMmap(param, add_line,
+                                                    add_pragma);
       } else {
-        add_pragma();
+        current_target->AddCodeForMiddleLevelAsyncMmap(param, add_line,
+                                                       add_pragma);
+      }
+    } else if (IsTapaType(param, "mmaps?")) {
+      if (IsTapaTopLevel(func)) {
+        current_target->AddCodeForTopLevelMmap(param, add_line, add_pragma);
+      } else {
+        current_target->AddCodeForMiddleLevelMmap(param, add_line, add_pragma);
       }
     } else {
-      // Make sure ap_clk and ap_rst_n are generated for middle-level mmaps and
-      // scalars.
-      replaced_body +=
-          "#pragma HLS interface ap_none port = " + param_name + " register\n";
+      if (IsTapaTopLevel(func)) {
+        current_target->AddCodeForTopLevelScalar(param, add_line, add_pragma);
+      } else {
+        current_target->AddCodeForMiddleLevelScalar(param, add_line,
+                                                    add_pragma);
+      }
     }
 
-    replaced_body += "\n";  // Separate pragmas for each parameter.
+    add_line("");  // Separate each parameter.
   }
+
   if (IsTapaTopLevel(func)) {
-    replaced_body +=
-        "#pragma HLS interface s_axilite port = return bundle = control\n";
+    current_target->AddCodeForTopLevelFunc(func, add_line, add_pragma,
+                                           GetRewriter());
+    add_line("");
+    current_target->RewriteTopLevelFuncBody(func, GetRewriter(), lines);
+  } else {
+    current_target->RewriteMiddleLevelFuncBody(func, GetRewriter(), lines);
   }
-  replaced_body += "\n";
-
-  // Add dummy reads and/or writes.
-  for (const auto param : func->parameters()) {
-    auto param_name = param->getNameAsString();
-    if (IsStreamInterface(param)) {
-      if (IsTapaType(param, "istream")) {
-        replaced_body += "{ auto val = " + param_name + ".read(); }\n";
-      } else if (IsTapaType(param, "ostream")) {
-        auto type = GetStreamElemType(param);
-        if (IsTapaTopLevel(func)) {
-          int width =
-              GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType());
-          type = "qdma_axis<" + to_string(width) + ", 0, 0, 0>";
-        }
-        replaced_body += param_name + ".write(" + type + "());\n";
-      }
-    } else if (IsTapaType(param, "istreams")) {
-      for (int i = 0; i < GetArraySize(param); ++i) {
-        replaced_body +=
-            "{ auto val = " + ArrayNameAt(param_name, i) + ".read(); }\n";
-      }
-    } else if (IsTapaType(param, "ostreams")) {
-      for (int i = 0; i < GetArraySize(param); ++i) {
-        replaced_body += ArrayNameAt(param_name, i) + ".write(" +
-                         GetStreamElemType(param) + "());\n";
-      }
-    } else if (IsTapaType(param, "(async_)?mmaps")) {
-      for (int i = 0; i < GetArraySize(param); ++i) {
-        replaced_body += "{ auto val = reinterpret_cast<volatile uint8_t&>(" +
-                         GetArrayElem(param_name, i) + "); }\n";
-      }
-    } else {
-      auto elem_type = param->getType();
-      const bool is_const = elem_type.isConstQualified();
-      replaced_body += "{ auto val = reinterpret_cast<volatile ";
-      if (is_const) {
-        replaced_body += "const ";
-      }
-      replaced_body += "uint8_t&>(" + param_name + "); }\n";
-    }
-  }
-
-  replaced_body += "}\n";
-
-  // We need a empty shell.
-  GetRewriter().ReplaceText(func_body->getSourceRange(), replaced_body);
 
   // Obtain the connection schema from the task.
   // metadata: {tasks, fifos}
@@ -308,7 +250,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
   // Process stream declarations.
   unordered_map<string, const VarDecl*> fifo_decls;
-  for (const auto child : func_body->children()) {
+  for (const auto child : func->getBody()->children()) {
     if (const auto decl_stmt = dyn_cast<DeclStmt>(child)) {
       if (const auto var_decl = dyn_cast<VarDecl>(*decl_stmt->decl_begin())) {
         if (auto decl = GetTapaStreamDecl(var_decl->getType())) {
@@ -598,48 +540,6 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       }
     }
   }
-
-  if (IsTapaTopLevel(func)) {
-    // SDAccel only works with extern C kernels.
-    GetRewriter().InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
-    GetRewriter().InsertTextAfterToken(func->getEndLoc(),
-                                       "\n\n}  // extern \"C\"\n");
-  }
-}
-
-void Visitor::RewriteFuncArguments(const clang::FunctionDecl* func) {
-  bool qdma_header_inserted = false;
-
-  // Replace mmaps arguments with 64-bit base addresses.
-  for (const auto param : func->parameters()) {
-    const string param_name = param->getNameAsString();
-    if (IsTapaType(param, "(async_)?mmap")) {
-      GetRewriter().ReplaceText(
-          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "uint64_t");
-    } else if (IsTapaType(param, "(async_)?mmaps")) {
-      string rewritten_text;
-      for (int i = 0; i < GetArraySize(param); ++i) {
-        if (!rewritten_text.empty()) rewritten_text += ", ";
-        rewritten_text += "uint64_t " + GetArrayElem(param_name, i);
-      }
-      GetRewriter().ReplaceText(param->getSourceRange(), rewritten_text);
-    } else if (IsTapaTopLevel(func) && IsTapaType(param, "(i|o)stream")) {
-      // TODO: support streams
-      int width =
-          GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType());
-      GetRewriter().ReplaceText(
-          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "hls::stream<qdma_axis<" + to_string(width) + ", 0, 0, 0> >&");
-      if (!qdma_header_inserted) {
-        GetRewriter().InsertText(func->getBeginLoc(),
-                                 "#include \"ap_axi_sdata.h\"\n"
-                                 "#include \"hls_stream.h\"\n\n",
-                                 true);
-        qdma_header_inserted = true;
-      }
-    }
-  }
 }
 
 // Apply tapa s2s transformations on a lower-level task.
@@ -648,41 +548,23 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
     vector<string> lines = {""};  // Make sure pragmas start with a new line.
     auto add_line = [&lines](StringRef line) { lines.push_back(line); };
     auto add_pragma = [&lines](initializer_list<StringRef> args) {
-      lines.push_back("#pragma HLS " + join(args, " "));
+      lines.push_back("#pragma " + join(args, " "));
     };
 
     const auto name = param->getNameAsString();
     if (IsTapaType(param, "(i|o)streams?")) {
-      AddPragmaForStream(param, add_line, add_pragma);
-    } else if (IsTapaType(param, "async_mmap")) {
-      add_pragma({"disaggregate variable =", name});
-      for (auto tag : {".read_addr", ".read_data", ".write_addr", ".write_data",
-                       ".write_resp"}) {
-        const auto fifo_var = GetFifoVar(name + tag);
-        add_pragma({"interface ap_fifo port =", fifo_var});
-        add_pragma({"aggregate variable =", fifo_var, " bit"});
-      }
-      for (auto tag : {".read_data", ".write_resp"}) {
-        add_pragma({"disaggregate variable =", name, tag});
-        const auto peek_var = GetPeekVar(name + tag);
-        add_pragma({"interface ap_fifo port =", peek_var});
-        add_pragma({"aggregate variable =", peek_var, "bit"});
-      }
-      add_line("void(" + name + ".read_addr._.full());");
-      add_line("void(" + name + ".read_data._.empty());");
-      add_line("void(" + name + ".read_data._peek.empty());");
-      add_line("void(" + name + ".write_addr._.full());");
-      add_line("void(" + name + ".write_data._.full());");
-      add_line("void(" + name + ".write_resp._.empty());");
-      add_line("void(" + name + ".write_resp._peek.empty());");
-    } else if (IsTapaType(param, "mmap")) {
-      add_pragma(
-          {"interface m_axi port =", name, "offset = direct bundle =", name});
+      current_target->AddCodeForLowerLevelStream(param, add_line, add_pragma);
+    } else if (IsTapaType(param, "async_mmaps?")) {
+      current_target->AddCodeForLowerLevelAsyncMmap(param, add_line,
+                                                    add_pragma);
+    } else if (IsTapaType(param, "mmaps?")) {
+      current_target->AddCodeForLowerLevelMmap(param, add_line, add_pragma);
+    } else {
+      current_target->AddCodeForLowerLevelScalar(param, add_line, add_pragma);
     }
 
-    lines.push_back("");  // Make sure pragmas finish with a new line.
-    GetRewriter().InsertTextAfterToken(func->getBody()->getBeginLoc(),
-                                       join(lines, "\n"));
+    add_line("");  // Make sure pragmas finish with a new line.
+    current_target->RewriteLowerLevelFuncBody(func, GetRewriter(), lines);
   }
 }
 

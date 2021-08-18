@@ -13,6 +13,7 @@
 
 #include "nlohmann/json.hpp"
 
+#include "../target/all_targets.h"
 #include "stream.h"
 
 namespace tapa {
@@ -37,21 +38,26 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
         metadata_{metadata} {}
 
   bool VisitFunctionDecl(clang::FunctionDecl* func);
-
-  static thread_local const clang::FunctionDecl* current_task;
+  void VisitTask(const clang::FunctionDecl* func);
 
  private:
+  static thread_local const clang::FunctionDecl* current_task;
+  static thread_local Target* current_target;
+
   clang::ASTContext& context_;
   std::vector<const clang::FunctionDecl*>& funcs_;
   std::unordered_map<const clang::FunctionDecl*, clang::Rewriter>& rewriters_;
   std::unordered_map<const clang::FunctionDecl*, nlohmann::json>& metadata_;
 
   clang::Rewriter& GetRewriter() { return rewriters_[current_task]; }
-  nlohmann::json& GetMetadata() { return metadata_[current_task]; }
+  nlohmann::json& GetMetadata() {
+    if (metadata_[current_task].is_null())
+      metadata_[current_task] = nlohmann::json::object();
+    return metadata_[current_task];
+  }
 
   void ProcessUpperLevelTask(const clang::ExprWithCleanups* task,
                              const clang::FunctionDecl* func);
-  void RewriteFuncArguments(const clang::FunctionDecl* func);
 
   void ProcessLowerLevelTask(const clang::FunctionDecl* func);
   std::string GetFrtInterface(const clang::FunctionDecl* func);

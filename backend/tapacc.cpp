@@ -122,8 +122,7 @@ class Consumer : public ASTConsumer {
     // funcs_ has been reset to only contain the tasks.
     // Traverse the AST for each task and obtain the transformed source code.
     for (auto task : funcs_) {
-      Visitor::current_task = task;
-      visitor_.TraverseDecl(context.getTranslationUnitDecl());
+      visitor_.VisitTask(task);
     }
     unordered_map<const FunctionDecl*, string> code_table;
     json code;
@@ -137,19 +136,7 @@ class Consumer : public ASTConsumer {
       code["tasks"][task_name]["code"] = code_table[task];
       bool is_upper = GetTapaTask(task->getBody()) != nullptr;
       code["tasks"][task_name]["level"] = is_upper ? "upper" : "lower";
-      if (auto attr = task->getAttr<clang::TapaTargetAttr>()) {
-        code["tasks"][task_name]["target"] = attr->getTarget();
-        code["tasks"][task_name]["vendor"] = attr->getVendor();
-        if (code["tasks"][task_name]["vendor"] == "") {
-          code["tasks"][task_name]["vendor"] = "xilinx";
-        }
-      } else {
-        code["tasks"][task_name]["target"] = "hls";
-        code["tasks"][task_name]["vendor"] = "xilinx";
-      }
-      if (is_upper) {
-        code["tasks"][task_name].update(metadata_[task]);
-      }
+      code["tasks"][task_name].update(metadata_[task]);
     }
     code["top"] = *top_name;
     std::cout << code;

@@ -76,12 +76,22 @@ target_sources(
   PRIVATE tapa/mmap.cpp)
 target_link_libraries(mmap PUBLIC type)
 
+add_library(target)
+target_sources(
+  target
+  PUBLIC target/all_targets.h
+  PUBLIC target/base_target.h
+  PUBLIC target/xilinx_hls_target.h
+  PRIVATE target/base_target.cpp
+  PRIVATE target/xilinx_hls_target.cpp)
+target_link_libraries(target PUBLIC type stream mmap)
+
 add_library(task)
 target_sources(
   task
   PUBLIC tapa/task.h
   PRIVATE tapa/task.cpp)
-target_link_libraries(task PUBLIC stream mmap nlohmann_json::nlohmann_json)
+target_link_libraries(task PUBLIC stream mmap target nlohmann_json::nlohmann_json)
 
 add_executable(tapacc)
 target_sources(tapacc PRIVATE tapacc.cpp)
