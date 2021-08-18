@@ -116,6 +116,8 @@ def generate_floorplan(
   ddr_list: List[int] = []
   config['DDR'] = ddr_list
   for connectivity in parse_connectivity(connectivity_fp):
+    if not connectivity:
+      continue
     dot = connectivity.find('.')
     colon = connectivity.find(':')
     kernel = connectivity[:dot]
@@ -245,6 +247,9 @@ def parse_connectivity(fp: TextIO) -> List[str]:
 def parse_port(port: str) -> Tuple[str, int]:
   bra = port.find('[')
   ket = port.find(']')
+  colon = port.find(':')
+  if colon != -1:
+    ket = colon  # use the first channel if a range is specified
   return port[:bra], int(port[bra + 1:ket])
 
 
