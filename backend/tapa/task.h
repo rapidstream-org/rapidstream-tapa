@@ -43,6 +43,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   void VisitTask(const clang::FunctionDecl* func);
 
  private:
+  static thread_local const clang::FunctionDecl* rewriting_func;
   static thread_local const clang::FunctionDecl* current_task;
   static thread_local Target* current_target;
 

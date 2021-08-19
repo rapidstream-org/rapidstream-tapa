@@ -23,6 +23,10 @@ class XilinxHLSTarget : public BaseTarget {
   virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
+  virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
+                                    const clang::Stmt *body);
+  virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
+                                    const clang::Stmt *body);
 
   static tapa::internal::Target *GetInstance() {
     static XilinxHLSTarget instance;

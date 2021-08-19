@@ -4,6 +4,8 @@
 #include "../tapa/stream.h"
 #include "../tapa/type.h"
 
+#include <cctype>
+
 using llvm::StringRef;
 
 namespace tapa {
@@ -249,6 +251,46 @@ void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl* func,
       }
     }
   }
+}
+
+static clang::SourceRange ExtendAttrRemovalRange(
+        clang::Rewriter &rewriter,
+        clang::SourceRange range) {
+  auto begin = range.getBegin();
+  auto end = range.getEnd();
+
+#define BEGIN(OFF)        (begin.getLocWithOffset(OFF))
+#define END(OFF)          (end.getLocWithOffset(OFF))
+#define STR_AT(BEGIN,END) (rewriter.getRewrittenText(clang::SourceRange((BEGIN), (END))))
+#define IS_IGNORE(STR)    ((STR) == "" || std::isspace((STR)[0]))
+
+  // Remove all whitespaces around the attribute
+  for (; IS_IGNORE(STR_AT(BEGIN(-1), BEGIN(-1))); begin = BEGIN(-1));
+  for (; IS_IGNORE(STR_AT(END(1), END(1))); end = END(1));
+
+  // Remove comma if around the attribute
+  if (STR_AT(BEGIN(-1), BEGIN(-1)) == ",") {
+    begin = BEGIN(-1);
+  } else if (STR_AT(END(1), END(1)) == ",") {
+    end = END(1);
+  } else if (STR_AT(BEGIN(-2), BEGIN(-1)) == "[[" &&
+        STR_AT(END(1), END(2)) == "]]") {
+      // Check if the attribute is completely removed
+      begin = BEGIN(-2);
+      end = END(2);
+  }
+
+  return clang::SourceRange(begin, end);
+}
+
+void XilinxHLSTarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
+        const clang::Stmt *body) {
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
+}
+
+void XilinxHLSTarget::RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
+        const clang::Stmt *body) {
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
 }
 
 }  // namespace internal

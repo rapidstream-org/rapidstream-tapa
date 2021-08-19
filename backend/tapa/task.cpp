@@ -100,6 +100,7 @@ bool IsTapaTopLevel(const FunctionDecl* func) {
   return *top_name == func->getNameAsString();
 }
 
+thread_local const FunctionDecl* Visitor::rewriting_func{nullptr};
 thread_local const FunctionDecl* Visitor::current_task{nullptr};
 thread_local Target* Visitor::current_target{nullptr};
 
@@ -139,12 +140,16 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
 
 // Apply tapa s2s transformations on a function.
 bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
+  rewriting_func = nullptr;
+
   if (func->hasBody() && func->isGlobal() &&
       context_.getSourceManager().isWrittenInMainFile(func->getBeginLoc())) {
     if (rewriters_.size() == 0) {
       funcs_.push_back(func);
     } else {
       if (rewriters_.count(func) > 0) {
+        rewriting_func = func;
+
         if (func == current_task) {
           if (auto task = GetTapaTask(func->getBody())) {
             // Run this before "extern C" is injected by
@@ -175,8 +180,11 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
 }
 
 bool Visitor::VisitAttributedStmt(clang::AttributedStmt* stmt) {
-  HandleAttrOnNodeWithBody(stmt, GetLoopBody(stmt->getSubStmt()),
-                           stmt->getAttrs());
+  if (current_task && rewriting_func == current_task &&
+      rewriters_.count(current_task) > 0) {
+    HandleAttrOnNodeWithBody(stmt, GetLoopBody(stmt->getSubStmt()),
+                             stmt->getAttrs());
+  }
   return clang::RecursiveASTVisitor<Visitor>::VisitAttributedStmt(stmt);
 }
 
@@ -684,10 +692,10 @@ void Visitor::HandleAttrOnNodeWithBody(
   if (body == nullptr) return;
 
 #define HANDLE_ATTR(FUNC_DECL, FUNC_STMT)                                      \
-  if (std::is_base_of<clang::Decl, std::remove_pointer<T>>()) {                \
+  if (std::is_base_of<clang::Decl, T>()) {                                     \
     current_target->FUNC_DECL((const clang::Decl*)(node), attr, GetRewriter(), \
                               body);                                           \
-  } else if (std::is_base_of<clang::Stmt, std::remove_pointer<T>>()) {         \
+  } else if (std::is_base_of<clang::Stmt, T>()) {                              \
     current_target->FUNC_STMT((const clang::Stmt*)(node), attr, GetRewriter(), \
                               body);                                           \
   }
