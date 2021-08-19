@@ -3174,6 +3174,14 @@ def ObjCExternallyRetained : InheritableAttr {
 
 // Begin TAPA
 
+def TapaPipeline : Attr {
+  let Spellings = [GNU<"tapa_pipeline">,
+                   CXX11<"tapa","pipeline">,
+                   C2x<"tapa", "pipeline">];
+  let Args = [IntArgument<"II", 1>];
+  let Documentation = [Undocumented];
+}
+
 def TapaTarget : Attr {
   let Spellings = [GNU<"tapa_target">,
                    CXX11<"tapa","target">,

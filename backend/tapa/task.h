@@ -37,7 +37,9 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
         rewriters_{rewriters},
         metadata_{metadata} {}
 
+  bool VisitAttributedStmt(clang::AttributedStmt* stmt);
   bool VisitFunctionDecl(clang::FunctionDecl* func);
+
   void VisitTask(const clang::FunctionDecl* func);
 
  private:
@@ -70,6 +72,10 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   int GetTypeWidth(const clang::QualType type) {
     return context_.getTypeInfo(type).Width;
   }
+
+  template <typename T>
+  void HandleAttrOnNodeWithBody(const T* node, const clang::Stmt* body,
+                                llvm::ArrayRef<const clang::Attr*> attrs);
 };
 
 // Find for a given upper-level task, return all direct children tasks (e.g.
@@ -133,6 +139,9 @@ inline const clang::Stmt* GetLoopBody(const clang::Stmt* loop) {
       return stmt->getBody();
     }
     if (auto stmt = llvm::dyn_cast<clang::WhileStmt>(loop)) {
+      return stmt->getBody();
+    }
+    if (auto stmt = llvm::dyn_cast<clang::CXXForRangeStmt>(loop)) {
       return stmt->getBody();
     }
   }

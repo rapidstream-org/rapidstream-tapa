@@ -394,6 +394,16 @@ static void handleSimpleAttribute(Sema &S, Decl *D, const ParsedAttr &AL) {
                                   AL.getAttributeSpellingListIndex());
 }
 
+static void handleTapaPipelineAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  uint32_t ii = 0;
+  if (AL.getNumArgs()) {
+    if (!checkUInt32Argument(S, AL, AL.getArgAsExpr(0), ii)) return;
+  }
+
+  D->addAttr(::new (S.Context) TapaPipelineAttr(
+      AL.getRange(), S.Context, ii, AL.getAttributeSpellingListIndex()));
+}
+
 static void handleTapaTargetAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   StringRef TargetStr, VendorStr;
   SourceLocation ArgLoc;
@@ -6727,6 +6737,10 @@ static void ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D,
       break;
 
     // Tapa attributes.
+    case ParsedAttr::AT_TapaPipeline:
+      handleTapaPipelineAttr(S, D, AL);
+      break;
+
     case ParsedAttr::AT_TapaTarget:
       handleTapaTargetAttr(S, D, AL);
       break;

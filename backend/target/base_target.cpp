@@ -140,6 +140,10 @@ void BaseTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
 }
 
 void BaseTarget::RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top) {}
+void BaseTarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
+                                      const clang::Stmt *body) {}
+void BaseTarget::RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
+                                      const clang::Stmt *body) {}
 
 }  // namespace internal
 }  // namespace tapa

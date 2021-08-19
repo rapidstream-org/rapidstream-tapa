@@ -8,6 +8,8 @@ FetchContent_Declare(
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/Attr.td clang/include/clang/Basic/Attr.td
   COMMAND
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/SemaDeclAttr.cpp clang/lib/Sema/SemaDeclAttr.cpp
+  COMMAND
+    ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/SemaStmtAttr.cpp clang/lib/Sema/SemaStmtAttr.cpp
 )
 
 FetchContent_Declare(

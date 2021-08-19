@@ -19,12 +19,16 @@
 
 #define REWRITE_FUNC_ARGS_DEF \
   const clang::FunctionDecl *func, clang::Rewriter &rewriter
+#define REWRITE_DECL_ARGS_DEF \
+  const clang::Decl *decl, const clang::Attr *, clang::Rewriter &rewriter
+#define REWRITE_STMT_ARGS_DEF \
+  const clang::Stmt *stmt, const clang::Attr *, clang::Rewriter &rewriter
 
 #define ADD_FOR_FUNC_ARGS func, add_line, add_pragma, rewriter
-
 #define ADD_FOR_PARAMS_ARGS param, add_line, add_pragma
-
 #define REWRITE_FUNC_ARGS func, rewriter
+#define REWRITE_DECL_ARGS decl, rewriter
+#define REWRITE_STMT_ARGS stmt, rewriter
 
 namespace tapa {
 namespace internal {
@@ -56,6 +60,10 @@ class Target {
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top) = 0;
+  virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
+                                    const clang::Stmt *body) = 0;
+  virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
+                                    const clang::Stmt *body) = 0;
 
   static tapa::internal::Target *GetInstance() = delete;
   Target(Target const &) = delete;
@@ -101,6 +109,11 @@ class BaseTarget : public Target {
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF);
 
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
+
+  virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
+                                    const clang::Stmt *body);
+  virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
+                                    const clang::Stmt *body);
 
   static tapa::internal::Target *GetInstance() = delete;
   BaseTarget(BaseTarget const &) = delete;

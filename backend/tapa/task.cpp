@@ -1,5 +1,6 @@
 #include "task.h"
 
+#include <cstdlib>
 #include <regex>
 #include <string>
 #include <unordered_map>
@@ -155,6 +156,8 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
           } else {
             ProcessLowerLevelTask(func);
           }
+          HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
+
         } else {
           current_target->RewriteFuncArguments(func, GetRewriter(),
                                                IsTapaTopLevel(func));
@@ -166,8 +169,15 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       }
     }
   }
+
   // Let the recursion continue.
-  return true;
+  return clang::RecursiveASTVisitor<Visitor>::VisitFunctionDecl(func);
+}
+
+bool Visitor::VisitAttributedStmt(clang::AttributedStmt* stmt) {
+  HandleAttrOnNodeWithBody(stmt, GetLoopBody(stmt->getSubStmt()),
+                           stmt->getAttrs());
+  return clang::RecursiveASTVisitor<Visitor>::VisitAttributedStmt(stmt);
 }
 
 // Apply tapa s2s transformations on a upper-level task.
@@ -665,6 +675,28 @@ int64_t Visitor::EvalAsInt(const Expr* expr) {
       .Report(expr->getBeginLoc(), diagnostic_id)
       .AddSourceRange(this->GetCharSourceRange(expr));
   return -1;
+}
+
+template <typename T>
+void Visitor::HandleAttrOnNodeWithBody(
+    const T* node, const clang::Stmt* body,
+    llvm::ArrayRef<const clang::Attr*> attrs) {
+  if (body == nullptr) return;
+
+#define HANDLE_ATTR(FUNC_DECL, FUNC_STMT)                                      \
+  if (std::is_base_of<clang::Decl, std::remove_pointer<T>>()) {                \
+    current_target->FUNC_DECL((const clang::Decl*)(node), attr, GetRewriter(), \
+                              body);                                           \
+  } else if (std::is_base_of<clang::Stmt, std::remove_pointer<T>>()) {         \
+    current_target->FUNC_STMT((const clang::Stmt*)(node), attr, GetRewriter(), \
+                              body);                                           \
+  }
+
+  for (const auto* attr : attrs) {
+    if (clang::isa<clang::TapaPipelineAttr>(attr)) {
+      HANDLE_ATTR(RewritePipelinedDecl, RewritePipelinedStmt);
+    }
+  }
 }
 
 }  // namespace internal
