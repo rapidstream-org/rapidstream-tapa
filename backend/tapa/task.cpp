@@ -149,6 +149,8 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
     } else {
       if (rewriters_.count(func) > 0) {
         rewriting_func = func;
+        // Run this before the function body is purged
+        HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
 
         if (func == current_task) {
           if (auto task = GetTapaTask(func->getBody())) {
@@ -161,8 +163,6 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
           } else {
             ProcessLowerLevelTask(func);
           }
-          HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
-
         } else {
           current_target->RewriteFuncArguments(func, GetRewriter(),
                                                IsTapaTopLevel(func));
@@ -689,8 +689,6 @@ template <typename T>
 void Visitor::HandleAttrOnNodeWithBody(
     const T* node, const clang::Stmt* body,
     llvm::ArrayRef<const clang::Attr*> attrs) {
-  if (body == nullptr) return;
-
 #define HANDLE_ATTR(FUNC_DECL, FUNC_STMT)                                      \
   if (std::is_base_of<clang::Decl, T>()) {                                     \
     current_target->FUNC_DECL((const clang::Decl*)(node), attr, GetRewriter(), \

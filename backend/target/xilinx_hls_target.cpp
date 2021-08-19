@@ -5,6 +5,7 @@
 #include "../tapa/type.h"
 
 #include <cctype>
+#include <string>
 
 using llvm::StringRef;
 
@@ -141,7 +142,7 @@ void XilinxHLSTarget::AddCodeForLowerLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
     names.push_back(name);
   }
 
-  for (const auto& name : names) {
+  for (const auto &name : names) {
     const auto fifo_var = GetFifoVar(name);
     add_pragma({"HLS interface ap_fifo port =", fifo_var});
     add_pragma({"HLS aggregate variable =", fifo_var, "bit"});
@@ -214,8 +215,8 @@ void XilinxHLSTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
                        "{\n" + llvm::join(lines, "\n") + "}\n");
 }
 
-void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl* func,
-                                           clang::Rewriter& rewriter,
+void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl *func,
+                                           clang::Rewriter &rewriter,
                                            bool top) {
   bool qdma_header_inserted = false;
 
@@ -253,20 +254,26 @@ void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl* func,
   }
 }
 
-static clang::SourceRange ExtendAttrRemovalRange(
-        clang::Rewriter &rewriter,
-        clang::SourceRange range) {
+static clang::SourceRange ExtendAttrRemovalRange(clang::Rewriter &rewriter,
+                                                 clang::SourceRange range) {
   auto begin = range.getBegin();
   auto end = range.getEnd();
 
-#define BEGIN(OFF)        (begin.getLocWithOffset(OFF))
-#define END(OFF)          (end.getLocWithOffset(OFF))
-#define STR_AT(BEGIN,END) (rewriter.getRewrittenText(clang::SourceRange((BEGIN), (END))))
-#define IS_IGNORE(STR)    ((STR) == "" || std::isspace((STR)[0]))
+#define BEGIN(OFF) (begin.getLocWithOffset(OFF))
+#define END(OFF) (end.getLocWithOffset(OFF))
+#define STR_AT(BEGIN, END) \
+  (rewriter.getRewrittenText(clang::SourceRange((BEGIN), (END))))
+#define IS_IGNORE(STR) ((STR) == "" || std::isspace((STR)[0]))
+
+  // Find the true end of the token
+  for (; std::isalpha(STR_AT(END(1), END(1))[0]); end = END(1))
+    ;
 
   // Remove all whitespaces around the attribute
-  for (; IS_IGNORE(STR_AT(BEGIN(-1), BEGIN(-1))); begin = BEGIN(-1));
-  for (; IS_IGNORE(STR_AT(END(1), END(1))); end = END(1));
+  for (; IS_IGNORE(STR_AT(BEGIN(-1), BEGIN(-1))); begin = BEGIN(-1))
+    ;
+  for (; IS_IGNORE(STR_AT(END(1), END(1))); end = END(1))
+    ;
 
   // Remove comma if around the attribute
   if (STR_AT(BEGIN(-1), BEGIN(-1)) == ",") {
@@ -274,22 +281,48 @@ static clang::SourceRange ExtendAttrRemovalRange(
   } else if (STR_AT(END(1), END(1)) == ",") {
     end = END(1);
   } else if (STR_AT(BEGIN(-2), BEGIN(-1)) == "[[" &&
-        STR_AT(END(1), END(2)) == "]]") {
-      // Check if the attribute is completely removed
-      begin = BEGIN(-2);
-      end = END(2);
+             STR_AT(END(1), END(2)) == "]]") {
+    // Check if the attribute is completely removed
+    begin = BEGIN(-2);
+    end = END(2);
   }
 
   return clang::SourceRange(begin, end);
 }
 
+static void AddPragmaToBody(clang::Rewriter &rewriter, const clang::Stmt *body,
+                            std::string pragma) {
+  if (auto compound = llvm::dyn_cast<clang::CompoundStmt>(body)) {
+    rewriter.InsertTextAfterToken(compound->getLBracLoc(),
+                                  std::string("\n#pragma ") + pragma + "\n");
+  } else {
+    rewriter.InsertTextBefore(body->getBeginLoc(),
+                              std::string("_Pragma(\"") + pragma + "\")");
+  }
+}
+
+static void AddPipelinePragma(clang::Rewriter &rewriter,
+                              const clang::TapaPipelineAttr *attr,
+                              const clang::Stmt *body) {
+  auto II = attr->getII();
+  std::string pragma = "HLS pipeline";
+  if (II) pragma += std::string(" II = ") + std::to_string(II);
+  AddPragmaToBody(rewriter, body, pragma);
+}
+
 void XilinxHLSTarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
-        const clang::Stmt *body) {
+                                           const clang::Stmt *body) {
+  if (auto pipeline = llvm::dyn_cast<clang::TapaPipelineAttr>(attr)) {
+    if (body) AddPipelinePragma(rewriter, pipeline, body);
+  }
   rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
 }
 
 void XilinxHLSTarget::RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
-        const clang::Stmt *body) {
+                                           const clang::Stmt *body) {
+  if (auto pipeline = llvm::dyn_cast<clang::TapaPipelineAttr>(attr)) {
+    if (body) AddPipelinePragma(rewriter, pipeline, body);
+  }
   rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
 }
 
