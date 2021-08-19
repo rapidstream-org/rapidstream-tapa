@@ -36,6 +36,7 @@ using clang::SourceLocation;
 using clang::SourceRange;
 using clang::Stmt;
 using clang::StringLiteral;
+using clang::TapaTargetAttr;
 using clang::TemplateArgument;
 using clang::TemplateSpecializationType;
 using clang::VarDecl;
@@ -49,12 +50,15 @@ using nlohmann::json;
 namespace tapa {
 namespace internal {
 
-static std::map<std::string, std::map<std::string, Target*>> target_map{
-    {"xilinx",
-     {
-         {"hls", XilinxHLSTarget::GetInstance()},
-     }},
-};
+static std::map<TapaTargetAttr::TargetType,
+                std::map<TapaTargetAttr::VendorType, Target*>>
+    target_map{
+        {TapaTargetAttr::TargetType::HLS,
+         {
+             {TapaTargetAttr::VendorType::Xilinx,
+              XilinxHLSTarget::GetInstance()},
+         }},
+    };
 
 extern const string* top_name;
 
@@ -101,18 +105,33 @@ thread_local Target* Visitor::current_target{nullptr};
 void Visitor::VisitTask(const clang::FunctionDecl* func) {
   current_task = func;
 
-  auto& metadata = GetMetadata();
-  if (auto attr = func->getAttr<clang::TapaTargetAttr>()) {
-    metadata["target"] = attr->getTarget();
-    metadata["vendor"] = attr->getVendor();
+  TapaTargetAttr::TargetType target;
+  TapaTargetAttr::VendorType vendor;
+  if (auto attr = func->getAttr<TapaTargetAttr>()) {
+    target = attr->getTarget();
+    vendor = attr->getVendor();
   } else {
-    metadata["target"] = "hls";
-  }
-  if (metadata["vendor"].is_null() || metadata["vendor"] == "") {
-    metadata["vendor"] = "xilinx";
+    target = TapaTargetAttr::TargetType::HLS;
+    vendor = TapaTargetAttr::VendorType::Xilinx;
   }
 
-  current_target = target_map[metadata["vendor"]][metadata["target"]];
+  auto& metadata = GetMetadata();
+  metadata["target"] = TapaTargetAttr::ConvertTargetTypeToStr(target);
+  metadata["vendor"] = TapaTargetAttr::ConvertVendorTypeToStr(vendor);
+
+  if (target_map.find(target) == target_map.end() ||
+      target_map[target].find(vendor) == target_map[target].end()) {
+    static const auto diagnostic_id =
+        this->context_.getDiagnostics().getCustomDiagID(
+            clang::DiagnosticsEngine::Error, "unsupported target: %0");
+    this->context_.getDiagnostics()
+        .Report(func->getLocation(), diagnostic_id)
+        .AddString(std::string(metadata["target"]) + " by " +
+                   std::string(metadata["vendor"]));
+    current_target = XilinxHLSTarget::GetInstance();
+  } else {
+    current_target = target_map[target][vendor];
+  }
 
   TraverseDecl(func->getASTContext().getTranslationUnitDecl());
 }

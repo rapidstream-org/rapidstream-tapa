@@ -3178,8 +3178,12 @@ def TapaTarget : Attr {
   let Spellings = [GNU<"tapa_target">,
                    CXX11<"tapa","target">,
                    C2x<"tapa", "target">];
-  let Args = [StringArgument<"Target">,
-              StringArgument<"Vendor", 1>];
+  let Args = [EnumArgument<"Target", "TargetType",
+                           ["hls", "aie"],
+                           ["HLS", "AIE"]>,
+              EnumArgument<"Vendor", "VendorType",
+                           ["xilinx"],
+                           ["Xilinx"], 1>];
   let Documentation = [Undocumented];
 }
 
