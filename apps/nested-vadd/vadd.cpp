@@ -10,8 +10,7 @@ void Add(uint64_t n_int,
   bool a_succeed = false, b_succeed = false;
   uint64_t read = 0;
 
-  while (read < n_int) {
-#pragma HLS pipeline II = 1
+  [[tapa::pipeline(1)]] while (read < n_int) {
     if (!a_succeed) {
       a = a_int.read(a_succeed);
     }
@@ -40,8 +39,7 @@ void Mmap2Stream_internal(
         uint64_t n_int,
         tapa::ostream<float>& stream_int) {
 
-  for (uint64_t rq_i = 0, rs_i = 0; rs_i < n_int; ) {
-#pragma HLS pipeline II = 1
+  [[tapa::pipeline(1)]] for (uint64_t rq_i = 0, rs_i = 0; rs_i < n_int; ) {
     float elem;
     if (rq_i < n_int && rq_i < rs_i + 50 &&  // TODO: resolve the DRAM lock issue
         mmap_int.read_addr.try_write(rq_i)) rq_i++;

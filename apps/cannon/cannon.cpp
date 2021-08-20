@@ -76,8 +76,7 @@ void ProcElem(tapa::istream<float>& a_fifo, tapa::istream<float>& b_fifo,
 
   for (int l = 0; l < p; ++l) {
     for (uint64_t i = 0; i < kN / p; ++i) {
-      for (uint64_t j = 0; j < kN / p; ++j) {
-#pragma HLS pipeline II = 1
+      [[tapa::pipeline(1)]] for (uint64_t j = 0; j < kN / p; ++j) {
 #pragma HLS dependence false variable = c
         float tmp = c[i * (kN / p) + j];
         for (uint64_t k = 0; k < kN / p; ++k) {

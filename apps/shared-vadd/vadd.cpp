@@ -10,7 +10,6 @@ using tapa::task;
 
 void Add(istream<float>& a, istream<float>& b, ostream<float>& c) {
   TAPA_WHILE_NEITHER_EOS(a, b) {
-#pragma HLS pipeline II = 1
     c.write(a.read(nullptr) + b.read(nullptr));
   }
   c.close();

@@ -133,8 +133,7 @@ void Control(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
   Vid vid_offset_acc = 0;
   Eid eid_offset_acc = 0;
   bool done[kMaxNumPartitions] = {};
-  for (Pid pid = 0; pid < num_partitions; ++pid) {
-#pragma HLS pipeline II = 1
+  [[tapa::pipeline(1)]] for (Pid pid = 0; pid < num_partitions; ++pid) {
     Vid num_vertices_delta = num_vertices[pid + 1];
     Eid num_edges_delta = num_edges[pid];
 
@@ -246,7 +245,6 @@ void UpdateHandler(Pid num_partitions,
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
   TAPA_WHILE_NOT_EOS(update_config_q) {
-#pragma HLS pipeline II = 1
     auto config = update_config_q.read(nullptr);
     VLOG(5) << "recv@UpdateHandler: UpdateConfig: " << config;
     switch (config.item) {
@@ -271,7 +269,6 @@ void UpdateHandler(Pid num_partitions,
     VLOG(5) << "recv@UpdateHandler: UpdateReq: " << update_req;
     if (update_req.phase == TaskReq::kScatter) {
       TAPA_WHILE_NOT_EOS(update_in_q) {
-#pragma HLS pipeline II = 1
         Update update = update_in_q.read(nullptr);
         VLOG(5) << "recv@UpdateHandler: Update: " << update;
         Pid pid = (update.dst - base_vid) / partition_size;
@@ -335,7 +332,6 @@ void ProcElem(tapa::istream<TaskReq>& req_q, tapa::ostream<TaskResp>& resp_q,
       update_out_q.close();
     } else {
       TAPA_WHILE_NOT_EOS(update_in_q) {
-#pragma HLS pipeline II = 1
 #pragma HLS dependence false variable = vertices_local
         auto update = update_in_q.read(nullptr);
         VLOG(5) << "recv@ProcElem: Update: " << update;

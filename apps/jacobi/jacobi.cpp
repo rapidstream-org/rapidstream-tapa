@@ -2,8 +2,7 @@
 
 void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
                  tapa::ostream<tapa::vec_t<float, 2>>& stream) {
-  for (uint64_t i = 0; i < n; ++i) {
-#pragma HLS pipeline II = 2
+  [[tapa::pipeline(2)]] for (uint64_t i = 0; i < n; ++i) {
     tapa::vec_t<float, 2> tmp;
     tmp.set(0, mmap[i * 2]);
     tmp.set(1, mmap[i * 2 + 1]);
@@ -14,11 +13,10 @@ void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
 
 void Stream2Mmap(tapa::istream<tapa::vec_t<float, 2>>& stream,
                  tapa::mmap<float> mmap) {
-  for (uint64_t i = 0;;) {
+  [[tapa::pipeline(2)]] for (uint64_t i = 0;;) {
     bool eos;
     if (stream.try_eos(eos)) {
       if (eos) break;
-#pragma HLS pipeline II = 2
       auto packed = stream.read(nullptr);
       mmap[i * 2] = packed[0];
       mmap[i * 2 + 1] = packed[1];
@@ -32,7 +30,6 @@ void Module0Func(tapa::ostream<float>& fifo_st_0,
                  tapa::istream<tapa::vec_t<float, 2>>& dram_t1_bank_0_fifo) {
 module_0_epoch:
   TAPA_WHILE_NOT_EOS(dram_t1_bank_0_fifo) {
-#pragma HLS pipeline II = 1
     auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read(nullptr);
     fifo_st_0.write(dram_t1_bank_0_buf[1]);
     fifo_st_1.write(dram_t1_bank_0_buf[0]);
@@ -46,7 +43,6 @@ void Module1Func(tapa::ostream<float>& fifo_st_0,
                  tapa::istream<float>& fifo_ld_0) {
 module_1_epoch:
   TAPA_WHILE_NOT_EOS(fifo_ld_0) {
-#pragma HLS pipeline II = 1
     auto fifo_ref_0 = fifo_ld_0.read(nullptr);
     fifo_st_0.write(fifo_ref_0);
     fifo_st_1.write(fifo_ref_0);
@@ -62,7 +58,6 @@ void Module3Func1(tapa::ostream<float>& fifo_st_0,
   int count = 0;
 module_3_1_epoch:
   TAPA_WHILE_NEITHER_EOS(fifo_ld_0, fifo_ld_1) {
-#pragma HLS pipeline II = 1
     float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
@@ -84,7 +79,6 @@ void Module3Func2(tapa::ostream<float>& fifo_st_0,
   int count = 0;
 module_3_2_epoch:
   TAPA_WHILE_NEITHER_EOS(fifo_ld_0, fifo_ld_1) {
-#pragma HLS pipeline II = 1
     float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
@@ -108,7 +102,6 @@ void Module6Func1(tapa::ostream<float>& fifo_st_0,
   int count = 0;
 module_6_1_epoch:
   TAPA_WHILE_NONE_EOS(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
-#pragma HLS pipeline II = 1
     float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
@@ -136,7 +129,6 @@ void Module6Func2(tapa::ostream<float>& fifo_st_0,
   int count = 0;
 module_6_2_epoch:
   TAPA_WHILE_NONE_EOS(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
-#pragma HLS pipeline II = 1
     float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
@@ -161,7 +153,6 @@ void Module8Func(tapa::ostream<tapa::vec_t<float, 2>>& dram_t0_bank_0_fifo,
                  tapa::istream<float>& fifo_ld_1) {
 module_8_epoch:
   TAPA_WHILE_NEITHER_EOS(fifo_ld_0, fifo_ld_1) {
-#pragma HLS pipeline II = 1
     tapa::vec_t<float, 2> tmp;
     tmp.set(0, fifo_ld_0.read(nullptr));
     tmp.set(1, fifo_ld_1.read(nullptr));

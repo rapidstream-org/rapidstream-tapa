@@ -6,3 +6,6 @@ else()
   find_package(TAPA REQUIRED)
   set(TAPA tapa::tapa)
 endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wno-attributes")
+set(TAPA_CFLAGS "${TAPA_CFLAGS} -Wno-attributes")

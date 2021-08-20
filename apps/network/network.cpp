@@ -16,8 +16,7 @@ constexpr int kN = 8;  // kN x kN network
 void Switch2x2(int b, istream<pkt_t>& pkt_in_q0, istream<pkt_t>& pkt_in_q1,
                ostreams<pkt_t, 2>& pkt_out_q) {
   uint8_t priority = 0;
-  for (bool valid_0, valid_1;;) {
-#pragma HLS pipeline II = 1
+  [[tapa::pipeline(1)]] for (bool valid_0, valid_1;;) {
 #pragma HLS latency max = 0
     auto pkt_0 = pkt_in_q0.peek(valid_0);
     auto pkt_1 = pkt_in_q1.peek(valid_1);
@@ -69,8 +68,7 @@ void Stage(int b, istreams<pkt_t, kN>& in_q, ostreams<pkt_t, kN> out_q) {
 void Produce(mmap<vec_t<pkt_t, kN>> mmap_in, uint64_t n,
              ostreams<pkt_t, kN>& out_q) {
 produce:
-  for (uint64_t i = 0; i < n; ++i) {
-#pragma HLS pipeline II = 1
+  [[tapa::pipeline(1)]] for (uint64_t i = 0; i < n; ++i) {
     auto buf = mmap_in[i];
     for (int j = 0; j < kN; ++j) {
       out_q[j].write(buf[j]);
@@ -81,8 +79,7 @@ produce:
 void Consume(mmap<vec_t<pkt_t, kN>> mmap_out, uint64_t n,
              istreams<pkt_t, kN> in_q) {
 consume:
-  for (uint64_t i = 0; i < n; ++i) {
-#pragma HLS pipeline II = 1
+  [[tapa::pipeline(1)]] for (uint64_t i = 0; i < n; ++i) {
     vec_t<pkt_t, kN> buf;
     for (int j = 0; j < kN; ++j) {
       buf.set(j, in_q[j].read());

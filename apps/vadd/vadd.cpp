@@ -5,7 +5,6 @@
 void Add(tapa::istream<float>& a, tapa::istream<float>& b,
          tapa::ostream<float>& c) {
   TAPA_WHILE_NEITHER_EOS(a, b) {
-#pragma HLS pipeline II = 1
     bool a_succeed;
     bool b_succeed;
     c.write(a.read(a_succeed) + b.read(b_succeed));
