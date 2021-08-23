@@ -72,15 +72,15 @@ class lock_free_queue : public base_queue {
   // constructors
   lock_free_queue(size_t depth, const std::string& name = "")
       : base_queue(name) {
-    this->buffer.resize(depth + 1);
+    this->buffer.resize(depth);
   }
 
   // debug helpers
-  uint64_t get_depth() const { return this->buffer.size() - 1; }
+  uint64_t get_depth() const { return this->buffer.size(); }
 
   // basic queue operations
-  bool empty() const override { return this->head == this->tail; }
-  bool full() const { return this->head - this->tail == this->buffer.size(); }
+  bool empty() const override { return this->head - this->tail <= 0; }
+  bool full() const { return this->head - this->tail >= this->buffer.size(); }
   const T& front() const { return this->buffer[this->tail % buffer.size()]; }
   T pop() {
     auto val = this->front();
