@@ -73,10 +73,12 @@ class Program:
       os.makedirs(self.work_dir, exist_ok=True)
       self.is_temp = False
     self.toplevel_ports = tuple(map(Port, obj['tasks'][self.top]['ports']))
-    self._tasks: Dict[str, Task] = collections.OrderedDict(
-        (name, Task(name=name, **obj['tasks'][name]))
-        for name in toposort.toposort_flatten(
-            {k: set(v.get('tasks', ())) for k, v in obj['tasks'].items()}))
+    self._tasks: Dict[str, Task] = collections.OrderedDict()
+    for name in toposort.toposort_flatten(
+        {k: set(v.get('tasks', ())) for k, v in obj['tasks'].items()}):
+      task = Task(name=name, **obj['tasks'][name])
+      if not task.is_upper or task.tasks:
+        self._tasks[name] = task
     self.frt_interface = obj['tasks'][self.top].get('frt_interface')
     self.files: Dict[str, str] = {}
 

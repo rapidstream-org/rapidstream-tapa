@@ -59,7 +59,7 @@ class Task:
     self.fifos = collections.OrderedDict()
     if self.is_upper:
       self.tasks = collections.OrderedDict(
-          sorted((item for item in kwargs.pop('tasks').items()),
+          sorted((item for item in kwargs.pop('tasks', {}).items()),
                  key=lambda x: x[0]))
       self.fifos = collections.OrderedDict(
           sorted((item for item in kwargs.pop('fifos').items()),
