@@ -8,6 +8,8 @@
 #include <type_traits>
 #include <vector>
 
+#include <frt.h>
+
 #include "tapa/coroutine.h"
 #include "tapa/stream.h"
 #include "tapa/synthesizable/vec.h"
@@ -284,6 +286,19 @@ struct accessor<async_mmap<T>, mmaps<T, S>&> {
   }
 };
 
+#define TAPA_DEFINE_ACCESSER(tag, frt_tag)                            \
+  template <typename T>                                               \
+  struct accessor<mmap<T>, tag##_mmap<T>> {                           \
+    static mmap<T> access(tag##_mmap<T>&& arg) { return arg; }        \
+    static fpga::frt_tag##Buffer<T> frt_access(tag##_mmap<T>&& arg) { \
+      return fpga::frt_tag(arg.get(), arg.size());                    \
+    }                                                                 \
+  }
+TAPA_DEFINE_ACCESSER(placeholder, Placeholder);
+// read/write are with respect to the kernel in tapa but host in frt
+TAPA_DEFINE_ACCESSER(read_only, WriteOnly);
+TAPA_DEFINE_ACCESSER(write_only, ReadOnly);
+TAPA_DEFINE_ACCESSER(read_write, ReadWrite);
 #undef TAPA_DEFINE_ACCESSER
 
 }  // namespace internal

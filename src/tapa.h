@@ -38,6 +38,9 @@ namespace tapa {
 
 namespace internal {
 
+void* allocate(size_t length);
+void deallocate(void* addr, size_t length);
+
 template <typename T>
 struct invoker;
 
@@ -48,6 +51,46 @@ struct invoker<void (&)(Params...)> {
     // std::bind creates a copy of args
     internal::schedule(detach, std::bind(f, accessor<Params, Args>::access(
                                                 std::forward<Args>(args))...));
+  }
+
+  template <typename... Args>
+  static int64_t invoke(bool run_in_new_process, void (&f)(Params...),
+                        const std::string& bitstream, Args&&... args) {
+    if (bitstream.empty()) {
+      const auto tic = std::chrono::steady_clock::now();
+      f(std::forward<Args>(args)...);
+      const auto toc = std::chrono::steady_clock::now();
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(toc - tic)
+          .count();
+    } else {
+      if (run_in_new_process) {
+        auto kernel_time_ns_raw = allocate(sizeof(int64_t));
+        auto deleter = [](int64_t* p) { deallocate(p, sizeof(int64_t)); };
+        std::unique_ptr<int64_t, decltype(deleter)> kernel_time_ns(
+            reinterpret_cast<int64_t*>(kernel_time_ns_raw), deleter);
+        if (pid_t pid = fork()) {
+          // Parent.
+          PCHECK(pid != -1);
+          int status = 0;
+          CHECK_EQ(wait(&status), pid);
+          CHECK(WIFEXITED(status));
+          CHECK_EQ(WEXITSTATUS(status), EXIT_SUCCESS);
+          return *kernel_time_ns;
+        }
+
+        // Child.
+        *kernel_time_ns = fpga::Instance(bitstream)
+                              .Invoke(accessor<Params, Args>::frt_access(
+                                  std::forward<Args>(args))...)
+                              .ComputeTimeNanoSeconds();
+        exit(EXIT_SUCCESS);
+      } else {
+        return fpga::Instance(bitstream)
+            .Invoke(
+                accessor<Params, Args>::frt_access(std::forward<Args>(args))...)
+            .ComputeTimeNanoSeconds();
+      }
+    }
   }
 };
 
@@ -113,6 +156,7 @@ namespace internal {
 template <typename Param, typename Arg>
 struct accessor {
   static Param access(Arg&& arg) { return arg; }
+  static Param frt_access(Arg&& arg) { return arg; }
 };
 
 template <typename T>
@@ -120,115 +164,20 @@ struct accessor<T, seq> {
   static T access(seq&& arg) { return arg.pos++; }
 };
 
-void* allocate(size_t length);
-void deallocate(void* addr, size_t length);
-
-// functions cannot be specialized so use classes
 template <typename T>
-struct dispatcher {
-  static void set_arg(fpga::Instance& instance, int& idx,
-                      typename std::remove_reference<T>::type& arg) {
-    instance.SetArg(idx, static_cast<T&&>(arg));
-    ++idx;
-  }
-};
-#define TAPA_DEFINE_DISPATCHER(tag, frt_tag)                   \
-  template <typename T>                                        \
-  struct dispatcher<tag##_mmap<T>> {                           \
-    static void set_arg(fpga::Instance& instance, int& idx,    \
-                        tag##_mmap<T> arg) {                   \
-      auto buf = fpga::frt_tag(arg.get(), arg.size());         \
-      instance.AllocBuf(idx, buf);                             \
-      instance.SetArg(idx, buf);                               \
-      ++idx;                                                   \
-    }                                                          \
-  };                                                           \
-  template <typename T, uint64_t S>                            \
-  struct dispatcher<tag##_mmaps<T, S>> {                       \
-    static void set_arg(fpga::Instance& instance, int& idx,    \
-                        tag##_mmaps<T, S> arg) {               \
-      for (uint64_t i = 0; i < S; ++i) {                       \
-        auto buf = fpga::frt_tag(arg[i].get(), arg[i].size()); \
-        instance.AllocBuf(idx, buf);                           \
-        instance.SetArg(idx, buf);                             \
-        ++idx;                                                 \
-      }                                                        \
-    }                                                          \
-  }
-TAPA_DEFINE_DISPATCHER(placeholder, Placeholder);
-// read/write are with respect to the kernel in tapa but host in frt
-TAPA_DEFINE_DISPATCHER(read_only, WriteOnly);
-TAPA_DEFINE_DISPATCHER(write_only, ReadOnly);
-TAPA_DEFINE_DISPATCHER(read_write, ReadWrite);
-// TODO: dispatch stream correctly
-#undef TAPA_DEFINE_DISPATCHER
-template <typename T>
-struct dispatcher<mmap<T>> {
+struct accessor<mmap<T>, mmap<T>> {
   static_assert(!std::is_same<T, T>::value,
                 "must use one of "
                 "placeholder_mmap/read_only_mmap/write_only_mmap/"
                 "read_write_mmap in tapa::invoke");
 };
 template <typename T, int64_t S>
-struct dispatcher<mmaps<T, S>> {
+struct accessor<mmaps<T, S>, mmaps<T, S>> {
   static_assert(!std::is_same<T, T>::value,
                 "must use one of "
                 "placeholder_mmaps/read_only_mmaps/write_only_mmaps/"
                 "read_write_mmaps in tapa::invoke");
 };
-
-inline void set_args(fpga::Instance& instance, int idx) {}
-template <typename Arg, typename... Args>
-inline void set_args(fpga::Instance& instance, int idx, Arg&& arg,
-                     Args&&... args) {
-  dispatcher<Arg>::set_arg(instance, idx, arg);
-  set_args(instance, idx, std::forward<Args>(args)...);
-}
-
-template <typename... Args>
-inline int64_t invoke(const std::string& bitstream, Args&&... args) {
-  auto instance = fpga::Instance(bitstream);
-  set_args(instance, 0, std::forward<Args>(args)...);
-  instance.WriteToDevice();
-  instance.Exec();
-  instance.ReadFromDevice();
-  instance.Finish();
-  return instance.ComputeTimeNanoSeconds();
-}
-
-template <typename Func, typename... Args>
-inline int64_t invoke(bool run_in_new_process, Func&& f,
-                      const std::string& bitstream, Args&&... args) {
-  if (bitstream.empty()) {
-    const auto tic = std::chrono::steady_clock::now();
-    f(std::forward<Args>(args)...);
-    const auto toc = std::chrono::steady_clock::now();
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(toc - tic)
-        .count();
-  } else {
-    if (run_in_new_process) {
-      auto kernel_time_ns_raw = allocate(sizeof(int64_t));
-      auto deleter = [](int64_t* p) { deallocate(p, sizeof(int64_t)); };
-      std::unique_ptr<int64_t, decltype(deleter)> kernel_time_ns(
-          reinterpret_cast<int64_t*>(kernel_time_ns_raw), deleter);
-      if (pid_t pid = fork()) {
-        // Parent.
-        PCHECK(pid != -1);
-        int status = 0;
-        CHECK_EQ(wait(&status), pid);
-        CHECK(WIFEXITED(status));
-        CHECK_EQ(WEXITSTATUS(status), EXIT_SUCCESS);
-        return *kernel_time_ns;
-      }
-
-      // Child.
-      *kernel_time_ns = invoke(bitstream, std::forward<Args>(args)...);
-      exit(EXIT_SUCCESS);
-    } else {
-      return invoke(bitstream, std::forward<Args>(args)...);
-    }
-  }
-}
 
 }  // namespace internal
 
@@ -236,8 +185,9 @@ inline int64_t invoke(bool run_in_new_process, Func&& f,
 // the kernel time in nanoseconds.
 template <typename Func, typename... Args>
 inline int64_t invoke(Func&& f, const std::string& bitstream, Args&&... args) {
-  return internal::invoke(/*run_in_new_process*/ false, std::forward<Func>(f),
-                          bitstream, std::forward<Args>(args)...);
+  return internal::invoker<Func>::template invoke<Args...>(
+      /*run_in_new_process*/ false, std::forward<Func>(f), bitstream,
+      std::forward<Args>(args)...);
 }
 
 // Workaround for the fact that Xilinx's cosim cannot run for more than once in
@@ -246,8 +196,9 @@ inline int64_t invoke(Func&& f, const std::string& bitstream, Args&&... args) {
 template <typename Func, typename... Args>
 inline int64_t invoke_in_new_process(Func&& f, const std::string& bitstream,
                                      Args&&... args) {
-  return internal::invoke(/*run_in_new_process*/ true, std::forward<Func>(f),
-                          bitstream, std::forward<Args>(args)...);
+  return internal::invoker<Func>::template invoke<Args...>(
+      /*run_in_new_process*/ true, std::forward<Func>(f), bitstream,
+      std::forward<Args>(args)...);
 }
 
 template <typename T>
