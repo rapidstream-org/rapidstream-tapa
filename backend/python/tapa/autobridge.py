@@ -67,6 +67,13 @@ AREA_OF_M_AXI = {
         'LUT': 1206,
         'URAM': 0,
     },
+    1024: {
+        'BRAM': 0,
+        'DSP': 0,
+        'FF': 289,
+        'LUT': 1500,
+        'URAM': 0,
+    },
 }
 
 _logger = logging.getLogger().getChild(__name__)
