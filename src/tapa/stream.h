@@ -5,6 +5,12 @@
 #include <cstdint>
 #include <cstring>
 
+#ifdef __SYNTHESIS__
+
+#include <hls_stream.h>
+
+#else  // __SYNTHESIS__
+
 #include <array>
 #include <atomic>
 #include <deque>
@@ -18,7 +24,11 @@
 
 #include "tapa/coroutine.h"
 
+#endif  // __SYNTHESIS__
+
 namespace tapa {
+
+#ifndef __SYNTHESIS__
 
 template <typename T>
 class istream;
@@ -32,7 +42,17 @@ class istreams;
 template <typename T, uint64_t S>
 class ostreams;
 
+#endif  // __SYNTHESIS__
+
 namespace internal {
+
+template <typename T>
+struct elem_t {
+  T val;
+  bool eos;
+};
+
+#ifndef __SYNTHESIS__
 
 template <typename Param, typename Arg>
 struct accessor;
@@ -143,12 +163,6 @@ using queue = locked_queue<T>;
 using queue = lock_free_queue<T>;
 #endif  // TAPA_USE_LOCKED_QUEUE
 
-template <typename T>
-struct elem_t {
-  T val;
-  bool eos;
-};
-
 // shared pointer of a queue
 template <typename T>
 class basic_stream {
@@ -197,41 +211,71 @@ class unbound_streams : public istreams<T, S>, public ostreams<T, S> {
   unbound_streams() : basic_streams<T>(nullptr) {}
 };
 
+#endif  // __SYNTHESIS__
+
 }  // namespace internal
 
 template <typename T>
-class istream : virtual public internal::basic_stream<T> {
+class istream
+#ifndef __SYNTHESIS__
+    : virtual public internal::basic_stream<T>
+#endif  // __SYNTHESIS__
+{
  public:
   // consumer const operations
 
   // whether stream is empty
   bool empty() const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    return _.empty();
+#else   // __SYNTHESIS__
     bool is_empty = this->ptr->empty();
     if (is_empty) {
       internal::yield("channel '" + this->get_name() + "' is empty");
     }
     return is_empty;
+#endif  // __SYNTHESIS__
   }
+
   // whether stream has ended
   bool try_eos(bool& eos) const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> elem;
+    return !empty() && _peek.read_nb(elem) && (void(eos = elem.eos), true);
+#else   // __SYNTHESIS__
     if (!empty()) {
       eos = this->ptr->front().eos;
       return true;
     }
     return false;
+#endif  // __SYNTHESIS__
   }
   bool eos(bool& succeeded) const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+#endif  // __SYNTHESIS__
     bool eos = false;
     succeeded = try_eos(eos);
     return eos;
   }
   bool eos(std::nullptr_t) const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+#endif  // __SYNTHESIS__
     bool eos = false;
     try_eos(eos);
     return eos;
   }
   // non-blocking non-destructive read
   bool try_peek(T& val) const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+#pragma HLS inline
+    elem_t<T> elem;
+    return !empty() && _peek.read_nb(elem) && (void(val = elem.val), true);
+#else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
       if (elem.eos) {
@@ -241,22 +285,34 @@ class istream : virtual public internal::basic_stream<T> {
       return true;
     }
     return false;
+#endif  // __SYNTHESIS__
   }
   // alternative non-blocking non-destructive read
   T peek(bool& succeeded) const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+#endif  // __SYNTHESIS__
     T val;
-    memset(&val, 0xcc, sizeof(val));
     succeeded = try_peek(val);
     return val;
   }
   T peek(std::nullptr_t) const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+#endif  // __SYNTHESIS__
     T val;
-    memset(&val, 0xcc, sizeof(val));
     try_peek(val);
     return val;
   }
   // peek val and eos at the same time
   T peek(bool& succeeded, bool& is_eos) const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> peek_val;
+    (succeeded = !empty()) && _peek.read_nb(peek_val);
+    is_eos = peek_val.eos && succeeded;
+    return peek_val.val;
+#else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
       succeeded = true;
@@ -266,12 +322,18 @@ class istream : virtual public internal::basic_stream<T> {
     succeeded = false;
     is_eos = false;
     return {};
+#endif  // __SYNTHESIS__
   }
 
   // consumer non-const operations
 
   // non-blocking destructive read
   bool try_read(T& val) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> elem;
+    return _.read_nb(elem) && (void(val = elem.val), true);
+#else   // __SYNTHESIS__
     if (!empty()) {
       auto elem = this->ptr->pop();
       if (elem.eos) {
@@ -281,39 +343,74 @@ class istream : virtual public internal::basic_stream<T> {
       return true;
     }
     return false;
+#endif  // __SYNTHESIS__
   }
   // blocking destructive read
   T read() {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    return _.read().val;
+#else   // __SYNTHESIS__
     T val;
     while (!try_read(val)) {
     }
     return val;
+#endif  // __SYNTHESIS__
   }
   // alterative non-blocking destructive read
   T read(bool& succeeded) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> elem;
+    succeeded = _.read_nb(elem);
+    return elem.val;
+#else   // __SYNTHESIS__
     T val;
     memset(&val, 0xcc, sizeof(val));
     succeeded = try_read(val);
     return val;
+#endif  // __SYNTHESIS__
   }
   T read(std::nullptr_t) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> elem;
+    _.read_nb(elem);
+    return elem.val;
+#else   // __SYNTHESIS__
     T val;
     memset(&val, 0xcc, sizeof(val));
     try_read(val);
     return val;
+#endif  // __SYNTHESIS__
   }
   // non-blocking destructive read with default value
   T read(bool* succeeded_ret, const T& default_val) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> elem;
+    bool succeeded = _.read_nb(elem);
+    if (succeeded_ret != nullptr) *succeeded_ret = succeeded;
+    return succeeded ? elem.val : default_val;
+#else   // __SYNTHESIS__
     T val;
     bool succeeded = try_read(val);
     if (succeeded_ret != nullptr) {
       *succeeded_ret = succeeded;
     }
     return succeeded ? val : default_val;
+#endif  // __SYNTHESIS__
   }
 
   // non-blocking destructive open
   bool try_open() {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> elem;
+    const bool succeeded = _.read_nb(elem);
+    assert(!succeeded || elem.eos);
+    return succeeded;
+#else   // __SYNTHESIS__
     if (!empty()) {
       auto elem = this->ptr->pop();
       if (!elem.eos) {
@@ -323,13 +420,24 @@ class istream : virtual public internal::basic_stream<T> {
       return true;
     }
     return false;
+#endif  // __SYNTHESIS__
   }
   // blocking destructive open
   void open() {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    const auto elem = _.read();
+    assert(elem.eos);
+#else   // __SYNTHESIS__
     while (!try_open()) {
     }
+#endif  // __SYNTHESIS__
   }
 
+#ifdef __SYNTHESIS__
+  hls::stream<elem_t<T>> _;
+  mutable hls::stream<elem_t<T>> _peek;
+#else   // __SYNTHESIS__
  protected:
   // allow derived class to omit initialization
   istream() : internal::basic_stream<T>(nullptr) {}
@@ -342,51 +450,90 @@ class istream : virtual public internal::basic_stream<T> {
   friend class streams;
   istream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
+#endif  // __SYNTHESIS__
 };
 
 template <typename T>
-class ostream : virtual public internal::basic_stream<T> {
+class ostream
+#ifndef __SYNTHESIS__
+    : virtual public internal::basic_stream<T>
+#endif  // __SYNTHESIS__
+{
  public:
   // producer const operations
 
   // whether stream is full
   bool full() const {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    return _.full();
+#else   // __SYNTHESIS__
     bool is_full = this->ptr->full();
     if (is_full) {
       internal::yield("channel '" + this->get_name() + "' is full");
     }
     return is_full;
+#endif  // __SYNTHESIS__
   }
 
   // producer non-const operations
 
   // non-blocking write
   bool try_write(const T& val) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    return _.write_nb({val, false});
+#else   // __SYNTHESIS__
     if (!full()) {
       this->ptr->push({val, false});
       return true;
     }
     return false;
+#endif  // __SYNTHESIS__
   }
   // blocking write
   void write(const T& val) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    _.write({val, false});
+#else   // __SYNTHESIS__
     while (!try_write(val)) {
     }
+#endif  // __SYNTHESIS__
   }
   // non-blocking close
   bool try_close() {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> elem;
+    memset(&elem.val, 0, sizeof(elem.val));
+    elem.eos = true;
+    return _.write_nb(elem);
+#else   // __SYNTHESIS__
     if (!full()) {
       this->ptr->push({{}, true});
       return true;
     }
     return false;
+#endif  // __SYNTHESIS__
   }
   // blocking close
   void close() {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+    elem_t<T> elem;
+    memset(&elem.val, 0, sizeof(elem.val));
+    elem.eos = true;
+    _.write(elem);
+#else   // __SYNTHESIS__
     while (!try_close()) {
     }
+#endif  // __SYNTHESIS__
   }
 
+#ifdef __SYNTHESIS__
+  hls::stream<elem_t<T>> _;
+#else   // __SYNTHESIS__
  protected:
   // allow derived class to omit initialization
   ostream() : internal::basic_stream<T>(nullptr) {}
@@ -399,10 +546,13 @@ class ostream : virtual public internal::basic_stream<T> {
   friend class streams;
   ostream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
+#endif  // __SYNTHESIS__
 };
 
 template <typename T, uint64_t N>
-class stream : public internal::unbound_stream<T> {
+class stream
+#ifndef __SYNTHESIS__
+    : public internal::unbound_stream<T> {
  public:
   constexpr static int depth = N;
 
@@ -419,12 +569,17 @@ class stream : public internal::unbound_stream<T> {
   friend class streams;
   stream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
-};
+}
+#endif  // __SYNTHESIS__
+;
 
 template <typename T, uint64_t depth>
 using channel = stream<T, depth>;
 
 template <typename T, uint64_t S>
+#ifdef __SYNTHESIS__
+using istreams = istream<T>[S];
+#else   // __SYNTHESIS__
 class istreams : virtual public internal::basic_streams<T> {
  public:
   constexpr static int length = S;
@@ -473,8 +628,12 @@ class istreams : virtual public internal::basic_streams<T> {
     return result;
   }
 };
+#endif  // __SYNTHESIS__
 
 template <typename T, uint64_t S>
+#ifdef __SYNTHESIS__
+using ostreams = ostream<T>[S];
+#else   // __SYNTHESIS__
 class ostreams : virtual public internal::basic_streams<T> {
  public:
   constexpr static int length = S;
@@ -523,9 +682,12 @@ class ostreams : virtual public internal::basic_streams<T> {
     return result;
   }
 };
+#endif  // __SYNTHESIS__
 
 template <typename T, uint64_t S, uint64_t N>
-class streams : public internal::unbound_streams<T, S> {
+class streams
+#ifndef __SYNTHESIS__
+    : public internal::unbound_streams<T, S> {
  public:
   constexpr static int length = S;
   constexpr static int depth = N;
@@ -605,10 +767,14 @@ class streams : public internal::unbound_streams<T, S> {
     }
     return result;
   }
-};
+}
+#endif  // __SYNTHESIS__
+;
 
 template <typename T, uint64_t S, uint64_t N>
 using channels = streams<T, S, N>;
+
+#ifndef __SYNTHESIS__
 
 namespace internal {
 
@@ -660,6 +826,8 @@ TAPA_DEFINE_ACCESSER(o, &&)
 #undef TAPA_DEFINE_ACCESSER
 
 }  // namespace internal
+
+#endif  // __SYNTHESIS__
 
 }  // namespace tapa
 

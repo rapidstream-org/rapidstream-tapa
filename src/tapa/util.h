@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-#include "../stream.h"
+#include "tapa/stream.h"
 
 namespace tapa {
 

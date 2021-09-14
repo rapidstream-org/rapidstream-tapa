@@ -3,6 +3,8 @@
 
 #include <cstddef>
 
+#ifndef __SYNTHESIS__
+
 #include <queue>
 #include <stdexcept>
 #include <type_traits>
@@ -11,21 +13,48 @@
 #include <frt.h>
 
 #include "tapa/coroutine.h"
+
+#endif  // __SYNTHESIS__
+
 #include "tapa/stream.h"
-#include "tapa/synthesizable/vec.h"
+#include "tapa/vec.h"
 
 namespace tapa {
 
 namespace internal {
 
+#ifdef __SYNTHESIS__
+
+template <typename T>
+struct async_mmap {
+  using addr_t = int64_t;
+  using resp_t = uint8_t;
+
+  tapa::ostream<addr_t> read_addr;
+  tapa::istream<T> read_data;
+  tapa::ostream<addr_t> write_addr;
+  tapa::ostream<T> write_data;
+  tapa::istream<resp_t> write_resp;
+};
+
+#else  // __SYNTHESIS__
+
 template <typename Param, typename Arg>
 struct accessor;
 
+#endif  // __SYNTHESIS__
+
 }  // namespace internal
 
+#ifndef __SYNTHESIS__
 template <typename T>
 class async_mmap;
+#endif  // __SYNTHESIS__
+
 template <typename T>
+#ifdef __SYNTHESIS__
+using mmap = T*;
+#else   // __SYNTHESIS__
 class mmap {
  public:
   mmap(T* ptr) : ptr_{ptr}, size_{0} {}
@@ -58,8 +87,13 @@ class mmap {
   T* ptr_;
   uint64_t size_;
 };
+#endif  // __SYNTHESIS__
 
 template <typename T>
+#ifdef __SYNTHESIS__
+// HLS doesn't like non-reference instance of hls::stream in the arguments.
+using async_mmap = internal::async_mmap<T>&;
+#else   // __SYNTHESIS__
 class async_mmap : public mmap<T> {
   using super = mmap<T>;
   using addr_t = int64_t;
@@ -136,7 +170,9 @@ class async_mmap : public mmap<T> {
     return async_mem;
   }
 };
+#endif  // __SYNTHESIS__
 
+#ifndef __SYNTHESIS__
 template <typename T, uint64_t S>
 class mmaps {
  protected:
@@ -330,6 +366,8 @@ struct accessor<mmaps<T, S>, mmaps<T, S>> {
 };
 
 }  // namespace internal
+
+#endif  // __SYNTHESIS__
 
 }  // namespace tapa
 

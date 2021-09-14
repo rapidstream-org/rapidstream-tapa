@@ -1,14 +1,57 @@
 #ifndef TASK_LEVEL_PARALLELIZATION_H_
 #define TASK_LEVEL_PARALLELIZATION_H_
 
-#ifdef __SYNTHESIS__
-#error this header is not synthesizable
-#endif  // __SYNTHESIS__
-
 #include <climits>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdlib>
+
+#ifdef __SYNTHESIS__
+
+namespace tapa {
+namespace internal {
+
+struct dummy {
+  template <typename T>
+  dummy& operator<<(const T&) {
+    return *this;
+  }
+};
+
+}  // namespace internal
+}  // namespace tapa
+
+#define LOG(level) ::tapa::internal::dummy()
+#define LOG_IF(level, cond) ::tapa::internal::dummy()
+#define LOG_EVERY_N(level, n) ::tapa::internal::dummy()
+#define LOG_IF_EVERY_N(level, cond, n) ::tapa::internal::dummy()
+#define LOG_FIRST_N(level, n) ::tapa::internal::dummy()
+
+#define DLOG(level) ::tapa::internal::dummy()
+#define DLOG_IF(level, cond) ::tapa::internal::dummy()
+#define DLOG_EVERY_N(level, n) ::tapa::internal::dummy()
+
+#define CHECK(cond) ::tapa::internal::dummy()
+#define CHECK_NE(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_EQ(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_GE(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_GT(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_LE(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_LT(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_NOTNULL(ptr) (ptr)
+#define CHECK_STREQ(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_STRNE(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_STRCASEEQ(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_STRCASENE(lhs, rhs) ::tapa::internal::dummy()
+#define CHECK_DOUBLE_EQ(lhs, rhs) ::tapa::internal::dummy()
+
+#define VLOG_IS_ON(level) false
+#define VLOG(level) ::tapa::internal::dummy()
+#define VLOG_IF(level, cond) ::tapa::internal::dummy()
+#define VLOG_EVERY_N(level, n) ::tapa::internal::dummy()
+#define VLOG_IF_EVERY_N(level, cond, n) ::tapa::internal::dummy()
+#define VLOG_FIRST_N(level, n) ::tapa::internal::dummy()
+#else  // __SYNTHESIS__
 
 #include <chrono>
 #include <functional>
@@ -28,13 +71,17 @@
 #include <frt.h>
 #include <glog/logging.h>
 
+#endif  // __SYNTHESIS__
+
 #include "tapa/mmap.h"
 #include "tapa/stream.h"
-#include "tapa/synthesizable/traits.h"
-#include "tapa/synthesizable/util.h"
-#include "tapa/synthesizable/vec.h"
+#include "tapa/traits.h"
+#include "tapa/util.h"
+#include "tapa/vec.h"
 
 namespace tapa {
+
+#ifndef __SYNTHESIS__
 
 namespace internal {
 
@@ -106,7 +153,11 @@ struct invoker<void (&)(Params...)> {
 
 }  // namespace internal
 
+#endif  // __SYNTHESIS__
+
 struct task {
+#ifndef __SYNTHESIS__
+
   task();
   task(task&&) = delete;
   task(const task&) = delete;
@@ -114,6 +165,8 @@ struct task {
 
   task& operator=(task&&) = delete;
   task& operator=(const task&) = delete;
+
+#endif  // __SYNTHESIS__
 
   template <typename Func, typename... Args>
   task& invoke(Func&& f, Args&&... args) {
@@ -133,9 +186,13 @@ struct task {
 
   template <int step, typename Func, typename... Args, size_t name_size>
   task& invoke(Func&& f, const char (&name)[name_size], Args&&... args) {
+#ifdef __SYNTHESIS__
+    f(std::forward<Args>(args)...);
+#else   // __SYNTHESIS__
     internal::invoker<Func>::template invoke<Args...>(
         /* detach= */ step < 0, std::forward<Func>(f),
         std::forward<Args>(args)...);
+#endif  // __SYNTHESIS__
     return *this;
   }
 
@@ -160,6 +217,8 @@ struct task {
 struct seq {
   int pos = 0;
 };
+
+#ifndef __SYNTHESIS__
 
 namespace internal {
 
@@ -213,6 +272,8 @@ struct aligned_allocator {
     internal::deallocate(ptr, count * sizeof(T));
   }
 };
+
+#endif  // __SYNTHESIS__
 
 }  // namespace tapa
 

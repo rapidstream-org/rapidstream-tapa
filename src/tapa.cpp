@@ -71,9 +71,7 @@ void yield(const string& msg) {
           starts_with(name, "void std::") || starts_with(name, "std::") ||
           // Ignore TAPA channel functions.
           ends_with(file, "/tapa/mmap.h") ||
-          ends_with(file, "/tapa/stream.h") ||
-          ends_with(file, "/tapa/synthesizable/../mmap.h") ||
-          ends_with(file, "/tapa/synthesizable/../stream.h")) {
+          ends_with(file, "/tapa/stream.h")) {
         continue;
       }
       name = name.substr(0, name.find('('));

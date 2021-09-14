@@ -1,6 +1,7 @@
 if(PROJECT_NAME STREQUAL "tapa")
   set(TAPA tapa)
-  set(TAPAC PYTHONPATH=${CMAKE_SOURCE_DIR}/backend/python python3 -m tapa.tapac)
+  set(TAPAC PYTHONPATH=${CMAKE_SOURCE_DIR}/backend/python python3 -m tapa.tapac
+            --cflags=-I${CMAKE_SOURCE_DIR}/src)
   set(TAPACC $<TARGET_FILE:tapacc>)
 else()
   find_package(TAPA REQUIRED)

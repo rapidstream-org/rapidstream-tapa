@@ -11,7 +11,7 @@
 #include <functional>
 #include <ostream>
 
-#include "./util.h"
+#include "tapa/util.h"
 
 namespace tapa {
 

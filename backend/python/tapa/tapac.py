@@ -66,8 +66,10 @@ def main():
                       help='SDAccel platform')
   parser.add_argument('--cflags',
                       type=str,
+                      default=[],
+                      nargs='+',
                       dest='cflags',
-                      help='cflags for kernel, space separated')
+                      help='cflags for kernel, may appear many times')
   parser.add_argument('--output',
                       '-o',
                       type=str,
@@ -166,9 +168,7 @@ def main():
     parser.error('output file must be set if pack xo is the last step')
   if not all_steps and last_step != 'run_tapacc' and args.work_dir is None:
     parser.error("steps beyond run tapacc won't work with --work-dir unset")
-  cflag_list = ['-std=c++17']
-  if args.cflags is not None:
-    cflag_list += args.cflags.strip().split()
+  cflag_list = ['-std=c++17'] + args.cflags
 
   if all_steps or args.run_tapacc is not None:
     tapacc_cmd = []
@@ -264,16 +264,9 @@ def main():
       tapa_program_json = lambda: open(
           os.path.join(args.work_dir, 'program.json'))
 
-  cflags = ' -I' + os.path.join(
-      os.path.dirname(tapa.__file__),
-      'assets',
-      'cpp',
-  )
-  if args.cflags is not None:
-    cflags += ' ' + args.cflags
   with tapa_program_json() as tapa_program_json_obj:
     program = tapa.core.Program(tapa_program_json_obj,
-                                cflags=cflags,
+                                cflags=' '.join(args.cflags),
                                 work_dir=args.work_dir)
 
   if args.frt_interface is not None and program.frt_interface is not None:

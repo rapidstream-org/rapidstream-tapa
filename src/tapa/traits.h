@@ -1,7 +1,7 @@
 #ifndef TAPA_SYNTHESIZABLE_TRAITS_H_
 #define TAPA_SYNTHESIZABLE_TRAITS_H_
 
-#include "../stream.h"
+#include "tapa/stream.h"
 
 namespace tapa {
 
