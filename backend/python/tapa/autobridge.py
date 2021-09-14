@@ -184,6 +184,7 @@ def generate_floorplan(
           'produced_by': rtl.ctrl_instance_name(top_task.name),
           'consumed_by': arg.instance.name,
           'width': width,
+          'depth': 1,
       }
 
   # Generate edges for FIFOs instantiated in the top task.
@@ -192,6 +193,7 @@ def generate_floorplan(
         'produced_by': util.get_instance_name(fifo['produced_by']),
         'consumed_by': util.get_instance_name(fifo['consumed_by']),
         'width': fifo_width_getter(top_task, fifo_name),
+        'depth': top_task.fifos[fifo_name]['depth']
     }
 
   # Dedup items.
