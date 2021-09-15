@@ -110,6 +110,11 @@ set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set(CPACK_GENERATOR TGZ DEB)
 include(CPack)
 
+option(BUILD_DOCS "Build documentations" OFF)
+if(BUILD_DOCS)
+  add_subdirectory(docs)
+endif()
+
 include(cmake/TAPACCConfig.cmake)
 enable_testing()
 add_subdirectory(apps/bandwidth)

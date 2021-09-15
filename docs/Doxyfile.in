@@ -1,0 +1,15 @@
+PROJECT_NAME           = "TAPA"
+
+OUTPUT_DIRECTORY       = "@DOXYGEN_OUTPUT_DIR@"
+
+INPUT                  = "@DOXYGEN_INPUT_DIR@/src" "@DOXYGEN_INPUT_DIR@/backend"
+
+RECURSIVE              = YES
+
+EXCLUDE_PATTERNS       = */python/*
+
+GENERATE_HTML          = NO
+
+GENERATE_LATEX         = NO
+
+GENERATE_XML           = YES
