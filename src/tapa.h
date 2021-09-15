@@ -79,18 +79,28 @@ struct invoker<void (&)(Params...)> {
         }
 
         // Child.
-        *kernel_time_ns = fpga::Instance(bitstream)
-                              .Invoke(accessor<Params, Args>::frt_access(
-                                  std::forward<Args>(args))...)
-                              .ComputeTimeNanoSeconds();
+        *kernel_time_ns = invoke(f, bitstream, std::forward<Args>(args)...);
         exit(EXIT_SUCCESS);
       } else {
-        return fpga::Instance(bitstream)
-            .Invoke(
-                accessor<Params, Args>::frt_access(std::forward<Args>(args))...)
-            .ComputeTimeNanoSeconds();
+        return invoke(f, bitstream, std::forward<Args>(args)...);
       }
     }
+  }
+
+ private:
+  template <typename... Args>
+  static int64_t invoke(void (&f)(Params...), const std::string& bitstream,
+                        Args&&... args) {
+    auto instance = fpga::Instance(bitstream);
+    int idx = 0;
+    int _[] = {(
+        accessor<Params, Args>::access(instance, idx, std::forward<Args>(args)),
+        0)...};
+    instance.WriteToDevice();
+    instance.Exec();
+    instance.ReadFromDevice();
+    instance.Finish();
+    return instance.ComputeTimeNanoSeconds();
   }
 };
 
@@ -156,27 +166,17 @@ namespace internal {
 template <typename Param, typename Arg>
 struct accessor {
   static Param access(Arg&& arg) { return arg; }
-  static Param frt_access(Arg&& arg) { return arg; }
+  static void access(fpga::Instance& instance, int& idx, Arg&& arg) {
+    instance.SetArg(idx++, static_cast<Param>(arg));
+  }
 };
 
 template <typename T>
 struct accessor<T, seq> {
   static T access(seq&& arg) { return arg.pos++; }
-};
-
-template <typename T>
-struct accessor<mmap<T>, mmap<T>> {
-  static_assert(!std::is_same<T, T>::value,
-                "must use one of "
-                "placeholder_mmap/read_only_mmap/write_only_mmap/"
-                "read_write_mmap in tapa::invoke");
-};
-template <typename T, int64_t S>
-struct accessor<mmaps<T, S>, mmaps<T, S>> {
-  static_assert(!std::is_same<T, T>::value,
-                "must use one of "
-                "placeholder_mmaps/read_only_mmaps/write_only_mmaps/"
-                "read_write_mmaps in tapa::invoke");
+  static void access(fpga::Instance& instance, int& idx, seq&& arg) {
+    instance.SetArg(idx++, static_cast<T>(arg.pos++));
+  }
 };
 
 }  // namespace internal

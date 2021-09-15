@@ -286,13 +286,27 @@ struct accessor<async_mmap<T>, mmaps<T, S>&> {
   }
 };
 
-#define TAPA_DEFINE_ACCESSER(tag, frt_tag)                            \
-  template <typename T>                                               \
-  struct accessor<mmap<T>, tag##_mmap<T>> {                           \
-    static mmap<T> access(tag##_mmap<T>&& arg) { return arg; }        \
-    static fpga::frt_tag##Buffer<T> frt_access(tag##_mmap<T>&& arg) { \
-      return fpga::frt_tag(arg.get(), arg.size());                    \
-    }                                                                 \
+#define TAPA_DEFINE_ACCESSER(tag, frt_tag)                     \
+  template <typename T>                                        \
+  struct accessor<mmap<T>, tag##_mmap<T>> {                    \
+    static mmap<T> access(tag##_mmap<T> arg) { return arg; }   \
+    static void access(fpga::Instance& instance, int& idx,     \
+                       tag##_mmap<T> arg) {                    \
+      auto buf = fpga::frt_tag(arg.get(), arg.size());         \
+      instance.AllocBuf(idx, buf);                             \
+      instance.SetArg(idx++, buf);                             \
+    }                                                          \
+  };                                                           \
+  template <typename T, uint64_t S>                            \
+  struct accessor<mmaps<T, S>, tag##_mmaps<T, S>> {            \
+    static void access(fpga::Instance& instance, int& idx,     \
+                       tag##_mmaps<T, S> arg) {                \
+      for (uint64_t i = 0; i < S; ++i) {                       \
+        auto buf = fpga::frt_tag(arg[i].get(), arg[i].size()); \
+        instance.AllocBuf(idx, buf);                           \
+        instance.SetArg(idx++, buf);                           \
+      }                                                        \
+    }                                                          \
   }
 TAPA_DEFINE_ACCESSER(placeholder, Placeholder);
 // read/write are with respect to the kernel in tapa but host in frt
@@ -300,6 +314,20 @@ TAPA_DEFINE_ACCESSER(read_only, WriteOnly);
 TAPA_DEFINE_ACCESSER(write_only, ReadOnly);
 TAPA_DEFINE_ACCESSER(read_write, ReadWrite);
 #undef TAPA_DEFINE_ACCESSER
+template <typename T>
+struct accessor<mmap<T>, mmap<T>> {
+  static_assert(!std::is_same<T, T>::value,
+                "must use one of "
+                "placeholder_mmap/read_only_mmap/write_only_mmap/"
+                "read_write_mmap in tapa::invoke");
+};
+template <typename T, int64_t S>
+struct accessor<mmaps<T, S>, mmaps<T, S>> {
+  static_assert(!std::is_same<T, T>::value,
+                "must use one of "
+                "placeholder_mmaps/read_only_mmaps/write_only_mmaps/"
+                "read_write_mmaps in tapa::invoke");
+};
 
 }  // namespace internal
 
