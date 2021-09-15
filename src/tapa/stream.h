@@ -242,7 +242,7 @@ class istream
   bool try_eos(bool& eos) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     return !empty() && _peek.read_nb(elem) && (void(eos = elem.eos), true);
 #else   // __SYNTHESIS__
     if (!empty()) {
@@ -273,7 +273,7 @@ class istream
 #ifdef __SYNTHESIS__
 #pragma HLS inline
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     return !empty() && _peek.read_nb(elem) && (void(val = elem.val), true);
 #else   // __SYNTHESIS__
     if (!empty()) {
@@ -308,7 +308,7 @@ class istream
   T peek(bool& succeeded, bool& is_eos) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> peek_val;
+    internal::elem_t<T> peek_val;
     (succeeded = !empty()) && _peek.read_nb(peek_val);
     is_eos = peek_val.eos && succeeded;
     return peek_val.val;
@@ -331,7 +331,7 @@ class istream
   bool try_read(T& val) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     return _.read_nb(elem) && (void(val = elem.val), true);
 #else   // __SYNTHESIS__
     if (!empty()) {
@@ -361,7 +361,7 @@ class istream
   T read(bool& succeeded) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     succeeded = _.read_nb(elem);
     return elem.val;
 #else   // __SYNTHESIS__
@@ -374,7 +374,7 @@ class istream
   T read(std::nullptr_t) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     _.read_nb(elem);
     return elem.val;
 #else   // __SYNTHESIS__
@@ -388,7 +388,7 @@ class istream
   T read(bool* succeeded_ret, const T& default_val) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     bool succeeded = _.read_nb(elem);
     if (succeeded_ret != nullptr) *succeeded_ret = succeeded;
     return succeeded ? elem.val : default_val;
@@ -406,7 +406,7 @@ class istream
   bool try_open() {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     const bool succeeded = _.read_nb(elem);
     assert(!succeeded || elem.eos);
     return succeeded;
@@ -435,8 +435,8 @@ class istream
   }
 
 #ifdef __SYNTHESIS__
-  hls::stream<elem_t<T>> _;
-  mutable hls::stream<elem_t<T>> _peek;
+  hls::stream<internal::elem_t<T>> _;
+  mutable hls::stream<internal::elem_t<T>> _peek;
 #else   // __SYNTHESIS__
  protected:
   // allow derived class to omit initialization
@@ -505,7 +505,7 @@ class ostream
   bool try_close() {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     memset(&elem.val, 0, sizeof(elem.val));
     elem.eos = true;
     return _.write_nb(elem);
@@ -521,7 +521,7 @@ class ostream
   void close() {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    elem_t<T> elem;
+    internal::elem_t<T> elem;
     memset(&elem.val, 0, sizeof(elem.val));
     elem.eos = true;
     _.write(elem);
@@ -532,7 +532,7 @@ class ostream
   }
 
 #ifdef __SYNTHESIS__
-  hls::stream<elem_t<T>> _;
+  hls::stream<internal::elem_t<T>> _;
 #else   // __SYNTHESIS__
  protected:
   // allow derived class to omit initialization
