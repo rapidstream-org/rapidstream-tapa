@@ -3,13 +3,10 @@
 #include <tapa.h>
 
 void Add(tapa::istream<float>& a, tapa::istream<float>& b,
-         tapa::ostream<float>& c) {
-  TAPA_WHILE_NEITHER_EOS(a, b) {
-    bool a_succeed;
-    bool b_succeed;
-    c.write(a.read(a_succeed) + b.read(b_succeed));
+         tapa::ostream<float>& c, uint64_t n) {
+  for (uint64_t i = 0; i < n; ++i) {
+    c.write(a.read() + b.read());
   }
-  c.close();
 }
 
 void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
@@ -17,7 +14,6 @@ void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
   for (uint64_t i = 0; i < n; ++i) {
     stream.write(mmap[i]);
   }
-  stream.close();
 }
 
 void Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,
@@ -27,15 +23,15 @@ void Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,
   }
 }
 
-void VecAdd(tapa::mmap<const float> a_array, tapa::mmap<const float> b_array,
-            tapa::mmap<float> c_array, uint64_t n) {
-  tapa::stream<float, 1> a_stream("a");
-  tapa::stream<float, 1> b_stream("b");
-  tapa::stream<float, 1> c_stream("c");
+void VecAdd(tapa::mmap<const float> a, tapa::mmap<const float> b,
+            tapa::mmap<float> c, uint64_t n) {
+  tapa::stream<float, 2> a_q("a");
+  tapa::stream<float, 2> b_q("b");
+  tapa::stream<float, 2> c_q("c");
 
   tapa::task()
-      .invoke(Mmap2Stream, a_array, n, a_stream)
-      .invoke(Mmap2Stream, b_array, n, b_stream)
-      .invoke(Add, a_stream, b_stream, c_stream)
-      .invoke(Stream2Mmap, c_stream, c_array, n);
+      .invoke(Mmap2Stream, a, n, a_q)
+      .invoke(Mmap2Stream, b, n, b_q)
+      .invoke(Add, a_q, b_q, c_q, n)
+      .invoke(Stream2Mmap, c_q, c, n);
 }
