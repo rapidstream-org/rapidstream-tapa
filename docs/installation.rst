@@ -71,9 +71,9 @@ Additional Build Prerequisites for Documentation
 
   * ``sudo apt install doxygen``
 
-* Sphinx
+* Sphinx and Breathe
 
-  * ``pip install sphinx``
+  * ``pip install -r docs/requirements.txt``
 
 Additional Build Prerequisites for Testing
 ++++++++++++++++++++++++++++++++++++++++++
