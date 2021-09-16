@@ -24,125 +24,193 @@ logging.basicConfig(
 _logger = logging.getLogger().getChild(__name__)
 
 
-def main():
-  parser = argparse.ArgumentParser(prog='tapac', description='TAPA compiler')
-  parser.add_argument('--verbose',
-                      '-v',
-                      action='count',
-                      dest='verbose',
-                      help='increase verbosity')
-  parser.add_argument('--quiet',
-                      '-q',
-                      action='count',
-                      dest='quiet',
-                      help='decrease verbosity')
-  parser.add_argument('--tapacc',
-                      type=str,
-                      metavar='file',
-                      dest='tapacc',
-                      help='override tapacc')
+def create_parser() -> argparse.ArgumentParser:
+  parser = argparse.ArgumentParser(
+      prog='tapac',
+      description='Compiles TAPA C++ code into packaged RTL.',
+  )
+  parser.add_argument(
+      '-v',
+      '--verbose',
+      action='count',
+      dest='verbose',
+      help='Increase logging verbosity.',
+  )
+  parser.add_argument(
+      '-q',
+      '--quiet',
+      action='count',
+      dest='quiet',
+      help='Decrease logging verbosity.',
+  )
+  parser.add_argument(
+      '--tapacc',
+      type=str,
+      metavar='file',
+      dest='tapacc',
+      help='Use a specific ``tapacc`` binary instead of searching in ``PATH``.',
+  )
   parser.add_argument(
       '--work-dir',
       type=str,
       metavar='dir',
       dest='work_dir',
-      help='use a specific working directory instead of a temporary one')
-  parser.add_argument('--top',
-                      type=str,
-                      dest='top',
-                      metavar='TASK_NAME',
-                      help='name of the top-level task')
-  parser.add_argument('--clock-period',
-                      type=str,
-                      dest='clock_period',
-                      help='clock period in nanoseconds')
-  parser.add_argument('--part-num',
-                      type=str,
-                      dest='part_num',
-                      help='part number')
-  parser.add_argument('--platform',
-                      type=str,
-                      dest='platform',
-                      help='SDAccel platform')
-  parser.add_argument('--cflags',
-                      type=str,
-                      default=[],
-                      nargs='+',
-                      dest='cflags',
-                      help='cflags for kernel, may appear many times')
-  parser.add_argument('--output',
-                      '-o',
-                      type=str,
-                      dest='output_file',
-                      metavar='file',
-                      help='output file')
-  parser.add_argument('--frt-interface',
-                      type=str,
-                      dest='frt_interface',
-                      metavar='file',
-                      help='output FRT interface file')
-  parser.add_argument(type=str,
-                      dest='input_file',
-                      metavar='file',
-                      help='tapa source code or tapa program json')
+      help='Use a specific working directory instead of a temporary one.',
+  )
+  parser.add_argument(
+      '--top',
+      type=str,
+      dest='top',
+      metavar='TASK_NAME',
+      help='Name of the top-level task.',
+  )
+  parser.add_argument(
+      '--clock-period',
+      type=str,
+      dest='clock_period',
+      help='Target clock period in nanoseconds.',
+  )
+  parser.add_argument(
+      '--part-num',
+      type=str,
+      dest='part_num',
+      help='Target FPGA part number.',
+  )
+  parser.add_argument(
+      '--platform',
+      type=str,
+      dest='platform',
+      help='Target Vitis platform.',
+  )
+  parser.add_argument(
+      '--cflags',
+      type=str,
+      default=[],
+      nargs='+',
+      dest='cflags',
+      help='Compiler flags for the kernel, may appear many times.',
+  )
+  parser.add_argument(
+      '-o',
+      '--output',
+      type=str,
+      dest='output_file',
+      metavar='file',
+      help='Output file.',
+  )
+  parser.add_argument(
+      '--frt-interface',
+      type=str,
+      dest='frt_interface',
+      metavar='file',
+      help='Output FRT interface file (deprecated).',
+  )
+  parser.add_argument(
+      type=str,
+      dest='input_file',
+      metavar='file',
+      help='Input file, usually TAPA C++ source code.',
+  )
 
-  group = parser.add_argument_group('steps')
-  group.add_argument('--run-tapacc',
-                     action='count',
-                     dest='run_tapacc',
-                     help='run tapacc and create program.json')
-  group.add_argument('--extract-cpp',
-                     action='count',
-                     dest='extract_cpp',
-                     help='extract HLS C++ files from program.json')
-  group.add_argument('--run-hls',
-                     action='count',
-                     dest='run_hls',
-                     help='run HLS and generate RTL tarballs')
-  group.add_argument('--extract-rtl',
-                     action='count',
-                     dest='extract_rtl',
-                     help='untar RTL tarballs')
-  group.add_argument('--instrument-rtl',
-                     action='count',
-                     dest='instrument_rtl',
-                     help='instrument RTL')
-  group.add_argument('--pack-xo',
-                     action='count',
-                     dest='pack_xo',
-                     help='package as Xilinx object')
+  group = parser.add_argument_group(
+      title='Compilation Steps',
+      description='Selectively run compilation steps (advanced usage).',
+  )
+  group.add_argument(
+      '--run-tapacc',
+      action='count',
+      dest='run_tapacc',
+      help='Run ``tapacc`` and create ``program.json``.',
+  )
+  group.add_argument(
+      '--extract-cpp',
+      action='count',
+      dest='extract_cpp',
+      help='Extract HLS C++ files from ``program.json``.',
+  )
+  group.add_argument(
+      '--run-hls',
+      action='count',
+      dest='run_hls',
+      help='Run HLS and generate RTL tarballs.',
+  )
+  group.add_argument(
+      '--extract-rtl',
+      action='count',
+      dest='extract_rtl',
+      help='Extract RTL tarballs.',
+  )
+  group.add_argument(
+      '--instrument-rtl',
+      action='count',
+      dest='instrument_rtl',
+      help='Instrument RTL.',
+  )
+  group.add_argument(
+      '--pack-xo',
+      action='count',
+      dest='pack_xo',
+      help='Package RTL as a Xilinx object file.',
+  )
 
-  group = parser.add_argument_group('floorplanning')
-  group.add_argument('--connectivity',
-                     type=argparse.FileType('r'),
-                     dest='connectivity',
-                     metavar='file',
-                     help='input connectivity specification for mmaps')
-  group.add_argument('--directive',
-                     type=argparse.FileType('r'),
-                     dest='directive',
-                     metavar='file',
-                     help='input partitioning directive json file')
-  group.add_argument('--constraint',
-                     type=argparse.FileType('w'),
-                     dest='constraint',
-                     metavar='file',
-                     help='output partitioning constraint tcl file')
-  group.add_argument('--register-level',
-                     type=int,
-                     dest='register_level',
-                     metavar='INT',
-                     help='override register level of top-level signals')
-  group.add_argument('--enable-synth-util',
-                     dest='enable_synth_util',
-                     action='store_true',
-                     help='enable post-synthesis resource utilization report')
-  group.add_argument('--disable-synth-util',
-                     dest='enable_synth_util',
-                     action='store_false',
-                     help='disable post-synthesis resource utilization report')
-  group.set_defaults(enable_synth_util=False)
+  group = parser.add_argument_group(
+      title='Floorplanning',
+      description=('Coarse-grained floorplanning via AutoBridge '
+                   '(advanced usage).'),
+  )
+  group.add_argument(
+      '--connectivity',
+      type=argparse.FileType('r'),
+      dest='connectivity',
+      metavar='file',
+      help=('Input ``connectivity.ini`` specification for mmaps. '
+            'This is the same file passed to ``v++``.'),
+  )
+  group.add_argument(
+      '--directive',
+      type=argparse.FileType('r'),
+      dest='directive',
+      metavar='file',
+      help=('Use a specific partitioning directive json file '
+            'instead of generating one via AutoBridge.'),
+  )
+  group.add_argument(
+      '--constraint',
+      type=argparse.FileType('w'),
+      dest='constraint',
+      metavar='file',
+      help='Output partitioning ``constraint.tcl`` file for ``v++``.',
+  )
+  group.add_argument(
+      '--register-level',
+      type=int,
+      dest='register_level',
+      metavar='INT',
+      help=('Use a specific register level of top-level scalar signals '
+            'instead of inferring from the floorplanning directive.'),
+  )
+  group.add_argument(
+      '--enable-synth-util',
+      dest='enable_synth_util',
+      action='store_true',
+      help=('Enable post-synthesis resource utilization report '
+            'for floorplanning.'),
+      default=False,
+  )
+  group.add_argument(
+      '--disable-synth-util',
+      dest='enable_synth_util',
+      action='store_false',
+      help=('Disable post-synthesis resource utilization report '
+            'for floorplanning.'),
+      default=True,
+  )
 
+  return parser
+
+
+def main():
+  parser = create_parser()
   args = parser.parse_args()
   verbose = 0 if args.verbose is None else args.verbose
   quiet = 0 if args.quiet is None else args.quiet
