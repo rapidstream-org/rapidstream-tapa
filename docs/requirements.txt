@@ -1,3 +1,3 @@
 breathe
 sphinx
-sphinx-argparse
+git+git://github.com/Blaok/sphinx-argparse#egg=sphinx-argparse
