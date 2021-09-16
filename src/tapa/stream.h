@@ -674,16 +674,23 @@ class ostream
 #endif  // __SYNTHESIS__
 };
 
+/// Defines a communication channel between two task instances.
 template <typename T, uint64_t N>
 class stream
 #ifndef __SYNTHESIS__
     : public internal::unbound_stream<T> {
  public:
+  /// Depth of the communication channel.
   constexpr static int depth = N;
 
+  /// Constructs a @c tapa::stream.
   stream()
       : internal::basic_stream<T>(
             std::make_shared<internal::queue<internal::elem_t<T>>>(N)) {}
+
+  /// Constructs a @c tapa::stream with the given name for debugging.
+  ///
+  /// @param[in] name Name of the communication channel (for debugging only).
   template <size_t S>
   stream(const char (&name)[S])
       : internal::basic_stream<T>(
@@ -698,6 +705,7 @@ class stream
 #endif  // __SYNTHESIS__
 ;
 
+/// Alternative name of @c tapa::stream.
 template <typename T, uint64_t depth>
 using channel = stream<T, depth>;
 
