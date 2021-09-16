@@ -709,14 +709,24 @@ class stream
 template <typename T, uint64_t depth>
 using channel = stream<T, depth>;
 
+/// Provides consumer-side operations to an array of @c tapa::stream where they
+/// are used as @a inputs.
+///
+/// This class should only be used in task function parameters and should never
+/// be instatiated directly.
 template <typename T, uint64_t S>
 #ifdef __SYNTHESIS__
 using istreams = istream<T>[S];
 #else   // __SYNTHESIS__
 class istreams : virtual public internal::basic_streams<T> {
  public:
+  /// Length of the @c tapa::stream array.
   constexpr static int length = S;
 
+  /// References a @c tapa::stream in the array.
+  ///
+  /// @param pos Position of the array reference.
+  /// @return    @c tapa::istream referenced in the array.
   istream<T> operator[](int pos) const {
     CHECK_NOTNULL(this->ptr);
     CHECK_GE(pos, 0);
@@ -763,14 +773,24 @@ class istreams : virtual public internal::basic_streams<T> {
 };
 #endif  // __SYNTHESIS__
 
+/// Provides producer-side operations to an array of @c tapa::stream where they
+/// are used as @a outputs.
+///
+/// This class should only be used in task function parameters and should never
+/// be instatiated directly.
 template <typename T, uint64_t S>
 #ifdef __SYNTHESIS__
 using ostreams = ostream<T>[S];
 #else   // __SYNTHESIS__
 class ostreams : virtual public internal::basic_streams<T> {
  public:
+  /// Length of the @c tapa::stream array.
   constexpr static int length = S;
 
+  /// References a @c tapa::stream in the array.
+  ///
+  /// @param pos Position of the array reference.
+  /// @return @c tapa::ostream referenced in the array.
   ostream<T> operator[](int pos) const {
     CHECK_NOTNULL(this->ptr);
     CHECK_GE(pos, 0);
@@ -817,14 +837,19 @@ class ostreams : virtual public internal::basic_streams<T> {
 };
 #endif  // __SYNTHESIS__
 
+/// Defines an array of @c tapa::stream.
 template <typename T, uint64_t S, uint64_t N>
 class streams
 #ifndef __SYNTHESIS__
     : public internal::unbound_streams<T, S> {
  public:
+  /// Count of @c tapa::stream in the array.
   constexpr static int length = S;
+
+  /// Depth of each @c tapa::stream in the array.
   constexpr static int depth = N;
 
+  /// Constructs a @c tapa::streams array.
   streams()
       : internal::basic_streams<T>(
             std::make_shared<std::vector<internal::basic_stream<T>>>()) {
@@ -834,6 +859,12 @@ class streams
     }
   }
 
+  /// Constructs a @c tapa::streams array with the given base name for
+  /// debugging.
+  ///
+  /// The actual name of each @c tapa::stream would be <tt>name[i]</tt>.
+  ///
+  /// @param[in] name Base name of the streams (for debugging only).
   template <size_t name_length>
   streams(const char (&name)[name_length])
       : internal::basic_streams<T>(
@@ -846,6 +877,10 @@ class streams
     }
   }
 
+  /// References a @c tapa::stream in the array.
+  ///
+  /// @param pos Position of the array reference.
+  /// @return @c tapa::stream referenced in the array.
   stream<T, N> operator[](int pos) const {
     CHECK_NOTNULL(this->ptr);
     CHECK_GE(pos, 0);
@@ -904,6 +939,7 @@ class streams
 #endif  // __SYNTHESIS__
 ;
 
+/// Alternative name of @c tapa::streams.
 template <typename T, uint64_t S, uint64_t N>
 using channels = streams<T, S, N>;
 
