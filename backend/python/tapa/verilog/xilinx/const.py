@@ -156,7 +156,7 @@ OTHER_MODULES = {
 def get_stream_width(port: str, data_width: int) -> Optional[ast.Width]:
   width = STREAM_PORT_WIDTH[port]
   if width == 0:
-    width = data_width + 1  # for eos
+    width = data_width + 1  # for eot
   if width == 1:
     return None
   else:

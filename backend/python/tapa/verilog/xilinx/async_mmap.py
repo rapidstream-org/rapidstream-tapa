@@ -58,7 +58,7 @@ def generate_async_mmap_ports(
     )
     port_name = instance.task.module.find_port(prefix=prefix, suffix=suffix)
     if port_name is not None:
-      # Make sure EoS is always 1'b0.
+      # Make sure Eot is always 1'b0.
       if suffix == ISTREAM_SUFFIXES[0]:
         arg_name = f"{{1'b0, {arg_name}}}"
 

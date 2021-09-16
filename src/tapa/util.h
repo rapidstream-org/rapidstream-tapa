@@ -78,23 +78,23 @@ inline std::ostream& operator<<(std::ostream& os,
 
 }  // namespace tapa
 
-#define TAPA_WHILE_NOT_EOS(fifo)                                \
+#define TAPA_WHILE_NOT_EOT(fifo)                                \
   for (bool tapa_##fifo##_valid;                                \
-       !fifo.eos(tapa_##fifo##_valid) || !tapa_##fifo##_valid;) \
+       !fifo.eot(tapa_##fifo##_valid) || !tapa_##fifo##_valid;) \
   _Pragma("HLS pipeline II = 1") if (tapa_##fifo##_valid)
 
-#define TAPA_WHILE_NEITHER_EOS(fifo1, fifo2)                          \
+#define TAPA_WHILE_NEITHER_EOT(fifo1, fifo2)                          \
   for (bool tapa_##fifo1##_valid, tapa_##fifo2##_valid;               \
-       (!fifo1.eos(tapa_##fifo1##_valid) || !tapa_##fifo1##_valid) && \
-       (!fifo2.eos(tapa_##fifo2##_valid) || !tapa_##fifo2##_valid);)  \
+       (!fifo1.eot(tapa_##fifo1##_valid) || !tapa_##fifo1##_valid) && \
+       (!fifo2.eot(tapa_##fifo2##_valid) || !tapa_##fifo2##_valid);)  \
   _Pragma("HLS pipeline II = 1") if (tapa_##fifo1##_valid &&          \
                                      tapa_##fifo2##_valid)
 
-#define TAPA_WHILE_NONE_EOS(fifo1, fifo2, fifo3)                              \
+#define TAPA_WHILE_NONE_EOT(fifo1, fifo2, fifo3)                              \
   for (bool tapa_##fifo1##_valid, tapa_##fifo2##_valid, tapa_##fifo3##_valid; \
-       (!fifo1.eos(tapa_##fifo1##_valid) || !tapa_##fifo1##_valid) &&         \
-       (!fifo2.eos(tapa_##fifo2##_valid) || !tapa_##fifo2##_valid) &&         \
-       (!fifo3.eos(tapa_##fifo3##_valid) || !tapa_##fifo3##_valid);)          \
+       (!fifo1.eot(tapa_##fifo1##_valid) || !tapa_##fifo1##_valid) &&         \
+       (!fifo2.eot(tapa_##fifo2##_valid) || !tapa_##fifo2##_valid) &&         \
+       (!fifo3.eot(tapa_##fifo3##_valid) || !tapa_##fifo3##_valid);)          \
   _Pragma("HLS pipeline II = 1") if (tapa_##fifo1##_valid &&                  \
                                      tapa_##fifo2##_valid &&                  \
                                      tapa_##fifo3##_valid)

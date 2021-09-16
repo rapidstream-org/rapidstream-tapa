@@ -49,7 +49,7 @@ namespace internal {
 template <typename T>
 struct elem_t {
   T val;
-  bool eos;
+  bool eot;
 };
 
 #ifndef __SYNTHESIS__
@@ -239,34 +239,34 @@ class istream
   }
 
   // whether stream has ended
-  bool try_eos(bool& eos) const {
+  bool try_eot(bool& eot) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     internal::elem_t<T> elem;
-    return !empty() && _peek.read_nb(elem) && (void(eos = elem.eos), true);
+    return !empty() && _peek.read_nb(elem) && (void(eot = elem.eot), true);
 #else   // __SYNTHESIS__
     if (!empty()) {
-      eos = this->ptr->front().eos;
+      eot = this->ptr->front().eot;
       return true;
     }
     return false;
 #endif  // __SYNTHESIS__
   }
-  bool eos(bool& succeeded) const {
+  bool eot(bool& succeeded) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
 #endif  // __SYNTHESIS__
-    bool eos = false;
-    succeeded = try_eos(eos);
-    return eos;
+    bool eot = false;
+    succeeded = try_eot(eot);
+    return eot;
   }
-  bool eos(std::nullptr_t) const {
+  bool eot(std::nullptr_t) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
 #endif  // __SYNTHESIS__
-    bool eos = false;
-    try_eos(eos);
-    return eos;
+    bool eot = false;
+    try_eot(eot);
+    return eot;
   }
   // non-blocking non-destructive read
   bool try_peek(T& val) const {
@@ -278,7 +278,7 @@ class istream
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
-      if (elem.eos) {
+      if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' peeked when closed";
       }
       val = elem.val;
@@ -304,23 +304,23 @@ class istream
     try_peek(val);
     return val;
   }
-  // peek val and eos at the same time
-  T peek(bool& succeeded, bool& is_eos) const {
+  // peek val and eot at the same time
+  T peek(bool& succeeded, bool& is_eot) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     internal::elem_t<T> peek_val;
     (succeeded = !empty()) && _peek.read_nb(peek_val);
-    is_eos = peek_val.eos && succeeded;
+    is_eot = peek_val.eot && succeeded;
     return peek_val.val;
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
       succeeded = true;
-      is_eos = elem.eos;
+      is_eot = elem.eot;
       return elem.val;
     }
     succeeded = false;
-    is_eos = false;
+    is_eot = false;
     return {};
 #endif  // __SYNTHESIS__
   }
@@ -336,7 +336,7 @@ class istream
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto elem = this->ptr->pop();
-      if (elem.eos) {
+      if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' read when closed";
       }
       val = elem.val;
@@ -408,12 +408,12 @@ class istream
 #pragma HLS inline
     internal::elem_t<T> elem;
     const bool succeeded = _.read_nb(elem);
-    assert(!succeeded || elem.eos);
+    assert(!succeeded || elem.eot);
     return succeeded;
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto elem = this->ptr->pop();
-      if (!elem.eos) {
+      if (!elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name()
                    << "' opened when not closed";
       }
@@ -427,7 +427,7 @@ class istream
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     const auto elem = _.read();
-    assert(elem.eos);
+    assert(elem.eot);
 #else   // __SYNTHESIS__
     while (!try_open()) {
     }
@@ -507,7 +507,7 @@ class ostream
 #pragma HLS inline
     internal::elem_t<T> elem;
     memset(&elem.val, 0, sizeof(elem.val));
-    elem.eos = true;
+    elem.eot = true;
     return _.write_nb(elem);
 #else   // __SYNTHESIS__
     if (!full()) {
@@ -523,7 +523,7 @@ class ostream
 #pragma HLS inline
     internal::elem_t<T> elem;
     memset(&elem.val, 0, sizeof(elem.val));
-    elem.eos = true;
+    elem.eot = true;
     _.write(elem);
 #else   // __SYNTHESIS__
     while (!try_close()) {
