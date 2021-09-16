@@ -1,9 +1,6 @@
 API Reference
 =============
 
-.. toctree::
-  :titlesonly:
-
 The TAPA Library (libtapa)
 --------------------------
 
