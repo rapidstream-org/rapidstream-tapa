@@ -215,6 +215,11 @@ class unbound_streams : public istreams<T, S>, public ostreams<T, S> {
 
 }  // namespace internal
 
+/// Provides consumer-side operations to a @c tapa::stream where it is used as
+/// an @a input.
+///
+/// This class should only be used in task function parameters and should never
+/// be instatiated directly.
 template <typename T>
 class istream
 #ifndef __SYNTHESIS__
@@ -222,9 +227,11 @@ class istream
 #endif  // __SYNTHESIS__
 {
  public:
-  // consumer const operations
-
-  // whether stream is empty
+  /// Tests whether the stream is empty.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// @return Whether the stream is empty.
   bool empty() const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
@@ -238,28 +245,47 @@ class istream
 #endif  // __SYNTHESIS__
   }
 
-  // whether stream has ended
-  bool try_eot(bool& eot) const {
+  /// Tests whether the next token is EoT.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// @param[out] is_eot Unmodified if the stream is empty. Otherwise, updated
+  ///                    to indicate whether the next token is EoT.
+  /// @return            Whether @c is_eot is updated.
+  bool try_eot(bool& is_eot) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     internal::elem_t<T> elem;
-    return !empty() && _peek.read_nb(elem) && (void(eot = elem.eot), true);
+    return !empty() && _peek.read_nb(elem) && (void(is_eot = elem.eot), true);
 #else   // __SYNTHESIS__
     if (!empty()) {
-      eot = this->ptr->front().eot;
+      is_eot = this->ptr->front().eot;
       return true;
     }
     return false;
 #endif  // __SYNTHESIS__
   }
-  bool eot(bool& succeeded) const {
+
+  /// Tests whether the next token is EoT.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// @param[out] is_success Whether the next token is available.
+  /// @return                Whether the next token is available and is EoT.
+  bool eot(bool& is_success) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
 #endif  // __SYNTHESIS__
     bool eot = false;
-    succeeded = try_eot(eot);
+    is_success = try_eot(eot);
     return eot;
   }
+
+  /// Tests whether the next token is EoT.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// @return Whether the next token is available and is EoT.
   bool eot(std::nullptr_t) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
@@ -268,34 +294,62 @@ class istream
     try_eot(eot);
     return eot;
   }
-  // non-blocking non-destructive read
-  bool try_peek(T& val) const {
+
+  /// Peeks the stream.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// The next token must not be EoT.
+  ///
+  /// @param[out] value Unmodified if the stream is empty. Otherwise, updated to
+  ///                   be the value of the next token.
+  /// @return           Whether @c value is updated.
+  bool try_peek(T& value) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
 #pragma HLS inline
     internal::elem_t<T> elem;
-    return !empty() && _peek.read_nb(elem) && (void(val = elem.val), true);
+    return !empty() && _peek.read_nb(elem) && (void(value = elem.val), true);
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' peeked when closed";
       }
-      val = elem.val;
+      value = elem.val;
       return true;
     }
     return false;
 #endif  // __SYNTHESIS__
   }
-  // alternative non-blocking non-destructive read
-  T peek(bool& succeeded) const {
+
+  /// Peeks the stream.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// The next token must not be EoT.
+  ///
+  /// @param[out] is_success Whether the next token is available.
+  /// @return                The value of the next token is returned if it is
+  ///                        available. Otherwise, default-constructed @c T() is
+  ///                        returned.
+  T peek(bool& is_success) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
 #endif  // __SYNTHESIS__
     T val;
-    succeeded = try_peek(val);
+    is_success = try_peek(val);
     return val;
   }
+
+  /// Peeks the stream.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// The next token must not be EoT.
+  ///
+  /// @return The value of the next token is returned if it is available.
+  ///         Otherwise, default-constructed @c T() is returned.
   T peek(std::nullptr_t) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
@@ -304,48 +358,71 @@ class istream
     try_peek(val);
     return val;
   }
-  // peek val and eot at the same time
-  T peek(bool& succeeded, bool& is_eot) const {
+
+  /// Peeks the stream.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// @param[out] is_success Whether the next token is available.
+  /// @param[out] is_eot     Set to @c false if the stream is empty. Otherwise,
+  ///                        updated to indicate whether the next token is EoT.
+  /// @return                The value of the next token is returned if it is
+  ///                        available. Otherwise, default-constructed @c T() is
+  ///                        returned.
+  T peek(bool& is_success, bool& is_eot) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     internal::elem_t<T> peek_val;
-    (succeeded = !empty()) && _peek.read_nb(peek_val);
-    is_eot = peek_val.eot && succeeded;
+    (is_success = !empty()) && _peek.read_nb(peek_val);
+    is_eot = peek_val.eot && is_success;
     return peek_val.val;
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
-      succeeded = true;
+      is_success = true;
       is_eot = elem.eot;
       return elem.val;
     }
-    succeeded = false;
+    is_success = false;
     is_eot = false;
     return {};
 #endif  // __SYNTHESIS__
   }
 
-  // consumer non-const operations
-
-  // non-blocking destructive read
-  bool try_read(T& val) {
+  /// Reads the stream.
+  ///
+  /// This is a @a non-blocking and @a destructive operation.
+  ///
+  /// The next token must not be EoT.
+  ///
+  /// @param[out] value Unmodified if the stream is empty. Otherwise, updated to
+  ///                   be the value of the next token.
+  /// @return           Whether @c value is updated.
+  bool try_read(T& value) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     internal::elem_t<T> elem;
-    return _.read_nb(elem) && (void(val = elem.val), true);
+    return _.read_nb(elem) && (void(value = elem.val), true);
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto elem = this->ptr->pop();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' read when closed";
       }
-      val = elem.val;
+      value = elem.val;
       return true;
     }
     return false;
 #endif  // __SYNTHESIS__
   }
-  // blocking destructive read
+
+  /// Reads the stream.
+  ///
+  /// This is a @a blocking and @a destructive operation.
+  ///
+  /// The next token must not be EoT.
+  ///
+  /// @return The value of the next token.
   T read() {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
@@ -357,52 +434,72 @@ class istream
     return val;
 #endif  // __SYNTHESIS__
   }
-  // alterative non-blocking destructive read
-  T read(bool& succeeded) {
+
+  /// Reads the stream.
+  ///
+  /// This is a @a non-blocking and @a destructive operation.
+  ///
+  /// The next token must not be EoT.
+  ///
+  /// @param[out] is_success Whether the next token is available.
+  /// @return                The value of the next token is returned if it is
+  ///                        available. Otherwise, default-constructed @c T() is
+  ///                        returned.
+  T read(bool& is_success) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    internal::elem_t<T> elem;
-    succeeded = _.read_nb(elem);
-    return elem.val;
-#else   // __SYNTHESIS__
-    T val;
-    memset(&val, 0xcc, sizeof(val));
-    succeeded = try_read(val);
-    return val;
 #endif  // __SYNTHESIS__
+    T val;
+    is_success = try_read(val);
+    return val;
   }
+
+  /// Reads the stream.
+  ///
+  /// This is a @a non-blocking and @a destructive operation.
+  ///
+  /// The next token must not be EoT.
+  ///
+  /// @return The value of the next token is returned if it is available.
+  ///         Otherwise, default-constructed @c T() is returned.
   T read(std::nullptr_t) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    internal::elem_t<T> elem;
-    _.read_nb(elem);
-    return elem.val;
-#else   // __SYNTHESIS__
+#endif  // __SYNTHESIS__
     T val;
-    memset(&val, 0xcc, sizeof(val));
     try_read(val);
     return val;
-#endif  // __SYNTHESIS__
-  }
-  // non-blocking destructive read with default value
-  T read(bool* succeeded_ret, const T& default_val) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    bool succeeded = _.read_nb(elem);
-    if (succeeded_ret != nullptr) *succeeded_ret = succeeded;
-    return succeeded ? elem.val : default_val;
-#else   // __SYNTHESIS__
-    T val;
-    bool succeeded = try_read(val);
-    if (succeeded_ret != nullptr) {
-      *succeeded_ret = succeeded;
-    }
-    return succeeded ? val : default_val;
-#endif  // __SYNTHESIS__
   }
 
-  // non-blocking destructive open
+  /// Reads the stream.
+  ///
+  /// This is a @a non-blocking and @a destructive operation.
+  ///
+  /// @param[in] default_value Value to return if the stream is empty.
+  /// @param[out] is_success   Updated to indicate whether the next token is
+  ///                          available if @c is_success is not @c nullptr.
+  /// @return                  The value of the next token is returned if it is
+  ///                          available. Otherwise, @c default_value is
+  ///                          returned.
+  T read(const T& default_value, bool* is_success = nullptr) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+#endif  // __SYNTHESIS__
+    T val;
+    bool succeeded = try_read(val);
+    if (is_success != nullptr) {
+      *is_success = succeeded;
+    }
+    return succeeded ? val : default_value;
+  }
+
+  /// Consumes an EoT token.
+  ///
+  /// This is a @a non-blocking and @a destructive operation.
+  ///
+  /// The next token must be EoT.
+  ///
+  /// @return Whether an EoT token is consumed.
   bool try_open() {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
@@ -422,7 +519,12 @@ class istream
     return false;
 #endif  // __SYNTHESIS__
   }
-  // blocking destructive open
+
+  /// Consumes an EoT token.
+  ///
+  /// This is a @a blocking and @a destructive operation.
+  ///
+  /// The next token must be EoT.
   void open() {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
