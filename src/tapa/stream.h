@@ -555,6 +555,11 @@ class istream
 #endif  // __SYNTHESIS__
 };
 
+/// Provides producer-side operations to a @c tapa::stream where it is used as
+/// an @a output.
+///
+/// This class should only be used in task function parameters and should never
+/// be instatiated directly.
 template <typename T>
 class ostream
 #ifndef __SYNTHESIS__
@@ -562,9 +567,11 @@ class ostream
 #endif  // __SYNTHESIS__
 {
  public:
-  // producer const operations
-
-  // whether stream is full
+  /// Tests whether the stream is full.
+  ///
+  /// This is a @a non-blocking and @a non-destructive operation.
+  ///
+  /// @return Whether the stream is full.
   bool full() const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
@@ -578,32 +585,45 @@ class ostream
 #endif  // __SYNTHESIS__
   }
 
-  // producer non-const operations
-
-  // non-blocking write
-  bool try_write(const T& val) {
+  /// Writes @c value to the stream.
+  ///
+  /// This is a @a non-blocking and @a destructive operation.
+  ///
+  /// @param[in] value The value to write.
+  /// @return          Whether @c value has been written successfully.
+  bool try_write(const T& value) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    return _.write_nb({val, false});
+    return _.write_nb({value, false});
 #else   // __SYNTHESIS__
     if (!full()) {
-      this->ptr->push({val, false});
+      this->ptr->push({value, false});
       return true;
     }
     return false;
 #endif  // __SYNTHESIS__
   }
-  // blocking write
-  void write(const T& val) {
+
+  /// Writes @c value to the stream.
+  ///
+  /// This is a @a blocking and @a destructive operation.
+  ///
+  /// @param[in] value The value to write.
+  void write(const T& value) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-    _.write({val, false});
+    _.write({value, false});
 #else   // __SYNTHESIS__
-    while (!try_write(val)) {
+    while (!try_write(value)) {
     }
 #endif  // __SYNTHESIS__
   }
-  // non-blocking close
+
+  /// Produces an EoT token to the stream.
+  ///
+  /// This is a @a non-blocking and @a destructive operation.
+  ///
+  /// @return Whether the EoT token has been written successfully.
   bool try_close() {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
@@ -619,7 +639,10 @@ class ostream
     return false;
 #endif  // __SYNTHESIS__
   }
-  // blocking close
+
+  /// Produces an EoT token to the stream.
+  ///
+  /// This is a @a blocking and @a destructive operation.
   void close() {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
