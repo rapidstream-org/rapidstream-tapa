@@ -15,6 +15,7 @@ extensions = [
     'breathe',  # Handles Doxygen output.
     'myst_parser',  # Handles MarkDown
     'sphinx.ext.autodoc',  # Handles Python docstring.
+    'sphinx.ext.autosectionlabel',  # Creates labels automatically.
     'sphinx.ext.napoleon',  # Handles Google-stype docstring.
     'sphinxarg.ext',  # Handles Python entry points.
 ]
@@ -38,5 +39,8 @@ if os.environ.get('READTHEDOCS') == 'True':
 
 # Make sure to use the tapa package shipped with the documentation.
 sys.path.insert(0, os.path.dirname(__file__) + '/../backend/python')
+
+# Make sure the target is unique.
+autosectionlabel_prefix_document = True
 
 source_suffix = ['.rst', '.md']

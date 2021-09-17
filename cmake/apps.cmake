@@ -5,6 +5,7 @@ if(PROJECT_NAME STREQUAL "tapa")
   set(TAPACC $<TARGET_FILE:tapacc>)
 else()
   find_package(TAPA REQUIRED)
+  find_package(FRT)
   set(TAPA tapa::tapa)
 endif()
 

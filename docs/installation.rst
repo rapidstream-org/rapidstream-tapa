@@ -176,8 +176,8 @@ you may need to add ``${HOME}/.local/bin`` to your ``PATH``:
 Troubleshooting
 ---------------
 
-``cmake`` Returns an Error
-++++++++++++++++++++++++++
+CMake Returns an Error
+++++++++++++++++++++++
 
 Please check ``cmake --version``.
 CMake 3.13 or higher is required,

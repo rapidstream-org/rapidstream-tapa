@@ -1,44 +1,49 @@
+cmake_minimum_required(VERSION 3.14)
+
+if(NOT PROJECT_NAME)
+  project(tapa-apps-vadd)
+endif()
+
+find_package(gflags REQUIRED)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(vadd)
 target_sources(vadd PRIVATE vadd-host.cpp vadd.cpp)
-target_link_libraries(vadd PRIVATE ${TAPA})
+target_link_libraries(vadd PRIVATE ${TAPA} gflags)
 add_test(NAME vadd COMMAND vadd)
 
-find_package(SDx)
 if(SDx_FOUND)
+  if(NOT PLATFORM)
+    set(PLATFORM
+        xilinx_u280_xdma_201920_3
+        CACHE STRING "Target FPGA platform")
+  endif()
+
   add_tapa_target(
     vadd-hw-xo
     INPUT vadd.cpp
-    FRT_INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/vadd.frt.cpp
     TOP VecAdd
-    PLATFORM xilinx_u250_xdma_201830_2)
+    PLATFORM ${PLATFORM})
 
   add_xocc_hw_link_targets(
     ${CMAKE_CURRENT_BINARY_DIR}
     INPUT vadd-hw-xo
-    HW_EMU_XCLBIN
-    hw_emu_xclbin
-    HW_XCLBIN
-    hw_xclbin)
-
-  add_executable(vadd-frt)
-  target_include_directories(vadd-frt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_sources(vadd-frt PRIVATE vadd-host.cpp
-                                  ${CMAKE_CURRENT_BINARY_DIR}/vadd.frt.cpp)
-  target_link_libraries(vadd-frt PRIVATE ${TAPA} frt::frt)
+    HW_EMU_XCLBIN hw_emu_xclbin
+    HW_XCLBIN hw_xclbin)
 
   add_custom_target(
     vadd-cosim
-    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
-            $<TARGET_FILE:vadd-frt> 1000
-    DEPENDS vadd-frt ${hw_emu_xclbin}
+    COMMAND $<TARGET_FILE:vadd>
+            --bitstream=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME> 1000
+    DEPENDS vadd ${hw_emu_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
   add_custom_target(
     vadd-hw
-    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
-            $<TARGET_FILE:vadd-frt>
-    DEPENDS vadd-frt ${hw_xclbin}
+    COMMAND $<TARGET_FILE:vadd>
+            --bitstream=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
+    DEPENDS vadd ${hw_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   add_test(NAME vadd-cosim COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}
