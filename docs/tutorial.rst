@@ -462,3 +462,26 @@ A downstream module,
       }
     }
   }
+
+Detached Task
+:::::::::::::
+
+This section covers the usage of detached tasks.
+
+Sometimes terminating each kernel function is an overkill.
+For example, a task function may be purely data-driven and we don't have to
+terminate it on program termination.
+In that case,
+TAPA allows you to *detach* a task on invocation instead of joining it to
+the parent.
+This resembles ``std::thread::detach``
+in the `C++ STL <https://en.cppreference.com/w/cpp/thread/thread/detach>`_.
+The network example shipped with TAPA leverages this feature to simplify design;
+the 2×2 switch boxes are instantiated and detached.
+
+.. code-block:: cpp
+
+  void InnerStage(int b, istreams<pkt_t, kN / 2>& in_q0,
+                  istreams<pkt_t, kN / 2>& in_q1, ostreams<pkt_t, kN> out_q) {
+    task().invoke<detach, kN / 2>(Switch2x2, b, in_q0, in_q1, out_q);
+  }
