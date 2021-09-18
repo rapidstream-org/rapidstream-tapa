@@ -406,3 +406,59 @@ Finally, we schedule the read operations based on these decisions.
     if (...) pkt_in_q0.read(nullptr);
     if (...) pkt_in_q1.read(nullptr);
   }
+
+End-of-Transaction
+::::::::::::::::::
+
+This section covers the usage of end-of-transaction tokens.
+
+`SODA <https://github.com/UCLA-VAST/soda>`_ is a highly parallel
+microarchitecture for stencil applications.
+It is implemented using the
+`dataflow optimization <https://www.xilinx.com/html_docs/xilinx2021_1/vitis_doc/vitis_hls_optimization_techniques.html#bmx1539734225930>`_.
+However, this requires that each kernel is terminated properly.
+This can be done by broadcasting the loop trip-count to each kernel function,
+but doing so requires an adder in each function.
+Since each kernel module can be very small,
+the adder can consume a lot of resources.
+
+TAPA provides a less expensive solution is to this problem.
+With TAPA, a kernel can send a special token to denote the end of transaction
+(``EoT``).
+For example, in the jacobi stencil example shipped with TAPA,
+the producer, ``Mmap2Stream``, sends an ``EoT`` token by
+:ref:`closing <classtapa_1_1ostream_1a10405849fa9a12a02e2fc0d33b305d22>` the
+stream.
+
+.. code-block:: cpp
+
+  void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
+                   tapa::ostream<tapa::vec_t<float, 2>>& stream) {
+    [[tapa::pipeline(2)]] for (uint64_t i = 0; i < n; ++i) {
+      tapa::vec_t<float, 2> tmp;
+      tmp.set(0, mmap[i * 2]);
+      tmp.set(1, mmap[i * 2 + 1]);
+      stream.write(tmp);
+    }
+    stream.close();
+  }
+
+A downstream module,
+``Stream2Mmap`` in the example, can then detect the program termination by
+:ref:`testing for the EoT token <classtapa_1_1istream_1aa776b6b4c8cfd5a287c6699077152dcd>`.
+
+.. code-block:: cpp
+
+  void Stream2Mmap(tapa::istream<tapa::vec_t<float, 2>>& stream,
+                  tapa::mmap<float> mmap) {
+    [[tapa::pipeline(2)]] for (uint64_t i = 0;;) {
+      bool eot;
+      if (stream.try_eot(eot)) {
+        if (eot) break;
+        auto packed = stream.read(nullptr);
+        mmap[i * 2] = packed[0];
+        mmap[i * 2 + 1] = packed[1];
+        ++i;
+      }
+    }
+  }
