@@ -516,3 +516,77 @@ and 3 wrapper stages.
         .invoke(Stage, 0, q2, q3)
         .invoke(Consume, mmap_out, n, q3);
   }
+
+Advanced Features
+-----------------
+
+Stream/MMAP Array
+:::::::::::::::::
+
+This section covers the usage of stream/mmap arrays
+(:ref:`api:streams`/:ref:`api:mmaps`).
+
+Often times a singleton ``stream`` or ``mmap`` is insufficient for
+parameterized designs.
+For example, the network example shipped with TAPA defines a 8×8 switch network.
+What if we want to use a 16×16 network? Or 4×4?
+Apparently we would like the network size parameterized so that such a
+design-space exploration does not take too much manual effort.
+This is possible in TAPA through arrays of stream/mmap and batch invocation.
+
+The concepts of arrays of ``tapa::(i/o)stream`` and ``tapa::mmap`` and
+batch invocation explain themselves.
+The relevant APIs are well documented in the
+:ref:`API references <api:the tapa library (libtapa)>`.
+How task invocation interacts with the arrays is worth explaining.
+Using the network example,
+the ``InnerStage`` function instantiates the 2×2 switch boxes ``kN / 2`` times.
+Instead of writing ``kN / 2`` ``invoke`` functions,
+this can be done using a single ``invoke``.
+It will effectively instantiate the same ``Switch2x2`` task ``kN / 2`` times.
+Every time a task is instantiated,
+an (actual) argument ``streams`` or ``mmaps`` array will be accessed sequentially.
+If the (formal) parameter is a singleton ``istream``, ``ostream``, ``mmap``,
+``async_mmap``,
+only one element in the array will be accessed.
+If the (formal) parameter is an array of ``istreams``, ``ostreams``,
+or ``mmaps``,
+the number of element accessed is determined by
+the array length of the (formal) parameter.
+Once accessed,
+the accessed element will be marked "accessed" and the next time the following
+element will be accessed.
+
+Let's go back to the example.
+``InnerStage`` instantiates ``Switch2x2`` ``kN / 2`` times.
+The first argument is the scalar input ``b``,
+which is broadcast to each instance of ``Switch2x2``.
+The second argument is an ``istreams<pkt_t, kN / 2>`` array.
+The ``kN / 2`` ``Switch2x2`` instances each takes one ``istream<pkt_t>``.
+The third argument is accessed similarly.
+The fourth argument is an ``ostreams<pkt_t, kN>`` array.
+The ``kN / 2`` ``Switch2x2`` instances each takes one ``ostreams<pkt_t, 2>``,
+which is effectively two ``ostream<pkt_t>``.
+
+The same argument can be passed to different parameters in the same invocation.
+In such a case, the array elements are accessed sequentially
+first from left to right in the argument list then repeated many times
+if it is a batch invocation.
+``Stage`` leverages this feature in the network example.
+The first apparence of ``in_q`` accesses the first ``kN / 2`` elements,
+and the second accesses the second half.
+
+.. code-block:: cpp
+
+  void Switch2x2(int b, istream<pkt_t>& pkt_in_q0, istream<pkt_t>& pkt_in_q1,
+                 ostreams<pkt_t, 2>& pkt_out_q) {
+  }
+
+  void InnerStage(int b, istreams<pkt_t, kN / 2>& in_q0,
+                  istreams<pkt_t, kN / 2>& in_q1, ostreams<pkt_t, kN> out_q) {
+    task().invoke<detach, kN / 2>(Switch2x2, b, in_q0, in_q1, out_q);
+  }
+
+  void Stage(int b, istreams<pkt_t, kN>& in_q, ostreams<pkt_t, kN> out_q) {
+    task().invoke<detach>(InnerStage, b, in_q, in_q, out_q);
+  }
