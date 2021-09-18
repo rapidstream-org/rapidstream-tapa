@@ -590,3 +590,18 @@ and the second accesses the second half.
   void Stage(int b, istreams<pkt_t, kN>& in_q, ostreams<pkt_t, kN> out_q) {
     task().invoke<detach>(InnerStage, b, in_q, in_q, out_q);
   }
+
+Asynchronous MMAP Interface
+:::::::::::::::::::::::::::
+
+This section covers the usage of asynchronous memory-mapped interfaces.
+
+Vitis HLS assumes a fixed latency for the regular ``tapa::mmap`` interfaces,
+which are implemented using AXI memory-mapped interfaces (``m_axi``) in RTL.
+If the memory request did not arrive in time,
+the kernel will stall.
+TAPA provides an alternative by separating the request and response of the
+memory-mapped interfaces and making the requests asynchronous.
+This is done by exposing 5 stream interfaces,
+each of which corresponds to one of the data channels in ``m_axi``.
+More details are documented in the :ref:`API references <api:async_mmap>`.
