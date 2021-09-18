@@ -362,3 +362,47 @@ To generate the on-board bitstream and run on-board execution:
 .. code-block:: shell
 
   make vadd-hw
+
+Peeking a Stream
+::::::::::::::::
+
+This section covers the usage of non-destructive read (a.k.a. peek) on a stream.
+
+TAPA provides the functionality to read a token from a stream without actually
+removing it from the stream.
+This can be helpful when the computation operations depend on the content of the
+input token, for example, in a switch network.
+
+The network example shipped with TAPA uses the peeking API.
+That example implements 3-stage 8×8
+`Omega network <https://www.mathcs.emory.edu/~cheung/Courses/355/Syllabus/90-parallel/Omega.html>`_.
+The basic component of such a multi-stage switch network is a 2×2 switch box,
+which routes an input packet based on one bit in the destination address
+(which is part of the packet).
+For example, if a packet from ``pkt_in_q0`` has destination ``2 = 0b010``,
+and we are interested in bit 1 (0-based),
+this packet should be written to ``pkt_out_q[1]``.
+If another packet from ``pkt_in_q1`` has destination ``7 = 0b111``,
+we will have to choose only one of them to write to ``pkt_out_q[1]`` because
+only one token can be written in each clock cycle.
+This means we need to make the decision before we remove the token from the
+input channel (stream).
+In the following code, we first
+:ref:`peek <classtapa_1_1istream_1a6df8ab2e1caaaf2e32844b7cc716cf11>`
+the input stream.
+Then, we use the peeked destinations to determine which input(s) can actually be
+consumed.
+Finally, we schedule the read operations based on these decisions.
+
+.. code-block:: cpp
+
+  void Switch2x2(int b, istream<pkt_t>& pkt_in_q0, istream<pkt_t>& pkt_in_q1,
+                 ostreams<pkt_t, 2>& pkt_out_q) {
+  ...
+  for (bool is_valid_0, is_valid_1;;) {
+    const auto pkt_0 = pkt_in_q0.peek(valid_0);
+    const auto pkt_1 = pkt_in_q1.peek(valid_1);
+    ... // decide which input(s) can be consumed
+    if (...) pkt_in_q0.read(nullptr);
+    if (...) pkt_in_q1.read(nullptr);
+  }
