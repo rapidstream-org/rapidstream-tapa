@@ -605,3 +605,46 @@ memory-mapped interfaces and making the requests asynchronous.
 This is done by exposing 5 stream interfaces,
 each of which corresponds to one of the data channels in ``m_axi``.
 More details are documented in the :ref:`API references <api:async_mmap>`.
+
+Sharing MMAP Interface
+::::::::::::::::::::::
+
+This section covers the usage of shared memory-mapped interfaces.
+
+Vitis HLS does not allow sharing of memory-mapped interfaces among dataflow
+modules.
+TAPA gives a programmer the flexibility to do this.
+This can be very useful when the number of memory-mapped interfaces is limited.
+For example, the shared vector add example shipped with TAPA puts the inputs
+``a`` and ``b`` in the same memory-mapped interface.
+By referencing the same ``mmap<float>`` twice, the two ``Mmap2Stream`` task
+instances can both access the same AXI instance.
+
+.. code-block:: cpp
+
+  void Mmap2Stream(mmap<float> mmap, int offset, uint64_t n, ostream<float>& stream) {
+    for (uint64_t i = 0; i < n; ++i) {
+      stream.write(mmap[n * offset + i]);
+    }
+    stream.close();
+  }
+
+  void Load(mmap<float> srcs, uint64_t n, ostream<float>& a, ostream<float>& b) {
+    task()
+        .invoke(Mmap2Stream, srcs, 0, n, a)
+        .invoke(Mmap2Stream, srcs, 1, n, b);
+  }
+
+.. note::
+
+  The programmer needs to make sure of memory consistency among
+  shared memory-mapped interfaces, for example,
+  by accessing different memory locations in different task instances.
+
+.. tip::
+
+  Under the hood,
+  TAPA instantiates an AXI interconnect and use a dedicated AXI thread
+  for each port so that requests from different ports are not ordered
+  with respect to each other.
+  This can help reduce potential deadlocks at the cost of more resource usage.
