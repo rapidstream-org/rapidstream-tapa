@@ -161,11 +161,15 @@ By specifying a filename for the output TCL constraints, TAPA can generate coars
   In FCCM, 2021.
   [[PDF]](https://about.blaok.me/pub/fccm21-tapa.pdf)
   [[Code]][tapa]
+  [[Slides]](https://about.blaok.me/pub/fccm21-tapa.slides.pdf)
+  [[Video]](https://about.blaok.me/pub/fccm21-tapa.mp4)
 + Licheng Guo, Yuze Chi, Jie Wang, Jason Lau, Weikang Qiao, Ecenur Ustun, Zhiru Zhang, Jason Cong.
   [AutoBridge: Coupling Coarse-Grained Floorplanning and Pipelining for High-Frequency HLS Design on Multi-Die FPGAs](https://doi.org/10.1145/3431920.3439289).
   In FPGA, 2021. (Best Paper Award)
   [[PDF]](https://about.blaok.me/pub/fpga21-autobridge.pdf)
   [[Code]][autobridge]
+  [[Slides]](https://about.blaok.me/pub/fpga21-autobridge.slides.pdf)
+  [[Video]](https://about.blaok.me/pub/fpga21-autobridge.mp4)
 
 ## Getting Started
 
