@@ -156,6 +156,26 @@ class Task:
       raise ValueError(f'total area of task {self.name} already populated')
     self._total_area = area
 
+  @property
+  def report(self) -> Dict[str, dict]:
+
+    area = {
+        'source': 'synth' if self._total_area else 'hls',
+        'total': self.total_area,
+    }
+    if self.is_upper:
+      area['breakdown'] = {}
+      for instance in self.instances:
+        area['breakdown'].setdefault(instance.task.name, {
+            'count': 0,
+            'area': instance.task.report['area']
+        })['count'] += 1
+
+    return {
+        'schema': 'v0.0.20210922',
+        'area': area,
+    }
+
   def get_id_width(self, port: str) -> Optional[int]:
     if port in self.mmaps:
       return self.mmaps[port].id_width or None

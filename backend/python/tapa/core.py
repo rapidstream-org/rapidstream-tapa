@@ -13,6 +13,7 @@ from typing import (Any, BinaryIO, Dict, List, Optional, Set, TextIO, Tuple,
                     Union)
 
 import toposort
+import yaml
 from haoda.backend import xilinx as hls
 from haoda.report.xilinx import rtl as report
 
@@ -321,6 +322,13 @@ class Program:
     # instrument the top-level RTL
     _logger.info('instrumenting top-level RTL')
     self._instrument_task(self.top_task)
+
+    _logger.info('generating report')
+    task_report = self.top_task.report
+    with open(os.path.join(self.work_dir, 'report.yaml'), 'w') as fp:
+      yaml.dump(task_report, fp, default_flow_style=False, sort_keys=False)
+    with open(os.path.join(self.work_dir, 'report.json'), 'w') as fp:
+      json.dump(task_report, fp, indent=2)
 
     # self.files won't be populated until all tasks are instrumented
     _logger.info('writing generated auxiliary RTL files')

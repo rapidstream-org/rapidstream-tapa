@@ -45,6 +45,7 @@ setup(
     install_requires=[
         'haoda>=0.0.20210801.dev1',
         'pyverilog>=1.2.0',
+        'pyyaml>=5.1',
         'toposort',
     ],
     entry_points={
