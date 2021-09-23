@@ -249,14 +249,16 @@ class istream
   ///
   /// This is a @a non-blocking and @a non-destructive operation.
   ///
-  /// @param[out] is_eot Unmodified if the stream is empty. Otherwise, updated
-  ///                    to indicate whether the next token is EoT.
+  /// @param[out] is_eot Uninitialized if the stream is empty. Otherwise,
+  ///                    updated to indicate whether the next token is EoT.
   /// @return            Whether @c is_eot is updated.
   bool try_eot(bool& is_eot) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     internal::elem_t<T> elem;
-    return !empty() && _peek.read_nb(elem) && (void(is_eot = elem.eot), true);
+    const bool is_success = !empty() && _peek.read_nb(elem);
+    is_eot = elem.eot;
+    return is_success;
 #else   // __SYNTHESIS__
     if (!empty()) {
       is_eot = this->ptr->front().eot;
@@ -304,15 +306,17 @@ class istream
   ///
   /// The next token must not be EoT.
   ///
-  /// @param[out] value Unmodified if the stream is empty. Otherwise, updated to
-  ///                   be the value of the next token.
+  /// @param[out] value Uninitialized if the stream is empty. Otherwise, updated
+  ///                   to be the value of the next token.
   /// @return           Whether @c value is updated.
   bool try_peek(T& value) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
 #pragma HLS inline
     internal::elem_t<T> elem;
-    return !empty() && _peek.read_nb(elem) && (void(value = elem.val), true);
+    const bool is_success = !empty() && _peek.read_nb(elem);
+    value = elem.val;
+    return is_success;
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
@@ -398,14 +402,16 @@ class istream
   ///
   /// The next token must not be EoT.
   ///
-  /// @param[out] value Unmodified if the stream is empty. Otherwise, updated to
-  ///                   be the value of the next token.
+  /// @param[out] value Uninitialized if the stream is empty. Otherwise, updated
+  ///                   to be the value of the next token.
   /// @return           Whether @c value is updated.
   bool try_read(T& value) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     internal::elem_t<T> elem;
-    return _.read_nb(elem) && (void(value = elem.val), true);
+    const bool is_success = _.read_nb(elem);
+    value = elem.val;
+    return is_success;
 #else   // __SYNTHESIS__
     if (!empty()) {
       auto elem = this->ptr->pop();
