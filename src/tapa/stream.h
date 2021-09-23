@@ -289,10 +289,13 @@ class istream
   bool eot(std::nullptr_t) const {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-#endif  // __SYNTHESIS__
+    bool is_success;
+    return eot(is_success) && is_success;
+#else   // __SYNTHESIS__
     bool eot = false;
     try_eot(eot);
     return eot;
+#endif  // __SYNTHESIS__
   }
 
   /// Peeks the stream.
@@ -448,10 +451,14 @@ class istream
   T read(bool& is_success) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-#endif  // __SYNTHESIS__
+    internal::elem_t<T> elem;
+    is_success = _.read_nb(elem);
+    return elem.val;
+#else   // __SYNTHESIS__
     T val;
     is_success = try_read(val);
     return val;
+#endif  // __SYNTHESIS__
   }
 
   /// Reads the stream.
@@ -465,10 +472,14 @@ class istream
   T read(std::nullptr_t) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
-#endif  // __SYNTHESIS__
+    internal::elem_t<T> elem;
+    _.read_nb(elem);
+    return elem.val;
+#else   // __SYNTHESIS__
     T val;
     try_read(val);
     return val;
+#endif  // __SYNTHESIS__
   }
 
   /// Reads the stream.
@@ -484,6 +495,12 @@ class istream
   T read(const T& default_value, bool* is_success = nullptr) {
 #ifdef __SYNTHESIS__
 #pragma HLS inline
+    internal::elem_t<T> elem;
+    bool is_success_val = _.read_nb(elem);
+    if (is_success != nullptr) {
+      *is_success = is_success_val;
+    }
+    return is_success_val ? elem.val : default_value;
 #endif  // __SYNTHESIS__
     T val;
     bool succeeded = try_read(val);
