@@ -302,6 +302,14 @@ struct aligned_allocator {
   using value_type = T;
   using size_type = std::size_t;
   using difference_type = std::ptrdiff_t;
+  template <typename U>
+  void construct(U* ptr) {
+    ::new (static_cast<void*>(ptr)) U;
+  }
+  template <class U, class... Args>
+  void construct(U* ptr, Args&&... args) {
+    ::new (static_cast<void*>(ptr)) U(std::forward<Args>(args)...);
+  }
   T* allocate(size_t count) {
     return reinterpret_cast<T*>(internal::allocate(count * sizeof(T)));
   }
