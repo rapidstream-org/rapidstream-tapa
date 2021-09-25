@@ -60,7 +60,8 @@ inline constexpr uint64_t round_up(uint64_t i) {
 template <typename T>
 T reg(T x) {
 #pragma HLS inline off
-#pragma HLS interface ap_none register port = x
+#pragma HLS pipeline II = 1
+#pragma HLS latency min = 1 max = 1
   return x;
 }
 
