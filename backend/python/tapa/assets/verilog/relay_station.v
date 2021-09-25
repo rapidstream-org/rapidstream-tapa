@@ -127,13 +127,10 @@ endmodule
 /////////////////////////////////////////////////////////////////
 
 // first-word fall-through (FWFT) FIFO
-// if its capacity > THRESHOLD bits, it uses block RAM, otherwise it will uses
-// shift register LUT
 module fifo_almost_full #(
   parameter DATA_WIDTH = 32,
   parameter ADDR_WIDTH = 5,
   parameter DEPTH      = 32,
-  parameter THRESHOLD  = 18432,
   parameter GRACE_PERIOD = 2
 ) (
   input wire clk,
@@ -174,7 +171,7 @@ generate
       .if_read   (if_read),
       .if_dout   (if_dout)
     );
-  end else if (DATA_WIDTH * DEPTH >= THRESHOLD) begin : bram
+  end else if (DEPTH >= 128) begin : bram
     fifo_bram_almost_full #(
       .MEM_STYLE ("block"),
       .DATA_WIDTH(DATA_WIDTH),
