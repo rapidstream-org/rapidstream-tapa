@@ -1,4 +1,5 @@
 import collections
+import decimal
 import json
 import logging
 import os.path
@@ -82,6 +83,7 @@ class Program:
         self._tasks[name] = task
     self.frt_interface = obj['tasks'][self.top].get('frt_interface')
     self.files: Dict[str, str] = {}
+    self._hls_report_xmls: Dict[str, ET.ElementTree] = {}
 
   def __del__(self):
     if self.is_temp:
@@ -136,10 +138,22 @@ class Program:
                         (util.get_module_name(name) if prefix else name) +
                         rtl.RTL_SUFFIX)
 
+  def _get_hls_report_xml(self, name: str) -> ET.ElementTree:
+    tree = self._hls_report_xmls.get(name)
+    if tree is None:
+      filename = os.path.join(self.work_dir, 'report', f'{name}_csynth.xml')
+      self._hls_report_xmls[name] = tree = ET.parse(filename)
+    return tree
+
   def get_area(self, name: str) -> Dict[str, int]:
-    filename = os.path.join(self.work_dir, 'report', f'{name}_csynth.xml')
-    node = ET.parse(filename).find('./AreaEstimates/Resources')
+    node = self._get_hls_report_xml(name).find('./AreaEstimates/Resources')
     return {x.tag: int(x.text) for x in sorted(node, key=lambda x: x.tag)}
+
+  def get_clock_period(self, name: str) -> decimal.Decimal:
+    return decimal.Decimal(
+        self._get_hls_report_xml(name).find('./PerformanceEstimates'
+                                            '/SummaryOfTimingAnalysis'
+                                            '/EstimatedClockPeriod').text)
 
   def extract_cpp(self) -> 'Program':
     """Extract HLS C++ files."""
@@ -244,6 +258,7 @@ class Program:
       _logger.debug('parsing %s', task.name)
       task.module = rtl.Module([self.get_rtl(task.name)])
       task.self_area = self.get_area(task.name)
+      task.clock_period = self.get_clock_period(task.name)
       _logger.debug('populating %s', task.name)
       self._populate_task(task)
     os.chdir(oldcwd)

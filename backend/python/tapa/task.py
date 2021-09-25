@@ -1,4 +1,5 @@
 import collections
+import decimal
 import enum
 import logging
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
@@ -71,6 +72,7 @@ class Task:
     self._mmaps: Optional[Dict[str, MMapConnection]] = None
     self._self_area = {}
     self._total_area = {}
+    self._clock_period = decimal.Decimal(0)
 
   @property
   def is_upper(self) -> bool:
@@ -157,22 +159,56 @@ class Task:
     self._total_area = area
 
   @property
+  def clock_period(self) -> decimal.Decimal:
+    if self.is_upper:
+      return max(
+          self._clock_period,
+          *(x.clock_period for x in {y.task for y in self.instances}),
+      )
+    elif self._clock_period:
+      return self._clock_period
+    raise ValueError(f'clock period of task {self.name} not populated')
+
+  @clock_period.setter
+  def clock_period(self, clock_period: decimal.Decimal) -> None:
+    if self._clock_period:
+      raise ValueError(f'clock period of task {self.name} already populated')
+    self._clock_period = clock_period
+
+  @property
   def report(self) -> Dict[str, dict]:
+
+    performance = {
+        'source': 'hls',
+        'clock_period': str(self.clock_period),
+    }
 
     area = {
         'source': 'synth' if self._total_area else 'hls',
         'total': self.total_area,
     }
+
     if self.is_upper:
+      performance['critical_path'] = {}
       area['breakdown'] = {}
       for instance in self.instances:
+        task_report = instance.task.report
+
+        if self.clock_period == instance.task.clock_period:
+          performance['critical_path'].setdefault(
+              instance.task.name,
+              task_report['performance'],
+          )
+
         area['breakdown'].setdefault(instance.task.name, {
             'count': 0,
-            'area': instance.task.report['area']
+            'area': task_report['area']
         })['count'] += 1
 
     return {
         'schema': 'v0.0.20210922',
+        'name': self.name,
+        'performance': performance,
         'area': area,
     }
 
