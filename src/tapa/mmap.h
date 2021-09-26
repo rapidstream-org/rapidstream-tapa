@@ -62,7 +62,7 @@ class mmap {
   /// Constructs a @c tapa::mmap with unknown size.
   ///
   /// @param ptr Pointer to the start of the mapped memory.
-  mmap(T* ptr) : ptr_{ptr}, size_{0} {}
+  explicit mmap(T* ptr) : ptr_{ptr}, size_{0} {}
 
   /// Constructs a @c tapa::mmap with the given @c size.
   ///
@@ -70,13 +70,13 @@ class mmap {
   /// @param size Size of the mapped memory (in unit of element count).
   mmap(T* ptr, uint64_t size) : ptr_{ptr}, size_{size} {}
 
-  /// Constructs a @c tapa::mmap from the given @c std::vector.
+  /// Constructs a @c tapa::mmap from the given @c container.
   ///
-  /// @param vec @c std::vector being mapped.
-  template <typename Allocator>
-  explicit mmap(
-      std::vector<typename std::remove_const<T>::type, Allocator>& vec)
-      : ptr_{vec.data()}, size_{vec.size()} {}
+  /// @param container Container holding a @c tapa::mmap. Must implement
+  ///                  @c data() and @c size().
+  template <typename Container>
+  explicit mmap(Container& container)
+      : ptr_{container.data()}, size_{container.size()} {}
 
   /// Implicitly casts to a regular pointer.
   ///
@@ -136,6 +136,31 @@ class mmap {
   mmap<vec_t<T, N>> vectorized() const {
     CHECK_EQ(size_ % N, 0) << "size must be a multiple of N";
     return mmap<vec_t<T, N>>(reinterpret_cast<vec_t<T, N>*>(ptr_), size_ / N);
+  }
+
+  /// Reinterprets the element type of the mapped memory as @c U.
+  ///
+  /// This should be used on the host only.
+  /// Both @c T and @c U must have standard layout.
+  /// The host memory pointer must be properly aligned.
+  /// The size of mapped memory must be a multiple of @c sizeof(U)/sizeof(T).
+  ///
+  /// @tparam U  The new element type.
+  /// @return @c tapa::mmap<U> of the same piece of memory.
+  template <typename U>
+  mmap<U> reinterpret() const {
+    static_assert(std::is_standard_layout<T>::value,
+                  "T must have standard layout");
+    static_assert(std::is_standard_layout<U>::value,
+                  "U must have standard layout");
+
+    if (sizeof(U) > sizeof(T)) {
+      constexpr auto N = sizeof(U) / sizeof(T);
+      CHECK_EQ(size() % N, 0) << "size must be a multiple of N = " << N;
+    }
+    CHECK_EQ(reinterpret_cast<size_t>(get()) % alignof(U), 0)
+        << "pointer must be " << alignof(U) << "-byte aligned";
+    return mmap<U>(reinterpret_cast<U*>(get()), size() * sizeof(T) / sizeof(U));
   }
 
  protected:
@@ -273,46 +298,26 @@ class mmaps {
   std::vector<mmap<T>> mmaps_;
 
  public:
-  /// Constructs a @c tapa::mmap array with unknown sizes.
-  ///
-  /// @param ptrs Pointers to the start of the array of mapped memory.
-  mmaps(const std::array<T*, S>& ptrs) {
-    for (uint64_t i = 0; i < S; ++i) {
-      mmaps_.emplace_back(ptrs[i]);
-    }
-  }
-
-  /// Constructs a @c tapa::mmap array from an @c std::array of pointers and an
-  /// @c std::array of sizes.
+  /// Constructs a @c tapa::mmap array from the given @c pointers and @c sizes.
   ///
   /// @param ptrs  Pointers to the start of the array of mapped memory.
   /// @param sizes Sizes of each mapped memory (in unit of element count).
-  mmaps(const std::array<T*, S>& ptrs, const std::array<uint64_t, S>& sizes) {
+  template <typename PtrContainer, typename SizeContainer>
+  mmaps(const PtrContainer& pointers, const SizeContainer& sizes) {
     for (uint64_t i = 0; i < S; ++i) {
-      mmaps_.emplace_back(ptrs[i], sizes[i]);
+      mmaps_.emplace_back(pointers[i], sizes[i]);
     }
   }
 
-  /// Constructs a @c tapa::mmap array from an @c std::vector array.
+  /// Constructs a @c tapa::mmap array from the given @c container.
   ///
-  /// @param vecs @c std::vector array being mapped.
-  template <typename Allocator>
-  explicit mmaps(
-      std::vector<typename std::remove_const<T>::type, Allocator> (&vecs)[S]) {
+  /// @param container Container holding an array of @c tapa::mmap. @c container
+  ///                  must implement @c operator[] that returns a container
+  ///                  suitable for constructing a @c tapa::mmap.
+  template <typename Container>
+  explicit mmaps(Container& container) {
     for (uint64_t i = 0; i < S; ++i) {
-      mmaps_.emplace_back(vecs[i]);
-    }
-  }
-
-  /// Constructs a @c tapa::mmap array from an @c std::array of @c std::vector.
-  ///
-  /// @param vecs @c std::vector array being mapped.
-  template <typename Allocator>
-  explicit mmaps(
-      std::array<std::vector<typename std::remove_const<T>::type, Allocator>,
-                 S>& vecs) {
-    for (uint64_t i = 0; i < S; ++i) {
-      mmaps_.emplace_back(vecs[i]);
+      mmaps_.emplace_back(container[i]);
     }
   }
 
@@ -360,6 +365,39 @@ class mmaps {
     return mmaps<vec_t<T, N>, S>(ptrs, sizes);
   }
 
+  /// Reinterprets the element type of each mapped memory as @c U.
+  ///
+  /// This should be used on the host only.
+  /// Both @c T and @c U must have standard layout.
+  /// The host memory pointers must be properly aligned.
+  /// The size of each mapped memory must be a multiple of
+  /// @c sizeof(U)/sizeof(T).
+  ///
+  /// @tparam U  The new element type.
+  /// @return <tt>tapa::mmaps<U, S></tt> of the same pieces of memory.
+  template <typename U>
+  mmaps<U, S> reinterpret() const {
+    static_assert(std::is_standard_layout<T>::value,
+                  "T must have standard layout");
+    static_assert(std::is_standard_layout<U>::value,
+                  "U must have standard layout");
+
+    std::array<U*, S> ptrs;
+    std::array<uint64_t, S> sizes;
+    for (uint64_t i = 0; i < S; ++i) {
+      if (sizeof(U) > sizeof(T)) {
+        constexpr auto N = sizeof(U) / sizeof(T);
+        CHECK_EQ(mmaps_[i].size() % N, 0)
+            << "size[" << i << "] must be a multiple of N = " << N;
+      }
+      CHECK_EQ(reinterpret_cast<size_t>(mmaps_[i].get()) % alignof(U), 0)
+          << "pointer[" << i << "] must be " << alignof(U) << "-byte aligned";
+      ptrs[i] = reinterpret_cast<U*>(mmaps_[i].get());
+      sizes[i] = mmaps_[i].size() * sizeof(T) / sizeof(U);
+    }
+    return mmaps<U, S>(ptrs, sizes);
+  }
+
  private:
   template <typename Param, typename Arg>
   friend struct internal::accessor;
@@ -375,44 +413,46 @@ class mmaps {
 };
 
 // Host-only mmap types that must have correct size.
-#define TAPA_DEFINE_MMAP(tag)                                           \
-  template <typename T>                                                 \
-  class tag##_mmap : public mmap<T> {                                   \
-    using mmap<T>::mmap;                                                \
-    tag##_mmap(T* ptr) : mmap<T>(ptr) {}                                \
-                                                                        \
-   public:                                                              \
-    template <uint64_t N>                                               \
-    tag##_mmap<vec_t<T, N>> vectorized() const {                        \
-      CHECK_EQ(this->size_ % N, 0) << "size must be a multiple of N";   \
-      return tag##_mmap<vec_t<T, N>>(                                   \
-          reinterpret_cast<vec_t<T, N>*>(this->ptr_), this->size_ / N); \
-    }                                                                   \
+#define TAPA_DEFINE_MMAP(tag)                          \
+  template <typename T>                                \
+  class tag##_mmap : public mmap<T> {                  \
+    tag##_mmap(T* ptr) : mmap<T>(ptr) {}               \
+                                                       \
+   public:                                             \
+    using mmap<T>::mmap;                               \
+    tag##_mmap(const mmap<T>& base) : mmap<T>(base) {} \
+                                                       \
+    template <uint64_t N>                              \
+    tag##_mmap<vec_t<T, N>> vectorized() const {       \
+      return mmap<T>::template vectorized<N>();        \
+    }                                                  \
+    template <typename U>                              \
+    tag##_mmap<U> reinterpret() const {                \
+      return mmap<T>::template reinterpret<U>();       \
+    }                                                  \
   }
 TAPA_DEFINE_MMAP(placeholder);
 TAPA_DEFINE_MMAP(read_only);
 TAPA_DEFINE_MMAP(write_only);
 TAPA_DEFINE_MMAP(read_write);
 #undef TAPA_DEFINE_MMAP
-#define TAPA_DEFINE_MMAPS(tag)                                           \
-  template <typename T, uint64_t S>                                      \
-  class tag##_mmaps : public mmaps<T, S> {                               \
-    using mmaps<T, S>::mmaps;                                            \
-    tag##_mmaps(const std::array<T*, S>& ptrs) : mmaps<T, S>(ptrs){};    \
-                                                                         \
-   public:                                                               \
-    template <uint64_t N>                                                \
-    tag##_mmaps<vec_t<T, N>, S> vectorized() const {                     \
-      std::array<vec_t<T, N>*, S> ptrs;                                  \
-      std::array<uint64_t, S> sizes;                                     \
-      for (uint64_t i = 0; i < S; ++i) {                                 \
-        CHECK_EQ(this->mmaps_[i].size() % N, 0)                          \
-            << "size[" << i << "] must be a multiple of N";              \
-        ptrs[i] = reinterpret_cast<vec_t<T, N>*>(this->mmaps_[i].get()); \
-        sizes[i] = this->mmaps_[i].size() / N;                           \
-      }                                                                  \
-      return tag##_mmaps<vec_t<T, N>, S>(ptrs, sizes);                   \
-    }                                                                    \
+#define TAPA_DEFINE_MMAPS(tag)                                        \
+  template <typename T, uint64_t S>                                   \
+  class tag##_mmaps : public mmaps<T, S> {                            \
+    tag##_mmaps(const std::array<T*, S>& ptrs) : mmaps<T, S>(ptrs){}; \
+                                                                      \
+   public:                                                            \
+    using mmaps<T, S>::mmaps;                                         \
+    tag##_mmaps(const mmaps<T, S>& base) : mmaps<T, S>(base) {}       \
+                                                                      \
+    template <uint64_t N>                                             \
+    tag##_mmaps<vec_t<T, N>, S> vectorized() const {                  \
+      return mmaps<T, S>::template vectorized<N>();                   \
+    }                                                                 \
+    template <typename U>                                             \
+    tag##_mmaps<U, S> reinterpret() const {                           \
+      return mmaps<T, S>::template reinterpret<U>();                  \
+    }                                                                 \
   }
 TAPA_DEFINE_MMAPS(placeholder);
 TAPA_DEFINE_MMAPS(read_only);
