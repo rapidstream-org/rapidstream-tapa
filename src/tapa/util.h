@@ -57,6 +57,21 @@ inline constexpr uint64_t round_up(uint64_t i) {
   return ((i - 1) / N + 1) * N;
 }
 
+/// Obtain a value of type @c To by reinterpreting the object representation of
+/// @c from.
+///
+/// @note       This function is slightly different from C++20 @c std::bit_cast.
+/// @tparam To  Target type.
+/// @param from Source object.
+template <typename To, typename From>
+inline typename std::enable_if<sizeof(To) == sizeof(From), To>::type  //
+bit_cast(From from) noexcept {
+#pragma HLS inline
+  To to;
+  std::memcpy(&to, &from, sizeof(To));
+  return to;
+}
+
 template <typename T>
 T reg(T x) {
 #pragma HLS inline off
