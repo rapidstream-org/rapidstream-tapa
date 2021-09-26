@@ -291,8 +291,10 @@ class async_mmap : public mmap<T> {
 #endif  // __SYNTHESIS__
 
 /// Defines an array of @c tapa::mmap.
-#ifndef __SYNTHESIS__
 template <typename T, uint64_t S>
+#ifdef __SYNTHESIS__
+class mmaps;
+#else  // __SYNTHESIS__
 class mmaps {
  protected:
   std::vector<mmap<T>> mmaps_;
