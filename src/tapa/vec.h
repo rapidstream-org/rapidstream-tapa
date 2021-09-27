@@ -208,16 +208,16 @@ inline vec_t<T, length> truncated(const vec_t<T, N>& vec) {
   return truncated<0, length>(vec);
 }
 
-// return vec[begin:begin+len]
-template <int len, typename T, int N>
-inline vec_t<T, len> truncated(const vec_t<T, N>& vec, int begin) {
-  static_assert(len <= N, "cannot enlarge vector");
-  int end = begin + len;
+// return vec[begin:begin+length]
+template <int length, typename T, int N>
+inline vec_t<T, length> truncated(const vec_t<T, N>& vec, int begin) {
+  static_assert(length <= N, "cannot enlarge vector");
+  int end = begin + length;
   CHECK_GE(begin, 0) << "cannot truncate before 0";
-  CHECK_LT(end, N) << "cannot truncate after N";
-  vec_t<T, len> result;
+  CHECK_LE(end, N) << "cannot truncate after N";
+  vec_t<T, length> result;
 #pragma HLS inline
-  for (int i = 0; i < end - begin; ++i) {
+  for (int i = 0; i < length; ++i) {
 #pragma HLS unroll
     result.set(i, vec[begin + i]);
   }
