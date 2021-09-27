@@ -44,8 +44,14 @@ struct vec_t : std::array<T, N> {
   }
 
   // single-element getter and setter
-  constexpr const_reference get(size_type pos) const { return (*this)[pos]; }
-  void set(size_type pos, const T& value) { (*this)[pos] = value; }
+  constexpr const_reference get(size_type pos) const {
+#pragma HLS inline
+    return (*this)[pos];
+  }
+  void set(size_type pos, const T& value) {
+#pragma HLS inline
+    (*this)[pos] = value;
+  }
 
   // default constructors and copy assignment operators
   vec_t() = default;
