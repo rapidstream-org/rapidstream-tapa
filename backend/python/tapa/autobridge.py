@@ -198,11 +198,11 @@ def generate_floorplan(
 
   # Dedup items.
   for region, instances in config['OptionalFloorplan'].items():
-    instances[:] = list(dict.fromkeys(instances))
+    instances[:] = dict.fromkeys(instances)
     region_area = {}
     for instance in instances:
       accumulate_area(region_area, area[vertices[instance]])
-    _logger.info('placeholder area in %s: %s', region, region_area)
+    _logger.info('hard constraint area in %s: %s', region, region_area)
 
   # Dump the input to AutoBridge.
   with open(os.path.join(work_dir, 'autobridge_config.json'), 'w') as fp:
