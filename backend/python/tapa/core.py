@@ -222,6 +222,7 @@ class Program:
       directive: Optional[Dict[str, Any]] = None,
       register_level: int = 0,
       enable_synth_util: bool = False,
+      max_usage = None,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
 
@@ -300,7 +301,6 @@ class Program:
         with open(rpt_path) as rpt_file:
           return report.parse_hierarchical_utilization_report(rpt_file)
 
-      max_usage = None  # use AutoBridge's default
       if enable_synth_util:
         _logger.info('generating post-synthesis resource utilization reports')
         max_workers = max(1, (os.cpu_count() - int(os.getloadavg()[0])))

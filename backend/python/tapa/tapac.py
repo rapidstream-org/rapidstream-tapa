@@ -190,6 +190,14 @@ def create_parser() -> argparse.ArgumentParser:
             'instead of inferring from the floorplanning directive.'),
   )
   group.add_argument(
+      '--max-usage',
+      type=float,
+      dest='max_usage',
+      metavar='0-1',
+      help=('Use a specific floorplan usage threshold instead of using the '
+            'conservative default in AutoBridge.'),
+  )
+  group.add_argument(
       '--enable-synth-util',
       dest='enable_synth_util',
       action='store_true',
@@ -377,6 +385,7 @@ def main():
         directive,
         args.register_level or 0,
         args.enable_synth_util,
+        args.max_usage,
     )
 
   if all_steps or args.pack_xo is not None:
