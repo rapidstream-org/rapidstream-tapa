@@ -78,10 +78,17 @@ struct vec_t : std::array<T, N> {
   // all-element setter
   void set(T val) {
 #pragma HLS inline
+    *this = val;
+  }
+
+  // all-element assignment operator
+  vec_t& operator=(T val) {
+#pragma HLS inline
     for (size_type i = 0; i < N; ++i) {
 #pragma HLS unroll
       set(i, val);
     }
+    return *this;
   }
 
 // assignment operators
