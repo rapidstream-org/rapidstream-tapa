@@ -84,9 +84,8 @@ def create_parser() -> argparse.ArgumentParser:
   )
   parser.add_argument(
       '--cflags',
-      type=str,
+      action='append',
       default=[],
-      nargs='+',
       dest='cflags',
       help='Compiler flags for the kernel, may appear many times.',
   )
