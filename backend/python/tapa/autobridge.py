@@ -121,7 +121,6 @@ def generate_floorplan(
   # Set floorplans for tasks connected to MMAP and the ctrl instance.
   vertices[rtl.ctrl_instance_name(top_task.name)] = top_task.name
   ddr_list: List[int] = []
-  config['DDR'] = ddr_list
   for connectivity in parse_connectivity(connectivity_fp):
     if not connectivity:
       continue
@@ -147,6 +146,7 @@ def generate_floorplan(
       if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
         config['OptionalFloorplan'][region].append(
             rtl.async_mmap_instance_name(arg.mmap_name))
+  config['DDR'] = list(dict.fromkeys(ddr_list))
 
   # Account for area used for the shell platform and memory subsystem.
   accumulate_area(
