@@ -21,15 +21,6 @@ AREA_OF_PLATFORM = {
     'DSP': 0,
 }
 
-# Use negative values to compensate area of platform (only for DDR[0])
-AREA_PER_DDR = {
-    'LUT': max(19773 - 12960 * 4, -AREA_OF_PLATFORM['LUT']),
-    'FF': max(21360 - 25920 * 4, -AREA_OF_PLATFORM['FF']),
-    'BRAM': max(51 - 48 * 4, -AREA_OF_PLATFORM['BRAM']),
-    'URAM': max(0 - 16 * 4, -AREA_OF_PLATFORM['URAM']),
-    'DSP': max(3 - 96 * 4, -AREA_OF_PLATFORM['DSP']),
-}
-
 AREA_PER_HBM = {
     'LUT': 2952,
     'FF': 3961,
@@ -132,8 +123,6 @@ def generate_floorplan(
     region = get_port_region(part_num, port=port)
     port_cat, port_id = parse_port(port)
     if port_cat == 'DDR':
-      if port_id == 0:
-        accumulate_area(region_to_shell_area[region], AREA_PER_DDR)
       ddr_list.append(port_id)
     elif port_cat == 'HBM':
       accumulate_area(region_to_shell_area[region], AREA_PER_HBM)
