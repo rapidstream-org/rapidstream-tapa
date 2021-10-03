@@ -37,10 +37,12 @@ if(Boost_COROUTINE_FOUND)
   message(STATUS "Building TAPA with coroutine")
   target_compile_definitions(tapa_static PRIVATE TAPA_ENABLE_COROUTINE=1)
   target_compile_definitions(tapa_shared PRIVATE TAPA_ENABLE_COROUTINE=1)
-  target_link_libraries(tapa_static PRIVATE ${Boost_COROUTINE_LIBRARY}
-                                            ${Boost_CONTEXT_LIBRARY})
-  target_link_libraries(tapa_shared PRIVATE ${Boost_COROUTINE_LIBRARY}
-                                            ${Boost_CONTEXT_LIBRARY})
+  target_link_libraries(
+    tapa_static PRIVATE Boost::boost ${Boost_COROUTINE_LIBRARY}
+                        ${Boost_CONTEXT_LIBRARY})
+  target_link_libraries(
+    tapa_shared PRIVATE Boost::boost ${Boost_COROUTINE_LIBRARY}
+                        ${Boost_CONTEXT_LIBRARY})
   list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
        "libboost-coroutine-dev(>=${Boost_VERSION_STRING})")
   list(APPEND CPACK_RPM_PACKAGE_REQUIRES
@@ -51,10 +53,10 @@ if(Boost_STACKTRACE_BASIC_FOUND)
   message(STATUS "Building TAPA with stacktrace")
   target_compile_definitions(tapa_static PRIVATE TAPA_ENABLE_STACKTRACE=1)
   target_compile_definitions(tapa_shared PRIVATE TAPA_ENABLE_STACKTRACE=1)
-  target_link_libraries(tapa_static PRIVATE ${Boost_STACKTRACE_BASIC_LIBRARY}
-                                            dl)
-  target_link_libraries(tapa_shared PRIVATE ${Boost_STACKTRACE_BASIC_LIBRARY}
-                                            dl)
+  target_link_libraries(
+    tapa_static PRIVATE Boost::boost ${Boost_STACKTRACE_BASIC_LIBRARY} dl)
+  target_link_libraries(
+    tapa_shared PRIVATE Boost::boost ${Boost_STACKTRACE_BASIC_LIBRARY} dl)
   list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
        "libboost-stacktrace-dev(>=${Boost_VERSION_STRING})")
   list(APPEND CPACK_RPM_PACKAGE_REQUIRES
