@@ -1,0 +1,9 @@
+**/__pycache__
+**/*.egg-info
+/.cache
+/.git
+/.vscode
+/backend/python/build
+/backend/python/dist
+/build
+/compile_commands.json
