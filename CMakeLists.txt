@@ -43,6 +43,8 @@ if(Boost_COROUTINE_FOUND)
                                             ${Boost_CONTEXT_LIBRARY})
   list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
        "libboost-coroutine-dev(>=${Boost_VERSION_STRING})")
+  list(APPEND CPACK_RPM_PACKAGE_REQUIRES
+       "boost${Boost_VERSION_MAJOR}${Boost_VERSION_MINOR}-coroutine")
 endif()
 
 if(Boost_STACKTRACE_BASIC_FOUND)
@@ -55,6 +57,8 @@ if(Boost_STACKTRACE_BASIC_FOUND)
                                             dl)
   list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS
        "libboost-stacktrace-dev(>=${Boost_VERSION_STRING})")
+  list(APPEND CPACK_RPM_PACKAGE_REQUIRES
+       "boost${Boost_VERSION_MAJOR}${Boost_VERSION_MINOR}-stacktrace")
 endif()
 
 include(GNUInstallDirs)
@@ -107,7 +111,22 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Blaok Chi")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 
-set(CPACK_GENERATOR TGZ DEB)
+list(
+  APPEND
+  CPACK_RPM_PACKAGE_REQUIRES
+  "frt-devel" # required by libtapa for host-kernel interface
+  "gcc-c++" # required by tapac for dependence analysis
+  "glog-devel" # required by libtapa for logging messages
+  "iverilog" # required by tapac for RTL instrumentation
+)
+list(SORT CPACK_RPM_PACKAGE_REQUIRES)
+list(JOIN CPACK_RPM_PACKAGE_REQUIRES ", " CPACK_RPM_PACKAGE_REQUIRES)
+
+set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+
+set(CPACK_GENERATOR
+    TGZ DEB
+    CACHE STRING "Enable selected CPack generators")
 include(CPack)
 
 option(BUILD_DOCS "Build documentations" OFF)
