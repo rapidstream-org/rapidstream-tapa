@@ -751,7 +751,7 @@ class istreams : virtual public internal::basic_streams<T> {
   /// @param pos Position of the array reference.
   /// @return    @c tapa::istream referenced in the array.
   istream<T> operator[](int pos) const {
-    CHECK_NOTNULL(this->ptr);
+    CHECK_NOTNULL(this->ptr.get());
     CHECK_GE(pos, 0);
     CHECK_LT(pos, this->ptr->size());
     return (*this->ptr)[pos];
@@ -781,7 +781,7 @@ class istreams : virtual public internal::basic_streams<T> {
   }
   template <uint64_t length>
   istreams<T, length> access() {
-    CHECK_NOTNULL(this->ptr);
+    CHECK_NOTNULL(this->ptr.get());
     istreams<T, length> result;
     result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
     result.ptr->reserve(length);
@@ -815,7 +815,7 @@ class ostreams : virtual public internal::basic_streams<T> {
   /// @param pos Position of the array reference.
   /// @return @c tapa::ostream referenced in the array.
   ostream<T> operator[](int pos) const {
-    CHECK_NOTNULL(this->ptr);
+    CHECK_NOTNULL(this->ptr.get());
     CHECK_GE(pos, 0);
     CHECK_LT(pos, this->ptr->size());
     return (*this->ptr)[pos];
@@ -845,7 +845,7 @@ class ostreams : virtual public internal::basic_streams<T> {
   }
   template <uint64_t length>
   ostreams<T, length> access() {
-    CHECK_NOTNULL(this->ptr);
+    CHECK_NOTNULL(this->ptr.get());
     ostreams<T, length> result;
     result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
     result.ptr->reserve(length);
@@ -905,7 +905,7 @@ class streams
   /// @param pos Position of the array reference.
   /// @return @c tapa::stream referenced in the array.
   stream<T, N> operator[](int pos) const {
-    CHECK_NOTNULL(this->ptr);
+    CHECK_NOTNULL(this->ptr.get());
     CHECK_GE(pos, 0);
     CHECK_LT(pos, this->ptr->size());
     return (*this->ptr)[pos];
@@ -930,7 +930,7 @@ class streams
   }
   template <uint64_t length>
   istreams<T, length> access_as_istreams() {
-    CHECK_NOTNULL(this->ptr);
+    CHECK_NOTNULL(this->ptr.get());
     istreams<T, length> result;
     result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
     result.ptr->reserve(length);
@@ -945,7 +945,7 @@ class streams
   }
   template <uint64_t length>
   ostreams<T, length> access_as_ostreams() {
-    CHECK_NOTNULL(this->ptr);
+    CHECK_NOTNULL(this->ptr.get());
     ostreams<T, length> result;
     result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
     result.ptr->reserve(length);
