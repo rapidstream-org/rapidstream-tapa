@@ -95,11 +95,11 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Task-Parallel High-Level Synthesis")
 list(
   APPEND
   CPACK_DEBIAN_PACKAGE_DEPENDS
-  "clang-8"
-  "g++"
-  "iverilog"
-  "libfrt-dev"
-  "libgoogle-glog-dev")
+  "g++" # required by tapac for dependence analysis
+  "iverilog" # required by tapac for RTL instrumentation
+  "libfrt-dev" # required by libtapa for host-kernel interface
+  "libgoogle-glog-dev" # required by libtapa for logging messages
+)
 list(SORT CPACK_DEBIAN_PACKAGE_DEPENDS)
 list(JOIN CPACK_DEBIAN_PACKAGE_DEPENDS ", " CPACK_DEBIAN_PACKAGE_DEPENDS)
 

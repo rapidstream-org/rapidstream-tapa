@@ -277,11 +277,14 @@ def main():
     if match is None:
       parser.error(f'failed to parse tapacc output: {tapacc_version}')
     clang_version = match[1]
-    clang_include = os.path.join('/', 'usr', 'lib', 'clang', clang_version,
-                                 'include')
+    clang_include = os.path.join(
+        os.path.dirname(tapa.core.__file__),
+        'assets',
+        'clang',
+    )
     if not os.path.isdir(clang_include):
       parser.error(f'missing clang include directory: {clang_include}')
-    tapacc_cmd += '-I', clang_include
+    tapacc_cmd += '-isystem', clang_include
     tapacc_cmd += cflag_list
 
     proc = subprocess.run(tapacc_cmd,
@@ -296,7 +299,7 @@ def main():
     input_file_basename = os.path.basename(args.input_file)
     input_file_dirname = os.path.dirname(args.input_file) or '.'
     deps: str = subprocess.check_output([
-        'clang++-' + clang_version,
+        os.environ.get('CXX', 'g++'),
         '-MM',
         input_file_basename,
         '-I',

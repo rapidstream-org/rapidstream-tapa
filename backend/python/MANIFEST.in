@@ -1,1 +1,2 @@
 include tapa/assets/verilog/*.v
+graft tapa/assets/clang
