@@ -16,7 +16,7 @@
 namespace tapa {
 
 template <typename T, int N>
-struct vec_t : std::array<T, N> {
+struct vec_t : protected std::array<T, N> {
  private:
   using base_type = std::array<T, N>;
 
@@ -38,12 +38,17 @@ struct vec_t : std::array<T, N> {
   using typename base_type::reverse_iterator;
   using typename base_type::value_type;
 
-  // bit-aggregate vec_t objects
-  ~vec_t() {
-#pragma HLS aggregate variable = this bit
-  }
-
   // single-element getter and setter
+  constexpr const_reference operator[](size_type pos) const {
+#pragma HLS inline
+#pragma HLS aggregate variable = this bit
+    return base_type::operator[](pos);
+  }
+  reference operator[](size_type pos) {
+#pragma HLS inline
+#pragma HLS aggregate variable = this bit
+    return base_type::operator[](pos);
+  }
   constexpr const_reference get(size_type pos) const {
 #pragma HLS inline
     return (*this)[pos];
@@ -53,12 +58,9 @@ struct vec_t : std::array<T, N> {
     (*this)[pos] = value;
   }
 
-  // default constructors and copy assignment operators
-  vec_t() = default;
-  vec_t(const vec_t&) = default;
-  vec_t(vec_t&&) = default;
-  vec_t& operator=(const vec_t&) = default;
-  vec_t& operator=(vec_t&&) = default;
+  // use base type constructors and assignment operators
+  using base_type::base_type;
+  using base_type::operator=;
 
   // constructors from base_type
   explicit vec_t(const base_type& other) : base_type(other) {}
