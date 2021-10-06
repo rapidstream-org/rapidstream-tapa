@@ -8,7 +8,7 @@ import os.path
 import re
 import shutil
 import subprocess
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import haoda.backend.xilinx
 
@@ -216,9 +216,9 @@ def create_parser() -> argparse.ArgumentParser:
   return parser
 
 
-def main():
+def main(argv: Optional[List[str]] = None):
   parser = create_parser()
-  args = parser.parse_args()
+  args = parser.parse_args(argv)
   verbose = 0 if args.verbose is None else args.verbose
   quiet = 0 if args.quiet is None else args.quiet
   logging_level = (quiet -
