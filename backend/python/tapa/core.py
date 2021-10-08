@@ -1,5 +1,6 @@
 import collections
 import decimal
+import itertools
 import json
 import logging
 import os.path
@@ -173,7 +174,8 @@ class Program:
     """Run HLS with extracted HLS C++ files and generate tarballs."""
     _logger.info('running HLS')
 
-    def worker(task: Task) -> None:
+    def worker(task: Task, idx: int) -> None:
+      os.nice(idx % 19)
       with open(self.get_tar(task.name), 'wb') as tarfileobj:
         with hls.RunHls(
             tarfileobj,
@@ -192,20 +194,14 @@ class Program:
               'HLS failed for %s, but the failure may be flaky; retrying',
               task.name,
           )
-          worker(task)
+          worker(task, 0)
           return
         sys.stdout.write(stdout.decode('utf-8'))
         sys.stderr.write(stderr.decode('utf-8'))
         raise RuntimeError('HLS failed for {}'.format(task.name))
 
-    # Vitis HLS often fails with "Pre-synthesis failed" when the load is high.
-    # Use a simple heuristic to avoid that.
-    max_workers = max(1, os.cpu_count() - int(os.getloadavg()[0]))
-    with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-      tasks = [executor.submit(worker, x) for x in self._tasks.values()]
-      futures.wait(tasks)
-      for task in tasks:
-        task.result()
+    with futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+      any(executor.map(worker, self._tasks.values(), itertools.count(0)))
 
     return self
 
@@ -276,7 +272,7 @@ class Program:
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
 
-      def worker(module_name: str) -> report.HierarchicalUtilization:
+      def worker(module_name: str, idx: int) -> report.HierarchicalUtilization:
         _logger.debug('synthesizing %s', module_name)
         rpt_path = f'{self.work_dir}/report/{module_name}.hier.util.rpt'
 
@@ -286,6 +282,7 @@ class Program:
 
         # generate report if and only if C++ source is newer than report.
         if os.path.getmtime(self.get_cpp(module_name)) > rpt_path_mtime:
+          os.nice(idx % 19)
           with report.ReportDirUtil(
               self.rtl_dir,
               rpt_path,
@@ -306,11 +303,11 @@ class Program:
 
       if enable_synth_util:
         _logger.info('generating post-synthesis resource utilization reports')
-        max_workers = max(1, (os.cpu_count() - int(os.getloadavg()[0])))
-        with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
           for utilization in executor.map(
               worker,
               {x.task.name for x in self.top_task.instances},
+              itertools.count(0),
           ):
             # override self_area populated from HLS report
             bram = int(utilization['RAMB36']) * 2 + int(utilization['RAMB18'])
