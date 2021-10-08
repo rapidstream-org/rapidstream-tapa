@@ -1,6 +1,8 @@
 import collections
 import itertools
 import logging
+import os.path
+import tempfile
 from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple, Union
 
 from pyverilog.ast_code_generator import codegen
@@ -42,9 +44,15 @@ class Module:
     """Construct a Module from files. """
     if not files:
       return
-    self.ast: ast.Source
-    self.directives: Tuple[Directive, ...]
-    self.ast, self.directives = parser.parse(files, debug=False)
+    with tempfile.TemporaryDirectory(prefix='pyverilog-') as output_dir:
+      codeparser = parser.VerilogCodeParser(
+          files,
+          preprocess_output=os.path.join(output_dir, 'preprocess.output'),
+          outputdir=output_dir,
+          debug=False,
+      )
+      self.ast: ast.Source = codeparser.parse()
+      self.directives: Tuple[Directive, ...] = codeparser.get_directives()
     self._handshake_output_ports: Dict[str, ast.Assign] = {}
     self._calculate_indices()
 

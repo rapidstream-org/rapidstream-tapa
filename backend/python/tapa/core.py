@@ -253,16 +253,19 @@ class Program:
 
     # extract and parse RTL and populate tasks
     _logger.info('parsing RTL files and populating tasks')
-    oldcwd = os.getcwd()
-    os.chdir(self.work_dir)
-    for task in self._tasks.values():
+    for task, module in zip(
+        self._tasks.values(),
+        futures.ProcessPoolExecutor().map(
+            rtl.Module,
+            ([self.get_rtl(x.name)] for x in self._tasks.values()),
+        ),
+    ):
       _logger.debug('parsing %s', task.name)
-      task.module = rtl.Module([self.get_rtl(task.name)])
+      task.module = module
       task.self_area = self.get_area(task.name)
       task.clock_period = self.get_clock_period(task.name)
       _logger.debug('populating %s', task.name)
       self._populate_task(task)
-    os.chdir(oldcwd)
 
     # instrument the upper-level RTL except the top-level
     _logger.info('instrumenting upper-level RTL')
