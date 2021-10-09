@@ -40,11 +40,29 @@ class Module:
     _last_logic_idx: Last index of ast.Assign or ast.Always in module_def.items.
   """
 
-  def __init__(self, files: Iterable[str]):
+  def __init__(self, files: Iterable[str], is_trimming_enabled: bool = False):
     """Construct a Module from files. """
     if not files:
       return
     with tempfile.TemporaryDirectory(prefix='pyverilog-') as output_dir:
+      if is_trimming_enabled:
+        # trim the body since we only need the interface information
+        new_files = []
+        for idx, file in enumerate(files):
+          lines = []
+          with open(file) as fp:
+            for line in fp:
+              items = line.strip().split()
+              if (len(items) > 1 and items[0] in {'reg', 'wire'} and
+                  items[1].startswith('ap_rst')):
+                lines.append('endmodule')
+                break
+              lines.append(line)
+          new_file = os.path.join(output_dir, f'trimmed_{idx}.v')
+          with open(new_file, 'w') as fp:
+            fp.writelines(lines)
+          new_files.append(new_file)
+        files = new_files
       codeparser = parser.VerilogCodeParser(
           files,
           preprocess_output=os.path.join(output_dir, 'preprocess.output'),

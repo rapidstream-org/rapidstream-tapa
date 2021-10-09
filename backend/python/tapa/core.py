@@ -254,6 +254,7 @@ class Program:
         futures.ProcessPoolExecutor().map(
             rtl.Module,
             ([self.get_rtl(x.name)] for x in self._tasks.values()),
+            (not x.is_upper for x in self._tasks.values()),
         ),
     ):
       _logger.debug('parsing %s', task.name)
