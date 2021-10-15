@@ -212,6 +212,13 @@ def create_parser() -> argparse.ArgumentParser:
             'for floorplanning.'),
       default=True,
   )
+  group.add_argument(
+      '--force-dag',
+      dest='force_dag',
+      action='store_true',
+      help='Forces DAG for floorplanning.',
+      default=False,
+  )
 
   return parser
 
@@ -388,6 +395,7 @@ def main(argv: Optional[List[str]] = None):
         args.register_level or 0,
         args.enable_synth_util,
         args.max_usage,
+        args.force_dag,
     )
 
   if all_steps or args.pack_xo is not None:

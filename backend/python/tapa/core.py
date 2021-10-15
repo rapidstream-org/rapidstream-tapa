@@ -219,6 +219,7 @@ class Program:
       register_level: int = 0,
       enable_synth_util: bool = False,
       max_usage = None,
+      force_dag: bool = False,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
 
@@ -330,6 +331,7 @@ class Program:
             directive['connectivity'],
             directive['part_num'],
             max_usage,
+            force_dag,
         )
       self._process_partition_directive(floorplan, directive['constraint'])
     if register_level:

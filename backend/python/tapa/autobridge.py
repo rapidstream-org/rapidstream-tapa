@@ -86,6 +86,7 @@ def generate_floorplan(
     connectivity_fp: Optional[TextIO],
     part_num: str,
     max_usage: Optional[float],
+    force_dag: bool,
 ) -> Dict[str, Any]:
   # pylint: disable=import-outside-toplevel
   import autobridge.HLSParser.tapa as autobridge
@@ -109,6 +110,7 @@ def generate_floorplan(
       'Vertices': vertices,
       'Edges': edges,
       'Area': area,
+      'force_dag': force_dag,
   }
   if max_usage is not None:
     config['MaxUsage'] = max_usage
