@@ -161,7 +161,8 @@ def generate_floorplan(
         floorplan_vertex_name = rtl.async_mmap_instance_name(arg.mmap_name)
         vertices[floorplan_vertex_name] = floorplan_vertex_name
         # TODO: use a better calibrated model
-        area[floorplan_vertex_name] = AREA_OF_M_AXI[width_table[arg.name]]
+        width = max(width_table[arg.name], 32)
+        area[floorplan_vertex_name] = AREA_OF_M_AXI[width]
 
   # Generate edges for scalar connections from the ctrl instance.
   for port in top_task.ports.values():
