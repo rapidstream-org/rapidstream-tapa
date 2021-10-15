@@ -30,6 +30,13 @@ AREA_PER_HBM = {
 }
 
 AREA_OF_M_AXI = {
+    32: {
+        'BRAM': 0,
+        'DSP': 0,
+        'FF': 50,
+        'LUT': 150,
+        'URAM': 0,
+    },
     64: {
         'BRAM': 0,
         'DSP': 0,
