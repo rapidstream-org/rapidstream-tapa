@@ -218,8 +218,7 @@ class Program:
       directive: Optional[Dict[str, Any]] = None,
       register_level: int = 0,
       enable_synth_util: bool = False,
-      max_usage = None,
-      force_dag: bool = False,
+      **kwargs,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
 
@@ -330,8 +329,7 @@ class Program:
             self._get_fifo_width,
             directive['connectivity'],
             directive['part_num'],
-            max_usage,
-            force_dag,
+            **kwargs,
         )
       self._process_partition_directive(floorplan, directive['constraint'])
     if register_level:

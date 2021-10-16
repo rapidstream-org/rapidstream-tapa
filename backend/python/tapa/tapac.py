@@ -390,12 +390,16 @@ def main(argv: Optional[List[str]] = None):
     if args.register_level is not None:
       if args.register_level <= 0:
         parser.error('register level must be positive')
+    kwargs = {}
+    if args.max_usage is not None:
+      kwargs['user_max_usage_ratio'] = args.max_usage
+    if args.force_dag is not None:
+      kwargs['force_dag'] = args.force_dag
     program.instrument_rtl(
         directive,
         args.register_level or 0,
         args.enable_synth_util,
-        args.max_usage,
-        args.force_dag,
+        **kwargs,
     )
 
   if all_steps or args.pack_xo is not None:

@@ -85,8 +85,7 @@ def generate_floorplan(
     fifo_width_getter: Callable[[Task, str], int],
     connectivity_fp: Optional[TextIO],
     part_num: str,
-    max_usage: Optional[float],
-    force_dag: bool,
+    **kwargs,
 ) -> Dict[str, Any]:
   # pylint: disable=import-outside-toplevel
   import autobridge.HLSParser.tapa as autobridge
@@ -110,10 +109,8 @@ def generate_floorplan(
       'Vertices': vertices,
       'Edges': edges,
       'Area': area,
-      'force_dag': force_dag,
+      'ExtraKeyWordArgs': kwargs,
   }
-  if max_usage is not None:
-    config['MaxUsage'] = max_usage
 
   # Remember the number of ports instantiated (for shell area estimation).
   region_to_shell_area = collections.defaultdict(dict)
