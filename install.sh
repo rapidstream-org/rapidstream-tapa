@@ -64,5 +64,5 @@ centos.7)
   ;;
 esac
 
-python3 -m pip install --upgrade --user setuptools
+python3 -m pip install --upgrade --user setuptools wheel
 python3 -m pip install --upgrade --user tapa
