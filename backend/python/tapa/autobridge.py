@@ -90,6 +90,8 @@ def generate_floorplan(
   # pylint: disable=import-outside-toplevel
   import autobridge.HLSParser.tapa as autobridge
 
+  _logger.info('total area estimation: %s', top_task.total_area)
+
   vertices = {x.name: x.task.name for x in top_task.instances}
   edges = {}
 
