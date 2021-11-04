@@ -17,14 +17,14 @@ function install-tapa-for-ubuntu() {
     python3-pip \
     wget
 
+  wget -O - https://about.blaok.me/tapa/tapa.gpg.key | sudo apt-key add -
+  wget -O - https://about.blaok.me/fpga-runtime/frt.gpg.key | sudo apt-key add -
   sudo tee /etc/apt/sources.list.d/tapa.list <<EOF
 deb [arch=amd64] https://about.blaok.me/tapa ${codename} main
 EOF
   sudo tee /etc/apt/sources.list.d/frt.list <<EOF
 deb [arch=amd64] https://about.blaok.me/fpga-runtime ${codename} main
 EOF
-  wget -O - https://about.blaok.me/tapa/tapa.gpg.key | sudo apt-key add -
-  wget -O - https://about.blaok.me/fpga-runtime/frt.gpg.key | sudo apt-key add -
 
   sudo apt-get update
   sudo apt-get install -y xrt --no-install-recommends || true
