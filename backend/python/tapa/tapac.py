@@ -8,9 +8,11 @@ import os.path
 import re
 import shutil
 import subprocess
+import sys
 from typing import Any, Dict, List, Optional
 
 import haoda.backend.xilinx
+from absl import flags
 
 import tapa.core
 
@@ -224,6 +226,8 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None):
+  argv = flags.FLAGS(argv or sys.argv[1:], known_only=True)
+
   parser = create_parser()
   args = parser.parse_args(argv)
   verbose = 0 if args.verbose is None else args.verbose
