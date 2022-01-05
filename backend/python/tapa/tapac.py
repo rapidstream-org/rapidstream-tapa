@@ -303,6 +303,11 @@ def main(argv: Optional[List[str]] = None):
                           universal_newlines=True,
                           check=False)
     if proc.returncode != 0:
+      _logger.error(
+          'tapacc command %s failed with exit code %d',
+          tapacc_cmd,
+          proc.returncode,
+      )
       parser.exit(status=proc.returncode)
     tapa_program_json_dict = json.loads(proc.stdout)
 
