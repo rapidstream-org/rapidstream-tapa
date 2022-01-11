@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+sudo apt-get update
 sudo apt-get purge -y libgcc-*-dev || true
 sudo apt-get install -y \
   build-essential \
