@@ -4,36 +4,35 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-18.04, ubuntu-20.04]
 
     steps:
-    - name: Checkout myself
-      uses: actions/checkout@v1
-    - name: Install dependencies
-      run: |
-        ./.github/scripts/install-build-deps.sh
-    - name: Configure myself
-      run: cmake -S . -B build
-    - name: Cache llvm-src
-      uses: actions/cache@v1
-      with:
-        path: build/_deps/llvm-src
-        key: ${{ matrix.os }}-llvm-src-202108-1
-    - name: Cache llvm-build
-      uses: actions/cache@v1
-      with:
-        path: build/_deps/llvm-build
-        key: ${{ matrix.os }}-llvm-build-202108-1
-    - name: Cache llvm-subbuild
-      uses: actions/cache@v1
-      with:
-        path: build/_deps/llvm-subbuild
-        key: ${{ matrix.os }}-llvm-subbuild-202108-1
-    - name: Build myself
-      run: cmake --build build --target all
-    - name: Test myself
-      run: cmake --build build --target test
+      - name: Checkout myself
+        uses: actions/checkout@v1
+      - name: Install dependencies
+        run: |
+          ./.github/scripts/install-build-deps.sh
+      - name: Configure myself
+        run: cmake -S . -B build
+      - name: Cache llvm-src
+        uses: actions/cache@v1
+        with:
+          path: build/_deps/llvm-src
+          key: ${{ matrix.os }}-llvm-src-202108-1
+      - name: Cache llvm-build
+        uses: actions/cache@v1
+        with:
+          path: build/_deps/llvm-build
+          key: ${{ matrix.os }}-llvm-build-202108-1
+      - name: Cache llvm-subbuild
+        uses: actions/cache@v1
+        with:
+          path: build/_deps/llvm-subbuild
+          key: ${{ matrix.os }}-llvm-subbuild-202108-1
+      - name: Build myself
+        run: cmake --build build --target all
+      - name: Test myself
+        run: cmake --build build --target test
