@@ -36,3 +36,50 @@ jobs:
         run: cmake --build build --target all
       - name: Test myself
         run: cmake --build build --target test
+
+  cosim:
+    if: github.event_name == 'push' && github.repository == 'UCLA-VAST/tapa'
+
+    runs-on:
+      - self-hosted
+      - Linux
+      - xilinx-tools
+
+    strategy:
+      matrix:
+        xocl-version:
+          - 2020.2
+
+    env:
+      XILINX_VITIS: /opt/tools/xilinx/Vitis/${{ matrix.xocl-version }}
+      XILINX_VIVADO: /opt/tools/xilinx/Vivado/${{ matrix.xocl-version }}
+
+    steps:
+      - name: Checkout myself
+        uses: actions/checkout@v1
+      - name: Install dependencies
+        run: |
+          .github/scripts/install-build-deps.sh
+          python3 -m pip install --editable backend/python
+
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            faketime \
+            gcc-multilib \
+            iverilog \
+            libc6-dev-i386 \
+            libncurses5 \
+            libtinfo5 \
+            libxext6 \
+            ninja-build \
+            unzip \
+            xilinx-u250-xdma-dev \
+            xilinx-u280-xdma-dev \
+            xrt \
+      - name: Configure myself
+        run: cmake -S . -B build -G Ninja
+      - name: Build myself
+        run: cmake --build build --target all
+      - name: Test myself
+        working-directory: build
+        run: ctest --verbose
