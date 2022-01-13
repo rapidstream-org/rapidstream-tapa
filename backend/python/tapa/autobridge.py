@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Optional, TextIO, Tuple
 
 from tapa import util
 from tapa.verilog import xilinx as rtl
+from tapa.verilog.xilinx.async_mmap import ADDR_CHANNEL_DATA_WIDTH, RESP_CHANNEL_DATA_WIDTH
 
 from .instance import Instance
 from .task import Task
@@ -120,14 +121,16 @@ def generate_floorplan(
   # Set floorplans for tasks connected to MMAP and the ctrl instance.
   vertices[rtl.ctrl_instance_name(top_task.name)] = top_task.name
   ddr_list: List[int] = []
+
+  width_table = {port.name: port.width for port in top_task.ports.values()}
+
+  # connectivity refers to the .ini file with the arg to port mapping
   for connectivity in parse_connectivity(connectivity_fp):
     if not connectivity:
       continue
-    dot = connectivity.find('.')
-    colon = connectivity.find(':')
-    kernel = connectivity[:dot]
-    kernel_arg = connectivity[dot + 1:colon]
-    port = connectivity[colon + 1:]
+
+    kernel_arg, port = _parse_connectivity(connectivity)
+
     region = get_port_region(part_num, port=port)
     port_cat, port_id = parse_port(port)
     if port_cat == 'DDR':
@@ -136,13 +139,9 @@ def generate_floorplan(
       accumulate_area(region_to_shell_area[region], AREA_PER_HBM)
     if not region:
       continue
-    for arg in top_task.args[kernel_arg]:
-      _logger.debug('%s is constrained to %s because of %s', arg.instance.name,
-                    region, arg.name)
-      config['OptionalFloorplan'][region].append(arg.instance.name)
-      if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-        config['OptionalFloorplan'][region].append(
-            rtl.async_mmap_instance_name(arg.mmap_name))
+
+    _add_connectivity_constraints(config, region, kernel_arg, top_task, width_table)
+
   config['DDR'] = list(dict.fromkeys(ddr_list))
 
   # Account for area used for the shell platform and memory subsystem.
@@ -159,8 +158,6 @@ def generate_floorplan(
     accumulate_area(area.setdefault(placeholder_name, {}), shell_area)
     # Placeholders are bound to their own region.
     config['OptionalFloorplan'][region].append(placeholder_name)
-
-  width_table = {port.name: port.width for port in top_task.ports.values()}
 
   # ASYNC_MMAP is outside of its instantiating module and needs its own
   # floorplanning constraint.
@@ -194,6 +191,9 @@ def generate_floorplan(
         'width': fifo_width_getter(top_task, fifo_name),
         'depth': top_task.fifos[fifo_name]['depth']
     }
+
+  # Generate edges for FIFOs between async_mmap and task instances
+  # included in _add_connectivity_constraints()
 
   # Dedup items.
   for region, instances in config['OptionalFloorplan'].items():
@@ -280,3 +280,62 @@ def get_ctrl_instance_region(part_num: str) -> str:
   if part_num.startswith('xcu250-') or part_num.startswith('xcu280-'):
     return 'COARSE_X1Y0'
   raise NotImplementedError(f'unknown {part_num}')
+
+
+def _add_connectivity_constraints(
+    config: Dict[str, Any],
+    region: str,
+    kernel_arg: str,
+    top_task: Task,
+    width_table: Dict[str, int]
+) -> None:
+  """
+  based on the .ini configuration file:
+  (1) constrain the m_axi modules (async_mmap or mmap) nearby the associated IPs (DDR or HBM)
+  (2) update the dataflow graph to add edges between async_mmap instances and task instances
+  """
+  # add floorplan constraints for async_mmap and mmap
+  for arg in top_task.args[kernel_arg]:
+    # if async_mmap, only floorplans the async_mmap instances.
+    # connections between the async_mmap instance and the task instance are pipelined
+    if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+      _logger.debug(f'constrain async_mmap instance {arg.mmap_name} to {region}')
+      config['OptionalFloorplan'][region].append(
+          rtl.async_mmap_instance_name(arg.mmap_name))
+    # normal mmap, the axi module is combined with the IO task instance
+    else:
+      _logger.debug('%s is constrained to %s because of %s', arg.instance.name,
+                  region, arg.name)
+      config['OptionalFloorplan'][region].append(arg.instance.name)
+  
+  # update the graph to add the FIFO conenctions for async_mmap
+  # the FIFO between async_mmap and task instances are not defined by tapa::stream
+  # so we need to manually insert them to the graph
+  for arg in top_task.args[kernel_arg]:
+    if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+      arg_width = width_table[arg.name]
+      
+      # 5 FIFOs between the async_mmap and task instance
+      # wr_data, wr_addr, rd_data, rd_addr, resp
+      total_connection_width = arg_width + arg_width + ADDR_CHANNEL_DATA_WIDTH + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH
+      
+      config['Edges'][f'{arg.mmap_name}_ch'] = {
+        'produced_by': rtl.async_mmap_instance_name(arg.mmap_name),
+        'consumed_by': arg.instance.name,
+        'width': total_connection_width,
+        'depth': 2,
+      }
+
+
+def _parse_connectivity(connectivity: str) -> Tuple[str, str]:
+  """
+  parse the .ini config file. Example: 
+  [connectivity]
+  sp=serpens_1.edge_list_ch0:HBM[0]
+  """
+  dot = connectivity.find('.')
+  colon = connectivity.find(':')
+  kernel = connectivity[:dot]
+  kernel_arg = connectivity[dot + 1:colon]
+  port = connectivity[colon + 1:]
+  return kernel_arg, port
