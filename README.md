@@ -180,6 +180,8 @@ By specifying a filename for the output TCL constraints, TAPA can generate coars
 ## Known Issues
 
 + Template functions cannot be tasks
++ Task functions must be defined in the same file
+  + `inline` helper functions can be defined in headers
 
 [tapa]: https://github.com/UCLA-VAST/tapa/
 [autobridge]: https://github.com/Licheng-Guo/AutoBridge/
