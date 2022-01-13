@@ -14,6 +14,9 @@ __all__ = [
     'generate_async_mmap_ports',
     'generate_async_mmap_signals',
     'generate_async_mmap_ioports',
+    'PIPELINE_SUFFIX',
+    'ADDR_CHANNEL_DATA_WIDTH',
+    'RESP_CHANNEL_DATA_WIDTH',
 ]
 
 _logger = logging.getLogger().getChild(__name__)
@@ -26,6 +29,10 @@ ASYNC_MMAP_SUFFIXES = {
     'write_resp': ISTREAM_SUFFIXES,
 }
 
+PIPELINE_SUFFIX = '_async_mmap_side'
+
+ADDR_CHANNEL_DATA_WIDTH = 64
+RESP_CHANNEL_DATA_WIDTH = 8
 
 def async_mmap_arg_name(arg: str, tag: str, suffix: str) -> str:
   return util.wire_name(f'{arg}_{tag}', suffix)
@@ -38,9 +45,9 @@ def async_mmap_width(
 ) -> Optional[ast.Width]:
   if suffix in {ISTREAM_SUFFIXES[0], OSTREAM_SUFFIXES[0]}:
     if tag.endswith('addr'):
-      data_width = 64
+      data_width = ADDR_CHANNEL_DATA_WIDTH
     elif tag == 'write_resp':
-      data_width = 8
+      data_width = RESP_CHANNEL_DATA_WIDTH
     return ast.Width(msb=ast.Constant(data_width - 1), lsb=ast.Constant(0))
   return None
 
@@ -83,14 +90,17 @@ def generate_async_mmap_ports(
 def generate_async_mmap_signals(tag: str, arg: str,
                                 data_width: int) -> Iterator[ast.Wire]:
   for suffix in ASYNC_MMAP_SUFFIXES[tag]:
-    yield ast.Wire(
-        name=async_mmap_arg_name(arg=arg, tag=tag, suffix=suffix),
-        width=async_mmap_width(
-            tag=tag,
-            suffix=suffix,
-            data_width=data_width,
-        ),
-    )
+    # add relay station between the task instance and the async_mmap instance
+    # async_mmap.fifo_interface <-- wire --> relay_station <-- wire --> task_instance.fifo_interface
+    for pipelined_suffix in (suffix, f'{suffix}{PIPELINE_SUFFIX}'):
+      yield ast.Wire(
+          name=async_mmap_arg_name(arg=arg, tag=tag, suffix=pipelined_suffix),
+          width=async_mmap_width(
+              tag=tag,
+              suffix=suffix,
+              data_width=data_width,
+          ),
+      )
 
 
 def generate_async_mmap_ioports(tag: str, arg: str,
