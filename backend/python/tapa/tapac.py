@@ -287,7 +287,6 @@ def main(argv: Optional[List[str]] = None):
     match = re.compile(R'LLVM version (\d+)(\.\d+)*').search(tapacc_version)
     if match is None:
       parser.error(f'failed to parse tapacc output: {tapacc_version}')
-    clang_version = match[1]
     clang_include = os.path.join(
         os.path.dirname(tapa.core.__file__),
         'assets',
