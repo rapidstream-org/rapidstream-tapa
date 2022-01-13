@@ -180,8 +180,6 @@ By specifying a filename for the output TCL constraints, TAPA can generate coars
 ## Known Issues
 
 + Template functions cannot be tasks
-+ Vitis HLS include paths (e.g., `/opt/Xilinx/Vitis_HLS/2020.2/include`) must not be specified in `tapac --cflags`;
-  + Workaround is to use `CPATH` environment variable (e.g., `export CPATH=/opt/Xilinx/Vitis_HLS/2020.2/include`)
 
 [tapa]: https://github.com/UCLA-VAST/tapa/
 [autobridge]: https://github.com/Licheng-Guo/AutoBridge/

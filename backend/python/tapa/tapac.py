@@ -295,6 +295,17 @@ def main(argv: Optional[List[str]] = None):
     if not os.path.isdir(clang_include):
       parser.error(f'missing clang include directory: {clang_include}')
     tapacc_cmd += '-isystem', clang_include
+
+    # Append include paths that are automatically available in vendor tools.
+    vendor_include_paths = []
+    for vendor_env in 'XILINX_HLS', 'XILINX_VITIS', 'XILINX_VIVADO':
+      vendor_path = os.environ.get(vendor_env)
+      if vendor_path is not None:
+        vendor_include_paths += [
+            '-isystem', os.path.join(vendor_path, 'include')
+        ]
+    tapacc_cmd += vendor_include_paths
+
     tapacc_cmd += cflag_list
 
     proc = subprocess.run(tapacc_cmd,
@@ -319,6 +330,7 @@ def main(argv: Optional[List[str]] = None):
         input_file_basename,
         '-I',
         tapa_include_dir,
+        *vendor_include_paths,
         *cflag_list,
     ],
                                         cwd=input_file_dirname,
