@@ -66,13 +66,14 @@ STREAM_PORT_DIRECTION = {
 }
 
 # {port_suffix: opposite_suffix}
+# used when connecting two FIFOs head to tail
 STREAM_PORT_OPPOSITE = {
     '_dout':    '_din',
-    '_empty_n': '_full_n',
-    '_read':    '_write',
+    '_empty_n': '_write',
+    '_read':    '_full_n',
     '_din':     '_dout',
-    '_full_n':  '_empty_n',
-    '_write':   '_read',
+    '_full_n':  '_read',
+    '_write':   '_empty_n',
 }
 
 # {port_suffix: width}, 0 is variable
