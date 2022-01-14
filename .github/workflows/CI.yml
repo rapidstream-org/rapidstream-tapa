@@ -71,15 +71,14 @@ jobs:
             libncurses5 \
             libtinfo5 \
             libxext6 \
-            ninja-build \
             unzip \
             xilinx-u250-xdma-dev \
             xilinx-u280-xdma-dev \
             xrt \
       - name: Configure myself
-        run: cmake -S . -B build -G Ninja
+        run: cmake -S . -B build
       - name: Build myself
-        run: cmake --build build --target all
+        run: cmake --build build --target all --parallel $(nproc)
       - name: Test myself
         working-directory: build
         run: ctest --verbose
