@@ -82,7 +82,7 @@ module relay_station #(
 
   // write
   assign if_full_n  = full_n[0];  // output
-  assign empty_n[0] = if_write;   // input
+  assign empty_n[0] = if_write & full_n[0];   // input
   assign data[0]    = if_din;     // input
 
   // read
