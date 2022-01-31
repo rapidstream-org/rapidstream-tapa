@@ -30,11 +30,12 @@ void Copy(tapa::async_mmap<Elem> mem, uint64_t n, uint64_t flags) {
   for (uint64_t i_rd_req = 0, i_rd_resp = 0, i_wr_req = 0, i_wr_resp = 0;
        write ? (i_wr_resp < n) : (i_rd_resp < n);) {
 
-    if (read && i_rd_req < i_rd_resp + kEstimatedLatency && i_rd_req < n) {
+    if (read && i_rd_req < n) {
       auto addr = random ? uint64_t(lfsr_rd & mask) : i_rd_req;
-      mem.read_addr.try_write(addr);
+      if (mem.read_addr.try_write(addr)) {
+        ++i_rd_req;
+      }
 
-      ++i_rd_req;
       uint16_t bit =
           (lfsr_rd >> 0) ^ (lfsr_rd >> 2) ^ (lfsr_rd >> 3) ^ (lfsr_rd >> 5);
       lfsr_rd = (lfsr_rd >> 1) | (bit << 15);
