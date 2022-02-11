@@ -25,6 +25,7 @@ from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
 
 from .instance import Instance, Port
+from .axi_pipeline import get_axi_pipeline_wrapper
 from .task import Task
 
 _logger = logging.getLogger().getChild(__name__)
@@ -237,6 +238,7 @@ class Program:
 
     for file_name in (
         'async_mmap.v',
+        'axi_pipeline.v',
         'detect_burst.v',
         'fifo_fwd.v',
         'fifo.v',
@@ -860,8 +862,26 @@ class Program:
     is_done_signals = self._instantiate_children_tasks(task, width_table)
     self._instantiate_global_fsm(task, is_done_signals)
 
-    with open(self.get_rtl(task.name), 'w') as rtl_code:
+    # an upper task is not necessarily a top task
+    if task.name != self.top:
+      with open(self.get_rtl(task.name), 'w') as rtl_code:
+        rtl_code.write(task.module.code)
+    else:
+      self._pipeline_top_task(task)
+
+  def _pipeline_top_task(self, task: Task) -> None:
+    """
+    add axi pipelines to the top task
+    """
+    # generate the original top module. Append a suffix to it
+    top_suffix = '_inner'
+    task.module.name += top_suffix
+    with open(self.get_rtl(task.name + top_suffix), 'w') as rtl_code:
       rtl_code.write(task.module.code)
+
+    # generate the wrapper that becomes the final top module
+    with open(self.get_rtl(task.name), 'w') as rtl_code:
+      rtl_code.write(get_axi_pipeline_wrapper(task.name, top_suffix, task))
 
   def _get_fifo_width(self, task: Task, fifo: str) -> int:
     producer_task, _, fifo_port = task.get_connection_to(fifo, 'produced_by')

@@ -86,26 +86,18 @@ M_AXI_PORTS: Dict[str, Tuple[Tuple[str, str], ...]] = collections.OrderedDict(
 )
 
 
-M_AXI_SUFFIXES = (
+M_AXI_SUFFIXES_COMPACT = (
     '_ARADDR',
     '_ARBURST',
-    '_ARCACHE',
     '_ARID',
     '_ARLEN',
-    '_ARLOCK',
-    '_ARPROT',
-    '_ARQOS',
     '_ARREADY',
     '_ARSIZE',
     '_ARVALID',
     '_AWADDR',
     '_AWBURST',
-    '_AWCACHE',
     '_AWID',
     '_AWLEN',
-    '_AWLOCK',
-    '_AWPROT',
-    '_AWQOS',
     '_AWREADY',
     '_AWSIZE',
     '_AWVALID',
@@ -124,6 +116,17 @@ M_AXI_SUFFIXES = (
     '_WREADY',
     '_WSTRB',
     '_WVALID',
+)
+
+M_AXI_SUFFIXES = M_AXI_SUFFIXES_COMPACT + (
+    '_ARLOCK',
+    '_ARPROT',
+    '_ARQOS',
+    '_ARCACHE',
+    '_AWCACHE',
+    '_AWLOCK',
+    '_AWPROT',
+    '_AWQOS',
 )
 
 M_AXI_PARAM_PREFIX = 'C_M_AXI_'
