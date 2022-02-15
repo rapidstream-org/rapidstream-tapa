@@ -81,6 +81,8 @@ AREA_OF_M_AXI = {
 _logger = logging.getLogger().getChild(__name__)
 
 _PLACEHOLDER_REGION_PREFIX = 'PLACEHOLDER_'
+_DUMMY_OFF_CHIP_MEMORY_PORT_PREFIX = 'DUMMY_PORT'
+_DUMMY_VERTEX_NAME = 'DUMMY_VERTEX'
 
 
 def generate_floorplan(
@@ -112,6 +114,7 @@ def generate_floorplan(
       'Vertices': vertices,
       'Edges': edges,
       'Area': area,
+      'GroupingConstraints': [],
       'ExtraKeyWordArgs': kwargs,
   }
 
@@ -216,10 +219,15 @@ def generate_floorplan(
 
   # Remove placeholders.
   for pblock in floorplan:
-    floorplan[pblock] = [
-        x for x in floorplan[pblock]
-        if not (isinstance(x, str) and x.startswith(_PLACEHOLDER_REGION_PREFIX))
-    ]
+    filtered_list = []
+    for v in floorplan[pblock]:
+      if isinstance(v, str):
+        if v.startswith(_PLACEHOLDER_REGION_PREFIX):
+          continue
+        if v.startswith(_DUMMY_OFF_CHIP_MEMORY_PORT_PREFIX):
+          continue        
+      filtered_list.append(v)
+    floorplan[pblock] = filtered_list
 
   # Dump the output from AutoBridge.
   with open(os.path.join(work_dir, 'autobridge_floorplan.json'), 'w') as fp:
@@ -295,40 +303,42 @@ def _add_connectivity_constraints(
 ) -> None:
   """
   based on the .ini configuration file:
-  (1) constrain the m_axi modules (async_mmap or mmap) nearby the associated IPs (DDR or HBM)
-  (2) update the dataflow graph to add edges between async_mmap instances and task instances
+  (1) use a dummy node to represent the DDR/HBM port
+  (2) update the dataflow graph to add edges between dummy nodes and the task instance that access the port
+  (3) TODO: adjust the AXI pipeline according to the floorplanning results
   """
-  # add floorplan constraints for async_mmap and mmap
-  for arg in top_task.args[kernel_arg]:
-    # if async_mmap, only floorplans the async_mmap instances.
-    # connections between the async_mmap instance and the task instance are pipelined
-    if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-      _logger.debug(f'constrain async_mmap instance {arg.mmap_name} to {region}')
-      config['OptionalFloorplan'][region].append(
-          rtl.async_mmap_instance_name(arg.mmap_name))
-    # normal mmap, the axi module is combined with the IO task instance
-    else:
-      _logger.debug('%s is constrained to %s because of %s', arg.instance.name,
-                  region, arg.name)
-      config['OptionalFloorplan'][region].append(arg.instance.name)
-  
-  # update the graph to add the FIFO conenctions for async_mmap
-  # the FIFO between async_mmap and task instances are not defined by tapa::stream
-  # so we need to manually insert them to the graph
+  # async_mmap should be floorplanned together with its neighbor task instance
   for arg in top_task.args[kernel_arg]:
     if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-      arg_width = width_table[arg.name]
-      
-      # 5 FIFOs between the async_mmap and task instance
-      # wr_data, wr_addr, rd_data, rd_addr, resp
-      total_connection_width = arg_width + arg_width + ADDR_CHANNEL_DATA_WIDTH + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH
-      
-      config['Edges'][f'{arg.mmap_name}_ch'] = {
-        'produced_by': rtl.async_mmap_instance_name(arg.mmap_name),
-        'consumed_by': arg.instance.name,
-        'width': total_connection_width,
-        'depth': 2,
-      }
+      config['GroupingConstraints'].append([arg.instance.name, rtl.async_mmap_instance_name(arg.mmap_name)])
+
+  for arg in top_task.args[kernel_arg]:
+    # total width of an AXI channel
+    # wr_data, wr_addr, rd_data, rd_addr, resp + other control signals (approximately 50)
+    arg_width = width_table[arg.name]
+    total_connection_width = arg_width + arg_width + ADDR_CHANNEL_DATA_WIDTH + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH + 50
+    dummy_name = f'{_DUMMY_OFF_CHIP_MEMORY_PORT_PREFIX}_{region}_{arg.instance.name}_{arg.name}'
+
+    config['OptionalFloorplan'][region].append(dummy_name)
+
+    # dummy node represents where the mmap connects to
+    config['Vertices'][dummy_name] = _DUMMY_VERTEX_NAME
+
+    # the edge represents the AXI pipeline between the DDR/HBM IP and the mmap module
+    config['Edges'][f'{dummy_name}_ch'] = {
+      'produced_by': dummy_name,
+      'consumed_by': arg.instance.name,
+      'width': total_connection_width,
+      'depth': 2,
+    }
+
+  config['Area'][_DUMMY_VERTEX_NAME] = {
+    "BRAM": 0,
+    "DSP": 0,
+    "FF": 0,
+    "LUT": 0,
+    "URAM": 0
+  }
 
 
 def _parse_connectivity(connectivity: str) -> Tuple[str, str]:
