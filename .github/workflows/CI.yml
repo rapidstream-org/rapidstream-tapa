@@ -81,4 +81,4 @@ jobs:
         run: cmake --build build --target all --parallel $(nproc)
       - name: Test myself
         working-directory: build
-        run: ctest --verbose
+        run: ctest --verbose --parallel $(nproc)
