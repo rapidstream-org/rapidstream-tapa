@@ -75,6 +75,12 @@ jobs:
             xilinx-u250-xdma-dev \
             xilinx-u280-xdma-dev \
             xrt \
+
+          # Vivado doesn't like running concurrently for the first time.
+          (
+            source "${XILINX_VIVADO}"/settings64.sh
+            vivado -mode batch -nojournal -nolog
+          )
       - name: Configure myself
         run: cmake -S . -B build
       - name: Build myself
