@@ -43,6 +43,7 @@ setup(
     packages=find_packages(),
     python_requires='>=3.6',
     install_requires=[
+        'autobridge@git+https://github.com/Licheng-Guo/AutoBridge@d3b00cf7226ac9b8a1684e68b7182496479db6c4#egg=autobridge&subdirectory=in-develop/src',
         'haoda>=0.0.20211016.dev1',
         'pyverilog>=1.2.0',
         'pyyaml>=5.1',

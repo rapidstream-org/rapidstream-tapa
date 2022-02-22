@@ -19,7 +19,7 @@ import yaml
 from haoda.backend import xilinx as hls
 from haoda.report.xilinx import rtl as report
 
-import tapa.autobridge as autobridge
+import tapa.autobridge
 from tapa import util
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
@@ -323,7 +323,7 @@ class Program:
       _logger.info('generating partitioning constraints')
       floorplan = directive.get('floorplan')
       if floorplan is None:
-        floorplan = autobridge.generate_floorplan(
+        floorplan = tapa.autobridge.generate_floorplan(
             self.top_task,
             self.work_dir,
             self._get_fifo_width,

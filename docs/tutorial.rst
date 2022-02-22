@@ -660,14 +660,6 @@ it produces coarse-grained floorplans so that SLR crossing do not bottleneck the
 clock frequency of an HLS kernel.
 This is natively integrated with TAPA.
 
-To enable AutoBridge floorplanning with TAPA,
-install AutoBridge first.
-
-.. code-block:: shell
-
-  pip install 'git+https://github.com/Licheng-Guo/AutoBridge#egg=autobridge&subdirectory=in-develop/src'
-
-
 When running ``tapac``, specify the output constraint file:
 
 .. code-block:: shell

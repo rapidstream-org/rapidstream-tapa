@@ -5,6 +5,8 @@ import logging
 import os.path
 from typing import Any, Callable, Dict, List, Optional, TextIO, Tuple
 
+import autobridge.HLSParser.tapa
+
 from tapa import util
 from tapa.verilog import xilinx as rtl
 from tapa.verilog.xilinx.async_mmap import ADDR_CHANNEL_DATA_WIDTH, RESP_CHANNEL_DATA_WIDTH
@@ -88,9 +90,6 @@ def generate_floorplan(
     part_num: str,
     **kwargs,
 ) -> Dict[str, Any]:
-  # pylint: disable=import-outside-toplevel
-  import autobridge.HLSParser.tapa as autobridge
-
   _logger.info('total area estimation: %s', top_task.total_area)
 
   vertices = {x.name: x.task.name for x in top_task.instances}
@@ -208,7 +207,7 @@ def generate_floorplan(
     json.dump(config, fp, indent=2)
 
   # Generate floorplan using AutoBridge.
-  floorplan = autobridge.generate_constraints(config)
+  floorplan = autobridge.HLSParser.tapa.generate_constraints(config)
 
   # Remove placeholders.
   for pblock in floorplan:
