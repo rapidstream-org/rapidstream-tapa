@@ -45,9 +45,13 @@ you'll need to build TAPA from source.
 Build Prerequisites
 +++++++++++++++++++
 
+* Add ``${HOME}/.local/bin`` to your ``PATH``:
+
+  * ``PATH="${HOME}/.local/bin:${PATH}"``
+
 * CMake 3.13+
 
-  * ``pip install cmake``
+  * ``python3 -m pip install cmake``
 
 * A C++ 11 compiler
 
@@ -64,16 +68,6 @@ Build Prerequisites
 
   * ``curl -L https://git.io/JuAxz | bash``
 
-Additional Build Prerequisites for Documentation
-++++++++++++++++++++++++++++++++++++++++++++++++
-
-* Doxygen
-
-  * ``sudo apt install doxygen``
-
-* Sphinx and Breathe
-
-  * ``pip install -r docs/requirements.txt``
 
 Additional Build Prerequisites for Testing
 ++++++++++++++++++++++++++++++++++++++++++
@@ -100,28 +94,37 @@ Runtime Dependency
 Build and Installation
 ++++++++++++++++++++++
 
-1. Download source and create a build directory.
+1. Download source and install the Python part.
 
 .. code-block:: bash
 
   git clone https://github.com/UCLA-VAST/tapa
+  python3 -m pip install tapa/backend/python
+
+.. tip::
+
+  Since the Python part of TAPA is being actively upgraded, you could install the python package as editable.
+  In this case, it is easy to upgrade your local installation: simply pull the latest change from Github.
+
+.. code-block:: bash
+
+  python3 -m pip install --editable tapa/backend/python
+  
+2. Create a build directory
+
+.. code-block:: bash
+
   cd tapa
   mkdir build
   cd build
 
-2. Build TAPA and run tests.
+3. Build TAPA and run tests. Note: the command below will allow up to 8 parallel jobs for ``make``. This number should be adjusted according to your available cores and memory.
 
 .. code-block:: bash
 
   cmake ..
   make -j8
   make -j8 test
-
-
-.. tip::
-
-  The above steps will allow up to 8 parallel jobs for ``make``.
-  This number should be adjusted according to your available cores and memory.
 
 .. tip::
 
@@ -134,28 +137,24 @@ Build and Installation
     ninja
     ninja test
 
-3. Install TAPA.
+4. Install TAPA.
 
 .. code-block:: bash
 
-  pip install ../backend/python
-  sudo make install
-  sudo install backend/tapacc /usr/local/bin/
-  sudo cp -r ../src/tapa ../src/tapa.h /usr/local/include/
-  sudo cp -r libtapa.a libtapa.so /usr/local/lib/
-
-.. tip::
-
-  If you are contributing code to TAPA,
-  you may want the installation to update itself as you develop.
-  This can be done as follows:
-
-.. code-block:: bash
-
-  pip install --editable ../backend/python
   sudo ln -sf "${PWD}"/backend/tapacc /usr/local/bin/
   sudo ln -sf "${PWD}"/../src/tapa{,.h} /usr/local/include/
   sudo ln -sf "${PWD}"/libtapa.{a,so} /usr/local/lib/
+
+Additional Build Prerequisites for Documentation
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+* Doxygen
+
+  * ``sudo apt install doxygen``
+
+* Sphinx and Breathe
+
+  * ``python3 -m pip install -r docs/requirements.txt``
 
 Verify Installation
 -------------------
