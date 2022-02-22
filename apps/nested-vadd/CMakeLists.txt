@@ -12,7 +12,7 @@ if(SDx_FOUND)
     INPUT vadd.cpp
     FRT_INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/vadd.frt.cpp
     TOP VecAddNested
-    PLATFORM xilinx_u250_xdma_201830_2)
+    PLATFORM ${PLATFORM})
 
   add_xocc_hw_link_targets(
     ${CMAKE_CURRENT_BINARY_DIR}

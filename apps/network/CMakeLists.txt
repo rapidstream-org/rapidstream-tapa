@@ -11,7 +11,7 @@ if(SDx_FOUND)
     network-hw-xo
     INPUT network.cpp
     TOP Network
-    PLATFORM xilinx_u250_xdma_201830_2)
+    PLATFORM ${PLATFORM})
 
   add_xocc_hw_link_targets(
     ${CMAKE_CURRENT_BINARY_DIR}

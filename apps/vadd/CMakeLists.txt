@@ -14,12 +14,6 @@ target_link_libraries(vadd PRIVATE ${TAPA} gflags)
 add_test(NAME vadd COMMAND vadd)
 
 if(SDx_FOUND)
-  if(NOT PLATFORM)
-    set(PLATFORM
-        xilinx_u280_xdma_201920_3
-        CACHE STRING "Target FPGA platform")
-  endif()
-
   add_tapa_target(
     vadd-hw-xo
     INPUT vadd.cpp
