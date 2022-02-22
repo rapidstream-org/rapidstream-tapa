@@ -27,6 +27,7 @@ from tapa.verilog import xilinx as rtl
 from .instance import Instance, Port
 from .axi_pipeline import get_axi_pipeline_wrapper
 from .task import Task
+from .safety_check import check_mmap_arg_name
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -160,6 +161,8 @@ class Program:
   def extract_cpp(self) -> 'Program':
     """Extract HLS C++ files."""
     _logger.info('extracting HLS C++ files')
+    check_mmap_arg_name(self._tasks.values())
+
     for task in self._tasks.values():
       with open(self.get_cpp(task.name), 'w') as src_code:
         src_code.write(util.clang_format(task.code))
