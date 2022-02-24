@@ -158,6 +158,10 @@ def generate_floorplan(
     # Placeholders are bound to their own region.
     config['OptionalFloorplan'][region].append(placeholder_name)
 
+  # always constrain s_axi_control to the bottom right corner
+  ctrl_region = get_ctrl_instance_region(part_num)
+  config['OptionalFloorplan'][ctrl_region].append(rtl.ctrl_instance_name(top_task.name))
+
   # ASYNC_MMAP is outside of its instantiating module and needs its own
   # floorplanning constraint.
   for instance in top_task.instances:
