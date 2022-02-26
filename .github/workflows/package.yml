@@ -62,16 +62,12 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.6
-      - name: Install setuptools and wheel
-        run: pip install --upgrade setuptools wheel
+      - name: Install build
+        run: pip install --upgrade build
       - name: Checkout myself
         uses: actions/checkout@v2
-      - name: Install myself
-        working-directory: backend/python
-        run: python setup.py install
-      - name: Build dist
-        working-directory: backend/python
-        run: python setup.py sdist bdist_wheel
+      - name: Build myself
+        run: python -m build backend/python
       - name: Publish to PyPI
         if: github.repository == 'Blaok/tapa'
         uses: pypa/gh-action-pypi-publish@master
