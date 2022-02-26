@@ -15,9 +15,8 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, '..', '..', 'README.md'), encoding='utf-8') as f:
   long_description = f.read()
 
-with open(path.join(here, '..', '..', 'CMakeLists.txt'), encoding='utf-8') as f:
-  version = '.'.join(x[1] for x in re.finditer(
-      r'set\(CPACK_PACKAGE_VERSION_..... (.*)\)', f.read()))
+with open('VERSION') as f:
+  version = f.read()
 
 setup(
     name='tapa',

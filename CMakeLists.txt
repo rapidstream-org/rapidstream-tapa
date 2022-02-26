@@ -4,7 +4,8 @@ if(POLICY CMP0111)
   cmake_policy(SET CMP0111 NEW)
 endif()
 
-project(tapa)
+file(STRINGS VERSION VERSION)
+project(tapa VERSION ${VERSION})
 
 add_subdirectory(backend)
 
@@ -93,9 +94,7 @@ install(
   COMPONENT Devel)
 
 set(CPACK_PACKAGE_NAME tapa)
-set(CPACK_PACKAGE_VERSION_MAJOR 0)
-set(CPACK_PACKAGE_VERSION_MINOR 0)
-set(CPACK_PACKAGE_VERSION_PATCH 20220224.1)
+set(CPACK_PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Task-Parallel High-Level Synthesis")
 
 list(
