@@ -2,6 +2,6 @@ version: 2
 
 python:
   install:
-    - method: setuptools
+    - method: pip
       path: backend/python
     - requirements: docs/requirements.txt
