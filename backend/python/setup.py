@@ -1,22 +1,16 @@
 """Extending High-Level Synthesis for Task-Parallel Programs.
 
 See:
-https://github.com/Blaok/tapa
+https://github.com/UCLA-VAST/tapa
 """
-
-import re
-
-from os import path
 
 from setuptools import find_packages, setup
 
-here = path.abspath(path.dirname(__file__))
-
-with open(path.join(here, '..', '..', 'README.md'), encoding='utf-8') as f:
+with open('README.md', encoding='utf-8') as f:
   long_description = f.read()
 
 with open('VERSION') as f:
-  version = f.read()
+  version = f.read().strip()
 
 setup(
     name='tapa',
@@ -24,7 +18,7 @@ setup(
     description='Extending High-Level Synthesis for Task-Parallel Programs',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/Blaok/tapa',
+    url='https://github.com/UCLA-VAST/tapa',
     author='Blaok Chi',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
