@@ -55,8 +55,6 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
 
   package-pypi:
-    if: github.repository == 'Blaok/tapa'
-
     runs-on: ubuntu-latest
 
     steps:
@@ -75,6 +73,7 @@ jobs:
         working-directory: backend/python
         run: python setup.py sdist bdist_wheel
       - name: Publish to PyPI
+        if: github.repository == 'Blaok/tapa'
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
