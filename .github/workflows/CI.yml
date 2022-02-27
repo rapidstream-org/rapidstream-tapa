@@ -87,6 +87,8 @@ jobs:
           )
       - name: Configure myself
         run: cmake -S . -B build
+        env:
+          XILINX_HLS: /opt/tools/xilinx/Vitis_HLS/${{ matrix.xocl-version }}
       - name: Build myself
         run: cmake --build build --target all --parallel $(nproc)
       - name: Test myself
