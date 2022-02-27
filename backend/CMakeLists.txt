@@ -12,11 +12,6 @@ FetchContent_Declare(
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/SemaStmtAttr.cpp clang/lib/Sema/SemaStmtAttr.cpp
 )
 
-FetchContent_Declare(
-  json
-  GIT_REPOSITORY "https://github.com/nlohmann/json.git"
-  GIT_TAG "master")
-
 FetchContent_GetProperties(llvm)
 if(NOT llvm_POPULATED)
   function(add_llvm)
@@ -46,12 +41,6 @@ if(NOT llvm_POPULATED)
         PARENT_SCOPE)
   endfunction()
   add_llvm()
-endif()
-
-FetchContent_GetProperties(json)
-if(NOT json_POPULATED)
-  FetchContent_Populate(json)
-  add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
 add_library(type)
@@ -88,14 +77,23 @@ target_sources(
   PRIVATE target/xilinx_hls_target.cpp)
 target_link_libraries(target PUBLIC type stream mmap)
 
+file(
+  DOWNLOAD
+  https://github.com/nlohmann/json/releases/download/v3.10.5/json.hpp
+  ${CMAKE_CURRENT_BINARY_DIR}/include/nlohmann/json.hpp
+  TLS_VERIFY ON
+)
+
 add_library(task)
 target_sources(
   task
   PUBLIC tapa/task.h
   PRIVATE tapa/task.cpp)
-target_link_libraries(task PUBLIC stream mmap target nlohmann_json::nlohmann_json)
+target_include_directories(task PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_link_libraries(task PUBLIC stream mmap target)
 
 add_executable(tapacc)
 target_sources(tapacc PRIVATE tapacc.cpp)
 target_compile_options(tapacc PRIVATE -fno-rtti)
-target_link_libraries(tapacc PRIVATE task nlohmann_json::nlohmann_json)
+target_include_directories(tapacc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_link_libraries(tapacc PRIVATE task)
