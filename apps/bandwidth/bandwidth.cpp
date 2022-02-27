@@ -1,8 +1,10 @@
 #include <cstdint>
+#include <iomanip>
 
 #include <tapa.h>
 
 #include "bandwidth.h"
+#include "lfsr.h"
 
 void Copy(tapa::async_mmap<Elem> mem, uint64_t n, uint64_t flags) {
   const bool random = flags & kRandom;
@@ -19,54 +21,41 @@ void Copy(tapa::async_mmap<Elem> mem, uint64_t n, uint64_t flags) {
     }
   }
 
-  uint16_t lfsr_rd = 0xbeefu;
-  uint16_t lfsr_wr = 0xbeefu;
-  bool valid = false;
-  bool addr_ready = false;
-  bool data_ready = false;
+  Lfsr<16> lfsr_rd = 0xbeefu;
+  Lfsr<16> lfsr_wr = 0xbeefu;
   Elem elem;
 
-  [[tapa::pipeline(1)]]
+  [[tapa::pipeline(1)]]  //
   for (uint64_t i_rd_req = 0, i_rd_resp = 0, i_wr_req = 0, i_wr_resp = 0;
        write ? (i_wr_resp < n) : (i_rd_resp < n);) {
+    bool can_read = !mem.read_data.empty();
+    bool can_write = !mem.write_addr.full() && !mem.write_data.full();
+    int64_t read_addr = random ? uint64_t(lfsr_rd & mask) : i_rd_req;
+    int64_t write_addr = random ? uint64_t(lfsr_wr & mask) : i_wr_req;
 
-    if (read && i_rd_req < n) {
-      auto addr = random ? uint64_t(lfsr_rd & mask) : i_rd_req;
-      if (mem.read_addr.try_write(addr)) {
-        ++i_rd_req;
-      }
-
-      uint16_t bit =
-          (lfsr_rd >> 0) ^ (lfsr_rd >> 2) ^ (lfsr_rd >> 3) ^ (lfsr_rd >> 5);
-      lfsr_rd = (lfsr_rd >> 1) | (bit << 15);
+    if (read && i_rd_req < n && mem.read_addr.try_write(read_addr)) {
+      ++i_rd_req;
+      ++lfsr_rd;
+      VLOG(3) << "RD REQ [" << std::setw(5) << read_addr << "]";
     }
 
-    if ((!write || !valid) && mem.read_data.try_read(elem)) {
-      valid = true;
+    if (read && can_read && (!write || can_write)) {
+      mem.read_data.try_read(elem);
       ++i_rd_resp;
+      VLOG(3) << "RD RSP #" << std::setw(5) << i_rd_resp - 1;
     }
 
-    if (write && !addr_ready && i_wr_req < n) {
-      auto addr = random ? uint64_t(lfsr_wr & mask) : i_wr_req;
-      addr_ready = mem.write_addr.try_write(addr);
-    }
-
-    if (write && (!read || valid) && !data_ready && i_wr_req < n) {
-      data_ready = mem.write_data.try_write(elem);
+    if (((read && can_read && write) || (!read && i_wr_req < n)) && can_write) {
+      mem.write_addr.write(write_addr);
+      mem.write_data.write(elem);
+      ++i_wr_req;
+      ++lfsr_wr;
+      VLOG(3) << "WR REQ [" << std::setw(5) << write_addr << "]";
     }
 
     if (write && !mem.write_resp.empty()) {
       i_wr_resp += mem.write_resp.read(nullptr) + 1;
-    }
-
-    if (addr_ready && data_ready) {
-      valid = false;
-      addr_ready = false;
-      data_ready = false;
-      ++i_wr_req;
-      uint16_t bit =
-          (lfsr_wr >> 0) ^ (lfsr_wr >> 2) ^ (lfsr_wr >> 3) ^ (lfsr_wr >> 5);
-      lfsr_wr = (lfsr_wr >> 1) | (bit << 15);
+      VLOG(3) << "WR RSP #" << std::setw(5) << i_wr_resp - 1;
     }
   }
 }
