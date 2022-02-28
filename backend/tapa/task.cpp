@@ -601,7 +601,6 @@ string Visitor::GetFrtInterface(const FunctionDecl* func) {
                 R"(.get(), )",
                 var,
                 R"(.size());
-        _tapa_instance.AllocBuf(_tapa_arg_index, _tapa_arg);
         _tapa_instance.SetArg(_tapa_arg_index, _tapa_arg);)",
             },
             ""));

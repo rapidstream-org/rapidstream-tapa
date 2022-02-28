@@ -490,7 +490,6 @@ struct accessor<async_mmap<T>, mmaps<T, S>&> {
     static void access(fpga::Instance& instance, int& idx,     \
                        tag##_mmap<T> arg) {                    \
       auto buf = fpga::frt_tag(arg.get(), arg.size());         \
-      instance.AllocBuf(idx, buf);                             \
       instance.SetArg(idx++, buf);                             \
     }                                                          \
   };                                                           \
@@ -500,7 +499,6 @@ struct accessor<async_mmap<T>, mmaps<T, S>&> {
                        tag##_mmaps<T, S> arg) {                \
       for (uint64_t i = 0; i < S; ++i) {                       \
         auto buf = fpga::frt_tag(arg[i].get(), arg[i].size()); \
-        instance.AllocBuf(idx, buf);                           \
         instance.SetArg(idx++, buf);                           \
       }                                                        \
     }                                                          \
