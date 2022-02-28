@@ -177,7 +177,7 @@ class basic_stream {
   basic_stream(const basic_stream&) = default;
   basic_stream(basic_stream&&) = default;
   basic_stream& operator=(const basic_stream&) = default;
-  basic_stream& operator=(basic_stream&&) = delete;
+  basic_stream& operator=(basic_stream&&) = delete;  // -Wvirtual-move-assign
 
  protected:
   std::shared_ptr<queue<elem_t<T>>> ptr;
@@ -198,7 +198,7 @@ class basic_streams {
   basic_streams(const basic_streams&) = default;
   basic_streams(basic_streams&&) = default;
   basic_streams& operator=(const basic_streams&) = default;
-  basic_streams& operator=(basic_streams&&) = default;
+  basic_streams& operator=(basic_streams&&) = delete;  // -Wvirtual-move-assign
 
   basic_stream<T> operator[](int pos) const {
     CHECK_NOTNULL(ptr.get());
