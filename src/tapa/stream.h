@@ -187,14 +187,32 @@ class basic_stream {
 template <typename T>
 class basic_streams {
  protected:
-  basic_streams(const std::shared_ptr<std::vector<basic_stream<T>>>& ptr)
-      : ptr(ptr) {}
+  struct metadata_t {
+    metadata_t(const std::string& name, int pos) : name(name), pos(pos) {}
+    std::vector<basic_stream<T>> refs;  // references to the original streams
+    const std::string name;             // name of the original streams
+    const int pos;                      // position in the original streams
+  };
+
+  basic_streams(const std::shared_ptr<metadata_t>& ptr) : ptr({ptr}) {}
   basic_streams(const basic_streams&) = default;
   basic_streams(basic_streams&&) = default;
   basic_streams& operator=(const basic_streams&) = default;
-  basic_streams& operator=(basic_streams&&) = delete;
+  basic_streams& operator=(basic_streams&&) = default;
 
-  std::shared_ptr<std::vector<basic_stream<T>>> ptr;
+  basic_stream<T> operator[](int pos) const {
+    CHECK_NOTNULL(ptr.get());
+    CHECK_GE(pos, 0);
+    CHECK_LT(pos, ptr->refs.size());
+    return ptr->refs[pos];
+  }
+
+  std::string get_slice_name(int length) {
+    return ptr->name + "[" + std::to_string(ptr->pos) + ":" +
+           std::to_string(ptr->pos + length) + ")";
+  }
+
+  std::shared_ptr<metadata_t> ptr;
 };
 
 // stream without a bound depth; can be default-constructed by a derived class
@@ -751,10 +769,7 @@ class istreams : virtual public internal::basic_streams<T> {
   /// @param pos Position of the array reference.
   /// @return    @c tapa::istream referenced in the array.
   istream<T> operator[](int pos) const {
-    CHECK_NOTNULL(this->ptr.get());
-    CHECK_GE(pos, 0);
-    CHECK_LT(pos, this->ptr->size());
-    return (*this->ptr)[pos];
+    return internal::basic_streams<T>::operator[](pos);
   }
 
  protected:
@@ -776,20 +791,23 @@ class istreams : virtual public internal::basic_streams<T> {
   int access_pos_ = 0;
 
   istream<T> access() {
-    CHECK_LT(access_pos_, this->ptr->size());
-    return (*this->ptr)[access_pos_++];
+    CHECK_LT(access_pos_, this->ptr->refs.size())
+        << "istream slice '" << this->get_slice_name(length)
+        << "' accessed for " << access_pos_ + 1
+        << " times but it only contains " << this->ptr->refs.size()
+        << " channels";
+    return this->ptr->refs[access_pos_++];
   }
   template <uint64_t length>
   istreams<T, length> access() {
     CHECK_NOTNULL(this->ptr.get());
     istreams<T, length> result;
-    result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
-    result.ptr->reserve(length);
+    result.ptr =
+        std::make_shared<typename internal::basic_streams<T>::metadata_t>(
+            this->ptr->name, this->ptr->pos);
+    result.ptr->refs.reserve(length);
     for (int i = 0; i < length; ++i) {
-      CHECK_LT(access_pos_, this->ptr->size())
-          << "istreams accessed for " << access_pos_ + 1
-          << " times but it only contains " << this->ptr->size() << " istreams";
-      result.ptr->emplace_back((*this->ptr)[access_pos_++]);
+      result.ptr->refs.emplace_back(access());
     }
     return result;
   }
@@ -815,10 +833,7 @@ class ostreams : virtual public internal::basic_streams<T> {
   /// @param pos Position of the array reference.
   /// @return @c tapa::ostream referenced in the array.
   ostream<T> operator[](int pos) const {
-    CHECK_NOTNULL(this->ptr.get());
-    CHECK_GE(pos, 0);
-    CHECK_LT(pos, this->ptr->size());
-    return (*this->ptr)[pos];
+    return internal::basic_streams<T>::operator[](pos);
   }
 
  protected:
@@ -840,20 +855,23 @@ class ostreams : virtual public internal::basic_streams<T> {
   int access_pos_ = 0;
 
   ostream<T> access() {
-    CHECK_LT(access_pos_, this->ptr->size());
-    return (*this->ptr)[access_pos_++];
+    CHECK_LT(access_pos_, this->ptr->refs.size())
+        << "ostream slice '" << this->get_slice_name(length)
+        << "' accessed for " << access_pos_ + 1
+        << " times but it only contains " << this->ptr->refs.size()
+        << " channels";
+    return this->ptr->refs[access_pos_++];
   }
   template <uint64_t length>
   ostreams<T, length> access() {
     CHECK_NOTNULL(this->ptr.get());
     ostreams<T, length> result;
-    result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
-    result.ptr->reserve(length);
+    result.ptr =
+        std::make_shared<typename internal::basic_streams<T>::metadata_t>(
+            this->ptr->name, this->ptr->pos);
+    result.ptr->refs.reserve(length);
     for (int i = 0; i < length; ++i) {
-      CHECK_LT(access_pos_, this->ptr->size())
-          << "ostreams accessed for " << access_pos_ + 1
-          << " times but it only contains " << this->ptr->size() << " ostreams";
-      result.ptr->emplace_back((*this->ptr)[access_pos_++]);
+      result.ptr->refs.emplace_back(access());
     }
     return result;
   }
@@ -875,9 +893,10 @@ class streams
   /// Constructs a @c tapa::streams array.
   streams()
       : internal::basic_streams<T>(
-            std::make_shared<std::vector<internal::basic_stream<T>>>()) {
+            std::make_shared<typename internal::basic_streams<T>::metadata_t>(
+                "", 0)) {
     for (int i = 0; i < S; ++i) {
-      this->ptr->emplace_back(
+      this->ptr->refs.emplace_back(
           std::make_shared<internal::queue<internal::elem_t<T>>>(N));
     }
   }
@@ -891,12 +910,12 @@ class streams
   template <size_t name_length>
   streams(const char (&name)[name_length])
       : internal::basic_streams<T>(
-            std::make_shared<std::vector<internal::basic_stream<T>>>()),
-        name(name) {
+            std::make_shared<typename internal::basic_streams<T>::metadata_t>(
+                name, 0)) {
     for (int i = 0; i < S; ++i) {
-      this->ptr->emplace_back(
+      this->ptr->refs.emplace_back(
           std::make_shared<internal::queue<internal::elem_t<T>>>(
-              N, this->name + "[" + std::to_string(i) + "]"));
+              N, this->ptr->name + "[" + std::to_string(i) + "]"));
     }
   }
 
@@ -905,15 +924,10 @@ class streams
   /// @param pos Position of the array reference.
   /// @return @c tapa::stream referenced in the array.
   stream<T, N> operator[](int pos) const {
-    CHECK_NOTNULL(this->ptr.get());
-    CHECK_GE(pos, 0);
-    CHECK_LT(pos, this->ptr->size());
-    return (*this->ptr)[pos];
+    return internal::basic_streams<T>::operator[](pos);
   };
 
  private:
-  std::string name;
-
   template <typename Param, typename Arg>
   friend struct internal::accessor;
 
@@ -921,25 +935,29 @@ class streams
   int ostream_access_pos_ = 0;
 
   istream<T> access_as_istream() {
-    CHECK_LT(istream_access_pos_, this->ptr->size());
-    return (*this->ptr)[istream_access_pos_++];
+    CHECK_LT(istream_access_pos_, this->ptr->refs.size())
+        << "channels '" << this->ptr->name << "' accessed as istream for "
+        << istream_access_pos_ + 1 << " times but it only contains "
+        << this->ptr->refs.size() << " channels";
+    return this->ptr->refs[istream_access_pos_++];
   }
   ostream<T> access_as_ostream() {
-    CHECK_LT(ostream_access_pos_, this->ptr->size());
-    return (*this->ptr)[ostream_access_pos_++];
+    CHECK_LT(ostream_access_pos_, this->ptr->refs.size())
+        << "channels '" << this->ptr->name << "' accessed as ostream for "
+        << ostream_access_pos_ + 1 << " times but it only contains "
+        << this->ptr->refs.size() << " channels";
+    return this->ptr->refs[ostream_access_pos_++];
   }
   template <uint64_t length>
   istreams<T, length> access_as_istreams() {
     CHECK_NOTNULL(this->ptr.get());
     istreams<T, length> result;
-    result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
-    result.ptr->reserve(length);
+    result.ptr =
+        std::make_shared<typename internal::basic_streams<T>::metadata_t>(
+            this->ptr->name, istream_access_pos_);
+    result.ptr->refs.reserve(length);
     for (int i = 0; i < length; ++i) {
-      CHECK_LT(istream_access_pos_, this->ptr->size())
-          << "channels '" << name << "' accessed as istream for "
-          << istream_access_pos_ + 1 << " times but it only contains "
-          << this->ptr->size() << " channels";
-      result.ptr->emplace_back((*this->ptr)[istream_access_pos_++]);
+      result.ptr->refs.emplace_back(access_as_istream());
     }
     return result;
   }
@@ -947,14 +965,12 @@ class streams
   ostreams<T, length> access_as_ostreams() {
     CHECK_NOTNULL(this->ptr.get());
     ostreams<T, length> result;
-    result.ptr = std::make_shared<std::vector<internal::basic_stream<T>>>();
-    result.ptr->reserve(length);
+    result.ptr =
+        std::make_shared<typename internal::basic_streams<T>::metadata_t>(
+            this->ptr->name, ostream_access_pos_);
+    result.ptr->refs.reserve(length);
     for (int i = 0; i < length; ++i) {
-      CHECK_LT(ostream_access_pos_, this->ptr->size())
-          << "channels '" << name << "' accessed as ostream for "
-          << ostream_access_pos_ + 1 << " times but it only contains "
-          << this->ptr->size() << " channels";
-      result.ptr->emplace_back((*this->ptr)[ostream_access_pos_++]);
+      result.ptr->refs.emplace_back(access_as_ostream());
     }
     return result;
   }
