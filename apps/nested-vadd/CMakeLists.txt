@@ -10,7 +10,6 @@ if(SDx_FOUND)
   add_tapa_target(
     nested-vadd-hw-xo
     INPUT vadd.cpp
-    FRT_INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/vadd.frt.cpp
     TOP VecAddNested
     PLATFORM ${PLATFORM})
 
@@ -22,23 +21,17 @@ if(SDx_FOUND)
     HW_XCLBIN
     hw_xclbin)
 
-  add_executable(nested-vadd-frt)
-  target_include_directories(nested-vadd-frt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_sources(nested-vadd-frt PRIVATE vadd-host.cpp
-      ${CMAKE_CURRENT_BINARY_DIR}/vadd.frt.cpp)
-  target_link_libraries(nested-vadd-frt PRIVATE ${TAPA} frt::frt)
-
   add_custom_target(
     nested-vadd-cosim
-    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
-            $<TARGET_FILE:nested-vadd-frt> 1000
-    DEPENDS nested-vadd-frt ${hw_emu_xclbin}
+    COMMAND $<TARGET_FILE:nested-vadd> 1000
+            --bitstream=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
+    DEPENDS nested-vadd ${hw_emu_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   add_custom_target(
     nested-vadd-hw
-    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
-            $<TARGET_FILE:nested-vadd-frt>
-    DEPENDS nested-vadd-frt ${hw_xclbin}
+    COMMAND $<TARGET_FILE:nested-vadd>
+            --bitstream=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
+    DEPENDS nested-vadd ${hw_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   add_test(NAME nested-vadd-cosim COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}

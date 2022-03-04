@@ -17,7 +17,11 @@ using std::chrono::high_resolution_clock;
 void Cannon(tapa::mmap<const float> a, tapa::mmap<const float> b,
             tapa::mmap<float> c, uint64_t n);
 
+DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
+
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   const uint64_t n = 64;  // Hardcoded for efficient hardware generation.
   vector<float> a_vec(n * n);
   vector<float> b_vec(n * n);
@@ -57,9 +61,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  Cannon(tapa::read_only_mmap<const float>(a_buf),
-         tapa::read_only_mmap<const float>(b_buf),
-         tapa::write_only_mmap<float>(c_buf), n);
+  tapa::invoke(Cannon, FLAGS_bitstream,
+               tapa::read_only_mmap<const float>(a_buf),
+               tapa::read_only_mmap<const float>(b_buf),
+               tapa::write_only_mmap<float>(c_buf), n);
 
   for (uint64_t i = 0; i < p; ++i) {
     for (uint64_t j = 0; j < p; ++j) {

@@ -34,12 +34,14 @@ struct Update {
   Vid value;
 };
 
+DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
+
 void Graph(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
            tapa::mmap<const Eid> num_edges, tapa::mmap<VertexAttr> vertices,
            tapa::mmap<const Edge> edges, tapa::mmap<Update> updates);
 
-void Graph(Vid base_vid, vector<VertexAttr>& vertices,
-           const vector<Edge>& edges) {
+void GraphBaseline(Vid base_vid, vector<VertexAttr>& vertices,
+                   const vector<Edge>& edges) {
   bool has_update = true;
   while (has_update) {
     has_update = false;
@@ -53,6 +55,8 @@ void Graph(Vid base_vid, vector<VertexAttr>& vertices,
 }
 
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   const size_t partition_size = argc > 2 ? atoi(argv[2]) : 1024;
   auto partitions =
       nxgraph::LoadEdgeList<Vid, Eid, VertexAttr>(argv[1], partition_size);
@@ -113,13 +117,13 @@ int main(int argc, char* argv[]) {
     VLOG(10) << e.src << " -> " << e.dst;
   }
   VLOG(10) << "updates: " << updates.size();
-  Graph(num_partitions,
-        tapa::read_only_mmap<const Vid>(num_vertices),
-        tapa::read_only_mmap<const Eid>(num_edges),
-        tapa::read_only_mmap<VertexAttr>(vertices),
-        tapa::read_only_mmap<const Edge>(edges),
-        tapa::write_only_mmap<Update>(updates));
-  Graph(base_vid, vertices_baseline, edges);
+  tapa::invoke(Graph, FLAGS_bitstream, num_partitions,
+               tapa::read_only_mmap<const Vid>(num_vertices),
+               tapa::read_only_mmap<const Eid>(num_edges),
+               tapa::read_only_mmap<VertexAttr>(vertices),
+               tapa::read_only_mmap<const Edge>(edges),
+               tapa::write_only_mmap<Update>(updates));
+  GraphBaseline(base_vid, vertices_baseline, edges);
   VLOG(10) << "vertices: ";
   for (auto v : vertices) {
     VLOG(10) << v;

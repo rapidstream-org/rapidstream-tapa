@@ -10,7 +10,6 @@ if(SDx_FOUND)
   add_tapa_target(
     jacobi-hw-xo
     INPUT jacobi.cpp
-    FRT_INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/jacobi.frt.cpp
     TOP Jacobi
     PLATFORM ${PLATFORM})
 
@@ -22,23 +21,17 @@ if(SDx_FOUND)
     HW_XCLBIN
     hw_xclbin)
 
-  add_executable(jacobi-frt)
-  target_include_directories(jacobi-frt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_sources(jacobi-frt PRIVATE jacobi-host.cpp
-                                    ${CMAKE_CURRENT_BINARY_DIR}/jacobi.frt.cpp)
-  target_link_libraries(jacobi-frt PRIVATE ${TAPA} frt::frt)
-
   add_custom_target(
     jacobi-cosim
-    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
-            $<TARGET_FILE:jacobi-frt> 20
-    DEPENDS jacobi-frt ${hw_emu_xclbin}
+    COMMAND $<TARGET_FILE:jacobi> 20
+            --bitstream=$<TARGET_PROPERTY:${hw_emu_xclbin},FILE_NAME>
+    DEPENDS jacobi ${hw_emu_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   add_custom_target(
     jacobi-hw
-    COMMAND TAPAB=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
-            $<TARGET_FILE:jacobi-frt>
-    DEPENDS jacobi-frt ${hw_xclbin}
+    COMMAND $<TARGET_FILE:jacobi>
+            --bitstream=$<TARGET_PROPERTY:${hw_xclbin},FILE_NAME>
+    DEPENDS jacobi ${hw_xclbin}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   add_test(NAME jacobi-cosim COMMAND ${CMAKE_COMMAND} --build

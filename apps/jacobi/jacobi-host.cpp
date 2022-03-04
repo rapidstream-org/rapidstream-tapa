@@ -15,7 +15,11 @@ using std::chrono::high_resolution_clock;
 void Jacobi(tapa::mmap<float> bank_0_t0, tapa::mmap<const float> bank_0_t1,
             uint64_t coalesced_data_num);
 
+DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
+
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   const uint64_t width = 100;
   const uint64_t height = argc > 1 ? atoll(argv[1]) : 100;
   vector<float> t1_vec(height * width);
@@ -35,9 +39,8 @@ int main(int argc, char* argv[]) {
   }
 
   auto start = high_resolution_clock::now();
-  Jacobi(tapa::write_only_mmap<float>(t0_vec),
-         tapa::read_only_mmap<const float>(t1_vec),
-         height * width / 2);
+  tapa::invoke(Jacobi, FLAGS_bitstream, tapa::write_only_mmap<float>(t0_vec),
+               tapa::read_only_mmap<const float>(t1_vec), height * width / 2);
   auto stop = high_resolution_clock::now();
   duration<double> elapsed = stop - start;
   clog << "elapsed time: " << elapsed.count() << " s" << endl;
