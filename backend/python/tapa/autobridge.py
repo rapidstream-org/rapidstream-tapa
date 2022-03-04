@@ -32,47 +32,48 @@ AREA_PER_HBM = {
     'DSP': 0,
 }
 
+# TODO: check that the FIFOs are 32 in depth
 AREA_OF_M_AXI = {
     32: {
         'BRAM': 0,
         'DSP': 0,
-        'FF': 50,
-        'LUT': 150,
+        'FF': 377,
+        'LUT': 786,
         'URAM': 0,
     },
     64: {
         'BRAM': 0,
         'DSP': 0,
-        'FF': 103,
-        'LUT': 296,
+        'FF': 375,
+        'LUT': 848,
         'URAM': 0,
     },
     128: {
         'BRAM': 0,
         'DSP': 0,
-        'FF': 284,
-        'LUT': 800,
+        'FF': 373,
+        'LUT': 971,
         'URAM': 0,
     },
     256: {
         'BRAM': 0,
         'DSP': 0,
-        'FF': 290,
-        'LUT': 1099,
+        'FF': 371,
+        'LUT': 1225,
         'URAM': 0,
     },
     512: {
         'BRAM': 0,
         'DSP': 0,
-        'FF': 289,
-        'LUT': 1206,
+        'FF': 369,
+        'LUT': 1735,
         'URAM': 0,
     },
     1024: {
         'BRAM': 0,
         'DSP': 0,
-        'FF': 289,
-        'LUT': 1500,
+        'FF': 367,
+        'LUT': 2755,
         'URAM': 0,
     },
 }
