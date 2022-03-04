@@ -1,8 +1,8 @@
 `default_nettype none
 
 module async_mmap #(
-  parameter BufferSize        = 64,
-  parameter BufferSizeLog     = 6,
+  parameter BufferSize        = 32,
+  parameter BufferSizeLog     = 5,
   parameter AddrWidth         = 64,
   parameter DataWidth         = 512,
   parameter DataWidthBytesLog = 6,  // must equal log2(DataWidth/8)
@@ -90,12 +90,35 @@ module async_mmap #(
   // add flow control between the read_addr channel and the read_data channel
   // if the read_data channel is close to full, stop issuing more read requests
   // buffer size set by FlowControlBufferDepth
-  parameter FlowControlBufferDepth = 64;
-  wire read_data_fifo_almost_full_n;
-  wire m_axi_ARVALID_internal;
-  wire m_axi_ARREADY_internal;
-  assign m_axi_ARVALID = m_axi_ARVALID_internal & read_data_fifo_almost_full_n;
-  assign m_axi_ARREADY_internal = m_axi_ARREADY & read_data_fifo_almost_full_n;
+  parameter FlowControlThreshold = 48;
+  parameter FlowControlThresholdLog2 = $clog2(FlowControlThreshold)+1; // make the counter larger in case overflow
+  reg [FlowControlThresholdLog2: 0] counter; // # of outstanding read
+
+  wire allow_issue_read_addr = counter < FlowControlThreshold;
+  reg allow_issue_read_addr_q;
+  always @ (posedge clk) allow_issue_read_addr_q <= allow_issue_read_addr;
+
+  wire read_addr_write_internal;
+  wire read_addr_full_n_internal;
+  assign read_addr_write_internal = read_addr_write & allow_issue_read_addr_q;
+  assign read_addr_full_n = read_addr_full_n_internal & allow_issue_read_addr_q;
+
+  wire addr_write_en = read_addr_write_internal & read_addr_full_n_internal;
+  wire data_read_en = read_data_read & read_data_empty_n;
+
+  always @ (posedge clk) begin
+    if (rst) begin
+      counter <= 0;
+    end
+    else begin
+      if (addr_write_en & !data_read_en) begin
+        counter <= counter + 1;
+      end
+      else if (!addr_write_en & data_read_en) begin
+        counter <= counter - 1;
+      end
+    end
+  end
   
   // write addr buffer, from user to burst detector
   wire [AddrWidth-1:0] write_addr_dout;
@@ -375,9 +398,9 @@ module async_mmap #(
     .reset(rst),
 
     // from user
-    .if_full_n  (read_addr_full_n),
+    .if_full_n  (read_addr_full_n_internal),
     .if_write_ce(1'b1),
-    .if_write   (read_addr_write),
+    .if_write   (read_addr_write_internal),
     .if_din     (read_addr_din),
 
     // to axi
@@ -453,18 +476,16 @@ module async_mmap #(
   wire [DataWidth-1:0] read_data_din;
   wire                 read_data_write;
   wire                 read_data_full_n;
-  fifo_srl_with_almost_full #(
+  fifo #(
     .DATA_WIDTH(DataWidth),
-    .BASE_ADDR_WIDTH(BufferSizeLog),
-    .BASE_DEPTH     (BufferSize),
-    .GRACE_PERIOD (FlowControlBufferDepth)
+    .ADDR_WIDTH(BufferSizeLog),
+    .DEPTH     (BufferSize)
   ) read_data (
     .clk  (clk),
     .reset(rst),
 
     // from axi
     .if_full_n  (read_data_full_n),
-    .if_almost_full_n (read_data_fifo_almost_full_n),
     .if_write_ce(1'b1),
     .if_write   (read_data_write),
     .if_din     (read_data_din),
@@ -477,8 +498,8 @@ module async_mmap #(
   );
 
   // AR channel
-  assign burst_read_addr_read = m_axi_ARREADY_internal;
-  assign m_axi_ARVALID_internal        = burst_read_addr_empty_n;
+  assign burst_read_addr_read = m_axi_ARREADY;
+  assign m_axi_ARVALID        = burst_read_addr_empty_n;
   assign m_axi_ARADDR         = burst_read_addr_dout_addr;
   assign m_axi_ARID           = 0;
   assign m_axi_ARLEN          = burst_read_addr_dout_burst_len;
@@ -506,124 +527,3 @@ module async_mmap #(
 endmodule  // async_mmap
 
 `default_nettype wire
-
-///////////////////////////////////////////////////////////
-
-module fifo_srl_with_almost_full (
-  input wire clk,
-  input wire reset,
-
-  // write
-  output wire                  if_full_n,
-  output wire                  if_almost_full_n,
-  input  wire                  if_write_ce,
-  input  wire                  if_write,
-  input  wire [DATA_WIDTH-1:0] if_din,
-
-  // read
-  output wire                  if_empty_n,
-  input  wire                  if_read_ce,
-  input  wire                  if_read,
-  output wire [DATA_WIDTH-1:0] if_dout
-);
-
-parameter MEM_STYLE   = "shiftreg";
-parameter DATA_WIDTH  = 32'd32;
-parameter BASE_ADDR_WIDTH  = 32'd4;
-parameter BASE_DEPTH       = 5'd16;
-
-/*******************************************/
-parameter GRACE_PERIOD = 32;
-parameter DEPTH = GRACE_PERIOD + BASE_DEPTH;
-parameter ADDR_WIDTH  = $clog2(DEPTH);
-/*******************************************/
-
-wire[ADDR_WIDTH - 1:0] shiftReg_addr ;
-wire[DATA_WIDTH - 1:0] shiftReg_data, shiftReg_q;
-wire                     shiftReg_ce;
-reg[ADDR_WIDTH:0] mOutPtr = ~{(ADDR_WIDTH+1){1'b0}};
-reg internal_empty_n = 0, internal_full_n = 1;
-
-assign if_empty_n = internal_empty_n;
-
-/*******************************************/
-assign if_full_n = internal_full_n;
-wire almost_full = mOutPtr >= DEPTH - 1 - GRACE_PERIOD && mOutPtr != ~{ADDR_WIDTH+1{1'b0}};
-assign if_almost_full_n = ~almost_full;
-/*******************************************/
-
-assign shiftReg_data = if_din;
-assign if_dout = shiftReg_q;
-
-always @ (posedge clk) begin
-    if (reset == 1'b1)
-    begin
-        mOutPtr <= ~{ADDR_WIDTH+1{1'b0}};
-        internal_empty_n <= 1'b0;
-        internal_full_n <= 1'b1;
-    end
-    else begin
-        if (((if_read & if_read_ce) == 1 & internal_empty_n == 1) &&
-            ((if_write & if_write_ce) == 0 | internal_full_n == 0))
-        begin
-            mOutPtr <= mOutPtr - 5'd1;
-            if (mOutPtr == 0)
-                internal_empty_n <= 1'b0;
-            internal_full_n <= 1'b1;
-        end
-        else if (((if_read & if_read_ce) == 0 | internal_empty_n == 0) &&
-            ((if_write & if_write_ce) == 1 & internal_full_n == 1))
-        begin
-            mOutPtr <= mOutPtr + 5'd1;
-            internal_empty_n <= 1'b1;
-            if (mOutPtr == DEPTH - 5'd2)
-                internal_full_n <= 1'b0;
-        end
-    end
-end
-
-assign shiftReg_addr = mOutPtr[ADDR_WIDTH] == 1'b0 ? mOutPtr[ADDR_WIDTH-1:0]:{ADDR_WIDTH{1'b0}};
-assign shiftReg_ce = (if_write & if_write_ce) & internal_full_n;
-
-fifo_srl_almost_full_internal
-#(
-    .DATA_WIDTH(DATA_WIDTH),
-    .ADDR_WIDTH(ADDR_WIDTH),
-    .DEPTH(DEPTH))
-U_fifo_w32_d16_A_ram (
-    .clk(clk),
-    .data(shiftReg_data),
-    .ce(shiftReg_ce),
-    .a(shiftReg_addr),
-    .q(shiftReg_q));
-
-endmodule
-
-module fifo_srl_almost_full_internal (
-  input  wire                  clk,
-  input  wire [DATA_WIDTH-1:0] data,
-  input  wire                  ce,
-  input  wire [ADDR_WIDTH-1:0] a,
-  output wire [DATA_WIDTH-1:0] q
-);
-
-parameter DATA_WIDTH = 32'd32;
-parameter ADDR_WIDTH = 32'd4;
-parameter DEPTH = 5'd16;
-
-reg[DATA_WIDTH-1:0] SRL_SIG [0:DEPTH-1];
-integer i;
-
-always @ (posedge clk)
-    begin
-        if (ce)
-        begin
-            for (i=0;i<DEPTH-1;i=i+1)
-                SRL_SIG[i+1] <= SRL_SIG[i];
-            SRL_SIG[0] <= data;
-        end
-    end
-
-assign q = SRL_SIG[a];
-
-endmodule
