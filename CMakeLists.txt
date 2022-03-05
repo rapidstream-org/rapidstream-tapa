@@ -9,6 +9,7 @@ project(tapa VERSION ${VERSION})
 
 add_subdirectory(backend)
 
+# If change, also change `cmake/TAPAConfig.cmake`.
 find_package(Boost 1.59 COMPONENTS coroutine stacktrace_basic)
 find_package(FRT REQUIRED)
 
