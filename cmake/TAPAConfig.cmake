@@ -1,4 +1,4 @@
-find_package(Boost 1.59 COMPONENTS coroutine stacktrace_backtrace)
+find_package(Boost 1.59 COMPONENTS coroutine stacktrace_basic)
 find_package(FRT REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/TAPATargets.cmake")
