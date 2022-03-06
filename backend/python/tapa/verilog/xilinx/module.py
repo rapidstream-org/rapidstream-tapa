@@ -7,7 +7,6 @@ from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple, Union
 
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
-from pyverilog.vparser.ast import StringConst
 from tapa.verilog import ast
 # pylint: disable=wildcard-import,unused-wildcard-import
 from tapa.verilog.util import *
@@ -447,56 +446,6 @@ class Module:
         ),
     )
 
-  def _add_async_mmap_relay_stations(
-      self,
-      data_width: int,
-      tag: str,
-      rst_q: Pipeline,
-      name: str,
-  ) -> 'Module':
-    """
-    define the relay station instances between the task instance and the async_mmap instance
-    async_mmap.fifo_interface <-- wire --> relay_station <-- wire --> task_instance.fifo_interface
-    """
-    fifo_ch_to_widths = {
-      'read_addr': ADDR_CHANNEL_DATA_WIDTH,
-      'read_data': data_width,
-      'write_addr': ADDR_CHANNEL_DATA_WIDTH,
-      'write_data': data_width,
-      'write_resp': RESP_CHANNEL_DATA_WIDTH,
-    }
-
-    # Before we move out the FIFOs in side async_mmap, use a minimal relay station outside
-    # TODO: set LEVEL based on the floorplanning results.
-    param_list = [ast.ParamArg(paramname='DATA_WIDTH', argname=ast.Constant(fifo_ch_to_widths[tag])),
-                  ast.ParamArg(paramname='ADDR_WIDTH', argname=ast.Constant(2)),
-                  ast.ParamArg(paramname='DEPTH', argname=ast.Constant(2)),
-                  ast.ParamArg(paramname='LEVEL', argname=ast.Constant(4))]
-
-    port_list = [
-      ast.make_port_arg(port='clk', arg=CLK),
-      ast.make_port_arg(port='reset', arg=rst_q[-1]),
-      ast.make_port_arg(port='if_read_ce',  arg=ast.Constant(1)),
-      ast.make_port_arg(port='if_write_ce', arg=ast.Constant(1)),
-    ]
-    for port_suffix in ISTREAM_SUFFIXES + OSTREAM_SUFFIXES:
-      oppo_port = STREAM_PORT_OPPOSITE[port_suffix]
-      # connect the relay station and the async_mmap
-      # equivalent to connect two FIFOs head to tail
-      # dout <-> din, read <-> full_n, empty_n <-> write
-      if port_suffix in ASYNC_MMAP_SUFFIXES[tag]:
-        port_list.append(ast.make_port_arg(port=f'if{oppo_port}', arg=f'{name}_{tag}_{port_suffix}{PIPELINE_SUFFIX}'))
-      # connect the relay station and the task instance
-      else:
-        port_list.append(ast.make_port_arg(port=f'if{oppo_port}', arg=f'{name}_{tag}_{oppo_port}'))
-
-    self.add_instance(module_name='relay_station',
-                        instance_name=async_mmap_instance_name(name)+'_'+tag,
-                        ports=port_list,
-                        params=param_list)
-
-    return self
-
   def add_async_mmap_instance(
       self,
       name: str,
@@ -553,7 +502,7 @@ class Module:
     for tag in ASYNC_MMAP_SUFFIXES:
       for suffix in ASYNC_MMAP_SUFFIXES[tag]:
         if tag in tags:
-          arg = async_mmap_arg_name(arg=name, tag=tag, suffix=suffix+PIPELINE_SUFFIX)
+          arg = async_mmap_arg_name(arg=name, tag=tag, suffix=suffix)
           if tag.endswith('_addr') and suffix.endswith('_din'):
             elem_size_bytes_m1 = data_width // 8 - 1
             arg = "{name} + {{{arg}[{}:0], {}'d0}}".format(
@@ -569,8 +518,6 @@ class Module:
           else:
             arg = ''
         portargs.append(ast.make_port_arg(port=tag + suffix, arg=arg))
-
-      self._add_async_mmap_relay_stations(data_width, tag, rst_q, name)
 
     return self.add_instance(module_name='async_mmap',
                              instance_name=async_mmap_instance_name(name),

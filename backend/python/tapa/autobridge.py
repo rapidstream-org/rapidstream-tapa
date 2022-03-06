@@ -199,9 +199,6 @@ def generate_floorplan(
         'depth': top_task.fifos[fifo_name]['depth']
     }
 
-  # Generate edges for FIFOs between async_mmap and task instances
-  # included in _add_connectivity_constraints()
-
   # Dedup items.
   for region, instances in config['OptionalFloorplan'].items():
     instances[:] = dict.fromkeys(instances)
