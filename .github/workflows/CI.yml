@@ -15,10 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           ./.github/scripts/install-build-deps.sh
-          sudo git clone \
-            https://github.com/Xilinx/HLS_arbitrary_Precision_Types.git \
-            /usr/local/src/ap_int
-          sudo ln -sf /usr/local/src/ap_int/include/* /usr/local/include/
+          ./.github/scripts/setup-github-hosted.sh
       - name: Configure myself
         run: cmake -S . -B build
       - name: Cache llvm-src
@@ -64,27 +61,14 @@ jobs:
       - name: Install dependencies
         run: |
           .github/scripts/install-build-deps.sh
+          .github/scripts/setup-self-hosted.sh
           python3 -m pip install --editable backend/python
 
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            faketime \
-            gcc-multilib \
-            iverilog \
-            libc6-dev-i386 \
-            libncurses5 \
-            libtinfo5 \
-            libxext6 \
-            unzip \
             xilinx-u250-xdma-dev \
             xilinx-u280-xdma-dev \
-            xrt \
 
-          # Vivado doesn't like running concurrently for the first time.
-          (
-            source "${XILINX_VIVADO}"/settings64.sh
-            vivado -mode batch -nojournal -nolog
-          )
       - name: Configure myself
         run: cmake -S . -B build
         env:
