@@ -350,9 +350,10 @@ class Module:
       ports: Iterable[ast.ParamArg],
       params: Iterable[ast.ParamArg] = ()
   ) -> 'Module':
+    keep_hier_pragma = '(* keep_hierarchy = "yes" *) '
     self._module_def.items = (
         self._module_def.items[:self._last_instance_idx + 1] +
-        (ast.InstanceList(module=module_name,
+        (ast.InstanceList(module=keep_hier_pragma + module_name,
                           parameterlist=params,
                           instances=(ast.Instance(module=None,
                                                   name=instance_name,
