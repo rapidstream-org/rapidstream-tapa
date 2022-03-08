@@ -232,8 +232,7 @@ def main(argv: Optional[List[str]] = None):
   args = parser.parse_args(argv)
   verbose = 0 if args.verbose is None else args.verbose
   quiet = 0 if args.quiet is None else args.quiet
-  logging_level = (quiet -
-                   verbose) * 10 + logging.getLogger().getEffectiveLevel()
+  logging_level = (quiet - verbose) * 10 + logging.INFO
   logging_level = max(logging.DEBUG, min(logging.CRITICAL, logging_level))
   logging.getLogger().setLevel(logging_level)
   _logger.info('logging level set to %s', logging.getLevelName(logging_level))
