@@ -294,6 +294,7 @@ class Program:
               rpt_path,
               module_name,
               directive['part_num'],
+              synth_kwargs={'mode': 'out_of_context'},
           ) as proc:
             stdout, stderr = proc.communicate()
 
