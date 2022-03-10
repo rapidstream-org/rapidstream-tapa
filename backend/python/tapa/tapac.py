@@ -221,6 +221,14 @@ def create_parser() -> argparse.ArgumentParser:
       help='Forces DAG for floorplanning.',
       default=False,
   )
+  group.add_argument(
+      '--floorplan-pre-assignments',
+      type=argparse.FileType('r'),
+      dest='floorplan_pre_assignments',
+      help='Providing a json file of type Dict[str, List[str]] '
+           'storing the manual assignments to be used in floorplanning. '
+           'The key is the region name, the value is a list of modules.'
+  )
 
   return parser
 
@@ -414,6 +422,8 @@ def main(argv: Optional[List[str]] = None):
       kwargs['user_max_usage_ratio'] = args.max_usage
     if args.force_dag is not None:
       kwargs['force_dag'] = args.force_dag
+    if args.floorplan_pre_assignments is not None:
+      kwargs['pre_assignments'] = args.floorplan_pre_assignments.name
     program.instrument_rtl(
         directive,
         args.register_level or 0,

@@ -151,6 +151,12 @@ def generate_floorplan(
   ctrl_region = get_ctrl_instance_region(part_num)
   config['OptionalFloorplan'][ctrl_region].append(rtl.ctrl_instance_name(top_task.name))
 
+  user_pre_assignments_json = kwargs.get('pre_assignments', '')
+  if user_pre_assignments_json:
+    user_pre_assignments = json.loads(open(user_pre_assignments_json, 'r').read())
+    for region, modules in user_pre_assignments.items():
+      config['OptionalFloorplan'][region] += modules
+
   # ASYNC_MMAP is outside of its instantiating module and needs its own
   # floorplanning constraint.
   for instance in top_task.instances:
