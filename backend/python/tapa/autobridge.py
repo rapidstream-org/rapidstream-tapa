@@ -15,18 +15,9 @@ from .instance import Instance
 from .task import Task
 
 # TODO: use a better calibrated model
-
-AREA_OF_PLATFORM = {
-    'LUT': 39316,
-    'FF': 94580,
-    'BRAM': 183,
-    'URAM': 0,
-    'DSP': 0,
-}
-
 AREA_PER_HBM = {
-    'LUT': 2952,
-    'FF': 3961,
+    'LUT': 5000,
+    'FF': 6500,
     'BRAM': 0,
     'URAM': 0,
     'DSP': 0,
@@ -147,12 +138,6 @@ def generate_floorplan(
 
   config['DDR'] = list(dict.fromkeys(ddr_list))
 
-  # Account for area used for the shell platform and memory subsystem.
-  if config['Board'] == 'U280':
-    accumulate_area(
-        region_to_shell_area[get_ctrl_instance_region(part_num)],
-        AREA_OF_PLATFORM,
-    )
   for region, shell_area in region_to_shell_area.items():
     placeholder_name = _PLACEHOLDER_REGION_PREFIX + region
     # Each placeholder is both a task name and a task instance name.
