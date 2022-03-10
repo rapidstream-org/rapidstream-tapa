@@ -172,7 +172,8 @@ def create_parser() -> argparse.ArgumentParser:
       type=argparse.FileType('r'),
       dest='directive',
       metavar='file',
-      help=('Use a specific partitioning directive json file '
+      help=('[obsolete] Please use --floorplan-pre-assignments instead.\n'
+            'Use a specific partitioning directive json file '
             'instead of generating one via AutoBridge.'),
   )
   group.add_argument(
@@ -396,6 +397,11 @@ def main(argv: Optional[List[str]] = None):
 
   if all_steps or args.instrument_rtl is not None:
     directive: Optional[Dict[str, Any]] = None
+
+    if args.directive:
+      logging.error(f'The --directive option is obsolete. Please use --floorplan-pre-assignments instead')
+      raise NotImplementedError
+
     if args.directive is not None and args.constraint is not None:
       # Read floorplan from `args.directive` and write TCL commands to
       # `args.constraint`.
@@ -422,12 +428,11 @@ def main(argv: Optional[List[str]] = None):
       kwargs['user_max_usage_ratio'] = args.max_usage
     if args.force_dag is not None:
       kwargs['force_dag'] = args.force_dag
-    if args.floorplan_pre_assignments is not None:
-      kwargs['pre_assignments'] = args.floorplan_pre_assignments.name
     program.instrument_rtl(
         directive,
         args.register_level or 0,
         args.enable_synth_util,
+        args.floorplan_pre_assignments,
         **kwargs,
     )
 

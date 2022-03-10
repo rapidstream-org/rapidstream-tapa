@@ -82,6 +82,7 @@ def generate_floorplan(
     fifo_width_getter: Callable[[Task, str], int],
     connectivity_fp: Optional[TextIO],
     part_num: str,
+    floorplan_pre_assignments,
     **kwargs,
 ) -> Dict[str, Any]:
   _logger.info('total area estimation: %s', top_task.total_area)
@@ -119,12 +120,10 @@ def generate_floorplan(
   width_table = {port.name: port.width for port in top_task.ports.values()}
 
   # connectivity refers to the .ini file with the arg to port mapping
-  for connectivity in parse_connectivity(connectivity_fp):
-    if not connectivity:
-      continue
+  orig_arg_to_port = parse_connectivity(connectivity_fp)
 
-    kernel_arg, port = _parse_connectivity(connectivity)
-
+  # constraints based on the mapping from logical ports to physical ports
+  for kernel_arg, port in orig_arg_to_port.items():
     region = get_port_region(part_num, port=port)
     port_cat, port_id = parse_port(port)
     if port_cat == 'DDR':
@@ -151,9 +150,9 @@ def generate_floorplan(
   ctrl_region = get_ctrl_instance_region(part_num)
   config['OptionalFloorplan'][ctrl_region].append(rtl.ctrl_instance_name(top_task.name))
 
-  user_pre_assignments_json = kwargs.get('pre_assignments', '')
-  if user_pre_assignments_json:
-    user_pre_assignments = json.loads(open(user_pre_assignments_json, 'r').read())
+  # user could specify additional location constraints
+  if floorplan_pre_assignments:
+    user_pre_assignments = json.load(floorplan_pre_assignments)
     for region, modules in user_pre_assignments.items():
       config['OptionalFloorplan'][region] += modules
 
@@ -203,25 +202,33 @@ def generate_floorplan(
     json.dump(config, fp, indent=2)
 
   # Generate floorplan using AutoBridge.
-  floorplan = autobridge.HLSParser.tapa.generate_constraints(config)
+  vertex_to_slot, slot_to_vertices, topology = autobridge.HLSParser.tapa.generate_constraints_bundle(config)
 
   # Remove placeholders.
-  for pblock in floorplan:
+  vertex_to_slot = {v: s for v, s in vertex_to_slot.items() \
+    if not v.startswith(_PLACEHOLDER_REGION_PREFIX) \
+    and not v.startswith(_DUMMY_OFF_CHIP_MEMORY_PORT_PREFIX)  }
+
+  for s, v_list in slot_to_vertices.items():
     filtered_list = []
-    for v in floorplan[pblock]:
+    for v in v_list:
       if isinstance(v, str):
         if v.startswith(_PLACEHOLDER_REGION_PREFIX):
           continue
         if v.startswith(_DUMMY_OFF_CHIP_MEMORY_PORT_PREFIX):
           continue        
       filtered_list.append(v)
-    floorplan[pblock] = filtered_list
+    slot_to_vertices[s] = filtered_list
 
   # Dump the output from AutoBridge.
-  with open(os.path.join(work_dir, 'autobridge_floorplan.json'), 'w') as fp:
-    json.dump(floorplan, fp, indent=2)
+  with open(os.path.join(work_dir, 'autobridge_floorplan_vertex_to_slot.json'), 'w') as fp:
+    json.dump(vertex_to_slot, fp, indent=2)
+  with open(os.path.join(work_dir, 'autobridge_floorplan_slot_to_vertices.json'), 'w') as fp:
+    json.dump(slot_to_vertices, fp, indent=2)
+  with open(os.path.join(work_dir, 'autobridge_floorplan_topology.json'), 'w') as fp:
+    json.dump(topology, fp, indent=2)
 
-  return floorplan
+  return vertex_to_slot, slot_to_vertices, topology
 
 
 def make_autobridge_area(area: Dict[str, int]) -> Dict[str, int]:
@@ -235,9 +242,14 @@ def accumulate_area(lhs: Dict[str, int], rhs: Dict[str, int]) -> None:
     lhs[k] += v
 
 
-def parse_connectivity(fp: TextIO) -> List[str]:
+def parse_connectivity(fp: TextIO) -> Dict[str, str]:
+  """
+  parse the .ini config file. Example:
+  [connectivity]
+  sp=serpens_1.edge_list_ch0:HBM[0]
+  """
   if fp is None:
-    return []
+    return {}
 
   class MultiDict(dict):
 
@@ -249,7 +261,21 @@ def parse_connectivity(fp: TextIO) -> List[str]:
 
   config = configparser.RawConfigParser(dict_type=MultiDict, strict=False)
   config.read_file(fp)
-  return config['connectivity']['sp'].splitlines()
+
+  orig_arg_to_port = {}
+  for connectivity in config['connectivity']['sp'].splitlines():
+    if not connectivity:
+      continue
+
+    dot = connectivity.find('.')
+    colon = connectivity.find(':')
+    kernel = connectivity[:dot]
+    kernel_arg = connectivity[dot + 1:colon]
+    port = connectivity[colon + 1:]
+
+    orig_arg_to_port[kernel_arg] = port
+
+  return orig_arg_to_port
 
 
 def parse_port(port: str) -> Tuple[str, int]:
@@ -300,6 +326,11 @@ def _add_connectivity_constraints(
     if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
       config['GroupingConstraints'].append([arg.instance.name, rtl.async_mmap_instance_name(arg.mmap_name)])
 
+  if len(top_task.args[kernel_arg]) > 1:
+    logging.error(f'Internal Error. Please contact the authors.')
+    logging.error(f'Assumptions that len(top_task.args[kernel_arg]) == 1 has been broken.')
+    raise NotImplementedError
+
   for arg in top_task.args[kernel_arg]:
     # total width of an AXI channel
     # wr_data, wr_addr, rd_data, rd_addr, resp + other control signals (approximately 50)
@@ -327,17 +358,3 @@ def _add_connectivity_constraints(
     "LUT": 0,
     "URAM": 0
   }
-
-
-def _parse_connectivity(connectivity: str) -> Tuple[str, str]:
-  """
-  parse the .ini config file. Example: 
-  [connectivity]
-  sp=serpens_1.edge_list_ch0:HBM[0]
-  """
-  dot = connectivity.find('.')
-  colon = connectivity.find(':')
-  kernel = connectivity[:dot]
-  kernel_arg = connectivity[dot + 1:colon]
-  port = connectivity[colon + 1:]
-  return kernel_arg, port
