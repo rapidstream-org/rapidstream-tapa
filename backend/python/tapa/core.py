@@ -17,10 +17,9 @@ from typing import (Any, BinaryIO, Dict, List, Optional, Set, TextIO, Tuple,
 import toposort
 import yaml
 from haoda.backend import xilinx as hls
-from haoda.report.xilinx import rtl as report
 
-import tapa.autobridge
 from tapa import util
+from tapa.floorplan import get_floorplan
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
 
@@ -140,6 +139,9 @@ class Program:
     return os.path.join(self.rtl_dir,
                         (util.get_module_name(name) if prefix else name) +
                         rtl.RTL_SUFFIX)
+  
+  def get_post_syn_rpt(self, module_name: str) -> str:
+    return f'{self.work_dir}/report/{module_name}.hier.util.rpt'
 
   def _get_hls_report_xml(self, name: str) -> ET.ElementTree:
     tree = self._hls_report_xmls.get(name)
@@ -222,6 +224,7 @@ class Program:
       directive: Optional[Dict[str, Any]] = None,
       register_level: int = 0,
       enable_synth_util: bool = False,
+      floorplan_pre_assignments: TextIO = None,
       **kwargs,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
@@ -278,67 +281,38 @@ class Program:
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
+      inst_to_region, fifo_pipeline_level, tcl_definition_of_regions = get_floorplan(
+        directive,
+        enable_synth_util,
+        floorplan_pre_assignments,
+        self.work_dir,
+        self.rtl_dir,
+        self.top_task,
+        self.ctrl_instance_name,
+        self.get_post_syn_rpt,
+        self.get_task,
+        self._get_fifo_width,
+        self.get_cpp,
+        **kwargs,
+      )
 
-      def worker(module_name: str, idx: int) -> report.HierarchicalUtilization:
-        _logger.debug('synthesizing %s', module_name)
-        rpt_path = f'{self.work_dir}/report/{module_name}.hier.util.rpt'
+      rtl.print_constraints(
+        inst_to_region,
+        directive['constraint'],
+        pre=''.join(tcl_definition_of_regions),
+        post='\n'.join([
+            'foreach pblock [get_pblocks] {',
+            '  report_utilization -pblocks $pblock '
+            f'-file {self.work_dir}/report/$pblock.rpt',
+            '}',
+        ]),
+      )
 
-        rpt_path_mtime = 0.
-        if os.path.isfile(rpt_path):
-          rpt_path_mtime = os.path.getmtime(rpt_path)
+      self.top_task.module.register_level = 4
+      _logger.info('top task register level set to %d based on floorplan',
+                 self.top_task.module.register_level)
+      self.top_task.module.fifo_partition_count = fifo_pipeline_level
 
-        # generate report if and only if C++ source is newer than report.
-        if os.path.getmtime(self.get_cpp(module_name)) > rpt_path_mtime:
-          os.nice(idx % 19)
-          with report.ReportDirUtil(
-              self.rtl_dir,
-              rpt_path,
-              module_name,
-              directive['part_num'],
-              synth_kwargs={'mode': 'out_of_context'},
-          ) as proc:
-            stdout, stderr = proc.communicate()
-
-          # err if output report does not exist or is not newer than previous
-          if (not os.path.isfile(rpt_path) or
-              os.path.getmtime(rpt_path) <= rpt_path_mtime):
-            sys.stdout.write(stdout.decode('utf-8'))
-            sys.stderr.write(stderr.decode('utf-8'))
-            raise InputError(f'failed to generate report for {module_name}')
-
-        with open(rpt_path) as rpt_file:
-          return report.parse_hierarchical_utilization_report(rpt_file)
-
-      if enable_synth_util:
-        _logger.info('generating post-synthesis resource utilization reports')
-        with futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-          for utilization in executor.map(
-              worker,
-              {x.task.name for x in self.top_task.instances},
-              itertools.count(0),
-          ):
-            # override self_area populated from HLS report
-            bram = int(utilization['RAMB36']) * 2 + int(utilization['RAMB18'])
-            self.get_task(utilization.instance).total_area = {
-                'BRAM_18K': bram,
-                'DSP': int(utilization['DSP Blocks']),
-                'FF': int(utilization['FFs']),
-                'LUT': int(utilization['Total LUTs']),
-                'URAM': int(utilization['URAM']),
-            }
-
-      _logger.info('generating partitioning constraints')
-      floorplan = directive.get('floorplan')
-      if floorplan is None:
-        floorplan = tapa.autobridge.generate_floorplan(
-            self.top_task,
-            self.work_dir,
-            self._get_fifo_width,
-            directive['connectivity'],
-            directive['part_num'],
-            **kwargs,
-        )
-      self._process_partition_directive(floorplan, directive['constraint'])
     if register_level:
       self.top_task.module.register_level = register_level
 
@@ -368,101 +342,6 @@ class Program:
              rtl_dir=self.rtl_dir,
              output_file=output_file)
     return self
-
-  def _process_partition_directive(
-      self,
-      directive: Dict[str, List[Union[str, Dict[str, List[str]]]]],
-      constraints: TextIO,
-  ) -> None:
-    _logger.info('processing partition directive')
-
-    # mapping instance names to region names
-    instance_dict = {self.ctrl_instance_name: ''}
-
-    topology: Dict[str, Dict[str, List[str]]] = {}
-
-    # list of strings that creates the pblocks, may be empty
-    pblock_tcl: List[str] = []
-
-    for instance in self.top_task.instances:
-      for arg in instance.args:
-        if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
-          instance_dict[rtl.async_mmap_instance_name(arg.mmap_name)] = ''
-      instance_dict[instance.name] = ''
-
-    # check that all non-FIFO instances are assigned to one and only one SLR
-    program_instance_set = set(instance_dict)
-    directive_instance_set: Set[str] = set()
-    for region, instances in directive.items():
-      subset: Set[str] = set()
-      for instance_obj in instances:
-        if isinstance(instance_obj, str):
-          instance_obj = rtl.sanitize_array_name(instance_obj)
-          instance_dict[instance_obj] = region
-          subset.add(instance_obj)
-        else:
-          topology[region] = instance_obj
-          pblock_tcl.append(instance_obj.pop('tcl', ''))
-      intersect = subset & directive_instance_set
-      if intersect:
-        raise InputError('more than one region assignment: %s' % intersect)
-      directive_instance_set.update(subset)
-    missing_instances = program_instance_set - directive_instance_set
-    if missing_instances:
-      raise InputError('missing region assignment: {%s}' %
-                       ', '.join(missing_instances))
-    unnecessary_instances = (directive_instance_set - program_instance_set -
-                             rtl.BUILTIN_INSTANCES)
-    if unnecessary_instances:
-      raise InputError('unnecessary region assignment: {%s}' %
-                       ', '.join(unnecessary_instances))
-
-    # determine partitioning of each FIFO
-    fifo_partition_count: Dict[str, int] = {}
-
-    for name, meta in self.top_task.fifos.items():
-      name = rtl.sanitize_array_name(name)
-      producer_region = instance_dict[util.get_instance_name(
-          meta['produced_by'])]
-      consumer_region = instance_dict[util.get_instance_name(
-          meta['consumed_by'])]
-      if producer_region == consumer_region:
-        fifo_partition_count[name] = 1
-        instance_dict[name] = producer_region
-      else:
-        if producer_region not in topology:
-          raise InputError(f'missing topology info for {producer_region}')
-        if consumer_region not in topology[producer_region]:
-          raise InputError(f'{consumer_region} is not reachable from '
-                           f'{producer_region}')
-        idx = 0  # makes linter happy
-        for idx, region in enumerate((
-            producer_region,
-            *topology[producer_region][consumer_region],
-            consumer_region,
-        )):
-          instance_dict[rtl.fifo_partition_name(name, idx)] = region
-        fifo_partition_count[name] = idx + 1
-
-    rtl.print_constraints(
-        instance_dict,
-        constraints,
-        pre=''.join(pblock_tcl),
-        post='\n'.join([
-            'foreach pblock [get_pblocks] {',
-            '  report_utilization -pblocks $pblock '
-            f'-file {self.work_dir}/report/$pblock.rpt',
-            '}',
-        ]),
-    )
-
-    self.top_task.module.register_level = max(
-        map(len, topology[instance_dict[self.ctrl_instance_name]].values()),
-        default=-1,
-    ) + 1
-    _logger.info('top task register level set to %d based on floorplan',
-                 self.top_task.module.register_level)
-    self.top_task.module.fifo_partition_count = fifo_partition_count
 
   def _populate_task(self, task: Task) -> None:
     task.instances = tuple(
