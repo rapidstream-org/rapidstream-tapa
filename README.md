@@ -19,6 +19,18 @@ TAPA is a high-performance fast-compiling HLS framework that is fully compatible
 - TAPA generates an xo object that is fully compatible as the input to the Vitis v++ compiler for bitstream generation.
   - [in-progress] TAPA is integrating the parallel physical implementation tool [RapidStream](https://github.com/Licheng-Guo/RapidStream).
 
+# Successful Cases
+
+- [Serpens](https://arxiv.org/abs/2111.12555), to appear in DAC'22, achieves 270 MHz on the Xilinx Alveo U280 HBM board when using 24 HBM channels. The Vivado baseline failed in routing.
+- [Sextans](https://dl.acm.org/doi/pdf/10.1145/3490422.3502357), FPGA'22, achieves 260 MHz on the Xilinx Alveo U250 board when using 4 DDR channels. The Vivado baseline achieves only 189 MHz.
+
+- [AutoSA Systolic-Array Compiler](https://github.com/UCLA-VAST/AutoSA), FPGA'21:
+<img width="668" alt="image" src="https://user-images.githubusercontent.com/32432619/157976148-594e98bc-2658-4ebc-ae0d-3d2a347d1854.png">
+
+- [KNN](), FPT'20, achieves 235 MHz on the Xilinx Alveo U280 board. The Vivado baseline achieves only 165 MHz.
+
+# More Details
+
 ## Feature Synopsis
 
 ### Programmability Improvement
