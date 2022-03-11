@@ -4,8 +4,20 @@
 [![install](https://github.com/Blaok/tapa/actions/workflows/install.yml/badge.svg)](https://github.com/Blaok/tapa/actions/workflows/install.yml)
 [![Documentation Status](https://readthedocs.org/projects/tapa/badge/?version=latest)](https://tapa.readthedocs.io/en/latest/?badge=latest)
 
-TAPA is an extension to high-level synthesis (HLS) C++
-for task-parallel programs.
+TAPA is a high-performance fast-compiling HLS framework that is fully compatible with the Xilinx Vitis/Vivado workflow.
+
+<img width="931" alt="image" src="https://user-images.githubusercontent.com/32432619/157972074-12fe5f32-4cd0-492e-b47a-06c23ea9c283.png">
+
+- TAPA takes in a task-parallel dataflow program in C++ written in Vitis HLS syntax and additional TAPA APIs. 
+  - Compared to Vitis HLS, TAPA supports **more flexible memory access patterns** and **runtime burst detection**.
+- TAPA extracts parallel components of the program and invokes Vitis HLS to compile each component simultaneously. 
+  - TAPA compiles **7X** faster than Vitis HLS. In some cases, TAPA reduces a **10-hour** Vitis compilation to **10-min**.
+- TAPA invokes the [AutoBridge](https://github.com/Licheng-Guo/AutoBridge) floorplanner to floorplan the dataflow program and pipeline the global data links accordingly. 
+  - With AutoBridge, TAPA achieves **2X** higher the frequency on average compared to Vivado.
+- TAPA supports a [customized fast C-RTL simulation plug-in](https://github.com/Licheng-Guo/tapa-fast-cosim).
+  - **10X** faster than Vitis to setup the simulation.
+- TAPA generates an xo object that is fully compatible as the input to the Vitis v++ compiler for bitstream generation.
+  - [in-progress] TAPA is integrating the parallel physical implementation tool [RapidStream](https://github.com/Licheng-Guo/RapidStream).
 
 ## Feature Synopsis
 
