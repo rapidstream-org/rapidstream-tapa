@@ -81,7 +81,7 @@ module axi_pipeline #(
   input   [1:0]                                  out_RRESP
 );
 
-  relay_station
+  relay_station_no_dont_touch
   #(
     .DATA_WIDTH     ( C_M_AXI_ADDR_WIDTH + C_M_AXI_ID_WIDTH + 8 + 3 + 2           ),
     .DEPTH          ( 2                                                           ),
@@ -104,7 +104,7 @@ module axi_pipeline #(
     .if_read        ( out_AWREADY                                                 )
   );
 
-  relay_station
+  relay_station_no_dont_touch
   #(
     .DATA_WIDTH(
       C_M_AXI_DATA_WIDTH + C_M_AXI_WSTRB_WIDTH + 1
@@ -129,7 +129,7 @@ module axi_pipeline #(
     .if_read    (out_WREADY)
   );
 
-  relay_station
+  relay_station_no_dont_touch
   #(
     .DATA_WIDTH(
       C_M_AXI_ADDR_WIDTH + C_M_AXI_ID_WIDTH + 8 + 3 + 2
@@ -154,7 +154,7 @@ module axi_pipeline #(
     .if_read    (out_ARREADY)
   );
 
-  relay_station
+  relay_station_no_dont_touch
   #(
     .DATA_WIDTH(
       C_M_AXI_DATA_WIDTH + 1 + C_M_AXI_ID_WIDTH + 2
@@ -179,7 +179,7 @@ module axi_pipeline #(
     .if_read    (in_RREADY)
   );
 
-  relay_station
+  relay_station_no_dont_touch
   #(
     .DATA_WIDTH(
       2 + C_M_AXI_ID_WIDTH

@@ -247,6 +247,7 @@ class Program:
         'fifo.v',
         'generate_last.v',
         'relay_station.v',
+        'relay_station_no_dont_touch.v',
     ):
       shutil.copy(
           os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
