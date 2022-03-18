@@ -23,21 +23,7 @@ namespace tapa {
 
 namespace internal {
 
-#ifdef __SYNTHESIS__
-
-template <typename T>
-struct async_mmap {
-  using addr_t = int64_t;
-  using resp_t = uint8_t;
-
-  tapa::ostream<addr_t> read_addr;
-  tapa::istream<T> read_data;
-  tapa::ostream<addr_t> write_addr;
-  tapa::ostream<T> write_data;
-  tapa::istream<resp_t> write_resp;
-};
-
-#else  // __SYNTHESIS__
+#ifndef __SYNTHESIS__
 
 template <typename Param, typename Arg>
 struct accessor;
@@ -173,8 +159,16 @@ class mmap {
 /// accesses.
 template <typename T>
 #ifdef __SYNTHESIS__
-// HLS doesn't like non-reference instance of hls::stream in the arguments.
-using async_mmap = internal::async_mmap<T>&;
+struct async_mmap {
+  using addr_t = int64_t;
+  using resp_t = uint8_t;
+
+  tapa::ostream<addr_t> read_addr;
+  tapa::istream<T> read_data;
+  tapa::ostream<addr_t> write_addr;
+  tapa::ostream<T> write_data;
+  tapa::istream<resp_t> write_resp;
+};
 #else   // __SYNTHESIS__
 class async_mmap : public mmap<T> {
  public:
