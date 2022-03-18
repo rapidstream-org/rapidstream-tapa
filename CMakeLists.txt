@@ -18,8 +18,8 @@ add_library(tapa ALIAS tapa_static)
 add_library(tapa_shared SHARED)
 target_sources(tapa_static PRIVATE src/tapa.cpp)
 target_sources(tapa_shared PRIVATE src/tapa.cpp)
-target_compile_features(tapa_static PUBLIC cxx_std_11)
-target_compile_features(tapa_shared PUBLIC cxx_std_11)
+target_compile_features(tapa_static PUBLIC cxx_std_17)
+target_compile_features(tapa_shared PUBLIC cxx_std_17)
 target_include_directories(
   tapa_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 target_include_directories(
