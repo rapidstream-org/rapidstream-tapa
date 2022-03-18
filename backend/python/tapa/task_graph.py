@@ -1,4 +1,3 @@
-import configparser
 import logging
 from typing import Callable, Dict, Tuple, TextIO
 
@@ -182,23 +181,22 @@ def get_async_mmap_vertices(top_task):
 
 
 def get_port_vertices(
-    top_task,
-    vitis_config_ini,
+    arg_name_to_external_port,
 ):
   """
   FIXME: currently assume the DDR/HBM channels are 512 bit wide
   """
   port_vertices = {}
 
-  arg_name_to_external_port = parse_connectivity(vitis_config_ini)
   for arg_name, external_port_name in arg_name_to_external_port.items():
-    port_cat, port_id = parse_port(external_port_name)
+    port_cat, port_id = util.parse_port(external_port_name)
     if port_cat == 'HBM':
       port_vertices[get_physical_port_vertex_name(arg_name)] = {
         'module': 'external_memory_controller',
         'area': get_hbm_controller_area(),
         'category': 'PORT_VERTEX',
-        'port': external_port_name,
+        'port_cat': port_cat,
+        'port_id': port_id,
       }
     # the ddr will not overlap with user logic
     elif port_cat == 'DDR':
@@ -206,27 +204,21 @@ def get_port_vertices(
         'module': get_physical_port_vertex_name(arg_name),
         'area': get_zero_area(),
         'category': 'PORT_VERTEX',
-        'port': external_port_name,
+        'port_cat': port_cat,
+        'port_id': port_id,
       }
     else:
       raise NotImplementedError(f'unrecognized port type {port_cat}')
 
-  # check that every MMAP/ASYNC_MMAP port has a physical mapping
-  for arg_list in top_task.args.values():
-    for arg in arg_list:
-      if arg.cat in {Instance.Arg.Cat.ASYNC_MMAP, Instance.Arg.Cat.MMAP}:
-        if arg.name not in arg_name_to_external_port:
-          raise AssertionError(f'Missing physical binding for {arg.name} in {vitis_config_ini}')
-
   return type_marked(port_vertices, 'PORT_VERTEX')
 
 
-def get_vertices(top_task: Task, vitis_config_ini: TextIO):
+def get_vertices(top_task: Task, arg_name_to_external_port: Dict[str, str]):
   all_vertices = {}
   all_vertices.update(get_task_vertices(top_task))
   all_vertices.update(get_ctrl_vertices(top_task))
   all_vertices.update(get_async_mmap_vertices(top_task))
-  all_vertices.update(get_port_vertices(top_task, vitis_config_ini))
+  all_vertices.update(get_port_vertices(arg_name_to_external_port))
 
   return all_vertices
 
@@ -253,53 +245,3 @@ def get_port_name_to_width(top_task):
 
 def make_autobridge_area(area: Dict[str, int]) -> Dict[str, int]:
   return {{'BRAM_18K': 'BRAM'}.get(k, k): v for k, v in area.items()}
-
-
-def parse_connectivity(vitis_config_ini: TextIO) -> Dict[str, str]:
-  """parse the .ini config file. 
-  
-    Example:
-    [connectivity]
-    sp=serpens_1.edge_list_ch0:HBM[0]
-  
-    Output:
-    {'edge_list_ch0': 'HBM[0]'}
-  """
-  if vitis_config_ini is None:
-    return {}
-
-  class MultiDict(dict):
-
-    def __setitem__(self, key, value):
-      if isinstance(value, list) and key in self:
-        self[key].extend(value)
-      else:
-        super().__setitem__(key, value)
-
-  config = configparser.RawConfigParser(dict_type=MultiDict, strict=False)
-  config.read_file(vitis_config_ini)
-
-  arg_name_to_external_port = {}
-  for connectivity in config['connectivity']['sp'].splitlines():
-    if not connectivity:
-      continue
-
-    dot = connectivity.find('.')
-    colon = connectivity.find(':')
-    kernel = connectivity[:dot]
-    kernel_arg = connectivity[dot + 1:colon]
-    port = connectivity[colon + 1:]
-
-    arg_name_to_external_port[kernel_arg] = port
-
-  return arg_name_to_external_port
-
-def parse_port(port: str) -> Tuple[str, int]:
-  bra = port.find('[')
-  ket = port.find(']')
-  colon = port.find(':')
-  if colon != -1:
-    ket = colon  # use the first channel if a range is specified
-  port_cat = port[:bra] 
-  port_id = int(port[bra + 1:ket])
-  return port_cat, port_id

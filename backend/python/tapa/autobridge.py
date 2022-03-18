@@ -1,5 +1,4 @@
 import collections
-import configparser
 import json
 import logging
 import os.path
@@ -120,12 +119,12 @@ def generate_floorplan(
   width_table = {port.name: port.width for port in top_task.ports.values()}
 
   # connectivity refers to the .ini file with the arg to port mapping
-  orig_arg_to_port = parse_connectivity(connectivity_fp)
+  orig_arg_to_port = util.parse_connectivity(connectivity_fp)
 
   # constraints based on the mapping from logical ports to physical ports
   for kernel_arg, port in orig_arg_to_port.items():
     region = get_port_region(part_num, port=port)
-    port_cat, port_id = parse_port(port)
+    port_cat, port_id = util.parse_port(port)
     if port_cat == 'DDR':
       ddr_list.append(port_id)
     elif port_cat == 'HBM':
@@ -242,53 +241,8 @@ def accumulate_area(lhs: Dict[str, int], rhs: Dict[str, int]) -> None:
     lhs[k] += v
 
 
-def parse_connectivity(fp: TextIO) -> Dict[str, str]:
-  """
-  parse the .ini config file. Example:
-  [connectivity]
-  sp=serpens_1.edge_list_ch0:HBM[0]
-  """
-  if fp is None:
-    return {}
-
-  class MultiDict(dict):
-
-    def __setitem__(self, key, value):
-      if isinstance(value, list) and key in self:
-        self[key].extend(value)
-      else:
-        super().__setitem__(key, value)
-
-  config = configparser.RawConfigParser(dict_type=MultiDict, strict=False)
-  config.read_file(fp)
-
-  orig_arg_to_port = {}
-  for connectivity in config['connectivity']['sp'].splitlines():
-    if not connectivity:
-      continue
-
-    dot = connectivity.find('.')
-    colon = connectivity.find(':')
-    kernel = connectivity[:dot]
-    kernel_arg = connectivity[dot + 1:colon]
-    port = connectivity[colon + 1:]
-
-    orig_arg_to_port[kernel_arg] = port
-
-  return orig_arg_to_port
-
-
-def parse_port(port: str) -> Tuple[str, int]:
-  bra = port.find('[')
-  ket = port.find(']')
-  colon = port.find(':')
-  if colon != -1:
-    ket = colon  # use the first channel if a range is specified
-  return port[:bra], int(port[bra + 1:ket])
-
-
 def get_port_region(part_num: str, port: str) -> str:
-  port_cat, port_id = parse_port(port)
+  port_cat, port_id = util.parse_port(port)
   if port_cat == 'PLRAM':
     return ''
   if part_num.startswith('xcu280-'):

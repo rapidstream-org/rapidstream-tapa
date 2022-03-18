@@ -72,3 +72,21 @@ def get_async_mmap_area(data_channel_width: int):
 
 def _next_power_of_2(x):  
   return 1 if x == 0 else 2**(x - 1).bit_length()
+
+def get_ctrl_instance_region(part_num: str) -> str:
+  if part_num.startswith('xcu250-') or part_num.startswith('xcu280-'):
+    return 'COARSE_X1Y0'
+  raise NotImplementedError(f'unknown {part_num}')
+
+def get_port_region(part_num: str, port_cat: str, port_id: int) -> str:
+  if port_cat == 'PLRAM':
+    return ''
+  if part_num.startswith('xcu280-'):
+    if port_cat == 'HBM' and 0 <= port_id < 32:
+      return f'COARSE_X{port_id // 16}Y0'
+    if port_cat == 'DDR' and 0 <= port_id < 2:
+      return f'COARSE_X1Y{port_id}'
+  elif part_num.startswith('xcu250-'):
+    if port_cat == 'DDR' and 0 <= port_id < 4:
+      return f'COARSE_X1Y{port_id}'
+  raise NotImplementedError(f'unknown port_cat {port_cat}, port_id {port_id} for {part_num}')
