@@ -35,7 +35,7 @@ void Compute(uint64_t n_ext,
 }
 
 void Mmap2Stream_internal(
-        tapa::async_mmap<float> mmap_int,
+        tapa::async_mmap<float>& mmap_int,
         uint64_t n_int,
         tapa::ostream<float>& stream_int) {
 

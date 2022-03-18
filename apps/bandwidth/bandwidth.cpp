@@ -6,7 +6,7 @@
 #include "bandwidth.h"
 #include "lfsr.h"
 
-void Copy(tapa::async_mmap<Elem> mem, uint64_t n, uint64_t flags) {
+void Copy(tapa::async_mmap<Elem>& mem, uint64_t n, uint64_t flags) {
   const bool random = flags & kRandom;
   const bool read = flags & kRead;
   const bool write = flags & kWrite;
