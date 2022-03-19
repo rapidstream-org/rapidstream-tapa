@@ -21,10 +21,10 @@ if(SDx_FOUND)
     HW_XCLBIN
     hw_xclbin
       --remote_ip_cache=$ENV{HOME}/.remote_ip_cache
-      --sp=Bandwidth.m_axi_chan_0:DDR[0]
-      --sp=Bandwidth.m_axi_chan_1:DDR[1]
-      --sp=Bandwidth.m_axi_chan_2:DDR[2]
-      --sp=Bandwidth.m_axi_chan_3:DDR[3]
+      --connectivity.sp=Bandwidth.m_axi_chan_0:DDR[0]
+      --connectivity.sp=Bandwidth.m_axi_chan_1:DDR[1]
+      --connectivity.sp=Bandwidth.m_axi_chan_2:DDR[2]
+      --connectivity.sp=Bandwidth.m_axi_chan_3:DDR[3]
       --vivado.prop
       run.impl_1.STRATEGY=Performance_EarlyBlockPlacement
       --vivado.prop
