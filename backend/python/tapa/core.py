@@ -281,14 +281,14 @@ class Program:
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
-      inst_to_region, fifo_pipeline_level, tcl_definition_of_regions = get_floorplan(
-        directive,
+      fifo_pipeline_level, tcl_definition_of_regions = get_floorplan(
+        directive['part_num'],
+        directive['connectivity'],
         enable_synth_util,
         floorplan_pre_assignments,
         self.work_dir,
         self.rtl_dir,
         self.top_task,
-        self.ctrl_instance_name,
         self.get_post_syn_rpt,
         self.get_task,
         self._get_fifo_width,
@@ -296,17 +296,7 @@ class Program:
         **kwargs,
       )
 
-      rtl.print_constraints(
-        inst_to_region,
-        directive['constraint'],
-        pre=''.join(tcl_definition_of_regions),
-        post='\n'.join([
-            'foreach pblock [get_pblocks] {',
-            '  report_utilization -pblocks $pblock '
-            f'-file {self.work_dir}/report/$pblock.rpt',
-            '}',
-        ]),
-      )
+      directive['constraint'].write('\n'.join(tcl_definition_of_regions))
 
       self.top_task.module.register_level = 4
       _logger.info('top task register level set to %d based on floorplan',
