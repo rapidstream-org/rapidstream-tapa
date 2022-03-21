@@ -7,7 +7,11 @@ endif()
 file(STRINGS VERSION VERSION)
 project(tapa VERSION ${VERSION})
 
-add_subdirectory(backend)
+option(TAPA_BUILD_BACKEND "Build TAPA backend" ON)
+if(TAPA_BUILD_BACKEND)
+  message(STATUS "Building TAPA with backend")
+  add_subdirectory(backend)
+endif()
 
 # If change, also change `cmake/TAPAConfig.cmake`.
 find_package(Boost 1.59 COMPONENTS coroutine stacktrace_basic)
@@ -71,7 +75,6 @@ install(
   EXPORT TAPATargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(TARGETS tapacc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(
   DIRECTORY "${CMAKE_SOURCE_DIR}/src/"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -84,13 +87,18 @@ export(
   NAMESPACE tapa::
   FILE ${CMAKE_CURRENT_BINARY_DIR}/tapa/TAPATargets.cmake)
 set(ConfigPackageLocation lib/cmake/tapa)
+set(ConfigFiles cmake/TAPAConfig.cmake)
+if(TAPA_BUILD_BACKEND)
+  install(TARGETS tapacc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  list(APPEND ConfigFiles cmake/TAPACCConfig.cmake)
+endif()
 install(
   EXPORT TAPATargets
   FILE TAPATargets.cmake
   NAMESPACE tapa::
   DESTINATION ${ConfigPackageLocation})
 install(
-  FILES cmake/TAPAConfig.cmake cmake/TAPACCConfig.cmake
+  FILES ${ConfigFiles}
   DESTINATION ${ConfigPackageLocation}
   COMPONENT Devel)
 
@@ -137,13 +145,15 @@ if(BUILD_DOCS)
   add_subdirectory(docs)
 endif()
 
-include(cmake/TAPACCConfig.cmake)
-enable_testing()
-add_subdirectory(apps/bandwidth)
-add_subdirectory(apps/cannon)
-add_subdirectory(apps/graph)
-add_subdirectory(apps/jacobi)
-add_subdirectory(apps/nested-vadd)
-add_subdirectory(apps/network)
-add_subdirectory(apps/shared-vadd)
-add_subdirectory(apps/vadd)
+if(TAPA_BUILD_BACKEND)
+  include(cmake/TAPACCConfig.cmake)
+  enable_testing()
+  add_subdirectory(apps/bandwidth)
+  add_subdirectory(apps/cannon)
+  add_subdirectory(apps/graph)
+  add_subdirectory(apps/jacobi)
+  add_subdirectory(apps/nested-vadd)
+  add_subdirectory(apps/network)
+  add_subdirectory(apps/shared-vadd)
+  add_subdirectory(apps/vadd)
+endif()
