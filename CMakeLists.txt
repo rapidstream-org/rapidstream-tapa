@@ -140,8 +140,8 @@ set(CPACK_GENERATOR
     CACHE STRING "Enable selected CPack generators")
 include(CPack)
 
-option(BUILD_DOCS "Build documentations" OFF)
-if(BUILD_DOCS)
+option(TAPA_BUILD_DOCS "Build TAPA documentations" OFF)
+if(TAPA_BUILD_DOCS)
   add_subdirectory(docs)
 endif()
 
