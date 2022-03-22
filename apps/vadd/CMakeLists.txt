@@ -18,11 +18,13 @@ if(SDx_FOUND)
     vadd-hw-xo
     INPUT vadd.cpp
     TOP VecAdd
+    CONNECTIVITY ${CMAKE_CURRENT_SOURCE_DIR}/link_config.ini
     CONSTRAINT ${CMAKE_CURRENT_BINARY_DIR}/constraint.tcl
     PLATFORM ${PLATFORM})
 
   add_xocc_hw_link_targets(
     ${CMAKE_CURRENT_BINARY_DIR}
+    --config=${CMAKE_CURRENT_SOURCE_DIR}/link_config.ini
     --vivado.prop=run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=${CMAKE_CURRENT_BINARY_DIR}/constraint.tcl
     INPUT vadd-hw-xo
     HW_EMU_XCLBIN hw_emu_xclbin
