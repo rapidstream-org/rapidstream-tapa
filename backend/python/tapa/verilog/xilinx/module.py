@@ -150,6 +150,10 @@ class Module:
     """
     return getattr(self, 'fifo_partition_count', {}).get(fifo_name, 1)
 
+  def get_axi_pipeline_level(self, port_name: str) -> int:
+    return getattr(self, 'axi_pipeline_level', {}).get(port_name, 0)
+
+
   @property
   def ports(self) -> Dict[str, IOPort]:
     port_lists = (

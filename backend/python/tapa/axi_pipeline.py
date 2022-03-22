@@ -8,10 +8,11 @@ from tapa.instance import Instance
 
 
 class AXI:
-  def __init__(self, name, data_width, addr_width):
+  def __init__(self, name, data_width, addr_width, pipeline_level):
     self.name = name
     self.data_width = data_width
     self.addr_width = addr_width
+    self.pipeline_level = pipeline_level
 
 class IOPort:
   def __init__(self, name: str, direction: str, width: str):
@@ -89,7 +90,7 @@ def get_pipeline_inst(axi_list: List[AXI]):
     pp_inst.append(f'axi_pipeline #(')
     pp_inst.append(f'  .C_M_AXI_ADDR_WIDTH({axi.addr_width}),')
     pp_inst.append(f'  .C_M_AXI_DATA_WIDTH({axi.data_width}),')
-    pp_inst.append(f'  .PIPELINE_LEVEL    (3 )') # FIXME: adjust based on floorplanning
+    pp_inst.append(f'  .PIPELINE_LEVEL    ({axi.pipeline_level})') # FIXME: adjust based on floorplanning
     pp_inst.append(f') {axi.name} (')
 
     for axi_port in M_AXI_SUFFIXES_COMPACT:
@@ -134,7 +135,8 @@ def get_axi_pipeline_wrapper(orig_top_name: str, top_name_suffix: str, top_task)
   axi_list = []
   for port in top_task.ports.values():
     if port.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
-      axi_list.append(AXI(port.name, port.width, 64))
+      pipeline_level = top_task.module.get_axi_pipeline_level(port.name)
+      axi_list.append(AXI(port.name, port.width, 64, pipeline_level))
 
   io_list = parse_ports(ast)
 

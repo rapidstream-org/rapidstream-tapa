@@ -281,7 +281,7 @@ class Program:
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
-      fifo_pipeline_level, tcl_definition_of_regions = get_floorplan(
+      fifo_pipeline_level, axi_pipeline_level, vivado_tcl = get_floorplan(
         directive['part_num'],
         directive['connectivity'],
         enable_synth_util,
@@ -296,12 +296,13 @@ class Program:
         **kwargs,
       )
 
-      directive['constraint'].write('\n'.join(tcl_definition_of_regions))
+      directive['constraint'].write('\n'.join(vivado_tcl))
 
       self.top_task.module.register_level = 4
       _logger.info('top task register level set to %d based on floorplan',
                  self.top_task.module.register_level)
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
+      self.top_task.module.axi_pipeline_level = axi_pipeline_level
 
     if register_level:
       self.top_task.module.register_level = register_level
