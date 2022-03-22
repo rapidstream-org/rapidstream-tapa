@@ -178,20 +178,17 @@ class Module:
     """
     ports = self.ports
     sanitized_fifo = sanitize_array_name(fifo)
-    for name in f'{sanitized_fifo}_V{suffix}', f'{sanitized_fifo}{suffix}':
-      port = ports.get(name)
+    infixes = ('_V', '_r', '_s', '')
+    for infix in infixes:
+      port = ports.get(f'{sanitized_fifo}{infix}{suffix}')
       if port is not None:
         return port
     # may be a singleton array without the numerical suffix...
     match = match_array_name(fifo)
     if match is not None and match[1] == 0:
       singleton_fifo = match[0]
-      for name in (
-          f'{singleton_fifo}_V{suffix}',
-          f'{singleton_fifo}_s{suffix}',
-          f'{singleton_fifo}{suffix}',
-      ):
-        port = ports.get(name)
+      for infix in infixes:
+        port = ports.get(f'{singleton_fifo}{infix}{suffix}')
         if port is not None:
           _logger.warning('assuming %s is a singleton array', singleton_fifo)
           return port
