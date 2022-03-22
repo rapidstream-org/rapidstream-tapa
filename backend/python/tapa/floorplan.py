@@ -64,9 +64,9 @@ def get_floorplan(
   open(f'{work_dir}/post-floorplan-config.json', 'w').write(json.dumps(config_with_floorplan, indent=2))
   checkpoint_floorplan(config_with_floorplan, work_dir)
 
-  fifo_pipeline_level, tcl_definition_of_regions = extract_floorplan_output(config_with_floorplan, work_dir)
+  fifo_pipeline_level, axi_pipeline_level, vivado_tcl = extract_floorplan_output(config_with_floorplan, work_dir)
 
-  return fifo_pipeline_level, tcl_definition_of_regions
+  return fifo_pipeline_level, axi_pipeline_level, vivado_tcl
 
 
 def extract_floorplan_output(config_with_floorplan, work_dir):
@@ -74,13 +74,17 @@ def extract_floorplan_output(config_with_floorplan, work_dir):
   for edge, properties in config_with_floorplan['edges'].items():
     if properties['category'] == 'FIFO_EDGE':
       fifo_pipeline_level[properties['instance']] = len(properties['path'])
-  
+
   axi_pipeline_level = {}
+  for edge, properties in config_with_floorplan['edges'].items():
+    if properties['category'] == 'AXI_EDGE':
+      # if the AXI module is at the same region as the external port, then no pipelining
+      axi_pipeline_level[properties['port_name']] = len(properties['path']) - 1
 
   # generate floorplan tcl
   vivado_tcl = get_vivado_tcl(config_with_floorplan, work_dir)
 
-  return fifo_pipeline_level, vivado_tcl
+  return fifo_pipeline_level, axi_pipeline_level, vivado_tcl
 
 def get_vivado_tcl(config_with_floorplan, work_dir):
   vivado_tcl = []
