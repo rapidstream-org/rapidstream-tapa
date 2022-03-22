@@ -117,7 +117,7 @@ def get_vivado_tcl(config_with_floorplan, work_dir):
   for region, inst_list in region_to_inst.items():
     vivado_tcl.append(f'add_cells_to_pblock [get_pblocks {region}] [get_cells -regex {{')
     vivado_tcl += [f'  pfm_top_i/dynamic_region/.*/inst/.*/{inst}' for inst in inst_list]
-    vivado_tcl.append(f'}}')
+    vivado_tcl.append(f'}} ]')
 
   # redundant clean up code for extra safety
   vivado_tcl.append('foreach pblock [get_pblocks -regexp CR_X\\\\d+Y\\\\d+_To_CR_X\\\\d+Y\\\\d+] {')
