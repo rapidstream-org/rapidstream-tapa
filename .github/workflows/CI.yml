@@ -51,6 +51,7 @@ jobs:
         xocl-version:
           - 2020.2
           - 2021.1
+          - 2021.2
 
     env:
       XILINX_HLS: /opt/tools/xilinx/Vitis_HLS/${{ matrix.xocl-version }}
