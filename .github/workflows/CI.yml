@@ -53,6 +53,7 @@ jobs:
           - 2021.1
 
     env:
+      XILINX_HLS: /opt/tools/xilinx/Vitis_HLS/${{ matrix.xocl-version }}
       XILINX_VITIS: /opt/tools/xilinx/Vitis/${{ matrix.xocl-version }}
       XILINX_VIVADO: /opt/tools/xilinx/Vivado/${{ matrix.xocl-version }}
 
@@ -72,10 +73,10 @@ jobs:
 
       - name: Configure myself
         run: cmake -S . -B build
-        env:
-          XILINX_HLS: /opt/tools/xilinx/Vitis_HLS/${{ matrix.xocl-version }}
       - name: Build myself
         run: cmake --build build --target all --parallel $(nproc)
       - name: Test myself
         working-directory: build
-        run: ctest --verbose --parallel $(nproc)
+        run: |
+          source ${XILINX_VITIS}/settings64.sh
+          /usr/local/bin/ctest --verbose --parallel $(nproc)
