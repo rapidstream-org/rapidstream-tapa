@@ -25,9 +25,6 @@ logging.basicConfig(
 
 _logger = logging.getLogger().getChild(__name__)
 
-# RTL parsing may require a deep stack
-sys.setrecursionlimit(3000)
-
 
 def create_parser() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(
@@ -238,6 +235,10 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None):
+
+  # RTL parsing may require a deep stack
+  sys.setrecursionlimit(3000)
+
   argv = flags.FLAGS(argv or sys.argv[1:], known_only=True)
 
   parser = create_parser()
