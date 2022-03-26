@@ -112,6 +112,8 @@ def get_vivado_tcl(config_with_floorplan, work_dir):
       if len(path) > 1:
         for i in range(len(path)):
           region_to_inst[path[i]].append(f'{fifo_name}/inst\\\\[{i}]\\\\.unit')
+      else:
+        region_to_inst[path[0]].append(f'{fifo_name}/.*.unit')
 
   # print out the constraints
   for region, inst_list in region_to_inst.items():
