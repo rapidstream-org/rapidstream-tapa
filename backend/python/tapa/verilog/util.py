@@ -30,7 +30,7 @@ class Pipeline:
   def signals(self) -> Iterator[Union[ast.Reg, ast.Wire, ast.Pragma]]:
     yield ast.Wire(name=self[0].name, width=self._width)
     for x in self[1:]:
-      yield ast.Pragma(ast.PragmaEntry('shreg_extract = "no"'))
+      yield ast.Pragma(ast.PragmaEntry('keep = "true"'))
       yield ast.Reg(name=x.name, width=self._width)
 
 
