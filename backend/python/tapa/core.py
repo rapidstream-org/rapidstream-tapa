@@ -225,6 +225,7 @@ class Program:
       register_level: int = 0,
       enable_synth_util: bool = False,
       floorplan_pre_assignments: TextIO = None,
+      part_num: str = '',
       **kwargs,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
@@ -232,6 +233,7 @@ class Program:
     Args:
         directive: Optional, if given it should a tuple of json object and file.
         register_level: Non-zero value overrides self.register_level.
+        part_num: optinally provide the part_num to enable board-specific optimization
 
     Returns:
         Program: Return self.
@@ -277,7 +279,7 @@ class Program:
     _logger.info('instrumenting upper-level RTL')
     for task in self._tasks.values():
       if task.is_upper and task.name != self.top:
-        self._instrument_task(task)
+        self._instrument_task(task, part_num)
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
@@ -309,7 +311,7 @@ class Program:
 
     # instrument the top-level RTL
     _logger.info('instrumenting top-level RTL')
-    self._instrument_task(self.top_task)
+    self._instrument_task(self.top_task, part_num)
 
     _logger.info('generating report')
     task_report = self.top_task.report
@@ -420,6 +422,7 @@ class Program:
       self,
       task: Task,
       width_table: Dict[str, int],
+      part_num: str,
   ) -> List[ast.Identifier]:
     is_done_signals: List[rtl.Pipeline] = []
     arg_table: Dict[str, rtl.Pipeline] = {}
@@ -624,6 +627,14 @@ class Program:
       )
 
     # instantiate async_mmap modules at the upper levels
+    if part_num.startswith('xcu280'):
+      addr_width = 35  # 8GB of HBM capacity or 32 GB of DDR capacity
+    elif part_num.startswith('xcu250'):
+      addr_width = 36  # 64GB of DDR capacity
+    else:
+      addr_width = 64
+    _logger.debug(f'Set the address width of async_mmap to {addr_width}')
+
     if task.is_upper:
       for arg in async_mmap_args:
         task.module.add_async_mmap_instance(
@@ -631,6 +642,7 @@ class Program:
             offset_name=arg_table[arg.name][-1],
             tags=async_mmap_args[arg],
             data_width=width_table[arg.name],
+            addr_width=addr_width,
         )
 
     return is_done_signals
@@ -728,13 +740,13 @@ class Program:
     task.module.add_pipeline(self.start_q, init=rtl.START)
     task.module.add_pipeline(self.done_q, init=is_state(STATE10))
 
-  def _instrument_task(self, task: Task) -> None:
+  def _instrument_task(self, task: Task, part_num: str) -> None:
     assert task.is_upper
     task.module.cleanup()
     self._instantiate_fifos(task)
     self._connect_fifos(task)
     width_table = {port.name: port.width for port in task.ports.values()}
-    is_done_signals = self._instantiate_children_tasks(task, width_table)
+    is_done_signals = self._instantiate_children_tasks(task, width_table, part_num)
     self._instantiate_global_fsm(task, is_done_signals)
 
     # an upper task is not necessarily a top task

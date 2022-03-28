@@ -437,6 +437,7 @@ def main(argv: Optional[List[str]] = None):
         args.register_level or 0,
         args.enable_synth_util,
         args.floorplan_pre_assignments,
+        part_num=_get_device_info(parser, args)['part_num'], 
         **kwargs,
     )
 

@@ -4,6 +4,7 @@ module async_mmap #(
   parameter BufferSize        = 32,
   parameter BufferSizeLog     = 5,
   parameter AddrWidth         = 64,
+  parameter AxiSideAddrWidth  = 64,
   parameter DataWidth         = 512,
   parameter DataWidthBytesLog = 6,  // must equal log2(DataWidth/8)
   parameter WaitTimeWidth     = 4,
@@ -19,7 +20,7 @@ module async_mmap #(
   // axi write addr channel
   output wire                 m_axi_AWVALID,
   input  wire                 m_axi_AWREADY,
-  output wire [AddrWidth-1:0] m_axi_AWADDR,
+  output wire [AxiSideAddrWidth-1:0] m_axi_AWADDR,
   output wire [0:0]           m_axi_AWID,
   output wire [7:0]           m_axi_AWLEN,
   output wire [2:0]           m_axi_AWSIZE,
@@ -45,7 +46,7 @@ module async_mmap #(
   // axi read addr channel
   output wire                 m_axi_ARVALID,
   input  wire                 m_axi_ARREADY,
-  output wire [AddrWidth-1:0] m_axi_ARADDR,
+  output wire [AxiSideAddrWidth-1:0] m_axi_ARADDR,
   output wire [0:0]           m_axi_ARID,
   output wire [7:0]           m_axi_ARLEN,
   output wire [2:0]           m_axi_ARSIZE,
@@ -364,7 +365,7 @@ module async_mmap #(
   // AW channel
   assign burst_write_addr_read = m_axi_AWREADY;
   assign m_axi_AWVALID  = burst_write_addr_empty_n;
-  assign m_axi_AWADDR   = burst_write_addr_dout_addr;
+  assign m_axi_AWADDR   = {{(AxiSideAddrWidth - AddrWidth){1'b0}}, burst_write_addr_dout_addr};
   assign m_axi_AWID     = 0;
   assign m_axi_AWLEN    = burst_write_addr_dout_burst_len;
   assign m_axi_AWSIZE   = DataWidthBytesLog;
@@ -500,7 +501,7 @@ module async_mmap #(
   // AR channel
   assign burst_read_addr_read = m_axi_ARREADY;
   assign m_axi_ARVALID        = burst_read_addr_empty_n;
-  assign m_axi_ARADDR         = burst_read_addr_dout_addr;
+  assign m_axi_ARADDR         = {{(AxiSideAddrWidth - AddrWidth){1'b0}}, burst_read_addr_dout_addr};
   assign m_axi_ARID           = 0;
   assign m_axi_ARLEN          = burst_read_addr_dout_burst_len;
   assign m_axi_ARSIZE         = DataWidthBytesLog;
