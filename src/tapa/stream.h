@@ -688,7 +688,6 @@ class ostream
 #ifdef __SYNTHESIS__
 #pragma HLS inline
     internal::elem_t<T> elem;
-    memset(&elem.val, 0, sizeof(elem.val));
     elem.eot = true;
     _.write(elem);
 #else   // __SYNTHESIS__
