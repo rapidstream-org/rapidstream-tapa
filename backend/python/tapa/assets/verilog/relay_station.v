@@ -24,9 +24,9 @@ module relay_station #(
   output wire [DATA_WIDTH-1:0] if_dout
 );
 
-  (* dont_touch = "yes" *) wire                  full_n  [LEVEL:0];
-  (* dont_touch = "yes" *) wire                  empty_n [LEVEL:0];
-  (* dont_touch = "yes" *) wire [DATA_WIDTH-1:0] data    [LEVEL:0];
+  (* keep = "true" *) wire                  full_n  [LEVEL:0];
+  (* keep = "true" *) wire                  empty_n [LEVEL:0];
+  (* keep = "true" *) wire [DATA_WIDTH-1:0] data    [LEVEL:0];
 
   // both full_n and write are registered, thus one level of relay_station cause
   // two additional latency for the almost full fifo
@@ -125,18 +125,18 @@ module fifo_reg #(
   input wire reset,
 
   // write
-  (* dont_touch = "yes" *)
+  (* keep = "true" *)
   output reg                   if_full_n,
   input  wire                  if_write_ce,
   input  wire                  if_write,
   input  wire [DATA_WIDTH-1:0] if_din,
 
   // read
-  (* dont_touch = "yes" *)
+  (* keep = "true" *)
   output reg                   if_empty_n,
   input  wire                  if_read_ce,
   input  wire                  if_read,
-  (* dont_touch = "yes" *)
+  (* keep = "true" *)
   output reg  [DATA_WIDTH-1:0] if_dout
 );
 
