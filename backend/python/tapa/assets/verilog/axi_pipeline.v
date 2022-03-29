@@ -5,7 +5,9 @@ module axi_pipeline #(
     C_M_AXI_DATA_WIDTH      = 512,
     C_M_AXI_WSTRB_WIDTH     = (512 / 8),
 
-    PIPELINE_LEVEL          = 3
+    PIPELINE_LEVEL          = 3,
+    EnableReadChannel       = 1,
+    EnableWriteChannel      = 1
 ) 
 (
   input                                          ap_clk,
@@ -86,7 +88,8 @@ module axi_pipeline #(
     .DATA_WIDTH     ( C_M_AXI_ADDR_WIDTH + C_M_AXI_ID_WIDTH + 8 + 3 + 2           ),
     .DEPTH          ( 2                                                           ),
     .ADDR_WIDTH     ( 1                                                           ),
-    .LEVEL          ( PIPELINE_LEVEL                                              )
+    .LEVEL          ( PIPELINE_LEVEL                                              ),
+    .CONNECT        ( EnableWriteChannel )
   )
   AW_pipeline
   (
@@ -111,7 +114,8 @@ module axi_pipeline #(
     ),
     .DEPTH(2),
     .ADDR_WIDTH(1),
-    .LEVEL(PIPELINE_LEVEL)
+    .LEVEL( PIPELINE_LEVEL ),
+    .CONNECT        ( EnableWriteChannel )
   )
   W_pipeline
   (
@@ -136,7 +140,8 @@ module axi_pipeline #(
     ),
     .DEPTH(2),
     .ADDR_WIDTH(1),
-    .LEVEL(PIPELINE_LEVEL)
+    .LEVEL( PIPELINE_LEVEL ),
+    .CONNECT( EnableReadChannel )
   )
   AR_pipeline
   (
@@ -161,7 +166,8 @@ module axi_pipeline #(
     ),
     .DEPTH(2),
     .ADDR_WIDTH(1),
-    .LEVEL(PIPELINE_LEVEL)
+    .LEVEL( PIPELINE_LEVEL ),
+    .CONNECT( EnableReadChannel )
   )
   R_pipeline
   (
@@ -186,7 +192,8 @@ module axi_pipeline #(
     ),
     .DEPTH(2),
     .ADDR_WIDTH(1),
-    .LEVEL(PIPELINE_LEVEL)
+    .LEVEL( PIPELINE_LEVEL ),
+    .CONNECT( EnableWriteChannel )
   )
   B_pipeline
   (

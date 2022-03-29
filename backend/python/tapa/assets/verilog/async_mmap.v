@@ -8,7 +8,11 @@ module async_mmap #(
   parameter DataWidth         = 512,
   parameter DataWidthBytesLog = 6,  // must equal log2(DataWidth/8)
   parameter WaitTimeWidth     = 4,
-  parameter BurstLenWidth     = 8
+  parameter BurstLenWidth     = 8,
+  // implement the FIFOs for the read channel
+  // if set to 0: disconnect the data link
+  parameter EnableReadChannel = 1,
+  parameter EnableWriteChannel= 1
 ) (
   input wire clk,
   input wire rst, // active high
@@ -126,10 +130,11 @@ module async_mmap #(
   wire                 write_addr_empty_n;
   wire                 write_addr_read;
 
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(AddrWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableWriteChannel)
   ) write_addr (
     .clk  (clk),
     .reset(rst),
@@ -209,10 +214,11 @@ module async_mmap #(
     .burst_len_1_write (write_req_write)
   );
 
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(BurstLenWidth + AddrWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableWriteChannel)
   ) burst_write_addr (
     .clk  (clk),
     .reset(rst),
@@ -230,10 +236,11 @@ module async_mmap #(
     .if_dout   ({burst_write_addr_dout_burst_len, burst_write_addr_dout_addr})
   );
 
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(BurstLenWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableWriteChannel)
   ) burst_write_len (
     .clk  (clk),
     .reset(rst),
@@ -268,10 +275,11 @@ module async_mmap #(
   );
 
   // write req buffer that remembers the burst length of each write transaction
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(BurstLenWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableWriteChannel)
   ) write_req (
     .clk  (clk),
     .reset(rst),
@@ -289,11 +297,12 @@ module async_mmap #(
     .if_dout   (write_req_dout)
   );
 
-  // this fifo should be synchronized with the wr_data fifo
-  fifo #(
+  // this relay_station should be synchronized with the wr_data relay_station
+  relay_station #(
     .DATA_WIDTH(1),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableWriteChannel)
   ) burst_write_last (
     .clk  (clk),
     .reset(rst),
@@ -307,7 +316,7 @@ module async_mmap #(
     // to axi
     .if_empty_n(burst_write_last_empty_n),
     .if_read_ce(1'b1),
-    // deal with when last-fifo is non-empty while data-fifo is empty
+    // deal with when last-relay_station is non-empty while data-relay_station is empty
     .if_read   (m_axi_WREADY && write_data_empty_n),
     .if_dout   (burst_write_last_dout)
   );
@@ -315,10 +324,11 @@ module async_mmap #(
   // write data buffer
   wire [DataWidth-1:0] write_data_dout;
   wire                 write_data_empty_n;
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(DataWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableWriteChannel)
   ) write_data (
     .clk  (clk),
     .reset(rst),
@@ -332,7 +342,7 @@ module async_mmap #(
     // to axi
     .if_empty_n(write_data_empty_n),
     .if_read_ce(1'b1),
-    // deal with when data-fifo is non empty but last-fifo is empty
+    // deal with when data-relay_station is non empty but last-relay_station is empty
     .if_read   (m_axi_WREADY && burst_write_last_empty_n),
     .if_dout   (write_data_dout)
   );
@@ -341,10 +351,11 @@ module async_mmap #(
   wire [BurstLenWidth-1:0] write_resp_din   = write_req_dout;
   wire                     write_resp_write = m_axi_BVALID && write_req_empty_n;
   wire                     write_resp_full_n;
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(BurstLenWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableWriteChannel)
   ) write_resp (
     .clk  (clk),
     .reset(rst),
@@ -390,10 +401,11 @@ module async_mmap #(
   wire                 read_addr_empty_n;
   wire                 read_addr_read;
 
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(AddrWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableReadChannel)
   ) read_addr (
     .clk  (clk),
     .reset(rst),
@@ -419,10 +431,11 @@ module async_mmap #(
   wire                               burst_read_addr_empty_n;
   wire                               burst_read_addr_read;
 
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(BurstLenWidth + AddrWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableReadChannel)
   ) burst_read_addr (
     .clk  (clk),
     .reset(rst),
@@ -477,10 +490,11 @@ module async_mmap #(
   wire [DataWidth-1:0] read_data_din;
   wire                 read_data_write;
   wire                 read_data_full_n;
-  fifo #(
+  relay_station #(
     .DATA_WIDTH(DataWidth),
     .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize)
+    .DEPTH     (BufferSize),
+    .CONNECT   (EnableReadChannel)
   ) read_data (
     .clk  (clk),
     .reset(rst),
