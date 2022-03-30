@@ -87,6 +87,8 @@ class Program:
     self.files: Dict[str, str] = {}
     self._hls_report_xmls: Dict[str, ET.ElementTree] = {}
 
+    self.extract_cpp()
+
   def __del__(self):
     if self.is_temp:
       shutil.rmtree(self.work_dir)

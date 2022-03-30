@@ -124,12 +124,6 @@ def create_parser() -> argparse.ArgumentParser:
       help='Run ``tapacc`` and create ``program.json``.',
   )
   group.add_argument(
-      '--extract-cpp',
-      action='count',
-      dest='extract_cpp',
-      help='Extract HLS C++ files from ``program.json``.',
-  )
-  group.add_argument(
       '--run-hls',
       action='count',
       dest='run_hls',
@@ -256,7 +250,7 @@ def main(argv: Optional[List[str]] = None):
 
   all_steps = True
   last_step = ''
-  for arg in ('run_tapacc', 'extract_cpp', 'run_hls', 'generate_task_rtl',
+  for arg in ('run_tapacc', 'run_hls', 'generate_task_rtl',
               'run_floorplanning', 'generate_top_rtl', 'pack_xo'):
     if getattr(args, arg) is not None:
       all_steps = False
@@ -395,9 +389,6 @@ def main(argv: Optional[List[str]] = None):
   if args.frt_interface is not None and program.frt_interface is not None:
     with open(args.frt_interface, 'w') as output_fp:
       output_fp.write(program.frt_interface)
-
-  if all_steps or args.extract_cpp is not None:
-    program.extract_cpp()
 
   if all_steps or args.run_hls is not None:
     program.run_hls(**_get_device_info(parser, args))
