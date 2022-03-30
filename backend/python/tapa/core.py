@@ -225,6 +225,7 @@ class Program:
       register_level: int = 0,
       enable_synth_util: bool = False,
       floorplan_pre_assignments: TextIO = None,
+      additional_fifo_pipelining: bool = False,
       part_num: str = '',
       **kwargs,
   ) -> 'Program':
@@ -234,6 +235,7 @@ class Program:
         directive: Optional, if given it should a tuple of json object and file.
         register_level: Non-zero value overrides self.register_level.
         part_num: optinally provide the part_num to enable board-specific optimization
+        additional_fifo_pipelining: replace every FIFO by a relay_station of LEVEL 2
 
     Returns:
         Program: Return self.
@@ -278,7 +280,7 @@ class Program:
     _logger.info('instrumenting upper-level RTL')
     for task in self._tasks.values():
       if task.is_upper and task.name != self.top:
-        self._instrument_task(task, part_num)
+        self._instrument_task(task, part_num, additional_fifo_pipelining)
 
     # generate partitioning constraints if partitioning directive is given
     if directive is not None:
@@ -310,7 +312,7 @@ class Program:
 
     # instrument the top-level RTL
     _logger.info('instrumenting top-level RTL')
-    self._instrument_task(self.top_task, part_num)
+    self._instrument_task(self.top_task, part_num, additional_fifo_pipelining)
 
     _logger.info('generating report')
     task_report = self.top_task.report
@@ -358,7 +360,7 @@ class Program:
       if task.is_fifo_external(fifo_name):
         task.connect_fifo_externally(fifo_name, task.name == self.top)
 
-  def _instantiate_fifos(self, task: Task) -> None:
+  def _instantiate_fifos(self, task: Task, additional_fifo_pipelining: bool) -> None:
     _logger.debug('  instantiating FIFOs in %s', task.name)
 
     # skip instantiating if the fifo is not declared in this task
@@ -379,6 +381,7 @@ class Program:
           name=fifo_name,
           width=self._get_fifo_width(task, fifo_name),
           depth=fifo['depth'],
+          additional_fifo_pipelining=additional_fifo_pipelining,
       )
 
       # print debugging info
@@ -739,10 +742,15 @@ class Program:
     task.module.add_pipeline(self.start_q, init=rtl.START)
     task.module.add_pipeline(self.done_q, init=is_state(STATE10))
 
-  def _instrument_task(self, task: Task, part_num: str) -> None:
+  def _instrument_task(
+      self, 
+      task: Task, 
+      part_num: str, 
+      additional_fifo_pipelining: bool = False,
+  ) -> None:
     assert task.is_upper
     task.module.cleanup()
-    self._instantiate_fifos(task)
+    self._instantiate_fifos(task, additional_fifo_pipelining)
     self._connect_fifos(task)
     width_table = {port.name: port.width for port in task.ports.values()}
     is_done_signals = self._instantiate_children_tasks(task, width_table, part_num)

@@ -230,6 +230,12 @@ def create_parser() -> argparse.ArgumentParser:
            'storing the manual assignments to be used in floorplanning. '
            'The key is the region name, the value is a list of modules.'
   )
+  parser.add_argument(
+      '--additional-fifo-pipelining',
+      dest='additional_fifo_pipelining',
+      action='store_true',
+      help='Pipelining a FIFO whose source and destination are in the same region'
+  )
 
   return parser
 
@@ -437,6 +443,7 @@ def main(argv: Optional[List[str]] = None):
         args.register_level or 0,
         args.enable_synth_util,
         args.floorplan_pre_assignments,
+        args.additional_fifo_pipelining,
         part_num=_get_device_info(parser, args)['part_num'], 
         **kwargs,
     )

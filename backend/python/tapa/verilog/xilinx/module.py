@@ -406,6 +406,7 @@ class Module:
       name: str,
       width: int,
       depth: int,
+      additional_fifo_pipelining: bool,
   ) -> 'Module':
     name = sanitize_array_name(name)
     rst_q = Pipeline(f'{name}__rst', level=self.register_level)
@@ -424,6 +425,11 @@ class Module:
       yield ast.make_port_arg(port=FIFO_WRITE_PORTS[-1], arg=TRUE)
 
     partition_count = self.partition_count_of(name)
+
+    # optionally allow additional pipelining if there is enough space
+    if additional_fifo_pipelining:
+      partition_count = max(2, partition_count)
+
     module_name = 'fifo'
     level = []
     if partition_count > 1:
