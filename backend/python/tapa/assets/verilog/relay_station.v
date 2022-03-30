@@ -24,9 +24,9 @@ module relay_station #(
   output wire [DATA_WIDTH-1:0] if_dout
 );
 
-  (* keep = "true" *) wire                  full_n  [LEVEL:0];
-  (* keep = "true" *) wire                  empty_n [LEVEL:0];
-  (* keep = "true" *) wire [DATA_WIDTH-1:0] data    [LEVEL:0];
+  wire                  full_n  [LEVEL:0];
+  wire                  empty_n [LEVEL:0];
+  wire [DATA_WIDTH-1:0] data    [LEVEL:0];
 
   // both full_n and write are registered, thus one level of relay_station cause
   // two additional latency for the almost full fifo
