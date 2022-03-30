@@ -26,12 +26,12 @@ FLOORPLAN_OUTPUT=${TOP_NAME}_floorplan.tcl
 
 # invoke tapac to compile each task and floorplan the design
 # tapac will execute as follows:
-# step1: run-tapacc: extract each task
+# step1: run-tapacc: source-to-source transformation to generate the Vitis HLS C++ for each task
 # step2: run-hls: call HLS to synthesize each task in parallel
-# step3: extract-rtl: extract the output of HLS
-# step4: instrument-rtl: invoke AutoBridge to floorplan the design
-#                        generate glue logic to put all RTL together
-# step5: pack-xo: box up all related files into an xilin xo object
+# step3: generate-task-rtl: extract the output of HLS and construct the rtl for each non-top task
+# step4: run-floorplanning: invoke AutoBridge to floorplan the design
+# step5: generate-top-rtl: generate the glue logic to connect all non-top tasks
+# step6: pack-xo: box up all related files into an xilin xo object
 #
 # --enable-synth-util will instruct the tool to run logic synthesis
 # of each task to get more accurate area information
@@ -47,10 +47,10 @@ tapac \
   --part-num ${DEVICE_NAME} \
   --clock-period ${CLOCK_PERIOD} \
   --run-tapacc \
-  --extract-cpp \
   --run-hls \
-  --extract-rtl \
-  --instrument-rtl \
+  --generate-task-rtl \
+  --run-floorplanning \
+  --generate-top-rtl \
   --pack-xo \
   --enable-synth-util \
   -o ${TOP_NAME}.xo \
