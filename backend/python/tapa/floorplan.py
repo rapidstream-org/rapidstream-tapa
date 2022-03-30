@@ -22,12 +22,11 @@ class InputError(Exception):
   pass
 
 
-def get_floorplan(
+def generate_floorplan(
     part_num: str,
     physical_connectivity: TextIO,
     enable_synth_util: bool,
     user_floorplan_pre_assignments: Optional[TextIO],
-    work_dir: str,
     rtl_dir: str,
     top_task: Task,
     post_syn_rpt_getter: Callable[[str], str],
@@ -35,7 +34,7 @@ def get_floorplan(
     fifo_width_getter: Callable[[Task, str], int],
     cpp_getter: Callable[[str], str],
     **kwargs,
-) -> Tuple[Dict[str, str], Dict[str, int], List[str]]:
+) -> Tuple[Dict, Dict]:
   """
   get the target region of each vertex
   get the pipeline level of each edge
@@ -58,18 +57,29 @@ def get_floorplan(
     fifo_width_getter,
     user_floorplan_pre_assignments,
   )
-  open(f'{work_dir}/pre-floorplan-config.json', 'w').write(json.dumps(config, indent=2))
 
   config_with_floorplan = annotate_floorplan(config)
-  open(f'{work_dir}/post-floorplan-config.json', 'w').write(json.dumps(config_with_floorplan, indent=2))
-  checkpoint_floorplan(config_with_floorplan, work_dir)
 
-  fifo_pipeline_level, axi_pipeline_level, vivado_tcl = extract_floorplan_output(config_with_floorplan, work_dir)
-
-  return fifo_pipeline_level, axi_pipeline_level, vivado_tcl
+  return config, config_with_floorplan
 
 
-def extract_floorplan_output(config_with_floorplan, work_dir):
+def get_floorplan_result(work_dir, constraint: TextIO) -> Tuple[Dict[str, str], Dict[str, int]]:
+  """ extract floorplan results from the checkpointed config file
+  """
+  try:
+    config_with_floorplan = json.loads(open(f'{work_dir}/post-floorplan-config.json', 'r').read())
+  except:
+    raise FileNotFoundError(f'no valid floorplanning results found in work directory {work_dir}')
+
+  vivado_tcl = get_vivado_tcl(config_with_floorplan, work_dir)
+  constraint.write('\n'.join(vivado_tcl))
+
+  fifo_pipeline_level, axi_pipeline_level = parse_floorplan_config(config_with_floorplan)
+
+  return fifo_pipeline_level, axi_pipeline_level
+
+
+def parse_floorplan_config(config_with_floorplan):
   fifo_pipeline_level = {}
   for edge, properties in config_with_floorplan['edges'].items():
     if properties['category'] == 'FIFO_EDGE':
@@ -81,10 +91,8 @@ def extract_floorplan_output(config_with_floorplan, work_dir):
       # if the AXI module is at the same region as the external port, then no pipelining
       axi_pipeline_level[properties['port_name']] = len(properties['path']) - 1
 
-  # generate floorplan tcl
-  vivado_tcl = get_vivado_tcl(config_with_floorplan, work_dir)
+  return fifo_pipeline_level, axi_pipeline_level
 
-  return fifo_pipeline_level, axi_pipeline_level, vivado_tcl
 
 def get_vivado_tcl(config_with_floorplan, work_dir):
   vivado_tcl = []

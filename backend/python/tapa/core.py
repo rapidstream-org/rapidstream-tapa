@@ -19,7 +19,7 @@ import yaml
 from haoda.backend import xilinx as hls
 
 from tapa import util
-from tapa.floorplan import get_floorplan
+from tapa.floorplan import get_floorplan_result, generate_floorplan, checkpoint_floorplan
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
 
@@ -211,35 +211,17 @@ class Program:
 
     return self
 
-  def extract_rtl(self) -> 'Program':
+  def generate_task_rtl(
+    self,
+    additional_fifo_pipelining: bool = False,
+    part_num: str = '',
+  ) -> 'Program':
     """Extract HDL files from tarballs generated from HLS."""
     _logger.info('extracting RTL files')
     for task in self._tasks.values():
       with tarfile.open(self.get_tar(task.name), 'r') as tarfileobj:
         tarfileobj.extractall(path=self.work_dir)
-    return self
 
-  def instrument_rtl(
-      self,
-      directive: Optional[Dict[str, Any]] = None,
-      register_level: int = 0,
-      enable_synth_util: bool = False,
-      floorplan_pre_assignments: TextIO = None,
-      additional_fifo_pipelining: bool = False,
-      part_num: str = '',
-      **kwargs,
-  ) -> 'Program':
-    """Instrument HDL files generated from HLS.
-
-    Args:
-        directive: Optional, if given it should a tuple of json object and file.
-        register_level: Non-zero value overrides self.register_level.
-        part_num: optinally provide the part_num to enable board-specific optimization
-        additional_fifo_pipelining: replace every FIFO by a relay_station of LEVEL 2
-
-    Returns:
-        Program: Return self.
-    """
     # these files are needed before running RTL synthesis for resource report
     _logger.info('writing basic auxiliary RTL files')
     for name, content in rtl.OTHER_MODULES.items():
@@ -282,33 +264,70 @@ class Program:
       if task.is_upper and task.name != self.top:
         self._instrument_task(task, part_num, additional_fifo_pipelining)
 
+    return self
+
+  def run_floorplanning(
+      self,
+      part_num,
+      connectivity: TextIO,
+      enable_synth_util: bool = False,
+      floorplan_pre_assignments: TextIO = None,
+      **kwargs,
+  ) -> 'Program':
+    _logger.info('Running floorplanning')
+
     # generate partitioning constraints if partitioning directive is given
-    if directive is not None:
-      fifo_pipeline_level, axi_pipeline_level, vivado_tcl = get_floorplan(
-        directive['part_num'],
-        directive['connectivity'],
-        enable_synth_util,
-        floorplan_pre_assignments,
-        self.work_dir,
-        self.rtl_dir,
-        self.top_task,
-        self.get_post_syn_rpt,
-        self.get_task,
-        self._get_fifo_width,
-        self.get_cpp,
-        **kwargs,
-      )
+    config, config_with_floorplan = generate_floorplan(
+      part_num,
+      connectivity,
+      enable_synth_util,
+      floorplan_pre_assignments,
+      self.rtl_dir,
+      self.top_task,
+      self.get_post_syn_rpt,
+      self.get_task,
+      self._get_fifo_width,
+      self.get_cpp,
+      **kwargs,
+    )
 
-      directive['constraint'].write('\n'.join(vivado_tcl))
+    open(f'{self.work_dir}/pre-floorplan-config.json', 'w').write(json.dumps(config, indent=2))
+    open(f'{self.work_dir}/post-floorplan-config.json', 'w').write(json.dumps(config_with_floorplan, indent=2))
+    checkpoint_floorplan(config_with_floorplan, self.work_dir)
 
-      self.top_task.module.register_level = 4
-      _logger.info('top task register level set to %d based on floorplan',
-                 self.top_task.module.register_level)
+    return self
+
+  def generate_top_rtl(
+      self,
+      constraint: TextIO,
+      register_level: int = 0,
+      additional_fifo_pipelining: bool = False,
+      part_num: str = '',
+  ) -> 'Program':
+    """Instrument HDL files generated from HLS.
+
+    Args:
+        constraint: where to save the floorplan constraints
+        register_level: Non-zero value overrides self.register_level.
+        part_num: optinally provide the part_num to enable board-specific optimization
+        additional_fifo_pipelining: replace every FIFO by a relay_station of LEVEL 2
+
+    Returns:
+        Program: Return self.
+    """
+    # extract the floorplan result
+    if constraint:
+      fifo_pipeline_level, axi_pipeline_level = get_floorplan_result(self.work_dir, constraint)
+
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
       self.top_task.module.axi_pipeline_level = axi_pipeline_level
 
+    self.top_task.module.register_level = 3
     if register_level:
+      assert register_level > 0
       self.top_task.module.register_level = register_level
+    _logger.info('top task register level set to %d',
+                self.top_task.module.register_level)
 
     # instrument the top-level RTL
     _logger.info('instrumenting top-level RTL')

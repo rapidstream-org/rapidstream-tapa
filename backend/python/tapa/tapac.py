@@ -136,16 +136,22 @@ def create_parser() -> argparse.ArgumentParser:
       help='Run HLS and generate RTL tarballs.',
   )
   group.add_argument(
-      '--extract-rtl',
+      '--generate-task-rtl',
       action='count',
-      dest='extract_rtl',
-      help='Extract RTL tarballs.',
+      dest='generate_task_rtl',
+      help='Generate the RTL for each task',
   )
   group.add_argument(
-      '--instrument-rtl',
+      '--run-floorplanning',
       action='count',
-      dest='instrument_rtl',
-      help='Instrument RTL.',
+      dest='run_floorplanning',
+      help='Floorplan the design.',
+  )
+  group.add_argument(
+      '--generate-top-rtl',
+      action='count',
+      dest='generate_top_rtl',
+      help='Generate the RTL for the top-level task',
   )
   group.add_argument(
       '--pack-xo',
@@ -166,15 +172,6 @@ def create_parser() -> argparse.ArgumentParser:
       metavar='file',
       help=('Input ``connectivity.ini`` specification for mmaps. '
             'This is the same file passed to ``v++``.'),
-  )
-  group.add_argument(
-      '--directive',
-      type=argparse.FileType('r'),
-      dest='directive',
-      metavar='file',
-      help=('[obsolete] Please use --floorplan-pre-assignments instead.\n'
-            'Use a specific partitioning directive json file '
-            'instead of generating one via AutoBridge.'),
   )
   group.add_argument(
       '--constraint',
@@ -229,6 +226,7 @@ def create_parser() -> argparse.ArgumentParser:
       help='Providing a json file of type Dict[str, List[str]] '
            'storing the manual assignments to be used in floorplanning. '
            'The key is the region name, the value is a list of modules.'
+           'Replace the outdated --directive option.'
   )
   parser.add_argument(
       '--additional-fifo-pipelining',
@@ -258,11 +256,13 @@ def main(argv: Optional[List[str]] = None):
 
   all_steps = True
   last_step = ''
-  for arg in ('run_tapacc', 'extract_cpp', 'run_hls', 'extract_rtl',
-              'instrument_rtl', 'pack_xo'):
+  for arg in ('run_tapacc', 'extract_cpp', 'run_hls', 'generate_task_rtl',
+              'run_floorplanning', 'generate_top_rtl', 'pack_xo'):
     if getattr(args, arg) is not None:
       all_steps = False
       last_step = arg
+    else:
+      _logger.warning(f'Step {arg} is skipped.')
   if all_steps:
     last_step = arg
 
@@ -402,50 +402,34 @@ def main(argv: Optional[List[str]] = None):
   if all_steps or args.run_hls is not None:
     program.run_hls(**_get_device_info(parser, args))
 
-  if all_steps or args.extract_rtl is not None:
-    program.extract_rtl()
+  if all_steps or args.generate_task_rtl is not None:
+    program.generate_task_rtl(
+      args.additional_fifo_pipelining,
+      _get_device_info(parser, args)['part_num'],
+    )
 
-  if all_steps or args.instrument_rtl is not None:
-    directive: Optional[Dict[str, Any]] = None
+  if all_steps or args.run_floorplanning is not None:
+    if args.constraint is not None:
+      kwargs = {}
+      if args.max_usage is not None:
+        kwargs['user_max_usage_ratio'] = args.max_usage
+      if args.force_dag is not None:
+        kwargs['force_dag'] = args.force_dag
 
-    if args.directive:
-      logging.error(f'The --directive option is obsolete. Please use --floorplan-pre-assignments instead')
-      raise NotImplementedError
-
-    if args.directive is not None and args.constraint is not None:
-      # Read floorplan from `args.directive` and write TCL commands to
-      # `args.constraint`.
-      directive = dict(
-          floorplan=json.load(args.directive),
-          constraint=args.constraint,
-      )
-    elif args.directive is not None:
-      parser.error('only directive given; constraint needed as output')
-    elif args.constraint is not None:
-      # Generate floorplan using AutoBridge, optionally with a connectivity file
-      # that is used for `v++ --link` to specify mmap connections, and write TCL
-      # commands to `args.constraint`.
-      directive = dict(
-          connectivity=args.connectivity,
-          part_num=_get_device_info(parser, args)['part_num'],
-          constraint=args.constraint,
-      )
-    if args.register_level is not None:
-      if args.register_level <= 0:
-        parser.error('register level must be positive')
-    kwargs = {}
-    if args.max_usage is not None:
-      kwargs['user_max_usage_ratio'] = args.max_usage
-    if args.force_dag is not None:
-      kwargs['force_dag'] = args.force_dag
-    program.instrument_rtl(
-        directive,
-        args.register_level or 0,
+      program.run_floorplanning(
+        _get_device_info(parser, args)['part_num'],
+        args.connectivity,
         args.enable_synth_util,
         args.floorplan_pre_assignments,
+        **kwargs,
+      )
+
+  if all_steps or args.generate_top_rtl is not None:
+    program.generate_top_rtl(
+        args.constraint,
+        args.register_level or 0,
         args.additional_fifo_pipelining,
         part_num=_get_device_info(parser, args)['part_num'], 
-        **kwargs,
     )
 
   if all_steps or args.pack_xo is not None:
