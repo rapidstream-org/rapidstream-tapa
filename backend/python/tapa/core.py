@@ -656,7 +656,7 @@ class Program:
       addr_width = 36  # 64GB of DDR capacity
     else:
       addr_width = 64
-    _logger.debug(f'Set the address width of async_mmap to {addr_width}')
+    _logger.debug('Set the address width of async_mmap to %d', addr_width)
 
     if task.is_upper:
       for arg in async_mmap_args:

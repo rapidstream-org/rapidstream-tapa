@@ -256,7 +256,7 @@ def main(argv: Optional[List[str]] = None):
       all_steps = False
       last_step = arg
     else:
-      _logger.warning(f'Step {arg} is skipped.')
+      _logger.warning('Step %s is skipped.', arg)
   if all_steps:
     last_step = arg
 

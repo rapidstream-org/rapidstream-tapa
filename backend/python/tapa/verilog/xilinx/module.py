@@ -606,9 +606,9 @@ def generate_m_axi_ports(
     port_name = module.find_port(prefix=port, suffix=suffix)
     if port_name is not None:
       if port_name != port + suffix:
-        _logger.warn(f"unexpected offset port `{port_name}' in module"
-                     f" `{module.name}'; please double check if this is the "
-                     f"offset port for m_axi port `{port}'")
+        _logger.warn("unexpected offset port `%s' in module"
+                     " `%s'; please double check if this is the "
+                     "offset port for m_axi port `%s'", port_name, module.name, port)
       yield ast.make_port_arg(port=port_name, arg=arg_reg or arg)
       break
   else:
