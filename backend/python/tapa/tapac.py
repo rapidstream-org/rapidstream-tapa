@@ -9,7 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import haoda.backend.xilinx
 from absl import flags
@@ -232,6 +232,35 @@ def create_parser() -> argparse.ArgumentParser:
   return parser
 
 
+def parse_steps(args, parser) -> Tuple[bool, str]:
+  """ extract which steps of tapac to execute 
+  """
+  manual_step_args = ('run_tapacc', 'run_hls', 'generate_task_rtl',
+              'run_floorplanning', 'generate_top_rtl', 'pack_xo')
+
+  if any(getattr(args, arg) for arg in manual_step_args):
+    all_steps = False
+    for idx, arg in enumerate(manual_step_args):
+      if getattr(args, arg):
+        last_step = arg
+        _logger.info('Step %d: %s is enabled.', idx, arg)
+      else:
+        _logger.warning('Step %d: %s is *SKIPPED*.', idx, arg)
+  else:
+    _logger.info('Executing all steps of tapac')
+    all_steps = True
+    last_step = manual_step_args[-1]
+
+  if last_step == 'run_tapacc' and args.output_file is None:
+    parser.error('output file must be set if tapacc is the last step')
+  if last_step == 'pack_xo' and args.output_file is None:
+    parser.error('output file must be set if pack xo is the last step')
+  if not all_steps and last_step != 'run_tapacc' and args.work_dir is None:
+    parser.error("steps beyond run tapacc won't work with --work-dir unset")
+  
+  return all_steps, last_step
+
+
 def main(argv: Optional[List[str]] = None):
 
   # RTL parsing may require a deep stack
@@ -248,24 +277,8 @@ def main(argv: Optional[List[str]] = None):
   logging.getLogger().setLevel(logging_level)
   _logger.info('logging level set to %s', logging.getLevelName(logging_level))
 
-  all_steps = True
-  last_step = ''
-  for arg in ('run_tapacc', 'run_hls', 'generate_task_rtl',
-              'run_floorplanning', 'generate_top_rtl', 'pack_xo'):
-    if getattr(args, arg) is not None:
-      all_steps = False
-      last_step = arg
-    else:
-      _logger.warning('Step %s is skipped.', arg)
-  if all_steps:
-    last_step = arg
+  all_steps, last_step = parse_steps(args, parser)
 
-  if last_step == 'run_tapacc' and args.output_file is None:
-    parser.error('output file must be set if tapacc is the last step')
-  if last_step == 'pack_xo' and args.output_file is None:
-    parser.error('output file must be set if pack xo is the last step')
-  if not all_steps and last_step != 'run_tapacc' and args.work_dir is None:
-    parser.error("steps beyond run tapacc won't work with --work-dir unset")
   cflag_list = ['-std=c++17'] + args.cflags
 
   if all_steps or args.run_tapacc is not None:
