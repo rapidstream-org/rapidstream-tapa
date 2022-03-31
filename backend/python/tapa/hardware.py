@@ -79,14 +79,22 @@ def get_ctrl_instance_region(part_num: str) -> str:
   raise NotImplementedError(f'unknown {part_num}')
 
 def get_port_region(part_num: str, port_cat: str, port_id: int) -> str:
-  if port_cat == 'PLRAM':
-    return ''
+  """ 
+  return the physical location of a given port
+  refer to the Vitis platforminfo command
+  """
   if part_num.startswith('xcu280-'):
     if port_cat == 'HBM' and 0 <= port_id < 32:
       return f'COARSE_X{port_id // 16}Y0'
     if port_cat == 'DDR' and 0 <= port_id < 2:
       return f'COARSE_X1Y{port_id}'
+    if port_cat == 'PLRAM' and 0 <= port_id < 6:
+      return f'COARSE_X1Y{int(port_id/2)}'
+
   elif part_num.startswith('xcu250-'):
     if port_cat == 'DDR' and 0 <= port_id < 4:
       return f'COARSE_X1Y{port_id}'
+    if port_cat == 'PLRAM' and 0 <= port_id < 4:
+      return f'COARSE_X1Y{port_id}'
+
   raise NotImplementedError(f'unknown port_cat {port_cat}, port_id {port_id} for {part_num}')

@@ -191,24 +191,22 @@ def get_port_vertices(
   for arg_name, external_port_name in arg_name_to_external_port.items():
     port_cat, port_id = util.parse_port(external_port_name)
     if port_cat == 'HBM':
-      port_vertices[get_physical_port_vertex_name(arg_name)] = {
-        'module': 'external_memory_controller',
-        'area': get_hbm_controller_area(),
-        'category': 'PORT_VERTEX',
-        'port_cat': port_cat,
-        'port_id': port_id,
-      }
+      area = get_hbm_controller_area()
     # the ddr will not overlap with user logic
     elif port_cat == 'DDR':
-      port_vertices[get_physical_port_vertex_name(arg_name)] = {
-        'module': get_physical_port_vertex_name(arg_name),
-        'area': get_zero_area(),
-        'category': 'PORT_VERTEX',
-        'port_cat': port_cat,
-        'port_id': port_id,
-      }
+      area = get_zero_area()
+    elif port_cat == 'PLRAM':
+      area = get_zero_area()
     else:
       raise NotImplementedError(f'unrecognized port type {port_cat}')
+
+    port_vertices[get_physical_port_vertex_name(arg_name)] = {
+      'module': f'external_{port_cat}_controller',
+      'area': area,
+      'category': 'PORT_VERTEX',
+      'port_cat': port_cat,
+      'port_id': port_id,
+    }
 
   return type_marked(port_vertices, 'PORT_VERTEX')
 
