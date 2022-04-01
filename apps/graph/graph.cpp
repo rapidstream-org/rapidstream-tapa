@@ -110,7 +110,7 @@ ostream& operator<<(ostream& os, const UpdateReq& obj) {
 }
 
 const int kMaxNumPartitions = 1024;
-const int kMaxPartitionSize = 1024 * 1024;
+const int kMaxPartitionSize = 1024 * 32;
 
 void Control(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
              tapa::mmap<const Eid> num_edges,
@@ -312,6 +312,8 @@ void ProcElem(tapa::istream<TaskReq>& req_q, tapa::ostream<TaskResp>& resp_q,
   update_out_q.close();
 
   VertexAttr vertices_local[kMaxPartitionSize];
+#pragma HLS bind_storage variable = vertices_local type = RAM_T2P impl = URAM
+
   TAPA_WHILE_NOT_EOT(req_q) {
     const TaskReq req = req_q.read();
     VLOG(5) << "recv@ProcElem: TaskReq: " << req;
