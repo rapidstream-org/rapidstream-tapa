@@ -87,8 +87,6 @@ class Program:
     self.files: Dict[str, str] = {}
     self._hls_report_xmls: Dict[str, ET.ElementTree] = {}
 
-    self.extract_cpp()
-
   def __del__(self):
     if self.is_temp:
       shutil.rmtree(self.work_dir)
@@ -180,8 +178,9 @@ class Program:
   def run_hls(self, clock_period: Union[int, float, str],
               part_num: str) -> 'Program':
     """Run HLS with extracted HLS C++ files and generate tarballs."""
-    _logger.info('running HLS')
+    self.extract_cpp()
 
+    _logger.info('running HLS')
     def worker(task: Task, idx: int) -> None:
       os.nice(idx % 19)
       with open(self.get_tar(task.name), 'wb') as tarfileobj:
