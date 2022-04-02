@@ -35,6 +35,32 @@ you can easily install TAPA from pre-built packages:
   You can run the installation script again to obtain the latest pre-built
   version when a new version is available.
 
+
+Install the Gurobi Solver
+-------------------
+
+In the floorplanning step, TAPA/AutoBridge relies on an open-source solver (python-mip) for Integer Linear Programming (ILP) models.
+However, the commercial tool Gurobi is much faster than open-source solvers and Gurobi is free for academia.
+
+* Optional but highly recommended
+
+* Register and download the Gurobi Optimizer at https://www.gurobi.com/downloads/gurobi-optimizer-eula/
+
+* Unzip the package to your desired directory
+
+* Obtain an academic license at https://www.gurobi.com/downloads/end-user-license-agreement-academic/
+
+* The environment variable GUROBI_HOME needs to point to the installation directory, so that Gurobi can be detected by AutoBridge.
+  
+  * ``export GUROBI_HOME=[WHERE-YOU-INSTALL]``
+  
+  * ``export GRB_LICENSE_FILE=[ADDRESS-OF-YOUR-LICENSE-FILE]``
+  
+  * ``export PATH="${PATH}:${GUROBI_HOME}/bin"``
+  
+  * ``export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"``
+
+
 Install from Source
 -------------------
 
