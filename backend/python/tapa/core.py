@@ -649,12 +649,7 @@ class Program:
       )
 
     # instantiate async_mmap modules at the upper levels
-    if part_num.startswith('xcu280'):
-      addr_width = 35  # 8GB of HBM capacity or 32 GB of DDR capacity
-    elif part_num.startswith('xcu250'):
-      addr_width = 36  # 64GB of DDR capacity
-    else:
-      addr_width = 64
+    addr_width = util.get_max_addr_width(part_num)
     _logger.debug('Set the address width of async_mmap to %d', addr_width)
 
     if task.is_upper:
@@ -781,9 +776,9 @@ class Program:
       with open(self.get_rtl(task.name), 'w') as rtl_code:
         rtl_code.write(task.module.code)
     else:
-      self._pipeline_top_task(task)
+      self._pipeline_top_task(task, part_num)
 
-  def _pipeline_top_task(self, task: Task) -> None:
+  def _pipeline_top_task(self, task: Task, part_num: str) -> None:
     """
     add axi pipelines to the top task
     """
@@ -795,7 +790,7 @@ class Program:
 
     # generate the wrapper that becomes the final top module
     with open(self.get_rtl(task.name), 'w') as rtl_code:
-      rtl_code.write(get_axi_pipeline_wrapper(task.name, top_suffix, task))
+      rtl_code.write(get_axi_pipeline_wrapper(task.name, top_suffix, task, part_num))
 
   def _get_fifo_width(self, task: Task, fifo: str) -> int:
     producer_task, _, fifo_port = task.get_connection_to(fifo, 'produced_by')

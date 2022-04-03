@@ -97,3 +97,14 @@ def parse_port(port: str) -> Tuple[str, int]:
   port_cat = port[:bra] 
   port_id = int(port[bra + 1:ket])
   return port_cat, port_id
+
+def get_max_addr_width(part_num: str) -> int:
+  """ get the max addr width based on the memory capacity """
+  if part_num.startswith('xcu280'):
+    addr_width = 35  # 8GB of HBM capacity or 32 GB of DDR capacity
+  elif part_num.startswith('xcu250'):
+    addr_width = 36  # 64GB of DDR capacity
+  else:
+    addr_width = 64
+  
+  return addr_width

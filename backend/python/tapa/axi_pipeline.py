@@ -5,6 +5,7 @@ from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 
 from tapa.verilog.xilinx.m_axi import M_AXI_SUFFIXES_COMPACT
 from tapa.instance import Instance
+from tapa.util import get_max_addr_width
 
 
 class AXI:
@@ -125,18 +126,20 @@ def get_end():
   return ['endmodule']
 
 
-def get_axi_pipeline_wrapper(orig_top_name: str, top_name_suffix: str, top_task):
+def get_axi_pipeline_wrapper(orig_top_name: str, top_name_suffix: str, top_task, part_num: str):
   """
   Given the original top RTL module
   Generate a wrapper that (1) instantiate the previous top module
   (2) pipeline all AXI interfaces
   """
+  addr_width = get_max_addr_width(part_num)
+
   ast = top_task.module.ast
   axi_list = []
   for port in top_task.ports.values():
     if port.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
       pipeline_level = top_task.module.get_axi_pipeline_level(port.name)
-      axi_list.append(AXI(port.name, port.width, 64, pipeline_level))
+      axi_list.append(AXI(port.name, port.width, addr_width, pipeline_level))
 
   io_list = parse_ports(ast)
 
