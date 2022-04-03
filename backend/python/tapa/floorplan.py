@@ -181,14 +181,26 @@ def get_floorplan_config(
                                 vertices,
                               )
 
+  grouping_constraints = get_grouping_constraints(edges)
+
   config = {
     'part_num': part_num,
     'edges': edges,
     'vertices': vertices,
-    'floorplan_pre_assignments': floorplan_pre_assignments, 
+    'floorplan_pre_assignments': floorplan_pre_assignments,
+    'grouping_constraints': grouping_constraints,
   }
 
   return config
+
+
+def get_grouping_constraints(edges: Dict) -> List[List[str]]:
+  """ specify which tasks must be placed in the same slot """
+  grouping = []
+  for edge, properties in edges.items():
+    if properties['category'] == 'ASYNC_MMAP_EDGE':
+      grouping.append([properties['produced_by'], properties['consumed_by']])
+  return grouping
 
 
 def get_floorplan_pre_assignments(
