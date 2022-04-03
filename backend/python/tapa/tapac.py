@@ -25,6 +25,12 @@ logging.basicConfig(
 
 _logger = logging.getLogger().getChild(__name__)
 
+flags.DEFINE_integer(
+    'recursionlimit',
+    3000,
+    'override Python recursion limit; RTL parsing may require a deep stack',
+)
+
 
 def create_parser() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(
@@ -262,10 +268,6 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
 
 
 def main(argv: Optional[List[str]] = None):
-
-  # RTL parsing may require a deep stack
-  sys.setrecursionlimit(3000)
-
   argv = sys.argv if argv is None else [sys.argv[0]] + argv
   argv = flags.FLAGS(argv, known_only=True)[1:]
 
@@ -277,6 +279,10 @@ def main(argv: Optional[List[str]] = None):
   logging_level = max(logging.DEBUG, min(logging.CRITICAL, logging_level))
   logging.getLogger().setLevel(logging_level)
   _logger.info('logging level set to %s', logging.getLevelName(logging_level))
+
+  # RTL parsing may require a deep stack
+  sys.setrecursionlimit(flags.FLAGS.recursionlimit)
+  _logger.info('Python recursion limit set to %d', flags.FLAGS.recursionlimit)
 
   all_steps, last_step = parse_steps(args, parser)
 
