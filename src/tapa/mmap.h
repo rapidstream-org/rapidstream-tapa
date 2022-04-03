@@ -463,6 +463,7 @@ struct accessor<async_mmap<T>, mmap<T>&> {
   [[deprecated("please use async_mmap<T>& in formal parameters")]]  //
   static async_mmap<T>
   access(mmap<T>& arg) {
+    LOG_FIRST_N(ERROR, 1) << "please use async_mmap<T>& in formal parameters";
     return async_mmap<T>::schedule(arg);
   }
 };
@@ -484,6 +485,7 @@ struct accessor<async_mmap<T>, mmaps<T, S>&> {
   [[deprecated("please use async_mmap<T>& in formal parameters")]]  //
   static async_mmap<T>
   access(mmaps<T, S>& arg) {
+    LOG_FIRST_N(ERROR, 1) << "please use async_mmap<T>& in formal parameters";
     return async_mmap<T>::schedule(arg.access());
   }
 };
