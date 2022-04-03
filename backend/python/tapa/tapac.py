@@ -266,7 +266,8 @@ def main(argv: Optional[List[str]] = None):
   # RTL parsing may require a deep stack
   sys.setrecursionlimit(3000)
 
-  argv = flags.FLAGS(argv or sys.argv[1:], known_only=True)
+  argv = sys.argv if argv is None else [sys.argv[0]] + argv
+  argv = flags.FLAGS(argv, known_only=True)[1:]
 
   parser = create_parser()
   args = parser.parse_args(argv)
