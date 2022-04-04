@@ -111,7 +111,7 @@ list(
   CPACK_DEBIAN_PACKAGE_DEPENDS
   "g++" # required by tapac for dependence analysis
   "iverilog" # required by tapac for RTL instrumentation
-  "libfrt-dev (>= 0.0.20220220.1)" # required by libtapa for host-kernel
+  "libfrt-dev (>= 0.0.20220403.1)" # required by libtapa for host-kernel
                                    # interface
   "libgoogle-glog-dev" # required by libtapa for logging messages
 )
@@ -125,7 +125,7 @@ set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 list(
   APPEND
   CPACK_RPM_PACKAGE_REQUIRES
-  "frt-devel >= 0.0.20220220.1" # required by libtapa for host-kernel interface
+  "frt-devel >= 0.0.20220403.1" # required by libtapa for host-kernel interface
   "gcc-c++" # required by tapac for dependence analysis
   "glog-devel" # required by libtapa for logging messages
   "iverilog" # required by tapac for RTL instrumentation

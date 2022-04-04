@@ -1,10 +1,14 @@
 import configparser
+import logging
+import os.path
 import shutil
 import subprocess
-from typing import Tuple, TextIO, Dict
+from typing import Dict, Iterator, TextIO, Tuple
 
 from .task import Task
 from .instance import Instance
+
+_logger = logging.getLogger().getChild(__name__)
 
 
 def clang_format(code: str, *args: str) -> str:
@@ -108,3 +112,19 @@ def get_max_addr_width(part_num: str) -> int:
     addr_width = 64
   
   return addr_width
+
+
+def get_vendor_include_paths() -> Iterator[str]:
+  """Yields include paths that are automatically available in vendor tools."""
+  try:
+    for line in subprocess.check_output(
+        ['frt_get_xlnx_env'],
+        universal_newlines=True,
+    ).split('\0'):
+      if not line:
+        continue
+      key, value = line.split('=', maxsplit=1)
+      if key == 'XILINX_HLS':
+        yield os.path.join(value, 'include')
+  except FileNotFoundError:
+    _logger.warn('not adding vendor include paths; please update FRT')

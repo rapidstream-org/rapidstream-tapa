@@ -15,6 +15,7 @@ import haoda.backend.xilinx
 from absl import flags
 
 import tapa.core
+import tapa.util
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -330,12 +331,9 @@ def main(argv: Optional[List[str]] = None):
 
     # Append include paths that are automatically available in vendor tools.
     vendor_include_paths = []
-    for vendor_env in 'XILINX_HLS', 'XILINX_VITIS', 'XILINX_VIVADO':
-      vendor_path = os.environ.get(vendor_env)
-      if vendor_path is not None:
-        vendor_include_paths += [
-            '-isystem', os.path.join(vendor_path, 'include')
-        ]
+    for vendor_path in tapa.util.get_vendor_include_paths():
+      vendor_include_paths += ['-isystem', vendor_path]
+      _logger.info('added vendor include path `%s`', vendor_path)
     tapacc_cmd += vendor_include_paths
 
     tapacc_cmd += cflag_list
