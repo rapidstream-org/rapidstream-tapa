@@ -303,6 +303,10 @@ def main(argv: Optional[List[str]] = None):
   logging.getLogger().setLevel(logging_level)
   _logger.info('logging level set to %s', logging.getLevelName(logging_level))
 
+  with open(os.path.join(os.path.dirname(tapa.__file__), 'VERSION')) as fp:
+    version = fp.read().strip()
+  _logger.info('tapa version: %s', version)
+
   # RTL parsing may require a deep stack
   sys.setrecursionlimit(flags.FLAGS.recursionlimit)
   _logger.info('Python recursion limit set to %d', flags.FLAGS.recursionlimit)
