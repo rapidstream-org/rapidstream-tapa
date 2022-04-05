@@ -229,7 +229,7 @@ def create_parser() -> argparse.ArgumentParser:
            'The key is the region name, the value is a list of modules.'
            'Replace the outdated --directive option.'
   )
-  parser.add_argument(
+  group.add_argument(
       '--additional-fifo-pipelining',
       dest='additional_fifo_pipelining',
       action='store_true',
