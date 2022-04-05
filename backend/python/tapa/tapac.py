@@ -229,13 +229,35 @@ def create_parser() -> argparse.ArgumentParser:
            'The key is the region name, the value is a list of modules.'
            'Replace the outdated --directive option.'
   )
-  group.add_argument(
+
+  strategies = parser.add_argument_group(
+      title='Strategy',
+      description=('Choose different strategy in floorplanning and codegen '
+                   '(advanced usage).'),
+  )
+  strategies.add_argument(
       '--additional-fifo-pipelining',
       dest='additional_fifo_pipelining',
       action='store_true',
       help='Pipelining a FIFO whose source and destination are in the same region'
   )
-
+  strategies.add_argument(
+      '--reuse-hbm-path-pipelining',
+      dest='reuse_hbm_path_pipelining',
+      action='store_true',
+      help='Remove the pblocks on HBM control logic and make them serve as pipelines '
+           'between the HBM controller and the user logic.'
+  )
+  strategies.add_argument(
+      '--manual-vivado-flow',
+      dest='manual_vivado_flow',
+      action='store_true',
+      help='(in-test) Run two passes of phys_opt_design after placement. '
+           'Take over control during a Vitis flow and execute customized tcl commands. '
+           'WARNING: the Vitis log will appear to be stuck. '
+           'WARNING: A post-placement checkpoint and a post-routing checkpoint will be generated '
+           'WARNING: User needs to run v++ --link --platform [] --reuse_impl route_opt.dcp to generate xclbin '
+  )
   return parser
 
 
@@ -438,7 +460,9 @@ def main(argv: Optional[List[str]] = None):
         args.constraint,
         args.register_level or 0,
         args.additional_fifo_pipelining,
-        part_num=_get_device_info(parser, args)['part_num'],
+        _get_device_info(parser, args)['part_num'],
+        args.reuse_hbm_path_pipelining,
+        args.manual_vivado_flow,
     )
 
   if all_steps or args.pack_xo is not None:

@@ -301,9 +301,11 @@ class Program:
   def generate_top_rtl(
       self,
       constraint: TextIO,
-      register_level: int = 0,
-      additional_fifo_pipelining: bool = False,
-      part_num: str = '',
+      register_level: int,
+      additional_fifo_pipelining: bool,
+      part_num: str,
+      reuse_hbm_path_pipelining: bool,
+      manual_vivado_flow: bool,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
 
@@ -312,13 +314,16 @@ class Program:
         register_level: Non-zero value overrides self.register_level.
         part_num: optinally provide the part_num to enable board-specific optimization
         additional_fifo_pipelining: replace every FIFO by a relay_station of LEVEL 2
+        (in-test) manual_vivado_flow: run two-pass of phys_opt_design after placement
 
     Returns:
         Program: Return self.
     """
     # extract the floorplan result
     if constraint:
-      fifo_pipeline_level, axi_pipeline_level = get_floorplan_result(self.work_dir, constraint)
+      fifo_pipeline_level, axi_pipeline_level = get_floorplan_result(
+        self.work_dir, constraint, reuse_hbm_path_pipelining, manual_vivado_flow
+      )
 
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
       self.top_task.module.axi_pipeline_level = axi_pipeline_level
