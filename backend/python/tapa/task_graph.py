@@ -94,7 +94,7 @@ def get_async_mmap_edges(
 ):
   """
   In fact the async_mmap are directly wired to the task that uses it.
-  Therefore we create edges of infinite width so that they will be 
+  Therefore we create edges of infinite width so that they will be
   binded together by the solver
   """
   async_mmap_edges = {}
@@ -145,7 +145,7 @@ def get_task_vertices(top_task):
 
 def get_ctrl_vertices(top_task):
   # Self area for top task represents mainly the control_s_axi instance.
-  ctrl_vertices = {rtl.ctrl_instance_name(top_task.name): 
+  ctrl_vertices = {rtl.ctrl_instance_name(top_task.name):
     {
       'module': top_task.name,
       'instance': rtl.ctrl_instance_name(top_task.name),

@@ -139,7 +139,7 @@ class Program:
     return os.path.join(self.rtl_dir,
                         (util.get_module_name(name) if prefix else name) +
                         rtl.RTL_SUFFIX)
-  
+
   def get_post_syn_rpt(self, module_name: str) -> str:
     return f'{self.work_dir}/report/{module_name}.hier.util.rpt'
 
@@ -758,9 +758,9 @@ class Program:
     task.module.add_pipeline(self.done_q, init=is_state(STATE10))
 
   def _instrument_task(
-      self, 
-      task: Task, 
-      part_num: str, 
+      self,
+      task: Task,
+      part_num: str,
       additional_fifo_pipelining: bool = False,
   ) -> None:
     assert task.is_upper

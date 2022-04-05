@@ -39,12 +39,12 @@ def get_module_name(module: str) -> str:
 
 
 def parse_connectivity(vitis_config_ini: TextIO) -> Dict[str, str]:
-  """parse the .ini config file. 
-  
+  """parse the .ini config file.
+
     Example:
     [connectivity]
     sp=serpens_1.edge_list_ch0:HBM[0]
-  
+
     Output:
     {'edge_list_ch0': 'HBM[0]'}
   """
@@ -98,7 +98,7 @@ def parse_port(port: str) -> Tuple[str, int]:
   colon = port.find(':')
   if colon != -1:
     ket = colon  # use the first channel if a range is specified
-  port_cat = port[:bra] 
+  port_cat = port[:bra]
   port_id = int(port[bra + 1:ket])
   return port_cat, port_id
 
@@ -110,7 +110,7 @@ def get_max_addr_width(part_num: str) -> int:
     addr_width = 36  # 64GB of DDR capacity
   else:
     addr_width = 64
-  
+
   return addr_width
 
 

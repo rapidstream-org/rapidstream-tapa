@@ -8,7 +8,7 @@ module axi_pipeline #(
     PIPELINE_LEVEL          = 3,
     EnableReadChannel       = 1,
     EnableWriteChannel      = 1
-) 
+)
 (
   input                                          ap_clk,
 
@@ -39,7 +39,7 @@ module axi_pipeline #(
   input   [7:0]                                  in_ARLEN,
   input   [2:0]                                  in_ARSIZE,
   input   [C_M_AXI_ID_WIDTH - 1:0]               in_ARID,
-  
+
   output                                         in_RVALID,
   input                                          in_RREADY,
   output   [C_M_AXI_DATA_WIDTH - 1:0]            in_RDATA,

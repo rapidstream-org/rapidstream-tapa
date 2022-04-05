@@ -161,7 +161,7 @@ def checkpoint_floorplan(config_with_floorplan, work_dir) -> Dict[str, List[str]
 
 def get_floorplan_config(
     part_num: str,
-    physical_connectivity: TextIO,  
+    physical_connectivity: TextIO,
     top_task: Task,
     fifo_width_getter: Callable[[Task, str], int],
     user_floorplan_pre_assignments: Optional[TextIO],
@@ -176,7 +176,7 @@ def get_floorplan_config(
   edges = get_edges(top_task, fifo_width_getter)
   vertices = get_vertices(top_task, arg_name_to_external_port)
   floorplan_pre_assignments = get_floorplan_pre_assignments(
-                                part_num, 
+                                part_num,
                                 user_floorplan_pre_assignments,
                                 vertices,
                               )
@@ -231,7 +231,7 @@ def get_floorplan_pre_assignments(
     if properties['category'] == 'PORT_VERTEX':
       region = get_port_region(part_num, properties['port_cat'], properties['port_id'])
       floorplan_pre_assignments[region].append(v_name)
-  
+
   return floorplan_pre_assignments
 
 

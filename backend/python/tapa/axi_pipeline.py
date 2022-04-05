@@ -36,7 +36,7 @@ def indented(code: List[str]) -> List[str]:
 def parse_ports(ast) -> List[IOPort]:
 
   io_list = []
-  
+
   is_input = lambda node: isinstance(node, Input)
   is_output = lambda node: isinstance(node, Output)
   is_io = lambda node: is_input(node) or is_output(node)
@@ -72,7 +72,7 @@ def get_params(ast) -> List[str]:
   codegen = ASTCodeGenerator()
   for node in _dfs(ast, lambda node: isinstance(node, Parameter)):
     params.append(codegen.visit(node))
-  
+
   return indented(params)
 
 
@@ -102,7 +102,7 @@ def get_pipeline_inst(axi_list: List[AXI]):
 
     pp_inst.append(f'  .ap_clk      (ap_clk)')
     pp_inst.append(f');')
-    
+
   return indented(pp_inst)
 
 
@@ -152,4 +152,3 @@ def get_axi_pipeline_wrapper(orig_top_name: str, top_name_suffix: str, top_task,
   wrapper += get_end()
 
   return '\n'.join(wrapper)
-  

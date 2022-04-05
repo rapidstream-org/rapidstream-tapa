@@ -36,9 +36,9 @@ module relay_station #(
 
   genvar i;
   generate
-  if (CONNECT > 0) begin 
+  if (CONNECT > 0) begin
     if (LEVEL > 0) begin
-    
+
       for (i = 0; i < LEVEL; i = i + 1) begin : inst
         if (i < LEVEL - 1) begin
           fifo_reg #(
@@ -94,7 +94,7 @@ module relay_station #(
       assign if_empty_n    = empty_n[LEVEL];  // output
       assign full_n[LEVEL] = if_read;         // input
       assign if_dout       = data[LEVEL];     // output
-      
+
     end
 
     // LEVEL == 0

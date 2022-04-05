@@ -124,7 +124,7 @@ module async_mmap #(
       end
     end
   end
-  
+
   // write addr buffer, from user to burst detector
   wire [AddrWidth-1:0] write_addr_dout;
   wire                 write_addr_empty_n;

@@ -70,7 +70,7 @@ def get_hbm_controller_area():
 def get_async_mmap_area(data_channel_width: int):
   return AREA_OF_ASYNC_MMAP[_next_power_of_2(data_channel_width)]
 
-def _next_power_of_2(x):  
+def _next_power_of_2(x):
   return 1 if x == 0 else 2**(x - 1).bit_length()
 
 def get_ctrl_instance_region(part_num: str) -> str:
@@ -79,7 +79,7 @@ def get_ctrl_instance_region(part_num: str) -> str:
   raise NotImplementedError(f'unknown {part_num}')
 
 def get_port_region(part_num: str, port_cat: str, port_id: int) -> str:
-  """ 
+  """
   return the physical location of a given port
   refer to the Vitis platforminfo command
   """

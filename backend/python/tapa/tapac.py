@@ -240,7 +240,7 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def parse_steps(args, parser) -> Tuple[bool, str]:
-  """ extract which steps of tapac to execute 
+  """ extract which steps of tapac to execute
   """
   manual_step_args = ('run_tapacc', 'run_hls', 'generate_task_rtl',
               'run_floorplanning', 'generate_top_rtl', 'pack_xo')
@@ -264,7 +264,7 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
     parser.error('output file must be set if pack xo is the last step')
   if not all_steps and last_step != 'run_tapacc' and args.work_dir is None:
     parser.error("steps beyond run tapacc won't work with --work-dir unset")
-  
+
   return all_steps, last_step
 
 
@@ -438,7 +438,7 @@ def main(argv: Optional[List[str]] = None):
         args.constraint,
         args.register_level or 0,
         args.additional_fifo_pipelining,
-        part_num=_get_device_info(parser, args)['part_num'], 
+        part_num=_get_device_info(parser, args)['part_num'],
     )
 
   if all_steps or args.pack_xo is not None:
