@@ -305,6 +305,7 @@ def get_post_synth_area(
       return report.parse_hierarchical_utilization_report(rpt_file)
 
   _logger.info('generating post-synthesis resource utilization reports')
+  _logger.info('this step runs logic synthesis of each task for accurate area info, it may take a while')
   with futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
     for utilization in executor.map(
         worker,
