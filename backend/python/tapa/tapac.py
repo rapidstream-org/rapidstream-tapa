@@ -258,6 +258,18 @@ def create_parser() -> argparse.ArgumentParser:
            'WARNING: A post-placement checkpoint and a post-routing checkpoint will be generated '
            'WARNING: User needs to run v++ --link --platform [] --reuse_impl route_opt.dcp to generate xclbin '
   )
+  strategies.add_argument(
+      '--floorplan-strategy',
+      dest='floorplan_strategy',
+      type=str,
+      default='',
+      choices=['QUICK_FLOORPLANNING', 'SLR_LEVEL_FLOORPLANNING'],
+      help='Override the automatic choosed floorplanning method. '
+           'QUICK_FLOORPLANNING: use iterative bi-partitioning, which has the best scalability. '
+           'Typically used for designs with hundreds of tasks. '
+           'SLR_LEVEL_FLOORPLANNING: only partition the device into SLR level slots. '
+           'Do not perform half-SLR-level floorplanning.'
+  )
   return parser
 
 
@@ -450,6 +462,8 @@ def main(argv: Optional[List[str]] = None):
         kwargs['user_max_usage_ratio'] = args.max_usage
       if args.force_dag is not None:
         kwargs['force_dag'] = args.force_dag
+      if args.floorplan_strategy:
+        kwargs['floorplan_strategy'] = args.floorplan_strategy
 
       program.run_floorplanning(
         _get_device_info(parser, args)['part_num'],

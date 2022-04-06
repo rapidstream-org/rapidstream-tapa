@@ -56,6 +56,7 @@ def generate_floorplan(
     top_task,
     fifo_width_getter,
     user_floorplan_pre_assignments,
+    **kwargs,
   )
 
   config_with_floorplan = annotate_floorplan(config)
@@ -196,6 +197,7 @@ def get_floorplan_config(
     top_task: Task,
     fifo_width_getter: Callable[[Task, str], int],
     user_floorplan_pre_assignments: Optional[TextIO],
+    **kwargs,
 ) -> Dict:
   """ Generate a json encoding the task graph for the floorplanner
   """
@@ -221,6 +223,8 @@ def get_floorplan_config(
     'floorplan_pre_assignments': floorplan_pre_assignments,
     'grouping_constraints': grouping_constraints,
   }
+
+  config.update(kwargs)
 
   return config
 
