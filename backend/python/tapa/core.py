@@ -325,6 +325,9 @@ class Program:
         self.work_dir, constraint, reuse_hbm_path_pipelining, manual_vivado_flow
       )
 
+      if not fifo_pipeline_level:
+        _logger.warning('generate top rtl without floorplanning')
+
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
       self.top_task.module.axi_pipeline_level = axi_pipeline_level
 

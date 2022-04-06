@@ -36,7 +36,7 @@ setup(
     packages=find_packages(),
     python_requires='>=3.6',
     install_requires=[
-        'autobridge>=0.0.20220403.dev1',
+        'autobridge>=0.0.20220406.dev2',
         'haoda>=0.0.20220227.dev1',
         'pyverilog>=1.2.0',
         'pyyaml>=5.1',
