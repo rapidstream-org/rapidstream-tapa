@@ -262,13 +262,24 @@ def create_parser() -> argparse.ArgumentParser:
       '--floorplan-strategy',
       dest='floorplan_strategy',
       type=str,
-      default='',
-      choices=['QUICK_FLOORPLANNING', 'SLR_LEVEL_FLOORPLANNING'],
+      default='HALF_SLR_LEVEL_FLOORPLANNING',
+      choices=['QUICK_FLOORPLANNING', 'SLR_LEVEL_FLOORPLANNING', 'HALF_SLR_LEVEL_FLOORPLANNING'],
       help='Override the automatic choosed floorplanning method. '
            'QUICK_FLOORPLANNING: use iterative bi-partitioning, which has the best scalability. '
            'Typically used for designs with hundreds of tasks. '
            'SLR_LEVEL_FLOORPLANNING: only partition the device into SLR level slots. '
-           'Do not perform half-SLR-level floorplanning.'
+           'Do not perform half-SLR-level floorplanning. '
+           'HALF_SLR_LEVEL_FLOORPLANNING: partition the device into half-SLR level slots. '
+
+  )
+  strategies.add_argument(
+      '--floorplan-opt-priority',
+      dest='floorplan_opt_priority',
+      type=str,
+      default='AREA_PRIORITIZED',
+      choices=['AREA_PRIORITIZED', 'SLR_CROSSING_PRIORITIZED'],
+      help='AREA_PRIORITIZED: give priority to the area usage ratio of each slot. '
+           'SLR_CROSSING_PRIORITIZED: give priority to the number of SLR crossing wires. '
   )
   return parser
 
@@ -464,6 +475,8 @@ def main(argv: Optional[List[str]] = None):
         kwargs['force_dag'] = args.force_dag
       if args.floorplan_strategy:
         kwargs['floorplan_strategy'] = args.floorplan_strategy
+      if args.floorplan_opt_priority:
+        kwargs['floorplan_opt_priority'] = args.floorplan_opt_priority
 
       program.run_floorplanning(
         _get_device_info(parser, args)['part_num'],
