@@ -104,6 +104,7 @@ struct invoker<void (&)(Params...)> {
   static int64_t invoke(bool run_in_new_process, void (&f)(Params...),
                         const std::string& bitstream, Args&&... args) {
     if (bitstream.empty()) {
+      LOG(INFO) << "running software simulation with TAPA library";
       const auto tic = std::chrono::steady_clock::now();
       f(std::forward<Args>(args)...);
       const auto toc = std::chrono::steady_clock::now();
