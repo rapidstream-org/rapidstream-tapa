@@ -28,6 +28,7 @@ def generate_floorplan(
     enable_synth_util: bool,
     user_floorplan_pre_assignments: Optional[TextIO],
     rtl_dir: str,
+    work_dir: str,
     top_task: Task,
     post_syn_rpt_getter: Callable[[str], str],
     task_getter: Callable[[str], Task],
@@ -51,6 +52,7 @@ def generate_floorplan(
     )
 
   config = get_floorplan_config(
+    work_dir,
     part_num,
     physical_connectivity,
     top_task,
@@ -202,6 +204,7 @@ def checkpoint_floorplan(config_with_floorplan, work_dir):
 
 
 def get_floorplan_config(
+    work_dir: str,
     part_num: str,
     physical_connectivity: TextIO,
     top_task: Task,
@@ -227,6 +230,7 @@ def get_floorplan_config(
   grouping_constraints = get_grouping_constraints(edges)
 
   config = {
+    'work_dir': work_dir,
     'part_num': part_num,
     'edges': edges,
     'vertices': vertices,

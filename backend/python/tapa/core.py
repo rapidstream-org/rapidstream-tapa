@@ -284,6 +284,7 @@ class Program:
       enable_synth_util,
       floorplan_pre_assignments,
       self.rtl_dir,
+      self.work_dir,
       self.top_task,
       self.get_post_syn_rpt,
       self.get_task,
