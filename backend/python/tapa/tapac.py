@@ -190,12 +190,45 @@ def create_parser() -> argparse.ArgumentParser:
             'instead of inferring from the floorplanning directive.'),
   )
   group.add_argument(
-      '--max-usage',
+      '--min-area-limit',
       type=float,
-      dest='max_usage',
+      dest='min_area_limit',
+      default=0.65,
       metavar='0-1',
-      help=('Use a specific floorplan usage threshold instead of using the '
-            'conservative default in AutoBridge.'),
+      help=('The floorplanner will try to find solution with the resource usage '
+            'of each slot betweeen min-area-limit and max-area-limit'),
+  )
+  group.add_argument(
+      '--max-area-limit',
+      type=float,
+      dest='max_area_limit',
+      default=0.85,
+      metavar='0-1',
+      help=('The floorplanner will try to find solution with the resource usage '
+            'of each slot betweeen min-area-limit and max-area-limit'),
+  )
+  group.add_argument(
+      '--min-slr-width-limit',
+      type=int,
+      dest='min_slr_width_limit',
+      default=10000,
+      help=('The floorplanner will try to find solution with the number of SLR crossing wires '
+            'of each die boundary betweeen min-slr-width-limit and max-slr-width-limit'),
+  )
+  group.add_argument(
+      '--max-slr-width-limit',
+      type=int,
+      dest='max_slr_width_limit',
+      default=15000,
+      help=('The floorplanner will try to find solution with the number of SLR crossing wires '
+            'of each die boundary betweeen min-slr-width-limit and max-slr-width-limit'),
+  )
+  group.add_argument(
+      '--max-search-time',
+      type=int,
+      dest='max_search_time',
+      default=600,
+      help=('The max runtime (in seconds) of each ILP solving process'),
   )
   group.add_argument(
       '--enable-synth-util',
@@ -469,14 +502,18 @@ def main(argv: Optional[List[str]] = None):
   if all_steps or args.run_floorplanning is not None:
     if args.constraint is not None:
       kwargs = {}
-      if args.max_usage is not None:
-        kwargs['user_max_usage_ratio'] = args.max_usage
-      if args.force_dag is not None:
-        kwargs['force_dag'] = args.force_dag
-      if args.floorplan_strategy:
-        kwargs['floorplan_strategy'] = args.floorplan_strategy
-      if args.floorplan_opt_priority:
-        kwargs['floorplan_opt_priority'] = args.floorplan_opt_priority
+      floorplan_params = (
+        'min_area_limit',
+        'max_area_limit',
+        'min_slr_width_limit',
+        'max_slr_width_limit',
+        'max_search_time',
+        'floorplan_strategy',
+        'floorplan_opt_priority',
+      )
+      for param in floorplan_params:
+        if hasattr(args, param):
+          kwargs[param] = getattr(args, param)
 
       program.run_floorplanning(
         _get_device_info(parser, args)['part_num'],
