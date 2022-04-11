@@ -67,10 +67,16 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
         top_name=top_name,
         kernel_xml=kernel_xml_obj.name,
         hdl_dir=rtl_dir,
-        m_axi_names=(port.name for port in port_tuple if port.cat in {
-            tapa.instance.Instance.Arg.Cat.MMAP,
-            tapa.instance.Instance.Arg.Cat.ASYNC_MMAP
-        })) as proc:
+        m_axi_names={
+            port.name: {
+                'HAS_BURST': '0',
+                'SUPPORTS_NARROW_BURST': '0',
+            } for port in port_tuple if port.cat in {
+                tapa.instance.Instance.Arg.Cat.MMAP,
+                tapa.instance.Instance.Arg.Cat.ASYNC_MMAP,
+            }
+        },
+    ) as proc:
       stdout, stderr = proc.communicate()
     if proc.returncode == 0 and os.path.exists(xo_file):
       if not isinstance(output_file, str):
