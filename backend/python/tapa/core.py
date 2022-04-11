@@ -207,7 +207,7 @@ class Program:
         sys.stderr.write(stderr.decode('utf-8'))
         raise RuntimeError('HLS failed for {}'.format(task.name))
 
-    with futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    with futures.ThreadPoolExecutor(max_workers=util.nproc()) as executor:
       any(executor.map(worker, self._tasks.values(), itertools.count(0)))
 
     return self

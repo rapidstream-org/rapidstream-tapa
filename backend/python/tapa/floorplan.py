@@ -320,7 +320,7 @@ def get_post_synth_area(
 
   _logger.info('generating post-synthesis resource utilization reports')
   _logger.info('this step runs logic synthesis of each task for accurate area info, it may take a while')
-  with futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+  with futures.ThreadPoolExecutor(max_workers=util.nproc()) as executor:
     for utilization in executor.map(
         worker,
         {x.task.name for x in top_task.instances},

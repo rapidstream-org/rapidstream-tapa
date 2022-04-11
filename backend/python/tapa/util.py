@@ -128,3 +128,7 @@ def get_vendor_include_paths() -> Iterator[str]:
         yield os.path.join(value, 'include')
   except FileNotFoundError:
     _logger.warn('not adding vendor include paths; please update FRT')
+
+
+def nproc() -> int:
+  return int(subprocess.check_output(['nproc']))
