@@ -6,6 +6,7 @@ import sys
 project = 'TAPA'
 author = ', '.join([
     'Yuze Chi',
+    'Licheng Guo',
 ])
 copyright = '2021, ' + author
 
