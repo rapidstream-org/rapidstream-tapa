@@ -279,8 +279,10 @@ assign if_empty_n = internal_empty_n;
 
 /*******************************************/
 // assign if_full_n = internal_full_n;
-wire almost_full = mOutPtr >= DEPTH - 1 - GRACE_PERIOD && mOutPtr != ~{ADDR_WIDTH+1{1'b0}};
-assign if_full_n = ~almost_full;
+reg almost_full_q;
+wire almost_full = mOutPtr >= DEPTH - 1 - GRACE_PERIOD - 1 && mOutPtr != ~{ADDR_WIDTH+1{1'b0}};
+always @ (posedge clk) almost_full_q <= almost_full;
+assign if_full_n = ~almost_full_q;
 /*******************************************/
 
 assign shiftReg_data = if_din;
