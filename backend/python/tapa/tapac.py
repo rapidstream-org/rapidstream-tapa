@@ -16,6 +16,7 @@ from absl import flags
 
 import tapa.core
 import tapa.util
+from tapa.bitstream import get_vitis_script
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -340,6 +341,8 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
     parser.error('output file must be set if tapacc is the last step')
   if last_step == 'pack_xo' and args.output_file is None:
     parser.error('output file must be set if pack xo is the last step')
+    if not args.output_file.endswith('.xo'):
+      parser.error('the output file must be a .xo object')
   if not all_steps and last_step != 'run_tapacc' and args.work_dir is None:
     parser.error("steps beyond run tapacc won't work with --work-dir unset")
 
@@ -537,6 +540,12 @@ def main(argv: Optional[List[str]] = None):
     with open(args.output_file, 'wb') as packed_obj:
       program.pack_rtl(packed_obj)
 
+    # trim the '.xo' from the end
+    assert args.output_file.endswith('.xo')
+    vitis_script = args.output_file[:-3]
+
+    with open(f'{vitis_script}_generate_bitstream.sh', 'w') as script:
+      script.write(get_vitis_script(args))
 
 def _get_device_info(
     parser: argparse.ArgumentParser,
