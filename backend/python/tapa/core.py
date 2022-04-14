@@ -207,7 +207,9 @@ class Program:
         sys.stderr.write(stderr.decode('utf-8'))
         raise RuntimeError('HLS failed for {}'.format(task.name))
 
-    with futures.ThreadPoolExecutor(max_workers=util.nproc()) as executor:
+    worker_num = util.nproc()
+    _logger.info('spawn %d workers for parallel HLS synthesis of the tasks', worker_num)
+    with futures.ThreadPoolExecutor(max_workers=worker_num) as executor:
       any(executor.map(worker, self._tasks.values(), itertools.count(0)))
 
     return self
@@ -272,6 +274,7 @@ class Program:
       part_num,
       connectivity: TextIO,
       enable_synth_util: bool = False,
+      max_parallel_synth_jobs: int = 8,
       floorplan_pre_assignments: TextIO = None,
       **kwargs,
   ) -> 'Program':
@@ -282,6 +285,7 @@ class Program:
       part_num,
       connectivity,
       enable_synth_util,
+      max_parallel_synth_jobs,
       floorplan_pre_assignments,
       self.rtl_dir,
       self.work_dir,

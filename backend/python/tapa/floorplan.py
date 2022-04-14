@@ -26,6 +26,7 @@ def generate_floorplan(
     part_num: str,
     physical_connectivity: TextIO,
     enable_synth_util: bool,
+    max_parallel_synth_jobs: int,
     user_floorplan_pre_assignments: Optional[TextIO],
     rtl_dir: str,
     work_dir: str,
@@ -49,6 +50,7 @@ def generate_floorplan(
       post_syn_rpt_getter,
       task_getter,
       cpp_getter,
+      max_parallel_synth_jobs,
     )
 
   config = get_floorplan_config(
@@ -291,6 +293,7 @@ def get_post_synth_area(
     post_syn_rpt_getter: Callable[[str], str],
     task_getter: Callable[[str], Task],
     cpp_getter: Callable[[str], str],
+    max_parallel_synth_jobs: int,
 ):
   def worker(module_name: str, idx: int) -> report.HierarchicalUtilization:
     _logger.debug('synthesizing %s', module_name)
@@ -324,7 +327,10 @@ def get_post_synth_area(
 
   _logger.info('generating post-synthesis resource utilization reports')
   _logger.info('this step runs logic synthesis of each task for accurate area info, it may take a while')
-  with futures.ThreadPoolExecutor(max_workers=util.nproc()) as executor:
+  worker_num = min(max_parallel_synth_jobs, util.nproc())
+  _logger.info('spawn %d workers for parallel logic synthesis. '
+               'use --max-parallel-synth-jobs to enable more workers.', worker_num)
+  with futures.ThreadPoolExecutor(max_workers=worker_num) as executor:
     for utilization in executor.map(
         worker,
         {x.task.name for x in top_task.instances},

@@ -248,6 +248,13 @@ def create_parser() -> argparse.ArgumentParser:
       default=True,
   )
   group.add_argument(
+      '--max-parallel-synth-jobs',
+      type=int,
+      dest='max_parallel_synth_jobs',
+      default=8,
+      help='Limit the number of parallel synthesize jobs if enable_synth_util is set',
+  )
+  group.add_argument(
       '--force-dag',
       dest='force_dag',
       action='store_true',
@@ -522,6 +529,7 @@ def main(argv: Optional[List[str]] = None):
         _get_device_info(parser, args)['part_num'],
         args.connectivity,
         args.enable_synth_util,
+        args.max_parallel_synth_jobs,
         args.floorplan_pre_assignments,
         **kwargs,
       )
