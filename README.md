@@ -27,7 +27,7 @@ TAPA is a high-performance fast-compiling HLS framework that is fully compatible
 - [AutoSA Systolic-Array Compiler](https://github.com/UCLA-VAST/AutoSA), FPGA'21:
 <img width="668" alt="image" src="https://user-images.githubusercontent.com/32432619/157976148-594e98bc-2658-4ebc-ae0d-3d2a347d1854.png">
 
-- [KNN](), FPT'20, achieves 235 MHz on the Xilinx Alveo U280 board. The Vivado baseline achieves only 165 MHz.
+- [KNN](), FPT'20, achieves 252 MHz on the Xilinx Alveo U280 board. The Vivado baseline achieves only 165 MHz.
 
 # More Details
 
