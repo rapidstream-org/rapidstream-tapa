@@ -276,6 +276,8 @@ class Program:
       enable_synth_util: bool = False,
       max_parallel_synth_jobs: int = 8,
       floorplan_pre_assignments: TextIO = None,
+      read_only_args: List[str] = [],
+      write_only_args: List[str] = [],
       **kwargs,
   ) -> 'Program':
     _logger.info('Running floorplanning')
@@ -286,6 +288,8 @@ class Program:
       connectivity,
       enable_synth_util,
       max_parallel_synth_jobs,
+      read_only_args,
+      write_only_args,
       floorplan_pre_assignments,
       self.rtl_dir,
       self.work_dir,

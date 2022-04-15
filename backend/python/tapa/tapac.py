@@ -270,6 +270,24 @@ def create_parser() -> argparse.ArgumentParser:
            'The key is the region name, the value is a list of modules.'
            'Replace the outdated --directive option.'
   )
+  group.add_argument(
+      '--read-only-args',
+      action='append',
+      dest='read_only_args',
+      default=[],
+      type=str,
+      help='Optionally specify which mmap/async_mmap arguments of the top function are read-only. '
+           'Regular expression supported. '
+  )
+  group.add_argument(
+      '--write-only-args',
+      action='append',
+      dest='write_only_args',
+      default=[],
+      type=str,
+      help='Optionally specify which mmap/async_mmap arguments of the top function are write-only. '
+           'Regular expression supported. '
+  )
 
   strategies = parser.add_argument_group(
       title='Strategy',
@@ -531,6 +549,8 @@ def main(argv: Optional[List[str]] = None):
         args.enable_synth_util,
         args.max_parallel_synth_jobs,
         args.floorplan_pre_assignments,
+        args.read_only_args,
+        args.write_only_args,
         **kwargs,
       )
 

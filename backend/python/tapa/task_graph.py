@@ -1,5 +1,6 @@
 import logging
-from typing import Callable, Dict, Tuple, TextIO
+import re
+from typing import Callable, Dict, List
 
 from tapa import util
 from tapa.verilog import xilinx as rtl
@@ -60,6 +61,8 @@ def get_fifo_edges(
 
 def get_axi_edges(
     top_task: Task,
+    read_only_args: List[str],
+    write_only_args: List[str],
 ):
   """
   get the edges corresponding to the AXI links between tasks and DDR/HBM ports
@@ -74,7 +77,15 @@ def get_axi_edges(
         # total width of an AXI channel
         # wr_data, wr_addr, rd_data, rd_addr, resp + other control signals (approximately 50)
         arg_width = port_name_to_width[arg.name]
-        total_connection_width = arg_width + arg_width + ADDR_CHANNEL_DATA_WIDTH + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH + 50
+
+        if any(re.match(ro, arg.name) for ro in read_only_args):
+          _logger.info('%s is specified as read-only', arg.name)
+          total_connection_width = arg_width + ADDR_CHANNEL_DATA_WIDTH + 50
+        elif any(re.match(wo, arg.name) for wo in write_only_args):
+          _logger.info('%s is specified as write-only', arg.name)
+          total_connection_width = arg_width + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH + 50
+        else:
+          total_connection_width = arg_width + arg_width + ADDR_CHANNEL_DATA_WIDTH + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH + 50
 
         # the edge represents the AXI pipeline between the DDR/HBM IP and the mmap module
         axi_edges[get_axi_edge_name(arg)] = {
@@ -113,11 +124,16 @@ def get_async_mmap_edges(
   return type_marked(async_mmap_edges, 'ASYNC_MMAP_EDGE')
 
 
-def get_edges(top_task: Task, fifo_width_getter: Callable[[Task, str], int]):
+def get_edges(
+    top_task: Task,
+    fifo_width_getter: Callable[[Task, str], int],
+    read_only_args: List[str],
+    write_only_args: List[str],
+):
   all_edges = {}
   all_edges.update(get_scalar_passing_edges(top_task))
   all_edges.update(get_fifo_edges(top_task, fifo_width_getter))
-  all_edges.update(get_axi_edges(top_task))
+  all_edges.update(get_axi_edges(top_task, read_only_args, write_only_args))
   all_edges.update(get_async_mmap_edges(top_task))
 
   return all_edges

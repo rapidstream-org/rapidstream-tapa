@@ -27,6 +27,8 @@ def generate_floorplan(
     physical_connectivity: TextIO,
     enable_synth_util: bool,
     max_parallel_synth_jobs: int,
+    read_only_args: List[str],
+    write_only_args: List[str],
     user_floorplan_pre_assignments: Optional[TextIO],
     rtl_dir: str,
     work_dir: str,
@@ -60,6 +62,8 @@ def generate_floorplan(
     top_task,
     fifo_width_getter,
     user_floorplan_pre_assignments,
+    read_only_args,
+    write_only_args,
     **kwargs,
   )
 
@@ -212,6 +216,8 @@ def get_floorplan_config(
     top_task: Task,
     fifo_width_getter: Callable[[Task, str], int],
     user_floorplan_pre_assignments: Optional[TextIO],
+    read_only_args: List[str],
+    write_only_args: List[str],
     **kwargs,
 ) -> Dict:
   """ Generate a json encoding the task graph for the floorplanner
@@ -221,7 +227,7 @@ def get_floorplan_config(
                                 top_task,
                               )
 
-  edges = get_edges(top_task, fifo_width_getter)
+  edges = get_edges(top_task, fifo_width_getter, read_only_args, write_only_args)
   vertices = get_vertices(top_task, arg_name_to_external_port)
   floorplan_pre_assignments = get_floorplan_pre_assignments(
                                 part_num,
