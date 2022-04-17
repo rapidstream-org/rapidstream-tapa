@@ -60,7 +60,7 @@ def get_vitis_script(args) -> str:
 
   # if not specified in tapac, use platform default
   if args.clock_period:
-    vitis_command += CLOCK_OPTION
+    vitis_command += NEWLINE
     freq_mhz = round(1000/float(args.clock_period))
     script.append(f'TARGET_FREQUENCY={freq_mhz}')
     vitis_command += CLOCK_OPTION
