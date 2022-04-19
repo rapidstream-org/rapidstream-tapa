@@ -266,7 +266,7 @@ class Program:
     _logger.info('instrumenting upper-level RTL')
     for task in self._tasks.values():
       if task.is_upper and task.name != self.top:
-        self._instrument_task(task, part_num, additional_fifo_pipelining)
+        self._instrument_non_top_upper_task(task, part_num, additional_fifo_pipelining)
 
     return self
 
@@ -329,9 +329,11 @@ class Program:
     Returns:
         Program: Return self.
     """
+    task_inst_to_slr = {}
+
     # extract the floorplan result
     if constraint:
-      fifo_pipeline_level, axi_pipeline_level = get_floorplan_result(
+      fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr = get_floorplan_result(
         self.work_dir, constraint, reuse_hbm_path_pipelining, manual_vivado_flow
       )
 
@@ -350,7 +352,7 @@ class Program:
 
     # instrument the top-level RTL
     _logger.info('instrumenting top-level RTL')
-    self._instrument_task(self.top_task, part_num, additional_fifo_pipelining)
+    self._instrument_top_task(self.top_task, part_num, task_inst_to_slr, additional_fifo_pipelining)
 
     _logger.info('generating report')
     task_report = self.top_task.report
@@ -463,6 +465,7 @@ class Program:
       task: Task,
       width_table: Dict[str, int],
       part_num: str,
+      instance_name_to_slr: Dict[str, int],
   ) -> List[ast.Identifier]:
     is_done_signals: List[rtl.Pipeline] = []
     arg_table: Dict[str, rtl.Pipeline] = {}
@@ -471,6 +474,12 @@ class Program:
     task.add_m_axi(width_table, self.files)
 
     for instance in task.instances:
+      # connect to the control_s_axi in the corresponding SLR
+      if instance.name in instance_name_to_slr:
+        argname_suffix = f'_slr_{instance_name_to_slr[instance.name]}'
+      else:
+        argname_suffix = ''
+
       child_port_set = set(instance.task.module.ports)
 
       # add signal delcarations
@@ -490,7 +499,13 @@ class Program:
               width=width,
           )
           arg_table[arg.name] = q
-          task.module.add_pipeline(q, init=ast.Identifier(arg.name))
+
+          # arg.name may be a constant
+          if arg.name in width_table:
+            id_name = arg.name + argname_suffix
+          else:
+            id_name = arg.name
+          task.module.add_pipeline(q, init=ast.Identifier(id_name))
 
         # arg.name is the upper-level name
         # arg.port is the lower-level name
@@ -775,26 +790,46 @@ class Program:
     task.module.add_pipeline(self.start_q, init=rtl.START)
     task.module.add_pipeline(self.done_q, init=is_state(STATE10))
 
-  def _instrument_task(
+  def _instrument_non_top_upper_task(
       self,
       task: Task,
       part_num: str,
       additional_fifo_pipelining: bool = False,
   ) -> None:
+    """ codegen for upper but non-top tasks """
     assert task.is_upper
     task.module.cleanup()
+
     self._instantiate_fifos(task, additional_fifo_pipelining)
     self._connect_fifos(task)
     width_table = {port.name: port.width for port in task.ports.values()}
-    is_done_signals = self._instantiate_children_tasks(task, width_table, part_num)
+    is_done_signals = self._instantiate_children_tasks(task, width_table, part_num, {})
     self._instantiate_global_fsm(task, is_done_signals)
 
-    # an upper task is not necessarily a top task
-    if task.name != self.top:
-      with open(self.get_rtl(task.name), 'w') as rtl_code:
-        rtl_code.write(task.module.code)
-    else:
-      self._pipeline_top_task(task, part_num)
+    with open(self.get_rtl(task.name), 'w') as rtl_code:
+      rtl_code.write(task.module.code)
+
+  def _instrument_top_task(
+      self,
+      task: Task,
+      part_num: str,
+      instance_name_to_slr,
+      additional_fifo_pipelining: bool = False,
+  ) -> None:
+    """ codegen for the top task """
+    assert task.is_upper
+    task.module.cleanup()
+
+    # add a control_s_axi instance in each SLR
+    duplicate_s_axi_ctrl(task, 3)
+
+    self._instantiate_fifos(task, additional_fifo_pipelining)
+    self._connect_fifos(task)
+    width_table = {port.name: port.width for port in task.ports.values()}
+    is_done_signals = self._instantiate_children_tasks(task, width_table, part_num, instance_name_to_slr)
+    self._instantiate_global_fsm(task, is_done_signals)
+
+    self._pipeline_top_task(task, part_num)
 
   def _pipeline_top_task(self, task: Task, part_num: str) -> None:
     """

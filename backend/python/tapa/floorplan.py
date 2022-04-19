@@ -77,7 +77,7 @@ def get_floorplan_result(
     constraint: TextIO,
     reuse_hbm_path_pipelining: bool,
     manual_vivado_flow: bool,
-) -> Tuple[Dict[str, str], Dict[str, int]]:
+) -> Tuple[Dict[str, str], Dict[str, int], Dict[str, int]]:
   """ extract floorplan results from the checkpointed config file """
   try:
     config_with_floorplan = json.loads(open(f'{work_dir}/post-floorplan-config.json', 'r').read())
@@ -89,8 +89,18 @@ def get_floorplan_result(
   constraint.write('\n'.join(vivado_tcl))
 
   fifo_pipeline_level, axi_pipeline_level = extract_pipeline_level(config_with_floorplan)
+  task_inst_to_slr = extract_task_locations(config_with_floorplan)
 
-  return fifo_pipeline_level, axi_pipeline_level
+  return fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr
+
+
+def extract_task_locations(config_with_floorplan) -> Dict[str, int]:
+  task_inst_to_slr = {}
+  for v_name, props in config_with_floorplan['vertices'].items():
+    # pseudo vertices dont have instances
+    if 'instance' in props:
+      task_inst_to_slr[props['instance']] = props['SLR']
+  return task_inst_to_slr
 
 
 def extract_pipeline_level(
