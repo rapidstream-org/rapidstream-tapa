@@ -24,7 +24,8 @@ from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
 
 from .instance import Instance, Port
-from .axi_pipeline import get_axi_pipeline_wrapper
+from .codegen.axi_pipeline import get_axi_pipeline_wrapper
+from .codegen.duplicate_s_axi_control import duplicate_s_axi_ctrl
 from .task import Task
 from .safety_check import check_mmap_arg_name
 
