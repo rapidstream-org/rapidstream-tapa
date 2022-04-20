@@ -113,7 +113,7 @@ def get_updated_ctrl_instance(
       if any(re.match(p, port_arg.portname) for p in DONT_TOUCH_PORTS):
         continue
       elif port_arg.portname in S_AXI_AR_AND_R_PORTS:
-        if port_arg.portname == 'RVALID':
+        if port_arg.portname == 'ARVALID':
           port_arg.argname.name = '1\'b0'
         else:
           port_arg.argname.name = ''
@@ -241,9 +241,16 @@ def get_paramarg_list(top_ast) -> List[ParamArg]:
 def get_s_axi_write_broadcastor(top_ast, slr_num) -> InstanceList:
   """ the interconnect to connect the s_axi_control instances """
   param_list = get_paramarg_list(top_ast)
+  portlist = []
+
+  portlist.append(
+    PortArg(
+      portname='ap_clk',
+      argname=Identifier('ap_clk'),
+    )
+  )
 
   # ports connecting to each s_axi_control instances
-  portlist = []
   for i in range(slr_num):
     for axi_port in S_AXI_AW_AND_W_PORTS:
       port_name = f's_axi_control_{axi_port}_slr_{i}'

@@ -240,6 +240,8 @@ class Program:
         'fifo.v',
         'generate_last.v',
         'relay_station.v',
+        'SAxiWriteBroadcastor_1to3.v',
+        'SAxiWriteBroadcastor_1to4.v',
     ):
       shutil.copy(
           os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
@@ -829,6 +831,7 @@ class Program:
     is_done_signals = self._instantiate_children_tasks(task, width_table, part_num, instance_name_to_slr)
     self._instantiate_global_fsm(task, is_done_signals)
 
+    # the s_axi_ctrl hack may mess up the order of RTL statements
     task.module.sort_module_def()
 
     self._pipeline_top_task(task, part_num)
