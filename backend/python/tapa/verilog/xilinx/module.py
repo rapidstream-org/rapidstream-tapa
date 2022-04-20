@@ -3,6 +3,7 @@ import itertools
 import logging
 import os.path
 import tempfile
+from functools import cmp_to_key
 from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple, Union
 
 from pyverilog.ast_code_generator import codegen
@@ -578,6 +579,34 @@ class Module:
     self.add_pipeline(self.rst_n_q, init=RST_N)
     self.add_logics([ast.Assign(left=RST, right=ast.Unot(self.rst_n_q[-1]))])
 
+  def sort_module_def(self) -> None:
+    """
+    the items in the ast may be out of order after modification
+    sort as parameter > input/output > wires > all the rest
+    """
+    param_nodes = []
+    io_nodes = []
+    wire_nodes = []
+    other_nodes = []
+    for item in self._module_def.items:
+      if isinstance(item, ast.Parameter):
+        param_nodes.append(item)
+      elif isinstance(item, (ast.Input, ast.Output, ast.Inout)):
+        io_nodes.append(item)
+      elif isinstance(item, ast.Wire):
+        wire_nodes.append(item)
+      elif isinstance(item, ast.Decl):
+        if any(isinstance(x, ast.Parameter) for x in item.list):
+          param_nodes.append(item)
+        elif any(isinstance(x, (ast.Input, ast.Output, ast.Inout))
+            for x in item.list):
+          io_nodes.append(item)
+        elif any(isinstance(x, ast.Wire) for x in item.list):
+          wire_nodes.append(item)
+      else:
+        other_nodes.append(item)
+
+    self._module_def.items = tuple(param_nodes + io_nodes + wire_nodes + other_nodes)
 
 def generate_m_axi_ports(
     module: Module,
