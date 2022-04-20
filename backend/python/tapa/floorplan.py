@@ -12,8 +12,11 @@ from tapa import util
 from tapa.task import Task
 
 from .task_graph import get_edges, get_vertices
-from .hardware import get_ctrl_instance_region, get_port_region
-
+from .hardware import (
+  get_ctrl_instance_region,
+  get_port_region,
+  get_slr_num,
+)
 from autobridge.main import annotate_floorplan
 
 _logger = logging.getLogger().getChild(__name__)
@@ -138,8 +141,14 @@ def get_vivado_tcl(config_with_floorplan, work_dir, reuse_hbm_path_pipelining, m
   # pblock definitions
   vivado_tcl += list(config_with_floorplan['floorplan_region_pblock_tcl'].values())
 
-  # floorplan vertices
   region_to_inst = defaultdict(list)
+
+  # floorplan the control_s_axi duplicates
+  num_copy = get_slr_num(config_with_floorplan['part_num'])
+  for i in range(num_copy):
+    region_to_inst[f'pblock_dynamic_SLR{i}'].append(f'control_s_axi_U_slr_{i}')
+
+  # floorplan vertices
   for vertex, properties in config_with_floorplan['vertices'].items():
     if properties['category'] == 'PORT_VERTEX':
       continue

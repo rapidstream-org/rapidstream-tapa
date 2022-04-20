@@ -98,3 +98,11 @@ def get_port_region(part_num: str, port_cat: str, port_id: int) -> str:
       return f'COARSE_X1Y{port_id}'
 
   raise NotImplementedError(f'unknown port_cat {port_cat}, port_id {port_id} for {part_num}')
+
+def get_slr_num(part_num: str):
+  if part_num.startswith('xcu280-'):
+    return 3
+  elif part_num.startswith('xcu250-'):
+    return 4
+  else:
+    raise NotImplementedError('unknown part_num %s', part_num)

@@ -22,6 +22,7 @@ from tapa import util
 from tapa.floorplan import get_floorplan_result, generate_floorplan, checkpoint_floorplan
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
+from tapa.hardware import get_slr_num
 
 from .instance import Instance, Port
 from .codegen.axi_pipeline import get_axi_pipeline_wrapper
@@ -822,8 +823,10 @@ class Program:
     assert task.is_upper
     task.module.cleanup()
 
-    # add a control_s_axi instance in each SLR
-    duplicate_s_axi_ctrl(task, 3)
+    # if floorplan is enabled, add a control_s_axi instance in each SLR
+    if instance_name_to_slr:
+      num_slr = get_slr_num(part_num)
+      duplicate_s_axi_ctrl(task, num_slr)
 
     self._instantiate_fifos(task, additional_fifo_pipelining)
     self._connect_fifos(task)
@@ -832,7 +835,8 @@ class Program:
     self._instantiate_global_fsm(task, is_done_signals)
 
     # the s_axi_ctrl hack may mess up the order of RTL statements
-    task.module.sort_module_def()
+    if instance_name_to_slr:
+      task.module.sort_module_def()
 
     self._pipeline_top_task(task, part_num)
 
