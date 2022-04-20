@@ -346,7 +346,7 @@ class Program:
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
       self.top_task.module.axi_pipeline_level = axi_pipeline_level
 
-    self.top_task.module.register_level = 3
+    self.top_task.module.register_level = get_slr_num(part_num)
     if register_level:
       assert register_level > 0
       self.top_task.module.register_level = register_level
@@ -476,6 +476,13 @@ class Program:
 
     task.add_m_axi(width_table, self.files)
 
+    # now that each SLR has an control_s_axi, slightly reduce the
+    # pipeline level of the scalars
+    if instance_name_to_slr:
+      scalar_register_level = 1
+    else:
+      scalar_register_level = self.register_level
+
     for instance in task.instances:
       # connect to the control_s_axi in the corresponding SLR
       if instance.name in instance_name_to_slr:
@@ -498,7 +505,7 @@ class Program:
               width = int(arg.name.split("'d")[0])
           q = rtl.Pipeline(
               name=instance.get_instance_arg(arg.name),
-              level=self.register_level,
+              level=scalar_register_level,
               width=width,
           )
           arg_table[arg.name] = q
