@@ -13,30 +13,6 @@ from .hardware import get_async_mmap_area, get_hbm_controller_area, get_zero_are
 _logger = logging.getLogger().getChild(__name__)
 
 
-def get_scalar_passing_edges(top_task):
-  """
-  get the edges between s_axi_control and each task for scalar passing
-  # FIXME: mixing ports and args
-  """
-  scalar_edges = {}
-
-  # Generate edges for scalar connections from the ctrl instance.
-  for port in top_task.ports.values():
-    width = port.width
-    if port.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
-      width = 64
-    for arg in top_task.args[port.name]:
-      scalar_edges[arg.instance.get_instance_arg(port.name)] = {
-          'produced_by': 'CTRL_VERTEX_' + rtl.ctrl_instance_name(top_task.name),
-          'consumed_by': 'TASK_VERTEX_' + arg.instance.name,
-          'width': width,
-          'depth': 1,
-          'category': 'SCALAR_EDGE',
-      }
-
-  return type_marked(scalar_edges, 'SCALAR_EDGE')
-
-
 def get_fifo_edges(
     top_task: Task,
     fifo_width_getter: Callable[[Task, str], int],
@@ -131,7 +107,6 @@ def get_edges(
     write_only_args: List[str],
 ):
   all_edges = {}
-  all_edges.update(get_scalar_passing_edges(top_task))
   all_edges.update(get_fifo_edges(top_task, fifo_width_getter))
   all_edges.update(get_axi_edges(top_task, read_only_args, write_only_args))
   all_edges.update(get_async_mmap_edges(top_task))
