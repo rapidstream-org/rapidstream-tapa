@@ -841,10 +841,6 @@ class Program:
     is_done_signals = self._instantiate_children_tasks(task, width_table, part_num, instance_name_to_slr)
     self._instantiate_global_fsm(task, is_done_signals)
 
-    # the s_axi_ctrl hack may mess up the order of RTL statements
-    if instance_name_to_slr:
-      task.module.sort_module_def()
-
     self._pipeline_top_task(task, part_num)
 
   def _pipeline_top_task(self, task: Task, part_num: str) -> None:

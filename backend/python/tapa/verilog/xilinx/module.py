@@ -3,7 +3,6 @@ import itertools
 import logging
 import os.path
 import tempfile
-from functools import cmp_to_key
 from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple, Union
 
 from pyverilog.ast_code_generator import codegen
@@ -89,8 +88,12 @@ class Module:
       elif isinstance(item, (ast.Assign, ast.Always)):
         self._last_logic_idx = idx
         if isinstance(item, ast.Assign):
-          if item.left.var.name in HANDSHAKE_OUTPUT_PORTS:
-            self._handshake_output_ports[item.left.var.name] = item
+          if isinstance(item.left, ast.Lvalue):
+            _name = item.left.var.name
+          elif isinstance(item.left, ast.Identifier):
+            _name = item.left.name
+          if _name in HANDSHAKE_OUTPUT_PORTS:
+            self._handshake_output_ports[_name] = item
       elif isinstance(item, ast.InstanceList):
         self._last_instance_idx = idx
 
@@ -345,6 +348,14 @@ class Module:
 
     self._filter(func, 'param')
 
+  def add_instancelist(self, item: ast.InstanceList) -> 'Module':
+    self._module_def.items = (
+        self._module_def.items[:self._last_instance_idx + 1] +
+        (item,) +
+        self._module_def.items[self._last_instance_idx + 1:])
+    self._increment_idx(1, 'instance')
+    return self
+
   def add_instance(
       self,
       module_name: str,
@@ -353,16 +364,13 @@ class Module:
       params: Iterable[ast.ParamArg] = ()
   ) -> 'Module':
     keep_hier_pragma = '(* keep_hierarchy = "yes" *) '
-    self._module_def.items = (
-        self._module_def.items[:self._last_instance_idx + 1] +
-        (ast.InstanceList(module=keep_hier_pragma + module_name,
+    item = ast.InstanceList(module=keep_hier_pragma + module_name,
                           parameterlist=params,
                           instances=(ast.Instance(module=None,
                                                   name=instance_name,
                                                   parameterlist=None,
-                                                  portlist=ports),)),) +
-        self._module_def.items[self._last_instance_idx + 1:])
-    self._increment_idx(1, 'instance')
+                                                  portlist=ports),))
+    self.add_instancelist(item)
     return self
 
   def add_logics(self, logics: Iterable[Logic]) -> 'Module':
@@ -579,34 +587,14 @@ class Module:
     self.add_pipeline(self.rst_n_q, init=RST_N)
     self.add_logics([ast.Assign(left=RST, right=ast.Unot(self.rst_n_q[-1]))])
 
-  def sort_module_def(self) -> None:
-    """
-    the items in the ast may be out of order after modification
-    sort as parameter > input/output > wires > all the rest
-    """
-    param_nodes = []
-    io_nodes = []
-    wire_nodes = []
-    other_nodes = []
-    for item in self._module_def.items:
-      if isinstance(item, ast.Parameter):
-        param_nodes.append(item)
-      elif isinstance(item, (ast.Input, ast.Output, ast.Inout)):
-        io_nodes.append(item)
-      elif isinstance(item, ast.Wire):
-        wire_nodes.append(item)
-      elif isinstance(item, ast.Decl):
-        if any(isinstance(x, ast.Parameter) for x in item.list):
-          param_nodes.append(item)
-        elif any(isinstance(x, (ast.Input, ast.Output, ast.Inout))
-            for x in item.list):
-          io_nodes.append(item)
-        elif any(isinstance(x, ast.Wire) for x in item.list):
-          wire_nodes.append(item)
-      else:
-        other_nodes.append(item)
+  def _get_nodes_of_type(self, node, *target_types) -> Iterator:
+    if isinstance(node, target_types):
+      yield node
+    for c in node.children():
+      yield from self._get_nodes_of_type(c, *target_types)
 
-    self._module_def.items = tuple(param_nodes + io_nodes + wire_nodes + other_nodes)
+  def get_nodes_of_type(self, *target_types) -> Iterator:
+    yield from self._get_nodes_of_type(self.ast, *target_types)
 
 def generate_m_axi_ports(
     module: Module,

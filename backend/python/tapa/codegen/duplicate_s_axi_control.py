@@ -72,9 +72,9 @@ def _get_nodes(node, *target_types) -> Iterator[Node]:
     yield from _get_nodes(c, *target_types)
 
 
-def get_ctrl_instance(ast: Node, ctrl_inst_name) -> InstanceList:
+def get_ctrl_instance(top_task: Task, ctrl_inst_name) -> InstanceList:
   ctrl_instance_list = []
-  for inst_list in _get_nodes(ast, InstanceList):
+  for inst_list in top_task.module.get_nodes_of_type(InstanceList):
     if inst_list.module == ctrl_inst_name:
       ctrl_instance_list.append(inst_list)
 
@@ -147,14 +147,14 @@ def get_updated_wire_names(ctrl_instance: InstanceList) -> List[str]:
   return updated_wires
 
 
-def get_updated_wire_decls(orig_ast, updated_wire_names) -> List[Decl]:
+def get_updated_wire_decls(top_task: Task, updated_wire_names) -> List[Decl]:
   """ based on the names, get the decl nodes from the ast """
   wire_decls = []
-  for decl in _get_nodes(orig_ast, Decl):
+  for decl in top_task.module.get_nodes_of_type(Decl):
     # not include the input/output Decl
     for wire in _get_nodes(decl, Wire):
       if wire.name in updated_wire_names:
-        wire_decls.append(decl)
+        wire_decls.append(deepcopy(decl))
 
     for io in _get_nodes(decl, Input, Output):
       if io.name in updated_wire_names:
@@ -181,27 +181,22 @@ def remove_decls(_curr_ast, updated_wire_names) -> Node:
   return curr_ast
 
 
-def add_updated_wire_decls(curr_ast, updated_wire_decls, suffix) -> Node:
+def add_updated_wire_decls(top_task, slr_num, updated_wire_names) -> Node:
   """ add new decl nodes to the ast """
-  curr_ast = deepcopy(curr_ast)
-  updated_wire_decls = deepcopy(updated_wire_decls)
+  orig_wire_decls = get_updated_wire_decls(top_task, updated_wire_names)
 
-  module_def = get_module_def(curr_ast)
+  for i in range(slr_num):
+    suffix = f'_slr_{i}'
 
-  def add_suffix(x):
-    for node in _get_nodes(x, Wire):
-      node.name += suffix
-    return x
+    def add_suffix(x):
+      x = deepcopy(x)
+      for node in _get_nodes(x, Wire):
+        node.name += suffix
+      return x
 
-  for i, item in enumerate(module_def.items):
-    if isinstance(item, Decl):
-      if isinstance(item.list[0], Wire):
-        break
+    updated_wire_decls = [add_suffix(x) for x in orig_wire_decls]
 
-  updated_wire_decls = [add_suffix(x) for x in updated_wire_decls]
-  module_def.items = module_def.items[:i] + tuple(updated_wire_decls) + module_def.items[i:]
-
-  return curr_ast
+    top_task.module.add_signals(updated_wire_decls)
 
 
 def get_module_def(ast: Node) -> ModuleDef:
@@ -227,10 +222,10 @@ def remove_ctrl_instance_list(ast: Node) -> Node:
   return ast
 
 
-def get_paramarg_list(top_ast) -> List[ParamArg]:
+def get_paramarg_list(top_task: Task) -> List[ParamArg]:
   """ the ParamArg for the axi interconnect """
   param_list = []
-  for param in _get_nodes(top_ast, Parameter):
+  for param in top_task.module.get_nodes_of_type(Parameter):
     param_list.append(ParamArg(
       paramname=param.name,
       argname=Identifier(param.name),
@@ -238,9 +233,9 @@ def get_paramarg_list(top_ast) -> List[ParamArg]:
   return param_list
 
 
-def get_s_axi_write_broadcastor(top_ast, slr_num) -> InstanceList:
+def get_s_axi_write_broadcastor(top_task, slr_num) -> InstanceList:
   """ the interconnect to connect the s_axi_control instances """
-  param_list = get_paramarg_list(top_ast)
+  param_list = get_paramarg_list(top_task)
   portlist = []
 
   portlist.append(
@@ -297,28 +292,26 @@ def add_instance_list(ast: Node, inst_list: InstanceList) -> Node:
 
 def duplicate_s_axi_ctrl(top_task: Task, slr_num: int) -> None:
   """ set an s_axi_control for each SLR """
-  orig_ast = top_task.module.ast
   ctrl_inst_name = f'{top_task.name}_control_s_axi'
+  ctrl_inst: InstanceList = get_ctrl_instance(top_task, ctrl_inst_name)
 
-  ctrl_inst: InstanceList = get_ctrl_instance(orig_ast, ctrl_inst_name)
-  curr_ast = remove_ctrl_instance_list(top_task.module.ast)
+  # remove the ctrl instance
+  top_task.module.del_instances(suffix='_control_s_axi')
 
+  # add updated ctrl instances
   for i in range(slr_num):
     suffix = f'_slr_{i}'
     _ctrl_inst = get_updated_ctrl_instance(ctrl_inst, suffix, i==0)
-    curr_ast = add_instance_list(curr_ast, _ctrl_inst)
+    top_task.module.add_instancelist(_ctrl_inst)
 
-  # remove the outdated wires and add new wires
+  # add the updated wires
   updated_wire_names = get_updated_wire_names(ctrl_inst)
-  updated_wire_decls = get_updated_wire_decls(orig_ast, updated_wire_names)
+  add_updated_wire_decls(top_task, slr_num, updated_wire_names)
 
-  curr_ast = remove_decls(curr_ast, updated_wire_names)
-  for i in range(slr_num):
-    suffix = f'_slr_{i}'
-    curr_ast = add_updated_wire_decls(curr_ast, updated_wire_decls, suffix)
+  # remove the outdated wires
+  for wire_name in updated_wire_names:
+    top_task.module.del_signals(prefix=wire_name, suffix=wire_name)
 
   # add the s_axi write channel interconnect
-  interconnect = get_s_axi_write_broadcastor(curr_ast, slr_num)
-  curr_ast = add_instance_list(curr_ast, interconnect)
-
-  top_task.module.ast = curr_ast
+  interconnect = get_s_axi_write_broadcastor(top_task, slr_num)
+  top_task.module.add_instancelist(interconnect)
