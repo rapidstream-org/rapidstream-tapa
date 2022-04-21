@@ -61,6 +61,9 @@ def get_axi_edges(
           _logger.info('%s is specified as write-only', arg.name)
           total_connection_width = arg_width + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH + 50
         else:
+          _logger.warning('%s is assumed to be both read from and written to. '
+                       'If not, please use --read-only-args or --write-only-args '
+                       'for better optimization results.' , arg.name)
           total_connection_width = arg_width + arg_width + ADDR_CHANNEL_DATA_WIDTH + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH + 50
 
         # the edge represents the AXI pipeline between the DDR/HBM IP and the mmap module
