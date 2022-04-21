@@ -46,8 +46,6 @@ module detect_burst #(
   reg [BurstLenWidth-1:0] burst_len_next;
   reg [WaitTimeWidth-1:0] wait_time_next;
 
-  wire [AddrWidth-1:0] curr_addr = addr_dout;
-
   wire [NextAddrWidth-1:0] next_addr_next =
       base_addr_next[AddrWidth-1:DataWidthBytesLog] +
       {{(NextAddrWidth-BurstLenWidth){1'b0}}, burst_len_next} +
@@ -60,9 +58,32 @@ module detect_burst #(
   assign burst_len_0_din = burst_len;
   assign burst_len_1_din = burst_len;
 
+  // register the input for timing closure
+  reg addr_empty_n_q;
+  reg [AddrWidth-1:0] addr_dout_q;
+  always @(posedge clk) begin
+    if (addr_full_n && burst_len_0_full_n && burst_len_1_full_n) begin
+      addr_empty_n_q <= addr_empty_n;
+      addr_dout_q <= addr_dout;
+    end
+  end
+  wire [AddrWidth-1:0] curr_addr = addr_dout_q;
+
   always @* begin
     // defaults
     addr_read = 1'b0;
+    if (!addr_full_n || !burst_len_0_full_n || !burst_len_1_full_n) begin
+      addr_read = 1'b0;
+    end else if (addr_empty_n) begin
+      // read new item if non-empty
+      addr_read = 1'b1;
+    end else if (base_valid) begin
+      addr_read = 1'b0;
+    end
+  end
+
+  always @* begin
+    // defaults
     write_enable = 1'b0;
     base_addr_next = base_addr;
     base_valid_next = base_valid;
@@ -70,9 +91,7 @@ module detect_burst #(
     burst_len_next = burst_len;
     if (!addr_full_n || !burst_len_0_full_n || !burst_len_1_full_n) begin
       // output FIFO full, do nothing
-    end else if (addr_empty_n) begin
-      // read new item if non-empty
-      addr_read = 1'b1;
+    end else if (addr_empty_n_q) begin
       wait_time_next = 0;
       if (!base_valid) begin
         base_addr_next = curr_addr;
@@ -98,7 +117,6 @@ module detect_burst #(
         end
       end
     end else if (base_valid) begin
-      addr_read = 1'b0;
       if (wait_time < max_wait_time) begin
         wait_time_next = wait_time + 1;
 
