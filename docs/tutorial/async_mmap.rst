@@ -1,15 +1,26 @@
 Introduction to TAPA ``async_mmap``
-======================================
+===================================
 
-``async_mmap`` is TAPA's flexible interface to access external memory through the AXI protocal. It directly exposes the five AXI channels in C++ (AR, R, W, AW, B). In this way, the users have the maximal control over how they want to access the external memory. The ``async_mmap`` feature has several advantages:
+``async_mmap`` is TAPA's flexible interface to access external memory through
+the AXI protocol.
+It directly exposes the five AXI channels in C++ (AR, R, AW, W, B).
+In this way,
+the users have the maximal control over how they want to access the external
+memory.
+The ``async_mmap`` feature has several advantages:
 
-- Richer expresiveness and more flexible memory access pattern.
+- Richer expressiveness and more flexible memory access pattern.
 
 - Runtime burst detection.
 
 - Smaller area overhead.
 
-That being said, ``async_mmap`` is relatively more difficult to use when compared to the conventional approach (abstract external memory as a simple array) because of the extra expressiveness. This tutorial shows examples of how to bring out the most potential of ``async_mmap``.
+That being said,
+``async_mmap`` is relatively more difficult to use when compared to the
+conventional approach (abstract external memory as a simple array)
+because of the extra expressiveness.
+This tutorial shows examples of how to bring out the most potential of
+``async_mmap``.
 
 .. image:: https://user-images.githubusercontent.com/32432619/162324279-93f2dd34-73a6-4fa5-a4df-afd032b94b80.png
   :width: 600pt

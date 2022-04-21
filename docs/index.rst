@@ -14,6 +14,7 @@ TAPA Documentation
   :caption: Tutorial
 
   tutorial
+  tutorial/async_mmap
 
 .. toctree::
   :caption: API reference
