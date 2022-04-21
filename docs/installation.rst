@@ -1,6 +1,3 @@
-Installation
-============
-
 Install TAPA from Binary
 ------------------------
 

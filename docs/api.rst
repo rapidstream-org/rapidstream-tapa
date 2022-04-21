@@ -1,6 +1,3 @@
-API Reference
-=============
-
 The TAPA Library (libtapa)
 --------------------------
 
