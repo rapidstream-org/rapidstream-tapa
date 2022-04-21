@@ -154,7 +154,7 @@ Additional Build Prerequisites for Documentation
   * ``python3 -m pip install -r docs/requirements.txt``
 
 Install Gurobi (Recommended)
--------------------------
+----------------------------
 
 Installing Gurobi is optional but highly recommended.
 In the floorplanning step,
