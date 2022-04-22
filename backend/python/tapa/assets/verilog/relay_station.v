@@ -286,7 +286,6 @@ assign if_full_n = ~almost_full_q;
 /*******************************************/
 
 assign shiftReg_data = if_din;
-assign if_dout = shiftReg_q;
 
 always @ (posedge clk) begin
     if (reset == 1'b1)
@@ -315,6 +314,37 @@ always @ (posedge clk) begin
     end
 end
 
+reg [ADDR_WIDTH+1:0] mOutPtr_next;
+always @ * begin
+  // as long as read happens
+  if (if_read) begin
+    mOutPtr_next = mOutPtr - 1;
+  end
+  // no +1 for write, because the shift register will shift forward
+  else begin
+    mOutPtr_next = mOutPtr;
+  end
+end
+
+reg [DATA_WIDTH - 1:0] shiftReg_q_q;
+always @(posedge clk) begin
+  // case 1: empty fifo, waiting for first write
+  // the first write should be forwared
+  if (internal_empty_n == 0) begin
+    shiftReg_q_q <= shiftReg_data;
+  end
+  // case 2: the fifo has 1 element in it
+  // if read and write at the same time, the write must be forwarded
+  else if (if_read & if_write & mOutPtr == 0) begin
+    shiftReg_q_q <= shiftReg_data;
+  end
+  // case 3: no forwarding
+  else begin
+    shiftReg_q_q <= shiftReg_q;
+  end
+end
+assign if_dout = shiftReg_q_q;
+
 assign shiftReg_addr = mOutPtr[ADDR_WIDTH] == 1'b0 ? mOutPtr[ADDR_WIDTH-1:0]:{ADDR_WIDTH{1'b0}};
 assign shiftReg_ce = (if_write & if_write_ce) & internal_full_n;
 
@@ -327,7 +357,7 @@ U_fifo_w32_d16_A_ram (
     .clk(clk),
     .data(shiftReg_data),
     .ce(shiftReg_ce),
-    .a(shiftReg_addr),
+    .a(mOutPtr_next),
     .q(shiftReg_q));
 
 endmodule
