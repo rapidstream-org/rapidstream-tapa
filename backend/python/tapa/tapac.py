@@ -18,6 +18,8 @@ import tapa.core
 import tapa.util
 from tapa.bitstream import get_vitis_script
 
+# TODO: use `force=True` when we drop support for Python 3.7-
+[logging.root.removeHandler(handler) for handler in logging.root.handlers]
 logging.basicConfig(
     level=logging.WARNING,
     format=
