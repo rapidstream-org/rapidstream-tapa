@@ -89,11 +89,11 @@ class Module:
         self._last_logic_idx = idx
         if isinstance(item, ast.Assign):
           if isinstance(item.left, ast.Lvalue):
-            _name = item.left.var.name
+            name = item.left.var.name
           elif isinstance(item.left, ast.Identifier):
-            _name = item.left.name
-          if _name in HANDSHAKE_OUTPUT_PORTS:
-            self._handshake_output_ports[_name] = item
+            name = item.left.name
+          if name in HANDSHAKE_OUTPUT_PORTS:
+            self._handshake_output_ports[name] = item
       elif isinstance(item, ast.InstanceList):
         self._last_instance_idx = idx
 
