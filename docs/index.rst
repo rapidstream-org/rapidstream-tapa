@@ -15,6 +15,7 @@ TAPA Documentation
 
   tutorial
   tutorial/async_mmap
+  tutorial/migrate_from_vitis_hls
 
 .. toctree::
   :caption: API reference
