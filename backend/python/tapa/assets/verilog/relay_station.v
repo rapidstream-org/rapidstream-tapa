@@ -287,10 +287,13 @@ assign if_full_n = ~almost_full_q;
 
 assign shiftReg_data = if_din;
 
+reg [ADDR_WIDTH+1:0] mOutPtr_minus_one;
+
 always @ (posedge clk) begin
     if (reset == 1'b1)
     begin
         mOutPtr <= ~{ADDR_WIDTH+1{1'b0}};
+        mOutPtr_minus_one <= ~{ADDR_WIDTH+1{1'b0}} - 1;
         internal_empty_n <= 1'b0;
         internal_full_n <= 1'b1;
     end
@@ -299,6 +302,7 @@ always @ (posedge clk) begin
             ((if_write & if_write_ce) == 0 | internal_full_n == 0))
         begin
             mOutPtr <= mOutPtr - 5'd1;
+            mOutPtr_minus_one <= mOutPtr_minus_one - 1;
             if (mOutPtr == 0)
                 internal_empty_n <= 1'b0;
             internal_full_n <= 1'b1;
@@ -307,6 +311,7 @@ always @ (posedge clk) begin
             ((if_write & if_write_ce) == 1 & internal_full_n == 1))
         begin
             mOutPtr <= mOutPtr + 5'd1;
+            mOutPtr_minus_one <= mOutPtr_minus_one + 1;
             internal_empty_n <= 1'b1;
             if (mOutPtr == DEPTH - 5'd2)
                 internal_full_n <= 1'b0;
@@ -318,7 +323,7 @@ reg [ADDR_WIDTH+1:0] mOutPtr_next;
 always @ * begin
   // as long as read happens
   if (if_read) begin
-    mOutPtr_next = mOutPtr - 1;
+    mOutPtr_next = mOutPtr_minus_one;
   end
   // no +1 for write, because the shift register will shift forward
   else begin
