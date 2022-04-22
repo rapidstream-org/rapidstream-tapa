@@ -15,7 +15,7 @@ from .task_graph import get_edges, get_vertices
 from .hardware import (
   get_ctrl_instance_region,
   get_port_region,
-  get_slr_num,
+  get_slr_count,
 )
 from autobridge.main import annotate_floorplan
 
@@ -100,7 +100,7 @@ def get_floorplan_result(
 def extract_task_locations(config_with_floorplan) -> Dict[str, int]:
   task_inst_to_slr = {}
   for v_name, props in config_with_floorplan['vertices'].items():
-    # pseudo vertices dont have instances
+    # pseudo vertices don't have instances
     if 'instance' in props:
       task_inst_to_slr[props['instance']] = props['SLR']
   return task_inst_to_slr
@@ -144,7 +144,7 @@ def get_vivado_tcl(config_with_floorplan, work_dir, reuse_hbm_path_pipelining, m
   region_to_inst = defaultdict(list)
 
   # floorplan the control_s_axi duplicates
-  num_copy = get_slr_num(config_with_floorplan['part_num'])
+  num_copy = get_slr_count(config_with_floorplan['part_num'])
   for i in range(num_copy):
     region_to_inst[f'pblock_dynamic_SLR{i}'].append(f'control_s_axi_U_slr_{i}')
 

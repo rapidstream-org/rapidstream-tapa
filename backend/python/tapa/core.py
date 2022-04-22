@@ -22,7 +22,7 @@ from tapa import util
 from tapa.floorplan import get_floorplan_result, generate_floorplan, checkpoint_floorplan
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
-from tapa.hardware import get_slr_num
+from tapa.hardware import get_slr_count
 
 from .instance import Instance, Port
 from .codegen.axi_pipeline import get_axi_pipeline_wrapper
@@ -241,8 +241,8 @@ class Program:
         'fifo.v',
         'generate_last.v',
         'relay_station.v',
-        'SAxiWriteBroadcastor_1to3.v',
-        'SAxiWriteBroadcastor_1to4.v',
+        'a_axi_write_broadcastor_1_to_3.v',
+        'a_axi_write_broadcastor_1_to_4.v',
     ):
       shutil.copy(
           os.path.join(os.path.dirname(util.__file__), 'assets', 'verilog',
@@ -346,7 +346,7 @@ class Program:
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
       self.top_task.module.axi_pipeline_level = axi_pipeline_level
 
-    self.top_task.module.register_level = get_slr_num(part_num)
+    self.top_task.module.register_level = get_slr_count(part_num)
     if register_level:
       assert register_level > 0
       self.top_task.module.register_level = register_level
@@ -823,7 +823,7 @@ class Program:
       self,
       task: Task,
       part_num: str,
-      instance_name_to_slr,
+      instance_name_to_slr: Dict[str, int],
       additional_fifo_pipelining: bool = False,
   ) -> None:
     """ codegen for the top task """
@@ -832,7 +832,7 @@ class Program:
 
     # if floorplan is enabled, add a control_s_axi instance in each SLR
     if instance_name_to_slr:
-      num_slr = get_slr_num(part_num)
+      num_slr = get_slr_count(part_num)
       duplicate_s_axi_ctrl(task, num_slr)
 
     self._instantiate_fifos(task, additional_fifo_pipelining)

@@ -267,14 +267,14 @@ def get_s_axi_write_broadcastor(top_task, slr_num) -> InstanceList:
     )
 
   inst = Instance(
-    module=f'SAxiWriteBroadcastor_1to{slr_num}',
+    module=f'a_axi_write_broadcastor_1_to_{slr_num}',
     name='s_axi_write_broadcastor',
     portlist=portlist,
     parameterlist=param_list,
   )
 
   inst_list = InstanceList(
-    module=f'SAxiWriteBroadcastor_1to{slr_num}',
+    module=f'a_axi_write_broadcastor_1_to_{slr_num}',
     parameterlist=param_list,
     instances=[inst],
   )

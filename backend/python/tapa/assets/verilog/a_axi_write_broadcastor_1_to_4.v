@@ -1,5 +1,5 @@
 
-module SAxiWriteBroadcastor_1to4 (
+module a_axi_write_broadcastor_1_to_4 (
   ap_clk,
 
   s_axi_control_AWVALID_slr_0,
