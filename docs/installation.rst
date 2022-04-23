@@ -1,5 +1,8 @@
-Install TAPA from Binary
-------------------------
+Install TAPA
+============
+
+Option 1: Install from Binary
+-----------------------------
 
 TAPA is developed and tested in Ubuntu.
 If you use Ubuntu as well (highly recommended),
@@ -32,8 +35,8 @@ you can easily install TAPA from pre-built packages:
   You can run the installation script again to obtain the latest pre-built
   version when a new version is available.
 
-Install TAPA from Source
-------------------------
+Option 2: Install from Source
+-----------------------------
 
 If you would like to contribute code to TAPA,
 or insist on using other Linux distributions,
@@ -154,7 +157,7 @@ Additional Build Prerequisites for Documentation
   * ``python3 -m pip install -r docs/requirements.txt``
 
 Install Gurobi (Recommended)
-----------------------------
+============================
 
 Installing Gurobi is optional but highly recommended.
 In the floorplanning step,
@@ -182,7 +185,7 @@ and it is free for academia.
     export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"
 
 Verify Installation
--------------------
+===================
 
 Check if ``tapac`` is available after installation:
 
@@ -198,10 +201,10 @@ you may need to add ``${HOME}/.local/bin`` to your ``PATH``:
   PATH="${HOME}/.local/bin:${PATH}"
 
 Troubleshooting
----------------
+===============
 
 CMake Returns an Error
-++++++++++++++++++++++
+----------------------
 
 Please check ``cmake --version``.
 CMake 3.13 or higher is required,

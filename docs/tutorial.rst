@@ -6,7 +6,7 @@ Getting Started
 
 We will cover the basic usages of TAPA in this section.
 Before you start, make sure you have
-:ref:`installed TAPA <installation:install tapa from binary>` properly.
+:ref:`installed TAPA <installation:install tapa>` properly.
 
 Hello World: Vector Add
 :::::::::::::::::::::::
