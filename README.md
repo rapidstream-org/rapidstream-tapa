@@ -6,16 +6,18 @@
 
 TAPA is a high-performance fast-compiling HLS framework that is fully compatible with the Xilinx Vitis/Vivado workflow.
 
-<img width="931" alt="image" src="https://user-images.githubusercontent.com/32432619/157972074-12fe5f32-4cd0-492e-b47a-06c23ea9c283.png">
+![TAPA Framework](https://user-images.githubusercontent.com/32432619/157972074-12fe5f32-4cd0-492e-b47a-06c23ea9c283.png)
 
 - TAPA takes in a task-parallel dataflow program in C++ written in Vitis HLS syntax and additional TAPA APIs.
   - Compared to Vitis HLS, TAPA supports **more flexible memory access patterns** and **runtime burst detection**.
 - TAPA extracts parallel components of the program and invokes Vitis HLS to compile each component simultaneously.
-  - TAPA compiles **7X** faster than Vitis HLS. In some cases, TAPA reduces a **10-hour** Vitis compilation to **10-min**.
+  - TAPA compiles **7×** faster than Vitis HLS.
+  In some cases, TAPA reduces a **10-hour** Vitis compilation to **10 minutes**.
 - TAPA invokes the [AutoBridge](https://github.com/Licheng-Guo/AutoBridge) floorplanner to floorplan the dataflow program and pipeline the global data links accordingly.
-  - With AutoBridge, TAPA achieves **2X** higher the frequency on average compared to Vivado.
+  - With AutoBridge, TAPA achieves **2×** higher the frequency on average
+    compared to Vivado.
 - TAPA supports a [customized fast C-RTL simulation plug-in](https://github.com/Licheng-Guo/tapa-fast-cosim).
-  - **10X** faster than Vitis to setup the simulation.
+  - **10×** faster than Vitis to setup the simulation.
 - TAPA generates an xo object that is fully compatible as the input to the Vitis v++ compiler for bitstream generation.
   - [in-progress] TAPA is integrating the parallel physical implementation tool [RapidStream](https://github.com/Licheng-Guo/RapidStream).
 
@@ -23,10 +25,14 @@ TAPA is a high-performance fast-compiling HLS framework that is fully compatible
 
 - [Serpens](https://arxiv.org/abs/2111.12555), to appear in DAC'22, achieves 270 MHz on the Xilinx Alveo U280 HBM board when using 24 HBM channels. The Vivado baseline failed in routing.
 - [Sextans](https://dl.acm.org/doi/pdf/10.1145/3490422.3502357), FPGA'22, achieves 260 MHz on the Xilinx Alveo U250 board when using 4 DDR channels. The Vivado baseline achieves only 189 MHz.
-
-- [AutoSA Systolic-Array Compiler](https://github.com/UCLA-VAST/AutoSA), FPGA'21:
-<img width="668" alt="image" src="https://user-images.githubusercontent.com/32432619/157976148-594e98bc-2658-4ebc-ae0d-3d2a347d1854.png">
-
+- [SPLAG](https://github.com/UCLA-VAST/splag), FPGA'22,
+  achieves up to a 4.9× speedup over state-of-the-art FPGA accelerators,
+  up to a 2.6× speedup over 32-thread CPU running at 4.4 GHz,
+  and up to a 0.9× speedup over an A100 GPU
+  (that has 4.1× power budget and 3.4× HBM bandwidth).
+- [AutoSA Systolic-Array Compiler](https://github.com/UCLA-VAST/AutoSA),
+  FPGA'21:
+  ![AutoSA Frequency Figure](https://user-images.githubusercontent.com/32432619/157976148-594e98bc-2658-4ebc-ae0d-3d2a347d1854.png)
 - [KNN](https://github.com/SFU-HiAccel/CHIP-KNN), FPT'20, achieves 252 MHz on the Xilinx Alveo U280 board. The Vivado baseline achieves only 165 MHz.
 
 ## Getting Started
