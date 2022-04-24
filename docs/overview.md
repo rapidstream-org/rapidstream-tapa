@@ -116,8 +116,10 @@ Vitis HLS provides DRAM access via AXI4 memory-mapped (`m_axi`) interfaces.
 However, in a `#pragma HLS dataflow` regions, task instances may not access the same `m_axi` interface.
 
 TAPA provides `tapa::mmap` that has the same functionality as Vitis HLS's `m_axi` interfaces.
-TAPA additionally provides asynchronous accesses to memory-mapped arguments, via separate address/data channels exposed as `tapa::i/ostream`.
+TAPA additionally provides `tapa::async_mmap` that enables asynchronous accesses
+to memory-mapped arguments, via separate address/data channels exposed as `tapa::i/ostream`.
 This makes it possible to achieve a high random access throughput.
+A detailed tutorial is available [here](tutorial/async_mmap.rst).
 
 TAPA also makes it possible to access the same memory-mapped interface from multiple task instances.
 This is implemented by instantiating AXI interconnect where an AXI interface is shared.
