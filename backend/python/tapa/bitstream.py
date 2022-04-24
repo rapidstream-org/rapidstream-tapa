@@ -37,7 +37,7 @@ NEWLINE = ['']
 def get_vitis_script(args) -> str:
   """ generate v++ commands to run implementation """
   script = []
-  script.append('#!/usr/bin/bash')
+  script.append('#!/bin/bash')
 
   vitis_command = VITIS_COMMAND_BASIC
 
