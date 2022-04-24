@@ -24,9 +24,8 @@ you can easily install TAPA from pre-built packages:
 
 .. tip::
 
-  Ubuntu 18.04 is highly recommended.
-  Ubuntu 20.04 is supported but undertested due to limited vendor-tool support.
-  Ubuntu 16.04 can only run software simulation using threads, not coroutines.
+  Ubuntu 18.04 and 20.04 are both supported.
+  Ubuntu 16.04 has reached end-of-life and is no longer supported.
 
 .. tip::
 
@@ -88,7 +87,7 @@ Runtime Dependency
 
   *  ``sudo apt install clang-8 libclang-8-dev``
 
-* Vitis 2020.2
+* Vitis 2020.2, 2021.1, or 2021.2
 * `Xilinx Runtime <https://github.com/Xilinx/XRT>`_
 
 Build and Installation
@@ -103,14 +102,18 @@ Build and Installation
 
 .. tip::
 
-  Since the Python part of TAPA is being actively upgraded, you could install the python package as editable.
-  In this case, it is easy to upgrade your local installation: simply pull the latest change from Github.
+  Since the Python part of TAPA is being actively updated,
+  you could install the Python package as *editable*:
 
-.. code-block:: bash
+  .. code-block:: bash
 
-  python3 -m pip install --editable tapa/backend/python
+    python3 -m pip install --editable tapa/backend/python
 
-2. Create a build directory
+  Any changes made to the source will be reflected when you run ``tapac``.
+  Therefore, it is easy to upgrade your local installation:
+  simply pull the latest change from GitHub.
+
+2. Create a build directory.
 
 .. code-block:: bash
 
@@ -118,7 +121,9 @@ Build and Installation
   mkdir build
   cd build
 
-3. Build TAPA and run tests. Note: the command below will allow up to 8 parallel jobs for ``make``. This number should be adjusted according to your available cores and memory.
+3. Build TAPA and run tests.
+Note: the command below will allow up to 8 parallel jobs for ``make``.
+This number should be adjusted according to your available cores and memory.
 
 .. code-block:: bash
 
