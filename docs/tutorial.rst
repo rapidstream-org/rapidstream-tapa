@@ -1,10 +1,11 @@
-This tutorial covers the basics for using TAPA to design FPGA accelerators
-effectively and efficiently.
-
 Getting Started
 ---------------
 
 We will cover the basic usages of TAPA in this section.
+If you are migrating from Vitis HLS,
+:ref:`another tutorial <tutorial/migrate_from_vitis_hls:migrate from vitis hls>`
+presents two nice examples.
+
 Before you start, make sure you have
 :ref:`installed TAPA <installation:install tapa>` properly.
 
@@ -118,9 +119,6 @@ Scalar values like the vector length ``n`` are passed to the kernel directly.
   Scalar values are always read-only to the kernel.
 
 The vector add example is one of the application examples shipped with TAPA.
-Note that the apps additionally requires the
-`gflags <https://github.com/gflags/gflags>`_ library
-(``sudo apt install libgflags-dev``).
 
 .. code-block:: bash
 
@@ -316,7 +314,7 @@ The first step to use CMake is to install it:
 
 .. code-block:: shell
 
-  pip install cmake --upgrade
+  python3 -m pip install cmake --upgrade
 
 .. tip::
 
@@ -591,7 +589,9 @@ and the second accesses the second half.
 Asynchronous MMAP Interface
 :::::::::::::::::::::::::::
 
-This section covers the usage of asynchronous memory-mapped interfaces.
+This section introduces the asynchronous memory-mapped interfaces briefly.
+A detailed tutorial is available
+:ref:`here <introduction-to-async-mmap>`.
 
 Vitis HLS assumes a fixed latency for the regular ``tapa::mmap`` interfaces,
 which are implemented using AXI memory-mapped interfaces (``m_axi``) in RTL.
@@ -670,7 +670,7 @@ When running ``tapac``, specify the output constraint file:
 
 Since the AXI interfaces are generally not very flexible,
 it'll be good if the ``m_axi``
-`connectivity configuration file <https://www.xilinx.com/html_docs/xilinx2021_1/vitis_doc/vitiscommandcompiler.html#qcm1528577331870__section_wgd_dxf_dnb>`_
+`connectivity configuration file <https://docs.xilinx.com/r/en-US/ug1393-vitis-application-acceleration/connectivity-Options>`_
 is also specified:
 
 .. code-block:: shell

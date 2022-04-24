@@ -1,3 +1,5 @@
+.. _introduction-to-async-mmap:
+
 Introduction to TAPA ``async_mmap``
 ===================================
 
