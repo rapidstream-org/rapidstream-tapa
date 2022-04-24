@@ -2,6 +2,7 @@ TAPA Documentation
 ==================
 
 .. toctree::
+  :caption: Overview
 
   overview
 

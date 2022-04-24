@@ -44,4 +44,7 @@ sys.path.insert(0, os.path.dirname(__file__) + '/../backend/python')
 # Make sure the target is unique.
 autosectionlabel_prefix_document = True
 
+# Generate labels for #, ##, and ### in markdown.
+myst_heading_anchors = 3
+
 source_suffix = ['.rst', '.md']
