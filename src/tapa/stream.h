@@ -28,6 +28,8 @@
 
 namespace tapa {
 
+inline constexpr int kStreamDefaultDepth = 2;
+
 #ifndef __SYNTHESIS__
 
 template <typename T>
@@ -715,7 +717,7 @@ class ostream
 };
 
 /// Defines a communication channel between two task instances.
-template <typename T, uint64_t N=2>
+template <typename T, uint64_t N = kStreamDefaultDepth>
 class stream
 #ifndef __SYNTHESIS__
     : public internal::unbound_stream<T> {
@@ -878,7 +880,7 @@ class ostreams : virtual public internal::basic_streams<T> {
 #endif  // __SYNTHESIS__
 
 /// Defines an array of @c tapa::stream.
-template <typename T, uint64_t S, uint64_t N=2>
+template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth>
 class streams
 #ifndef __SYNTHESIS__
     : public internal::unbound_streams<T, S> {
