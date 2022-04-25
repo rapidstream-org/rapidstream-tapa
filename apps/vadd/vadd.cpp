@@ -5,21 +5,21 @@
 void Add(tapa::istream<float>& a, tapa::istream<float>& b,
          tapa::ostream<float>& c, uint64_t n) {
   for (uint64_t i = 0; i < n; ++i) {
-    c.write(a.read() + b.read());
+    c << (a.read() + b.read());
   }
 }
 
 void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
                  tapa::ostream<float>& stream) {
   for (uint64_t i = 0; i < n; ++i) {
-    stream.write(mmap[i]);
+    stream << mmap[i];
   }
 }
 
 void Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,
                  uint64_t n) {
   for (uint64_t i = 0; i < n; ++i) {
-    mmap[i] = stream.read();
+    stream >> mmap[i];
   }
 }
 
