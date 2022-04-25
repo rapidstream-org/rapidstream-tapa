@@ -11,7 +11,7 @@
 
 void load_input(
     hls::vector<uint32_t, NUM_WORDS>* in,
-    hls::stream<hls::vector<uint32_t, NUM_WORDS> >& inStream,
+    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& inStream,
     int Size
 ) {
   for (int i = 0; i < Size; i++) {
@@ -21,9 +21,9 @@ void load_input(
 }
 
 void compute_add(
-    hls::stream<hls::vector<uint32_t, NUM_WORDS> >& in1_stream,
-    hls::stream<hls::vector<uint32_t, NUM_WORDS> >& in2_stream,
-    hls::stream<hls::vector<uint32_t, NUM_WORDS> >& out_stream,
+    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& in1_stream,
+    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& in2_stream,
+    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& out_stream,
     int Size
 ) {
   for (int i = 0; i < Size; i++) {
@@ -34,7 +34,7 @@ void compute_add(
 
 void store_result(
     hls::vector<uint32_t, NUM_WORDS>* out,
-    hls::istream<hls::vector<uint32_t>& out_stream,
+    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& out_stream,
     int Size
 ) {
   for (int i = 0; i < Size; i++) {
@@ -46,18 +46,18 @@ void store_result(
 extern "C" {
 
 void vadd(
-    tapa::mmap<uint32_t> in1,
-    tapa::mmap<uint32_t> in2,
-    tapa::mmap<uint32_t> out,
+    hls::vector<uint32_t, NUM_WORDS>* in1,
+    hls::vector<uint32_t, NUM_WORDS>* in2,
+    hls::vector<uint32_t, NUM_WORDS>* out,
     int size
 ) {
   #pragma HLS INTERFACE m_axi port = in1 bundle = gmem0
   #pragma HLS INTERFACE m_axi port = in2 bundle = gmem1
   #pragma HLS INTERFACE m_axi port = out bundle = gmem0
 
-  hls::stream<hls::vector<uint32_t, NUM_WORDS> > in1_stream("input_stream_1");
-  hls::stream<hls::vector<uint32_t, NUM_WORDS> > in2_stream("input_stream_2");
-  hls::stream<hls::vector<uint32_t, NUM_WORDS> > out_stream("output_stream");
+  hls::stream<hls::vector<uint32_t, NUM_WORDS>> in1_stream("input_stream_1");
+  hls::stream<hls::vector<uint32_t, NUM_WORDS>> in2_stream("input_stream_2");
+  hls::stream<hls::vector<uint32_t, NUM_WORDS>> out_stream("output_stream");
 
   #pragma HLS dataflow
   load_input(in1, in1_stream, size);
