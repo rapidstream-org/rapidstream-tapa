@@ -5,3 +5,6 @@ python:
     - method: pip
       path: backend/python
     - requirements: docs/requirements.txt
+
+sphinx:
+  fail_on_warning: true
