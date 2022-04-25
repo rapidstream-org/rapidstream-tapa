@@ -466,6 +466,22 @@ class istream
 
   /// Reads the stream.
   ///
+  /// This is a @a blocking and @a destructive operation.
+  ///
+  /// The next token must not be EoT.
+  ///
+  /// @param[out] value The value of the next token.
+  /// @return           @c *this.
+  istream& operator>>(T& value) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+#endif  // __SYNTHESIS__
+    value = read();
+    return *this;
+  }
+
+  /// Reads the stream.
+  ///
   /// This is a @a non-blocking and @a destructive operation.
   ///
   /// The next token must not be EoT.
@@ -660,6 +676,20 @@ class ostream
     while (!try_write(value)) {
     }
 #endif  // __SYNTHESIS__
+  }
+
+  /// Writes @c value to the stream.
+  ///
+  /// This is a @a blocking and @a destructive operation.
+  ///
+  /// @param[in] value The value to write.
+  /// @return          @c *this.
+  ostream& operator<<(const T& value) {
+#ifdef __SYNTHESIS__
+#pragma HLS inline
+#endif  // __SYNTHESIS__
+    write(value);
+    return *this;
   }
 
   /// Produces an EoT token to the stream.
