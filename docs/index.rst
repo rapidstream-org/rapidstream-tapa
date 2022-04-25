@@ -4,7 +4,10 @@ TAPA Documentation
 .. toctree::
   :caption: Overview
 
-  overview
+  overview/overview
+  overview/vs-state-of-the-art
+  overview/tapac
+  overview/known-issues
 
 .. toctree::
   :caption: Installation

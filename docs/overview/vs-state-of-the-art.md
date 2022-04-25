@@ -1,9 +1,3 @@
-# TAPA Overview
-
-```{include} ../README.md
-:relative-docs: docs/
-:start-line: 1
-```
 
 # TAPA vs State-of-the-Art
 
@@ -119,7 +113,7 @@ TAPA provides `tapa::mmap` that has the same functionality as Vitis HLS's `m_axi
 TAPA additionally provides `tapa::async_mmap` that enables asynchronous accesses
 to memory-mapped arguments, via separate address/data channels exposed as `tapa::i/ostream`.
 This makes it possible to achieve a high random access throughput.
-A detailed tutorial is available [here](tutorial/async_mmap.rst).
+A detailed tutorial is available [here](../tutorial/async_mmap.rst).
 
 TAPA also makes it possible to access the same memory-mapped interface from multiple task instances.
 This is implemented by instantiating AXI interconnect where an AXI interface is shared.
@@ -153,12 +147,6 @@ Moreover, when URAM is more efficient (width ≥ 36 and depth ≥ 4096), it is u
 
 TAPA natively supports [AutoBridge][autobridge].
 By specifying a filename for the output TCL constraints, TAPA can generate coarse-grained floorplans that were often necessary to achieve good timing closure.
-
-# Known Issues
-
-+ Template functions cannot be tasks
-+ Task functions must be defined in the same file
-  + `inline` helper functions can be defined in headers
 
 [autobridge]: https://github.com/Licheng-Guo/AutoBridge/
 [aws-f1]: https://aws.amazon.com/ec2/instance-types/f1/
