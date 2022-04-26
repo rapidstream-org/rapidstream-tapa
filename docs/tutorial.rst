@@ -178,6 +178,8 @@ To generate bitstream for hardware simulation:
 
 This would take 5--10 minutes.
 
+TAPA will automatically generate a script called ``vadd.$platform.hw_generate_bitstream.sh`` that includes the command to invoke v++.
+
 To run hardware simulation with the generated ``hw_emu`` bitstream:
 
 .. code-block:: bash
