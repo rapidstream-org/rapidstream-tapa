@@ -90,6 +90,7 @@ def get_floorplan_result(
   # generate the constraint file
   vivado_tcl = get_vivado_tcl(config_with_floorplan, work_dir, reuse_hbm_path_pipelining, manual_vivado_flow)
   constraint.write('\n'.join(vivado_tcl))
+  _logger.info('generate the floorplan constraint at %s', constraint.name)
 
   fifo_pipeline_level, axi_pipeline_level = extract_pipeline_level(config_with_floorplan)
   task_inst_to_slr = extract_task_locations(config_with_floorplan)

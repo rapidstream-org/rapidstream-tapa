@@ -587,15 +587,27 @@ def main(argv: Optional[List[str]] = None):
     )
 
   if all_steps or args.pack_xo is not None:
-    with open(args.output_file, 'wb') as packed_obj:
-      program.pack_rtl(packed_obj)
+    try:
+      with open(args.output_file, 'wb') as packed_obj:
+        program.pack_rtl(packed_obj)
+        _logger.info('generate the v++ xo file at %s', args.output_file)
+    except:
+      _logger.error('Fail to create the v++ xo file at %s. Check if you have write'
+                    'permission', args.output_file)
 
-    # trim the '.xo' from the end
-    assert args.output_file.endswith('.xo')
-    vitis_script = args.output_file[:-3]
+    try:
+      # trim the '.xo' from the end
+      assert args.output_file.endswith('.xo')
+      vitis_script = args.output_file[:-3]
+      script_name = f'{vitis_script}_generate_bitstream.sh'
 
-    with open(f'{vitis_script}_generate_bitstream.sh', 'w') as script:
-      script.write(get_vitis_script(args))
+      with open(script_name, 'w') as script:
+        script.write(get_vitis_script(args))
+        _logger.info('generate the v++ script at %s', script_name)
+
+    except:
+      _logger.error('Fail to create the v++ script at %s. Check if you have write'
+                    'permission', script_name)
 
 def _get_device_info(
     parser: argparse.ArgumentParser,
