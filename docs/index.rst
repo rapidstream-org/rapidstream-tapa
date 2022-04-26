@@ -19,7 +19,7 @@ TAPA Documentation
   :caption: Tutorial
 
   tutorial
-  autobridge
+  tutorial/autobridge
   tutorial/async_mmap
   tutorial/migrate_from_vitis_hls
   tutorial/fast_cosim
