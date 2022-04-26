@@ -8,6 +8,7 @@ TAPA Documentation
   overview/vs-state-of-the-art
   overview/tapac
   overview/known-issues
+  overview/output_file_organization.rst
 
 .. toctree::
   :caption: Installation
@@ -21,7 +22,6 @@ TAPA Documentation
   tutorial/async_mmap
   tutorial/migrate_from_vitis_hls
   tutorial/fast_cosim
-  output_file_organization.rst
 
 .. toctree::
   :caption: API reference
