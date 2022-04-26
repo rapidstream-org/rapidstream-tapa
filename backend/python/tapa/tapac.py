@@ -168,12 +168,31 @@ def create_parser() -> argparse.ArgumentParser:
       help=('Input ``connectivity.ini`` specification for mmaps. '
             'This is the same file passed to ``v++``.'),
   )
+  # this is a helper option with a straightforward name to
+  # help users enable floorplan. If provided, parsers will enforce
+  # the option of --floorplan-output
+  group.add_argument(
+      '--enable-floorplan',
+      action='store_true',
+      dest='enable_floorplan',
+      default=False,
+      help='Enable the floorplanning step. This option could be skipped if '
+           'the --floorplan-output option is given.',
+  )
+  group.add_argument(
+      '--floorplan-output',
+      type=argparse.FileType('w'),
+      dest='floorplan_output',
+      metavar='file',
+      help='Specify the name of the output tcl file that encodes the floorplan results. '
+           'If provided this option, floorplan will be enabled automatically.',
+  )
   group.add_argument(
       '--constraint',
       type=argparse.FileType('w'),
-      dest='constraint',
+      dest='floorplan_output',
       metavar='file',
-      help='Output partitioning ``constraint.tcl`` file for ``v++``.',
+      help='[deprecated] Specify the name of the output tcl file that encodes the floorplan results.',
   )
   group.add_argument(
       '--register-level',
@@ -364,6 +383,20 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
   if not all_steps and last_step != 'run_tapacc' and args.work_dir is None:
     parser.error("steps beyond run tapacc won't work with --work-dir unset")
 
+  # enable_floorplan is False by default
+  # if --enable-floorplan is set, --floorplan-output must be set
+  if args.enable_floorplan and args.floorplan_output is None:
+    parser.error('Floorplan is enabled but floorplan output file is not provided')
+
+  # if --floorplan-output is set, enable floorplan anyway for backward compatibility
+  if not args.enable_floorplan and args.floorplan_output:
+    args.enable_floorplan = True
+    _logger.warning('The floorplan option is automatically enabled because a '
+                    'floorplan output file is provided')
+
+  if args.run_floorplanning and not args.enable_floorplan:
+    parser.error('Floorplan is disabled but the --run-floorplan step is set')
+
   return all_steps, last_step
 
 
@@ -517,7 +550,7 @@ def main(argv: Optional[List[str]] = None):
     )
 
   if all_steps or args.run_floorplanning is not None:
-    if args.constraint is not None:
+    if args.floorplan_output is not None:
       kwargs = {}
       floorplan_params = (
         'min_area_limit',
@@ -545,7 +578,7 @@ def main(argv: Optional[List[str]] = None):
 
   if all_steps or args.generate_top_rtl is not None:
     program.generate_top_rtl(
-        args.constraint,
+        args.floorplan_output,
         args.register_level or 0,
         args.additional_fifo_pipelining,
         _get_device_info(parser, args)['part_num'],

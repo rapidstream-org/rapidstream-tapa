@@ -49,8 +49,8 @@ def get_vitis_script(args) -> str:
   script.append(f'TOP={args.top}')
   script.append(f'XO=\'{os.path.abspath(args.output_file)}\'')
 
-  if args.constraint:
-    script.append(f'CONSTRAINT=\'{os.path.abspath(args.constraint.name)}\'')
+  if args.floorplan_output:
+    script.append(f'CONSTRAINT=\'{os.path.abspath(args.floorplan_output.name)}\'')
     script.append(CHECK_CONSTRAINT)
     vitis_command += FLOORPLAN_OPTION
 
