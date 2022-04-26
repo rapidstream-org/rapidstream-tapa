@@ -22,8 +22,11 @@ from tapa import util
 from tapa.floorplan import get_floorplan_result, generate_floorplan, checkpoint_floorplan
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
-from tapa.hardware import get_slr_count
-
+from tapa.hardware import (
+  get_slr_count,
+  is_part_num_supported,
+  DEFAULT_REGISTER_LEVEL,
+)
 from .instance import Instance, Port
 from .codegen.axi_pipeline import get_axi_pipeline_wrapper
 from .codegen.duplicate_s_axi_control import duplicate_s_axi_ctrl
@@ -346,10 +349,17 @@ class Program:
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
       self.top_task.module.axi_pipeline_level = axi_pipeline_level
 
-    self.top_task.module.register_level = get_slr_count(part_num)
     if register_level:
       assert register_level > 0
       self.top_task.module.register_level = register_level
+    else:
+      if is_part_num_supported(part_num):
+        self.top_task.module.register_level = get_slr_count(part_num)
+      else:
+        _logger.info('the part-num is not included in the hardware library, '
+                     'using the default register level %d.', DEFAULT_REGISTER_LEVEL)
+        self.top_task.module.register_level = DEFAULT_REGISTER_LEVEL
+
     _logger.info('top task register level set to %d',
                 self.top_task.module.register_level)
 

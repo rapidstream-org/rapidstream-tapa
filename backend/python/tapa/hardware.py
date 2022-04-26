@@ -60,6 +60,14 @@ ZERO_AREA = {
     'DSP': 0,
 }
 
+# default pipeline level for control signals
+DEFAULT_REGISTER_LEVEL = 3
+
+SUPPORTED_PART_NUM_PREFIXS = (
+  'xcu280-',
+  'xcu250-',
+)
+
 def get_zero_area():
   return ZERO_AREA
 
@@ -106,3 +114,6 @@ def get_slr_count(part_num: str):
     return 4
   else:
     raise NotImplementedError('unknown part_num %s', part_num)
+
+def is_part_num_supported(part_num: str):
+  return any(part_num.startswith(prefix) for prefix in SUPPORTED_PART_NUM_PREFIXS)
