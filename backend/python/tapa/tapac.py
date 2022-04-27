@@ -18,15 +18,6 @@ import tapa.core
 import tapa.util
 from tapa.bitstream import get_vitis_script
 
-# TODO: use `force=True` when we drop support for Python 3.7-
-[logging.root.removeHandler(handler) for handler in logging.root.handlers]
-logging.basicConfig(
-    level=logging.WARNING,
-    format=
-    '%(levelname).1s%(asctime)s.%(msecs)03d %(name)s:%(lineno)d] %(message)s',
-    datefmt='%m%d %H:%M:%S',
-)
-
 _logger = logging.getLogger().getChild(__name__)
 
 flags.DEFINE_integer(
@@ -382,12 +373,8 @@ def main(argv: Optional[List[str]] = None):
 
   parser = create_parser()
   args = parser.parse_args(argv)
-  verbose = 0 if args.verbose is None else args.verbose
-  quiet = 0 if args.quiet is None else args.quiet
-  logging_level = (quiet - verbose) * 10 + logging.INFO
-  logging_level = max(logging.DEBUG, min(logging.CRITICAL, logging_level))
-  logging.getLogger().setLevel(logging_level)
-  _logger.info('logging level set to %s', logging.getLevelName(logging_level))
+
+  tapa.util.setup_logging(args)
 
   with open(os.path.join(os.path.dirname(tapa.__file__), 'VERSION')) as fp:
     version = fp.read().strip()

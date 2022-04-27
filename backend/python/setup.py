@@ -36,7 +36,9 @@ setup(
     packages=find_packages(),
     python_requires='>=3.6',
     install_requires=[
+        'absl-py',
         'autobridge>=0.0.20220420.dev2',
+        'coloredlogs>=9.3',
         'haoda>=0.0.20220410.dev1',
         'pyverilog>=1.2.0',
         'pyyaml>=5.1',

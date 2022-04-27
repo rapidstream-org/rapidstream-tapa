@@ -1,9 +1,14 @@
+import argparse
 import configparser
 import logging
 import os.path
 import shutil
 import subprocess
+import time
 from typing import Dict, Iterator, TextIO, Tuple
+
+import absl.logging
+import coloredlogs
 
 from .task import Task
 from .instance import Instance
@@ -132,3 +137,51 @@ def get_vendor_include_paths() -> Iterator[str]:
 
 def nproc() -> int:
   return int(subprocess.check_output(['nproc']))
+
+
+def setup_logging(args: argparse.Namespace,
+                  program_name: str = 'tapac') -> None:
+  verbose = 0 if args.verbose is None else args.verbose
+  quiet = 0 if args.quiet is None else args.quiet
+  logging_level = (quiet - verbose) * 10 + logging.INFO
+  logging_level = max(logging.DEBUG, min(logging.CRITICAL, logging_level))
+
+  coloredlogs.install(
+      level=logging_level,
+      fmt='%(levelname).1s%(asctime)s %(name)s:%(lineno)d] %(message)s',
+      datefmt='%m%d %H:%M:%S.%f',
+  )
+
+  log_dir = None
+  if args.work_dir is not None:
+    log_dir = os.path.join(args.work_dir, 'log')
+    os.makedirs(log_dir, exist_ok=True)
+
+  # The following is copied and modified from absl-py.
+  log_dir, file_prefix, symlink_prefix = absl.logging.find_log_dir_and_names(
+      program_name,
+      log_dir=log_dir,
+  )
+  time_str = time.strftime('%Y%m%d-%H%M%S', time.localtime(time.time()))
+  basename = f'{file_prefix}.INFO.{time_str}.{os.getpid()}'
+  filename = os.path.join(log_dir, basename)
+  symlink = os.path.join(log_dir, symlink_prefix + '.INFO')
+  try:
+    if os.path.islink(symlink):
+      os.unlink(symlink)
+    os.symlink(os.path.basename(filename), symlink)
+  except EnvironmentError:
+    # If it fails, we're sad but it's no error. Commonly, this fails because the
+    # symlink was created by another user so we can't modify it.
+    pass
+
+  handler = logging.FileHandler(filename, encoding='utf-8')
+  handler.setFormatter(
+      logging.Formatter(
+          fmt=('%(levelname).1s%(asctime)s.%(msecs)03d '
+               '%(name)s:%(lineno)d] %(message)s'),
+          datefmt='%m%d %H:%M:%S',
+      ))
+  logging.getLogger().addHandler(handler)
+
+  _logger.info('logging level set to %s', logging.getLevelName(logging_level))
