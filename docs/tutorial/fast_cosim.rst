@@ -1,4 +1,4 @@
-Introduction to TAPA Fast Host(C++)-Device(RTL) Co-Simulation
+TAPA RTL Simulation
 ====================================================================
 
 While the TAPA-generated xo could be used for cosim with the Vitis tool chain, this step is quite slow. The Vitis cosim will employ a set of complicated simulation models for external IPs (e.g., AXI interconnect, HBM, DDR, etc.) to best approximate the actual running environment. Setting up the cosim for a basic vector-add application takes more than 10 minutes in Vitis, even though the actual simulation only takes a few seconds.
