@@ -78,8 +78,6 @@ def generate_floorplan(
 def get_floorplan_result(
     work_dir: str,
     constraint: TextIO,
-    reuse_hbm_path_pipelining: bool,
-    manual_vivado_flow: bool,
 ) -> Tuple[Dict[str, str], Dict[str, int], Dict[str, int]]:
   """ extract floorplan results from the checkpointed config file """
   try:
@@ -88,7 +86,7 @@ def get_floorplan_result(
     raise FileNotFoundError(f'no valid floorplanning results found in work directory {work_dir}')
 
   # generate the constraint file
-  vivado_tcl = get_vivado_tcl(config_with_floorplan, work_dir, reuse_hbm_path_pipelining, manual_vivado_flow)
+  vivado_tcl = get_vivado_tcl(config_with_floorplan, work_dir)
   constraint.write('\n'.join(vivado_tcl))
   _logger.info('generate the floorplan constraint at %s', constraint.name)
 
@@ -130,7 +128,7 @@ def extract_pipeline_level(
   return fifo_pipeline_level, axi_pipeline_level
 
 
-def get_vivado_tcl(config_with_floorplan, work_dir, reuse_hbm_path_pipelining, manual_vivado_flow):
+def get_vivado_tcl(config_with_floorplan, work_dir):
   if config_with_floorplan.get('floorplan_status') == 'FAILED':
     return ['# Floorplan failed']
 
@@ -185,27 +183,6 @@ def get_vivado_tcl(config_with_floorplan, work_dir, reuse_hbm_path_pipelining, m
   vivado_tcl.append('foreach pblock [get_pblocks] {')
   vivado_tcl.append(f'  report_utilization -pblocks $pblock -file {work_dir}/report/$pblock.rpt')
   vivado_tcl.append('}',)
-
-  if reuse_hbm_path_pipelining:
-    vivado_tcl.append('')
-    vivado_tcl.append('# remove the pblock of hbm paths')
-    vivado_tcl.append('for {set i 0} {$i < 32} {incr i} {')
-    vivado_tcl.append('  add_cells_to_pblock -quiet pblock_dynamic_region [get_cells [list pfm_top_i/dynamic_region/hmss_0/inst/path_${i}]] -clear_locs')
-    vivado_tcl.append('}')
-
-  if manual_vivado_flow:
-    vivado_tcl.append('')
-    vivado_tcl.append('opt_design -directive Explore')
-    vivado_tcl.append('place_design -directive EarlyBlockPlacement -retiming')
-    # two passes of phys_opt_design after placement
-    vivado_tcl.append('phys_opt_design -directive Explore')
-    vivado_tcl.append('phys_opt_design -directive Explore')
-    vivado_tcl.append('write_checkpoint place_opt.dcp')
-    vivado_tcl.append('route_design -directive Explore')
-    vivado_tcl.append('write_checkpoint route.dcp')
-    vivado_tcl.append('phys_opt_design -directive Explore')
-    vivado_tcl.append('write_checkpoint route_opt.dcp')
-    vivado_tcl.append('exit')
 
   return vivado_tcl
 
