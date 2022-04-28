@@ -23,6 +23,7 @@ TAPA Documentation
   tutorial/async_mmap
   tutorial/migrate_from_vitis_hls
   tutorial/fast_cosim
+  tutorial/debug_tips
 
 .. toctree::
   :caption: API reference
