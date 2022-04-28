@@ -22,6 +22,10 @@ you can easily install TAPA from pre-built packages:
   `GitHub <https://github.com/Blaok/tapa/tree/gh-pages>`_
   and `PyPI <https://pypi.org/project/tapa/>`_.
 
+.. note::
+
+  TAPA requires Vitis HLS with version >= 2020.2. Previous HLS versions are not supported.
+
 .. tip::
 
   Ubuntu 18.04 and 20.04 are both supported.
