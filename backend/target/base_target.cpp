@@ -145,5 +145,10 @@ void BaseTarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
 void BaseTarget::RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
                                       const clang::Stmt *body) {}
 
+void BaseTarget::RewriteUnrolledDecl(REWRITE_DECL_ARGS_DEF,
+                                     const clang::Stmt *body) {}
+void BaseTarget::RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
+                                     const clang::Stmt *body) {}
+
 }  // namespace internal
 }  // namespace tapa

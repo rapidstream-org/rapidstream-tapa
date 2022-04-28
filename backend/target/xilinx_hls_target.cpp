@@ -326,5 +326,16 @@ void XilinxHLSTarget::RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
   rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
 }
 
+void XilinxHLSTarget::RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
+                                          const clang::Stmt *body) {
+  if (auto unroll = llvm::dyn_cast<clang::TapaUnrollAttr>(attr)) {
+    auto factor = unroll->getFactor();
+    std::string pragma = "HLS unroll";
+    if (factor) pragma += std::string(" factor = ") + std::to_string(factor);
+    AddPragmaToBody(rewriter, body, pragma);
+  }
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
+}
+
 }  // namespace internal
 }  // namespace tapa

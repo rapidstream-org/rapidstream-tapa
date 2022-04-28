@@ -27,6 +27,8 @@ class XilinxHLSTarget : public BaseTarget {
                                     const clang::Stmt *body);
   virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
                                     const clang::Stmt *body);
+  virtual void RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
+                                   const clang::Stmt *body);
 
   static tapa::internal::Target *GetInstance() {
     static XilinxHLSTarget instance;

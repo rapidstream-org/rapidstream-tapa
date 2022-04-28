@@ -3182,6 +3182,14 @@ def TapaPipeline : Attr {
   let Documentation = [Undocumented];
 }
 
+def TapaUnroll : Attr {
+  let Spellings = [GNU<"tapa_unroll">,
+                   CXX11<"tapa","unroll">,
+                   C2x<"tapa", "unroll">];
+  let Args = [IntArgument<"Factor", 0>];
+  let Documentation = [Undocumented];
+}
+
 def TapaTarget : Attr {
   let Spellings = [GNU<"tapa_target">,
                    CXX11<"tapa","target">,

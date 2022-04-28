@@ -404,6 +404,11 @@ static void handleTapaPipelineAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
       AL.getRange(), S.Context, ii, AL.getAttributeSpellingListIndex()));
 }
 
+static void handleTapaUnrollAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  S.Diag(D->getBeginLoc(), diag::warn_attribute_type_not_supported)
+      << AL << "unsupported unroll target";
+}
+
 static void handleTapaTargetAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   StringRef TargetStr, VendorStr;
   SourceLocation ArgLoc;
@@ -6739,6 +6744,10 @@ static void ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D,
     // Tapa attributes.
     case ParsedAttr::AT_TapaPipeline:
       handleTapaPipelineAttr(S, D, AL);
+      break;
+
+    case ParsedAttr::AT_TapaUnroll:
+      handleTapaUnrollAttr(S, D, AL);
       break;
 
     case ParsedAttr::AT_TapaTarget:

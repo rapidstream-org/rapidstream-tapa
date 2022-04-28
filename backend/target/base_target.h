@@ -64,6 +64,10 @@ class Target {
                                     const clang::Stmt *body) = 0;
   virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
                                     const clang::Stmt *body) = 0;
+  virtual void RewriteUnrolledDecl(REWRITE_DECL_ARGS_DEF,
+                                   const clang::Stmt *body) = 0;
+  virtual void RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
+                                   const clang::Stmt *body) = 0;
 
   static tapa::internal::Target *GetInstance() = delete;
   Target(Target const &) = delete;
@@ -114,6 +118,11 @@ class BaseTarget : public Target {
                                     const clang::Stmt *body);
   virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
                                     const clang::Stmt *body);
+
+  virtual void RewriteUnrolledDecl(REWRITE_DECL_ARGS_DEF,
+                                 const clang::Stmt *body);
+  virtual void RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
+                                 const clang::Stmt *body);
 
   static tapa::internal::Target *GetInstance() = delete;
   BaseTarget(BaseTarget const &) = delete;

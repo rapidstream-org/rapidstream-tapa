@@ -242,6 +242,26 @@ static Attr *handleTapaPipelineAttr(Sema &S, Stmt *St,
       AL.getRange(), S.Context, ii, AL.getAttributeSpellingListIndex());
 }
 
+static Attr *handleTapaUnrollAttr(Sema &S, Stmt *St,
+        const ParsedAttr &AL, SourceRange Range) {
+  uint32_t factor = 0;
+  if (AL.getNumArgs()) {
+    if (!checkUInt32Argument(S, AL, AL.getArgAsExpr(0), factor)) return nullptr;
+  }
+
+  if (St->getStmtClass() != Stmt::DoStmtClass &&
+      St->getStmtClass() != Stmt::ForStmtClass &&
+      St->getStmtClass() != Stmt::CXXForRangeStmtClass &&
+      St->getStmtClass() != Stmt::WhileStmtClass) {
+    S.Diag(St->getBeginLoc(), diag::warn_attribute_type_not_supported)
+        << AL << "unsupported unroll target";
+    return nullptr;
+  }
+
+  return ::new (S.Context) TapaUnrollAttr(
+      AL.getRange(), S.Context, factor, AL.getAttributeSpellingListIndex());
+}
+
 static void
 CheckForIncompatibleAttributes(Sema &S,
                                const SmallVectorImpl<const Attr *> &Attrs) {
@@ -403,6 +423,8 @@ static Attr *ProcessStmtAttribute(Sema &S, Stmt *St, const ParsedAttr &A,
     return handleSuppressAttr(S, St, A, Range);
   case ParsedAttr::AT_TapaPipeline:
     return handleTapaPipelineAttr(S, St, A, Range);
+  case ParsedAttr::AT_TapaUnroll:
+    return handleTapaUnrollAttr(S, St, A, Range);
   default:
     // if we're here, then we parsed a known attribute, but didn't recognize
     // it as a statement attribute => it is declaration attribute

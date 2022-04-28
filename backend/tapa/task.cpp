@@ -700,6 +700,8 @@ void Visitor::HandleAttrOnNodeWithBody(
   for (const auto* attr : attrs) {
     if (clang::isa<clang::TapaPipelineAttr>(attr)) {
       HANDLE_ATTR(RewritePipelinedDecl, RewritePipelinedStmt);
+    } else if (clang::isa<clang::TapaUnrollAttr>(attr)) {
+      HANDLE_ATTR(RewriteUnrolledDecl, RewriteUnrolledStmt);
     }
   }
 }
