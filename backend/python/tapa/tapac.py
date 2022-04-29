@@ -17,6 +17,7 @@ from absl import flags
 import tapa.core
 import tapa.util
 from tapa.bitstream import get_vitis_script
+from tapa.floorplan_dse import run_floorplan_dse
 from tapa.hardware import is_part_num_supported
 
 _logger = logging.getLogger().getChild(__name__)
@@ -185,6 +186,13 @@ def create_parser() -> argparse.ArgumentParser:
       default=False,
       help='Enable the floorplanning step. This option could be skipped if '
            'the --floorplan-output option is given.',
+  )
+  group.add_argument(
+      '--run-floorplan-dse',
+      action='store_true',
+      dest='run_floorplan_dse',
+      default=False,
+      help='Generate multiple floorplan configurations',
   )
   group.add_argument(
       '--floorplan-output',
@@ -387,9 +395,9 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
       parser.error('The part_num %s is not supported for floorplanning. '
                     'Contact the authors to add support for this device.', part_num)
 
-  if args.enable_synth_util:
-    if not all_steps and args.run_floorplanning is None:
-      parser.error('--enable-synth-util is set but floorplan is not enabled')
+  if args.run_floorplan_dse:
+    if not args.work_dir:
+      parser.error('--work-dir must be set to enable floorplan DSE.')
 
   return all_steps, last_step
 
@@ -412,6 +420,11 @@ def main(argv: Optional[List[str]] = None):
   all_steps, last_step = parse_steps(args, parser)
 
   cflag_list = ['-std=c++17'] + args.cflags
+
+  if args.run_floorplan_dse:
+    _logger.info('Floorplan DSE is enabled')
+    run_floorplan_dse(args)
+    return
 
   if all_steps or args.run_tapacc is not None:
     tapacc_cmd = []
