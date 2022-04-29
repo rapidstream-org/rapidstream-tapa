@@ -17,6 +17,7 @@ from absl import flags
 import tapa.core
 import tapa.util
 from tapa.bitstream import get_vitis_script
+from tapa.hardware import is_part_num_supported
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -372,6 +373,13 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
 
   if args.run_floorplanning and not args.enable_floorplan:
     parser.error('Floorplan is disabled but the --run-floorplan step is set')
+
+  if all_steps or args.run_floorplanning is not None:
+    part_num = _get_device_info(parser, args)['part_num']
+
+    if not is_part_num_supported(part_num):
+      parser.error('The part_num %s is not supported for floorplanning. '
+                    'Contact the authors to add support for this device.', part_num)
 
   return all_steps, last_step
 
