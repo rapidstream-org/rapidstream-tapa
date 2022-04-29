@@ -1,7 +1,7 @@
 .. _introduction-to-async-mmap:
 
-Introduction to TAPA ``async_mmap``
-===================================
+Flexible Memory Access with ``async_mmap``
+===========================================
 
 ``async_mmap`` is TAPA's flexible interface to access external memory through
 the AXI protocol.
