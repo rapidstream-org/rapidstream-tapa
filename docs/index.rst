@@ -26,6 +26,11 @@ TAPA Documentation
   tutorial/debug_tips
 
 .. toctree::
+  :caption: Example Designs
+
+  example
+
+.. toctree::
   :caption: API reference
 
   api
