@@ -231,10 +231,16 @@ AutoBridge has been tested on designs from <20 tasks to designs with >1000 tasks
 - By default, each solving process is allowed for 600 seconds. You could adjust the threshold by the ``--max-search-time`` option.
 
 
-Design Tips
-::::::::::::::::
+Tips to Improve Frequency
+:::::::::::::::::::::::::::::::
 
 - A general rule of thumb is to write smaller tasks, which allows more flexibility in the floorplanning process.
+
+- Smaller tasks also has less *control broadcast*. In general, Vitis HLS will generate a centralized controller for the entire task. If your task is too large, the controller will have a high fanout that will cause routing congestion. Checkout our `DAC 2020 <https://cadlab.cs.ucla.edu/beta/cadlab/sites/default/files/publications/dac20-hls-timing.pdf>`_ paper that studies this problem. The pipeline optimization technique has been realized in Vitis HLS as the ``frp`` pipeline style (e.g., ``#pragma HLS pipeline II=1 style=frp``), which trades area for less control signal fanout.
+
+- Modify the AutoBridge parameter and generate multiple bitstream at the same time. When it comes to the tradeoff between area limit and wire number, it is hard to judge which design point is better, so we may need to run multiple points on the pareto-optimal curve.
+
 - Currently, AutoBridge can only handle the top-level hierarchy. Lower-level hierarchies are not visible to AutoBridge and are treated as a
   whole. You may need to take this into consideration when designing the kernel. This limitation is expected to be addressed soon.
+
 - AutoBridge will generate a ``.dot`` file that helps you visualize the topology of your design.
