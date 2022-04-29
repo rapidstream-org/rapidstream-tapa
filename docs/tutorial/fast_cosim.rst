@@ -66,3 +66,9 @@ Do not forget to add the option parsing code to the top of the main function in 
     gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
 
     // ...
+
+
+Limitation
+--------------
+
+At this point, we do not support cross-channel access for HBM. In other words, each AXI interface could only access one HBM channel.
