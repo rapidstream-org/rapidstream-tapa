@@ -231,6 +231,17 @@ AutoBridge has been tested on designs from <20 tasks to designs with >1000 tasks
 - By default, each solving process is allowed for 600 seconds. You could adjust the threshold by the ``--max-search-time`` option.
 
 
+Visualize Your Design topology
+:::::::::::::::::::::::::::::::::::::
+
+AutoBridge will generate a ``.dot`` representation of how your tasks and streams are connected. You could generate a figure from it online, for example at `GraphvizOnline <https://dreampuf.github.io/GraphvizOnline/>`_. Here is an example of the ``vadd`` application.
+
+.. image:: https://user-images.githubusercontent.com/32432619/166062922-f69bf372-a15c-4d8c-ac11-0fa4f43a3a7e.png
+  :width: 80 %
+
+Blue boxes represent external memory ports. The number beside each edge represents its width.
+
+
 Tips to Improve Frequency
 :::::::::::::::::::::::::::::::
 
