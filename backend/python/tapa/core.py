@@ -19,7 +19,12 @@ import yaml
 from haoda.backend import xilinx as hls
 
 from tapa import util
-from tapa.floorplan import get_floorplan_result, generate_floorplan, checkpoint_floorplan
+from tapa.floorplan import (
+  checkpoint_floorplan,
+  generate_floorplan,
+  get_floorplan_result,
+  get_post_synth_area,
+)
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
 from tapa.hardware import (
@@ -281,12 +286,21 @@ class Program:
 
     return self
 
+  def generate_post_synth_task_area(self, part_num: str, max_parallel_synth_jobs: int = 8):
+    get_post_synth_area(
+      self.rtl_dir,
+      part_num,
+      self.top_task,
+      self.get_post_syn_rpt,
+      self.get_task,
+      self.get_cpp,
+      max_parallel_synth_jobs,
+    )
+
   def run_floorplanning(
       self,
       part_num,
       connectivity: TextIO,
-      enable_synth_util: bool = False,
-      max_parallel_synth_jobs: int = 8,
       floorplan_pre_assignments: TextIO = None,
       read_only_args: List[str] = [],
       write_only_args: List[str] = [],
@@ -300,18 +314,12 @@ class Program:
     config, config_with_floorplan = generate_floorplan(
       part_num,
       connectivity,
-      enable_synth_util,
-      max_parallel_synth_jobs,
       read_only_args,
       write_only_args,
-      floorplan_pre_assignments,
-      self.rtl_dir,
-      self.autobridge_dir,
-      self.top_task,
-      self.get_post_syn_rpt,
-      self.get_task,
-      self._get_fifo_width,
-      self.get_cpp,
+      user_floorplan_pre_assignments=floorplan_pre_assignments,
+      autobridge_dir=self.autobridge_dir,
+      top_task=self.top_task,
+      fifo_width_getter=self._get_fifo_width,
       **kwargs,
     )
 

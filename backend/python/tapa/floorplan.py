@@ -28,36 +28,18 @@ class InputError(Exception):
 def generate_floorplan(
     part_num: str,
     physical_connectivity: TextIO,
-    enable_synth_util: bool,
-    max_parallel_synth_jobs: int,
     read_only_args: List[str],
     write_only_args: List[str],
     user_floorplan_pre_assignments: Optional[TextIO],
-    rtl_dir: str,
     autobridge_dir: str,
     top_task: Task,
-    post_syn_rpt_getter: Callable[[str], str],
-    task_getter: Callable[[str], Task],
     fifo_width_getter: Callable[[Task, str], int],
-    cpp_getter: Callable[[str], str],
     **kwargs,
 ) -> Tuple[Dict, Dict]:
   """
   get the target region of each vertex
   get the pipeline level of each edge
   """
-  # run logic synthesis to get an accurate area estimation
-  if enable_synth_util:
-    get_post_synth_area(
-      rtl_dir,
-      part_num,
-      top_task,
-      post_syn_rpt_getter,
-      task_getter,
-      cpp_getter,
-      max_parallel_synth_jobs,
-    )
-
   config = get_floorplan_config(
     autobridge_dir,
     part_num,

@@ -387,6 +387,10 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
       parser.error('The part_num %s is not supported for floorplanning. '
                     'Contact the authors to add support for this device.', part_num)
 
+  if args.enable_synth_util:
+    if not all_steps and args.run_floorplanning is None:
+      parser.error('--enable-synth-util is set but floorplan is not enabled')
+
   return all_steps, last_step
 
 
@@ -537,6 +541,12 @@ def main(argv: Optional[List[str]] = None):
       _get_device_info(parser, args)['part_num'],
     )
 
+    if args.enable_synth_util:
+      program.generate_post_synth_task_area(
+        _get_device_info(parser, args)['part_num'],
+        args.max_parallel_synth_jobs,
+      )
+
   if all_steps or args.run_floorplanning is not None:
     if args.floorplan_output is not None:
       kwargs = {}
@@ -556,11 +566,9 @@ def main(argv: Optional[List[str]] = None):
       program.run_floorplanning(
         _get_device_info(parser, args)['part_num'],
         args.connectivity,
-        args.enable_synth_util,
-        args.max_parallel_synth_jobs,
         args.floorplan_pre_assignments,
-        args.read_only_args,
-        args.write_only_args,
+        read_only_args=args.read_only_args,
+        write_only_args=args.write_only_args,
         **kwargs,
       )
 
