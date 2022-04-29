@@ -3,6 +3,7 @@ if(PROJECT_NAME STREQUAL "tapa")
   set(TAPAC PYTHONPATH=${CMAKE_SOURCE_DIR}/backend/python python3 -m tapa.tapac
             --cflags=-I${CMAKE_SOURCE_DIR}/src)
   set(TAPACC $<TARGET_FILE:tapacc>)
+  include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/src")
 
   if(EXISTS "$ENV{XILINX_HLS}/include")
     include_directories(SYSTEM "$ENV{XILINX_HLS}/include")

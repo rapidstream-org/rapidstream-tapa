@@ -1,36 +1,23 @@
-#ifndef TAPA_STREAM_H_
-#define TAPA_STREAM_H_
+#ifndef TAPA_HOST_STREAM_H_
+#define TAPA_HOST_STREAM_H_
 
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 
-#ifdef __SYNTHESIS__
-
-#include <hls_stream.h>
-
-#else  // __SYNTHESIS__
-
 #include <array>
 #include <atomic>
-#include <deque>
-#include <memory>
 #include <mutex>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
 #include <glog/logging.h>
 
-#include "tapa/coroutine.h"
+#include "tapa/base/stream.h"
 
-#endif  // __SYNTHESIS__
+#include "tapa/host/coroutine.h"
 
 namespace tapa {
-
-inline constexpr int kStreamDefaultDepth = 2;
-
-#ifndef __SYNTHESIS__
 
 template <typename T>
 class istream;
@@ -44,17 +31,7 @@ class istreams;
 template <typename T, uint64_t S>
 class ostreams;
 
-#endif  // __SYNTHESIS__
-
 namespace internal {
-
-template <typename T>
-struct elem_t {
-  T val;
-  bool eot;
-};
-
-#ifndef __SYNTHESIS__
 
 template <typename Param, typename Arg>
 struct accessor;
@@ -231,8 +208,6 @@ class unbound_streams : public istreams<T, S>, public ostreams<T, S> {
   unbound_streams() : basic_streams<T>(nullptr) {}
 };
 
-#endif  // __SYNTHESIS__
-
 }  // namespace internal
 
 /// Provides consumer-side operations to a @c tapa::stream where it is used as
@@ -241,11 +216,7 @@ class unbound_streams : public istreams<T, S>, public ostreams<T, S> {
 /// This class should only be used in task function parameters and should never
 /// be instatiated directly.
 template <typename T>
-class istream
-#ifndef __SYNTHESIS__
-    : virtual public internal::basic_stream<T>
-#endif  // __SYNTHESIS__
-{
+class istream : virtual public internal::basic_stream<T> {
  public:
   /// Tests whether the stream is empty.
   ///
@@ -253,16 +224,11 @@ class istream
   ///
   /// @return Whether the stream is empty.
   bool empty() const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    return _.empty();
-#else   // __SYNTHESIS__
     bool is_empty = this->ptr->empty();
     if (is_empty) {
       internal::yield("channel '" + this->get_name() + "' is empty");
     }
     return is_empty;
-#endif  // __SYNTHESIS__
   }
 
   /// Tests whether the next token is EoT.
@@ -273,19 +239,11 @@ class istream
   ///                    updated to indicate whether the next token is EoT.
   /// @return            Whether @c is_eot is updated.
   bool try_eot(bool& is_eot) const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    const bool is_success = !empty() && _peek.read_nb(elem);
-    is_eot = elem.eot;
-    return is_success;
-#else   // __SYNTHESIS__
     if (!empty()) {
       is_eot = this->ptr->front().eot;
       return true;
     }
     return false;
-#endif  // __SYNTHESIS__
   }
 
   /// Tests whether the next token is EoT.
@@ -295,9 +253,6 @@ class istream
   /// @param[out] is_success Whether the next token is available.
   /// @return                Whether the next token is available and is EoT.
   bool eot(bool& is_success) const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-#endif  // __SYNTHESIS__
     bool eot = false;
     is_success = try_eot(eot);
     return eot;
@@ -309,15 +264,9 @@ class istream
   ///
   /// @return Whether the next token is available and is EoT.
   bool eot(std::nullptr_t) const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    bool is_success;
-    return eot(is_success) && is_success;
-#else   // __SYNTHESIS__
     bool eot = false;
     try_eot(eot);
     return eot;
-#endif  // __SYNTHESIS__
   }
 
   /// Peeks the stream.
@@ -330,14 +279,6 @@ class istream
   ///                   to be the value of the next token.
   /// @return           Whether @c value is updated.
   bool try_peek(T& value) const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    const bool is_success = !empty() && _peek.read_nb(elem);
-    value = elem.val;
-    return is_success;
-#else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
       if (elem.eot) {
@@ -347,7 +288,6 @@ class istream
       return true;
     }
     return false;
-#endif  // __SYNTHESIS__
   }
 
   /// Peeks the stream.
@@ -361,9 +301,6 @@ class istream
   ///                        available. Otherwise, default-constructed @c T() is
   ///                        returned.
   T peek(bool& is_success) const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-#endif  // __SYNTHESIS__
     T val;
     is_success = try_peek(val);
     return val;
@@ -378,9 +315,6 @@ class istream
   /// @return The value of the next token is returned if it is available.
   ///         Otherwise, default-constructed @c T() is returned.
   T peek(std::nullptr_t) const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-#endif  // __SYNTHESIS__
     T val;
     try_peek(val);
     return val;
@@ -397,13 +331,6 @@ class istream
   ///                        available. Otherwise, default-constructed @c T() is
   ///                        returned.
   T peek(bool& is_success, bool& is_eot) const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> peek_val;
-    (is_success = !empty()) && _peek.read_nb(peek_val);
-    is_eot = peek_val.eot && is_success;
-    return peek_val.val;
-#else   // __SYNTHESIS__
     if (!empty()) {
       auto& elem = this->ptr->front();
       is_success = true;
@@ -413,7 +340,6 @@ class istream
     is_success = false;
     is_eot = false;
     return {};
-#endif  // __SYNTHESIS__
   }
 
   /// Reads the stream.
@@ -426,13 +352,6 @@ class istream
   ///                   to be the value of the next token.
   /// @return           Whether @c value is updated.
   bool try_read(T& value) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    const bool is_success = _.read_nb(elem);
-    value = elem.val;
-    return is_success;
-#else   // __SYNTHESIS__
     if (!empty()) {
       auto elem = this->ptr->pop();
       if (elem.eot) {
@@ -442,7 +361,6 @@ class istream
       return true;
     }
     return false;
-#endif  // __SYNTHESIS__
   }
 
   /// Reads the stream.
@@ -453,15 +371,10 @@ class istream
   ///
   /// @return The value of the next token.
   T read() {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    return _.read().val;
-#else   // __SYNTHESIS__
     T val;
     while (!try_read(val)) {
     }
     return val;
-#endif  // __SYNTHESIS__
   }
 
   /// Reads the stream.
@@ -473,9 +386,6 @@ class istream
   /// @param[out] value The value of the next token.
   /// @return           @c *this.
   istream& operator>>(T& value) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-#endif  // __SYNTHESIS__
     value = read();
     return *this;
   }
@@ -491,16 +401,9 @@ class istream
   ///                        available. Otherwise, default-constructed @c T() is
   ///                        returned.
   T read(bool& is_success) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    is_success = _.read_nb(elem);
-    return elem.val;
-#else   // __SYNTHESIS__
     T val;
     is_success = try_read(val);
     return val;
-#endif  // __SYNTHESIS__
   }
 
   /// Reads the stream.
@@ -512,16 +415,9 @@ class istream
   /// @return The value of the next token is returned if it is available.
   ///         Otherwise, default-constructed @c T() is returned.
   T read(std::nullptr_t) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    _.read_nb(elem);
-    return elem.val;
-#else   // __SYNTHESIS__
     T val;
     try_read(val);
     return val;
-#endif  // __SYNTHESIS__
   }
 
   /// Reads the stream.
@@ -535,15 +431,6 @@ class istream
   ///                          available. Otherwise, @c default_value is
   ///                          returned.
   T read(const T& default_value, bool* is_success = nullptr) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    bool is_success_val = _.read_nb(elem);
-    if (is_success != nullptr) {
-      *is_success = is_success_val;
-    }
-    return is_success_val ? elem.val : default_value;
-#endif  // __SYNTHESIS__
     T val;
     bool succeeded = try_read(val);
     if (is_success != nullptr) {
@@ -560,13 +447,6 @@ class istream
   ///
   /// @return Whether an EoT token is consumed.
   bool try_open() {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    const bool succeeded = _.read_nb(elem);
-    assert(!succeeded || elem.eot);
-    return succeeded;
-#else   // __SYNTHESIS__
     if (!empty()) {
       auto elem = this->ptr->pop();
       if (!elem.eot) {
@@ -576,7 +456,6 @@ class istream
       return true;
     }
     return false;
-#endif  // __SYNTHESIS__
   }
 
   /// Consumes an EoT token.
@@ -585,20 +464,10 @@ class istream
   ///
   /// The next token must be EoT.
   void open() {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    const auto elem = _.read();
-    assert(elem.eot);
-#else   // __SYNTHESIS__
     while (!try_open()) {
     }
-#endif  // __SYNTHESIS__
   }
 
-#ifdef __SYNTHESIS__
-  hls::stream<internal::elem_t<T>> _;
-  mutable hls::stream<internal::elem_t<T>> _peek;
-#else   // __SYNTHESIS__
  protected:
   // allow derived class to omit initialization
   istream() : internal::basic_stream<T>(nullptr) {}
@@ -611,7 +480,6 @@ class istream
   friend class streams;
   istream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
-#endif  // __SYNTHESIS__
 };
 
 /// Provides producer-side operations to a @c tapa::stream where it is used as
@@ -620,11 +488,7 @@ class istream
 /// This class should only be used in task function parameters and should never
 /// be instatiated directly.
 template <typename T>
-class ostream
-#ifndef __SYNTHESIS__
-    : virtual public internal::basic_stream<T>
-#endif  // __SYNTHESIS__
-{
+class ostream : virtual public internal::basic_stream<T> {
  public:
   /// Tests whether the stream is full.
   ///
@@ -632,16 +496,11 @@ class ostream
   ///
   /// @return Whether the stream is full.
   bool full() const {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    return _.full();
-#else   // __SYNTHESIS__
     bool is_full = this->ptr->full();
     if (is_full) {
       internal::yield("channel '" + this->get_name() + "' is full");
     }
     return is_full;
-#endif  // __SYNTHESIS__
   }
 
   /// Writes @c value to the stream.
@@ -651,16 +510,11 @@ class ostream
   /// @param[in] value The value to write.
   /// @return          Whether @c value has been written successfully.
   bool try_write(const T& value) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    return _.write_nb({value, false});
-#else   // __SYNTHESIS__
     if (!full()) {
       this->ptr->push({value, false});
       return true;
     }
     return false;
-#endif  // __SYNTHESIS__
   }
 
   /// Writes @c value to the stream.
@@ -669,13 +523,8 @@ class ostream
   ///
   /// @param[in] value The value to write.
   void write(const T& value) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    _.write({value, false});
-#else   // __SYNTHESIS__
     while (!try_write(value)) {
     }
-#endif  // __SYNTHESIS__
   }
 
   /// Writes @c value to the stream.
@@ -685,9 +534,6 @@ class ostream
   /// @param[in] value The value to write.
   /// @return          @c *this.
   ostream& operator<<(const T& value) {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-#endif  // __SYNTHESIS__
     write(value);
     return *this;
   }
@@ -698,39 +544,21 @@ class ostream
   ///
   /// @return Whether the EoT token has been written successfully.
   bool try_close() {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    memset(&elem.val, 0, sizeof(elem.val));
-    elem.eot = true;
-    return _.write_nb(elem);
-#else   // __SYNTHESIS__
     if (!full()) {
       this->ptr->push({{}, true});
       return true;
     }
     return false;
-#endif  // __SYNTHESIS__
   }
 
   /// Produces an EoT token to the stream.
   ///
   /// This is a @a blocking and @a destructive operation.
   void close() {
-#ifdef __SYNTHESIS__
-#pragma HLS inline
-    internal::elem_t<T> elem;
-    elem.eot = true;
-    _.write(elem);
-#else   // __SYNTHESIS__
     while (!try_close()) {
     }
-#endif  // __SYNTHESIS__
   }
 
-#ifdef __SYNTHESIS__
-  hls::stream<internal::elem_t<T>> _;
-#else   // __SYNTHESIS__
  protected:
   // allow derived class to omit initialization
   ostream() : internal::basic_stream<T>(nullptr) {}
@@ -743,14 +571,11 @@ class ostream
   friend class streams;
   ostream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
-#endif  // __SYNTHESIS__
 };
 
 /// Defines a communication channel between two task instances.
 template <typename T, uint64_t N = kStreamDefaultDepth>
-class stream
-#ifndef __SYNTHESIS__
-    : public internal::unbound_stream<T> {
+class stream : public internal::unbound_stream<T> {
  public:
   /// Depth of the communication channel.
   constexpr static int depth = N;
@@ -773,13 +598,7 @@ class stream
   friend class streams;
   stream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
-}
-#endif  // __SYNTHESIS__
-;
-
-/// Alternative name of @c tapa::stream.
-template <typename T, uint64_t depth>
-using channel = stream<T, depth>;
+};
 
 /// Provides consumer-side operations to an array of @c tapa::stream where they
 /// are used as @a inputs.
@@ -787,9 +606,6 @@ using channel = stream<T, depth>;
 /// This class should only be used in task function parameters and should never
 /// be instatiated directly.
 template <typename T, uint64_t S>
-#ifdef __SYNTHESIS__
-using istreams = istream<T>[S];
-#else   // __SYNTHESIS__
 class istreams : virtual public internal::basic_streams<T> {
  public:
   /// Length of the @c tapa::stream array.
@@ -843,7 +659,6 @@ class istreams : virtual public internal::basic_streams<T> {
     return result;
   }
 };
-#endif  // __SYNTHESIS__
 
 /// Provides producer-side operations to an array of @c tapa::stream where they
 /// are used as @a outputs.
@@ -851,9 +666,6 @@ class istreams : virtual public internal::basic_streams<T> {
 /// This class should only be used in task function parameters and should never
 /// be instatiated directly.
 template <typename T, uint64_t S>
-#ifdef __SYNTHESIS__
-using ostreams = ostream<T>[S];
-#else   // __SYNTHESIS__
 class ostreams : virtual public internal::basic_streams<T> {
  public:
   /// Length of the @c tapa::stream array.
@@ -907,13 +719,10 @@ class ostreams : virtual public internal::basic_streams<T> {
     return result;
   }
 };
-#endif  // __SYNTHESIS__
 
 /// Defines an array of @c tapa::stream.
 template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth>
-class streams
-#ifndef __SYNTHESIS__
-    : public internal::unbound_streams<T, S> {
+class streams : public internal::unbound_streams<T, S> {
  public:
   /// Count of @c tapa::stream in the array.
   constexpr static int length = S;
@@ -1005,15 +814,7 @@ class streams
     }
     return result;
   }
-}
-#endif  // __SYNTHESIS__
-;
-
-/// Alternative name of @c tapa::streams.
-template <typename T, uint64_t S, uint64_t N>
-using channels = streams<T, S, N>;
-
-#ifndef __SYNTHESIS__
+};
 
 namespace internal {
 
@@ -1066,8 +867,6 @@ TAPA_DEFINE_ACCESSER(o, &&)
 
 }  // namespace internal
 
-#endif  // __SYNTHESIS__
-
 }  // namespace tapa
 
-#endif  // TAPA_STREAM_H_
+#endif  // TAPA_HOST_STREAM_H_

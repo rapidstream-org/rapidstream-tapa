@@ -1,5 +1,5 @@
-#ifndef TAPA_COROUTINE_H_
-#define TAPA_COROUTINE_H_
+#ifndef TAPA_HOST_COROUTINE_H_
+#define TAPA_HOST_COROUTINE_H_
 
 #include <functional>
 #include <string>
@@ -11,4 +11,4 @@ void yield(const std::string& msg);
 }  // namespace internal
 }  // namespace tapa
 
-#endif  // TAPA_COROUTINE_H_
+#endif  // TAPA_HOST_COROUTINE_H_

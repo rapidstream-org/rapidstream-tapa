@@ -1,9 +1,7 @@
-#ifndef TAPA_MMAP_H_
-#define TAPA_MMAP_H_
+#ifndef TAPA_HOST_MMAP_H_
+#define TAPA_HOST_MMAP_H_
 
 #include <cstddef>
-
-#ifndef __SYNTHESIS__
 
 #include <queue>
 #include <stdexcept>
@@ -12,37 +10,27 @@
 
 #include <frt.h>
 
-#include "tapa/coroutine.h"
+#include "tapa/base/mmap.h"
 
-#endif  // __SYNTHESIS__
-
-#include "tapa/stream.h"
-#include "tapa/vec.h"
+#include "tapa/host/coroutine.h"
+#include "tapa/host/stream.h"
+#include "tapa/host/vec.h"
 
 namespace tapa {
 
 namespace internal {
 
-#ifndef __SYNTHESIS__
-
 template <typename Param, typename Arg>
 struct accessor;
 
-#endif  // __SYNTHESIS__
-
 }  // namespace internal
 
-#ifndef __SYNTHESIS__
 template <typename T>
 class async_mmap;
-#endif  // __SYNTHESIS__
 
 /// Defines a view of a piece of consecutive memory with synchronous random
 /// accesses.
 template <typename T>
-#ifdef __SYNTHESIS__
-using mmap = T*;
-#else   // __SYNTHESIS__
 class mmap {
  public:
   /// Constructs a @c tapa::mmap with unknown size.
@@ -153,23 +141,10 @@ class mmap {
   T* ptr_;
   uint64_t size_;
 };
-#endif  // __SYNTHESIS__
 
 /// Defines a view of a piece of consecutive memory with asynchronous random
 /// accesses.
 template <typename T>
-#ifdef __SYNTHESIS__
-struct async_mmap {
-  using addr_t = int64_t;
-  using resp_t = uint8_t;
-
-  tapa::ostream<addr_t> read_addr;
-  tapa::istream<T> read_data;
-  tapa::ostream<addr_t> write_addr;
-  tapa::ostream<T> write_data;
-  tapa::istream<resp_t> write_resp;
-};
-#else   // __SYNTHESIS__
 class async_mmap : public mmap<T> {
  public:
   /// Type of the addresses.
@@ -181,11 +156,11 @@ class async_mmap : public mmap<T> {
  private:
   using super = mmap<T>;
 
-  tapa::stream<addr_t, 64> read_addr_q_{"read_addr"};
-  tapa::stream<T, 64> read_data_q_{"read_data"};
-  tapa::stream<addr_t, 64> write_addr_q_{"write_addr"};
-  tapa::stream<T, 64> write_data_q_{"write_data"};
-  tapa::stream<resp_t, 64> write_resp_q_{"write_resp"};
+  stream<addr_t, 64> read_addr_q_{"read_addr"};
+  stream<T, 64> read_data_q_{"read_data"};
+  stream<addr_t, 64> write_addr_q_{"write_addr"};
+  stream<T, 64> write_data_q_{"write_data"};
+  stream<resp_t, 64> write_resp_q_{"write_resp"};
 
   // Only convert when scheduled.
   async_mmap(const super& mem)
@@ -221,31 +196,31 @@ class async_mmap : public mmap<T> {
   ///
   /// Each value written to this channel triggers an asynchronous memory read
   /// request. Consecutive requests may be coalesced into a long burst request.
-  tapa::ostream<addr_t> read_addr;
+  ostream<addr_t> read_addr;
 
   /// Provides access to the read data channel.
   ///
   /// Each value read from this channel represents the data retrieved from the
   /// underlying memory system.
-  tapa::istream<T> read_data;
+  istream<T> read_data;
 
   /// Provides access to the write address channel.
   ///
   /// Each value written to this channel triggers an asynchronous memory write
   /// request. Consecutive requests may be coalesced into a long burst request.
-  tapa::ostream<addr_t> write_addr;
+  ostream<addr_t> write_addr;
 
   /// Provides access to the write data channel.
   ///
   /// Each value written to this channel supplies data to the memory write
   /// request.
-  tapa::ostream<T> write_data;
+  ostream<T> write_data;
 
   /// Provides access to the write response channel.
   ///
   /// Each value read from this channel represents the data count acknowledged
   /// by the underlying memory system.
-  tapa::istream<resp_t> write_resp;
+  istream<resp_t> write_resp;
 
   void operator()() {
     int16_t write_count = 0;
@@ -282,13 +257,9 @@ class async_mmap : public mmap<T> {
     return async_mem;
   }
 };
-#endif  // __SYNTHESIS__
 
 /// Defines an array of @c tapa::mmap.
 template <typename T, uint64_t S>
-#ifdef __SYNTHESIS__
-class mmaps;
-#else  // __SYNTHESIS__
 class mmaps {
  protected:
   std::vector<mmap<T>> mmaps_;
@@ -540,8 +511,6 @@ struct accessor<mmaps<T, S>, mmaps<T, S>> {
 
 }  // namespace internal
 
-#endif  // __SYNTHESIS__
-
 }  // namespace tapa
 
-#endif  // TAPA_MMAP_H_
+#endif  // TAPA_HOST_MMAP_H_
