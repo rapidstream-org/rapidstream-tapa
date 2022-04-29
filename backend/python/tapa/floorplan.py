@@ -34,7 +34,7 @@ def generate_floorplan(
     write_only_args: List[str],
     user_floorplan_pre_assignments: Optional[TextIO],
     rtl_dir: str,
-    work_dir: str,
+    autobridge_dir: str,
     top_task: Task,
     post_syn_rpt_getter: Callable[[str], str],
     task_getter: Callable[[str], Task],
@@ -59,7 +59,7 @@ def generate_floorplan(
     )
 
   config = get_floorplan_config(
-    work_dir,
+    autobridge_dir,
     part_num,
     physical_connectivity,
     top_task,
@@ -76,17 +76,17 @@ def generate_floorplan(
 
 
 def get_floorplan_result(
-    work_dir: str,
+    autobridge_dir: str,
     constraint: TextIO,
 ) -> Tuple[Dict[str, str], Dict[str, int], Dict[str, int]]:
   """ extract floorplan results from the checkpointed config file """
   try:
-    config_with_floorplan = json.loads(open(f'{work_dir}/post-floorplan-config.json', 'r').read())
+    config_with_floorplan = json.loads(open(f'{autobridge_dir}/post-floorplan-config.json', 'r').read())
   except:
-    raise FileNotFoundError(f'no valid floorplanning results found in work directory {work_dir}')
+    raise FileNotFoundError(f'no valid floorplanning results found in work directory {autobridge_dir}')
 
   # generate the constraint file
-  vivado_tcl = get_vivado_tcl(config_with_floorplan, work_dir)
+  vivado_tcl = get_vivado_tcl(config_with_floorplan)
   constraint.write('\n'.join(vivado_tcl))
   _logger.info('generate the floorplan constraint at %s', constraint.name)
 
@@ -128,7 +128,7 @@ def extract_pipeline_level(
   return fifo_pipeline_level, axi_pipeline_level
 
 
-def get_vivado_tcl(config_with_floorplan, work_dir):
+def get_vivado_tcl(config_with_floorplan):
   if config_with_floorplan.get('floorplan_status') == 'FAILED':
     return ['# Floorplan failed']
 
@@ -181,13 +181,13 @@ def get_vivado_tcl(config_with_floorplan, work_dir):
   vivado_tcl.append('}')
 
   vivado_tcl.append('foreach pblock [get_pblocks] {')
-  vivado_tcl.append(f'  report_utilization -pblocks $pblock -file {work_dir}/report/$pblock.rpt')
+  vivado_tcl.append(f'  report_utilization -pblocks $pblock')
   vivado_tcl.append('}',)
 
   return vivado_tcl
 
 
-def checkpoint_floorplan(config_with_floorplan, work_dir):
+def checkpoint_floorplan(config_with_floorplan, autobridge_dir):
   """ Save a copy of the region -> instances into a json file
   """
   if config_with_floorplan.get('floorplan_status') == 'FAILED':
@@ -201,13 +201,13 @@ def checkpoint_floorplan(config_with_floorplan, work_dir):
     region = properties['floorplan_region']
     region_to_inst[region].append(vertex)
 
-  open(f'{work_dir}/floorplan-region-to-instances.json', 'w').write(
+  open(f'{autobridge_dir}/floorplan-region-to-instances.json', 'w').write(
     json.dumps(region_to_inst, indent=2)
   )
 
 
 def get_floorplan_config(
-    work_dir: str,
+    autobridge_dir: str,
     part_num: str,
     physical_connectivity: TextIO,
     top_task: Task,
@@ -235,7 +235,7 @@ def get_floorplan_config(
   grouping_constraints = get_grouping_constraints(edges)
 
   config = {
-    'work_dir': work_dir,
+    'work_dir': autobridge_dir,
     'part_num': part_num,
     'edges': edges,
     'vertices': vertices,

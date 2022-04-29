@@ -125,6 +125,10 @@ class Program:
     return os.path.join(self.work_dir, 'hdl')
 
   @property
+  def autobridge_dir(self) -> str:
+    return os.path.join(self.work_dir, 'autobridge')
+
+  @property
   def cpp_dir(self) -> str:
     cpp_dir = os.path.join(self.work_dir, 'cpp')
     os.makedirs(cpp_dir, exist_ok=True)
@@ -289,6 +293,8 @@ class Program:
   ) -> 'Program':
     _logger.info('Running floorplanning')
 
+    os.makedirs(self.autobridge_dir, exist_ok=True)
+
     # generate partitioning constraints if partitioning directive is given
     config, config_with_floorplan = generate_floorplan(
       part_num,
@@ -299,7 +305,7 @@ class Program:
       write_only_args,
       floorplan_pre_assignments,
       self.rtl_dir,
-      self.work_dir,
+      self.autobridge_dir,
       self.top_task,
       self.get_post_syn_rpt,
       self.get_task,
@@ -308,9 +314,9 @@ class Program:
       **kwargs,
     )
 
-    open(f'{self.work_dir}/pre-floorplan-config.json', 'w').write(json.dumps(config, indent=2))
-    open(f'{self.work_dir}/post-floorplan-config.json', 'w').write(json.dumps(config_with_floorplan, indent=2))
-    checkpoint_floorplan(config_with_floorplan, self.work_dir)
+    open(f'{self.autobridge_dir}/pre-floorplan-config.json', 'w').write(json.dumps(config, indent=2))
+    open(f'{self.autobridge_dir}/post-floorplan-config.json', 'w').write(json.dumps(config_with_floorplan, indent=2))
+    checkpoint_floorplan(config_with_floorplan, self.autobridge_dir)
 
     return self
 
@@ -337,7 +343,7 @@ class Program:
     # extract the floorplan result
     if constraint:
       fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr = get_floorplan_result(
-        self.work_dir, constraint
+        self.autobridge_dir, constraint
       )
 
       if not fifo_pipeline_level:
