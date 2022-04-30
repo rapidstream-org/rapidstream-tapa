@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <bitset>
-#include <chrono>
 #include <iostream>
 #include <limits>
 #include <random>
@@ -11,12 +10,9 @@
 #include <gflags/gflags.h>
 #include <tapa.h>
 
-using std::abs;
 using std::clog;
 using std::endl;
 using std::vector;
-using std::chrono::duration;
-using std::chrono::high_resolution_clock;
 
 using pkt_t = uint64_t;
 constexpr int kN = 8;  // kN x kN network
@@ -42,16 +38,11 @@ int main(int argc, char* argv[]) {
 
   vector<pkt_t> output(n);
 
-  const auto start = high_resolution_clock::now();
-
-  tapa::invoke(Network, FLAGS_bitstream,
-               tapa::read_only_mmap<pkt_t>(input).vectorized<kN>(),
-               tapa::write_only_mmap<pkt_t>(output).vectorized<kN>(), n / kN);
-
-  const auto stop = high_resolution_clock::now();
-
-  duration<double> elapsed = stop - start;
-  clog << "elapsed time: " << elapsed.count() << " s" << endl;
+  int64_t kernel_time_ns = tapa::invoke(
+      Network, FLAGS_bitstream,
+      tapa::read_only_mmap<pkt_t>(input).vectorized<kN>(),
+      tapa::write_only_mmap<pkt_t>(output).vectorized<kN>(), n / kN);
+  clog << "kernel time: " << kernel_time_ns * 1e-9 << " s" << endl;
 
   uint64_t num_errors = 0;
   const uint64_t threshold = 10;  // only report up to these errors

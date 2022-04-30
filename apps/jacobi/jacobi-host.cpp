@@ -1,6 +1,5 @@
 #include <cmath>
 
-#include <chrono>
 #include <iostream>
 #include <vector>
 
@@ -9,8 +8,6 @@
 using std::clog;
 using std::endl;
 using std::vector;
-using std::chrono::duration;
-using std::chrono::high_resolution_clock;
 
 void Jacobi(tapa::mmap<float> bank_0_t0, tapa::mmap<const float> bank_0_t1,
             uint64_t coalesced_data_num);
@@ -38,12 +35,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  auto start = high_resolution_clock::now();
-  tapa::invoke(Jacobi, FLAGS_bitstream, tapa::write_only_mmap<float>(t0_vec),
-               tapa::read_only_mmap<const float>(t1_vec), height * width / 2);
-  auto stop = high_resolution_clock::now();
-  duration<double> elapsed = stop - start;
-  clog << "elapsed time: " << elapsed.count() << " s" << endl;
+  int64_t kernel_time_ns = tapa::invoke(
+      Jacobi, FLAGS_bitstream, tapa::write_only_mmap<float>(t0_vec),
+      tapa::read_only_mmap<const float>(t1_vec), height * width / 2);
+  clog << "kernel time: " << kernel_time_ns * 1e-9 << " s" << endl;
 
   uint64_t num_errors = 0;
   const uint64_t threshold = 10;  // only report up to these errors

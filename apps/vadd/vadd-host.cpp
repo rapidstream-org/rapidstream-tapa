@@ -1,4 +1,3 @@
-#include <chrono>
 #include <iostream>
 #include <vector>
 
@@ -8,8 +7,6 @@
 using std::clog;
 using std::endl;
 using std::vector;
-using std::chrono::duration;
-using std::chrono::high_resolution_clock;
 
 void VecAdd(tapa::mmap<const float> a_array, tapa::mmap<const float> b_array,
             tapa::mmap<float> c_array, uint64_t n);
@@ -28,13 +25,10 @@ int main(int argc, char* argv[]) {
     b[i] = static_cast<float>(i) * 2;
     c[i] = 0.f;
   }
-  auto start = high_resolution_clock::now();
-  tapa::invoke(VecAdd, FLAGS_bitstream, tapa::read_only_mmap<const float>(a),
-               tapa::read_only_mmap<const float>(b),
-               tapa::write_only_mmap<float>(c), n);
-  auto stop = high_resolution_clock::now();
-  duration<double> elapsed = stop - start;
-  clog << "elapsed time: " << elapsed.count() << " s" << endl;
+  int64_t kernel_time_ns = tapa::invoke(
+      VecAdd, FLAGS_bitstream, tapa::read_only_mmap<const float>(a),
+      tapa::read_only_mmap<const float>(b), tapa::write_only_mmap<float>(c), n);
+  clog << "kernel time: " << kernel_time_ns * 1e-9 << " s" << endl;
 
   uint64_t num_errors = 0;
   const uint64_t threshold = 10;  // only report up to these errors

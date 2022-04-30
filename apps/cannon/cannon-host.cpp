@@ -1,6 +1,5 @@
 #include <cmath>
 
-#include <chrono>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -11,8 +10,6 @@ using std::abs;
 using std::clog;
 using std::endl;
 using std::vector;
-using std::chrono::duration;
-using std::chrono::high_resolution_clock;
 
 void Cannon(tapa::mmap<const float> a, tapa::mmap<const float> b,
             tapa::mmap<float> c, uint64_t n);
@@ -40,7 +37,6 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  auto start = high_resolution_clock::now();
   // reshape the matrices into 2x2 blocks (each has size n/2 x n/2)
   const int p = 2;
   vector<float> a_buf(n * n);
@@ -61,10 +57,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  tapa::invoke(Cannon, FLAGS_bitstream,
-               tapa::read_only_mmap<const float>(a_buf),
-               tapa::read_only_mmap<const float>(b_buf),
-               tapa::write_only_mmap<float>(c_buf), n);
+  int64_t kernel_time_ns = tapa::invoke(
+      Cannon, FLAGS_bitstream, tapa::read_only_mmap<const float>(a_buf),
+      tapa::read_only_mmap<const float>(b_buf),
+      tapa::write_only_mmap<float>(c_buf), n);
 
   for (uint64_t i = 0; i < p; ++i) {
     for (uint64_t j = 0; j < p; ++j) {
@@ -75,9 +71,7 @@ int main(int argc, char* argv[]) {
       }
     }
   }
-  auto stop = high_resolution_clock::now();
-  duration<double> elapsed = stop - start;
-  clog << "elapsed time: " << elapsed.count() << " s" << endl;
+  clog << "kernel time: " << kernel_time_ns * 1e-9 << " s" << endl;
 
   uint64_t num_errors = 0;
   const uint64_t threshold = 10;  // only report up to these errors

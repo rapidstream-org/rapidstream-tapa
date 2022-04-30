@@ -1,4 +1,3 @@
-#include <chrono>
 #include <iostream>
 #include <vector>
 
@@ -7,8 +6,6 @@
 using std::clog;
 using std::endl;
 using std::vector;
-using std::chrono::duration;
-using std::chrono::high_resolution_clock;
 
 void VecAddShared(tapa::mmap<float> data, uint64_t n);
 
@@ -27,12 +24,9 @@ int main(int argc, char* argv[]) {
     b[i] = static_cast<float>(i) * 2;
     c[i] = 0.f;
   }
-  auto start = high_resolution_clock::now();
-  tapa::invoke(VecAddShared, FLAGS_bitstream,
-               tapa::read_write_mmap<float>(data), n);
-  auto stop = high_resolution_clock::now();
-  duration<double> elapsed = stop - start;
-  clog << "elapsed time: " << elapsed.count() << " s" << endl;
+  int64_t kernel_time_ns = tapa::invoke(VecAddShared, FLAGS_bitstream,
+                                        tapa::read_write_mmap<float>(data), n);
+  clog << "kernel time: " << kernel_time_ns * 1e-9 << " s" << endl;
 
   uint64_t num_errors = 0;
   const uint64_t threshold = 10;  // only report up to these errors
