@@ -19,14 +19,6 @@ The Streaming Library
 * A *destructive operation* changes the state of the stream.
 * A *non-destructive operation* does not change the state of the stream.
 
-channel
-^^^^^^^
-.. doxygentypedef:: tapa::channel
-
-channels
-^^^^^^^^
-.. doxygentypedef:: tapa::channels
-
 istream
 ^^^^^^^
 .. doxygenclass:: tapa::istream
