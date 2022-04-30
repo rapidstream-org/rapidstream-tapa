@@ -28,17 +28,17 @@ jobs:
         uses: actions/cache@v1
         with:
           path: build/_deps/llvm-src
-          key: ${{ matrix.os }}-llvm-src-202108-1
+          key: ${{ matrix.os }}-llvm-src-202204-1
       - name: Cache llvm-build
         uses: actions/cache@v1
         with:
           path: build/_deps/llvm-build
-          key: ${{ matrix.os }}-llvm-build-202108-1
+          key: ${{ matrix.os }}-llvm-build-202204-1
       - name: Cache llvm-subbuild
         uses: actions/cache@v1
         with:
           path: build/_deps/llvm-subbuild
-          key: ${{ matrix.os }}-llvm-subbuild-202108-1
+          key: ${{ matrix.os }}-llvm-subbuild-202204-1
       - name: Build myself
         run: cmake --build build --target all
       - name: Test myself

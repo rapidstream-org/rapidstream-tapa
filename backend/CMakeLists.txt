@@ -7,6 +7,10 @@ FetchContent_Declare(
   PATCH_COMMAND
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/Attr.td clang/include/clang/Basic/Attr.td
   COMMAND
+    ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/Preprocessor.h clang/include/clang/Lex/Preprocessor.h
+  COMMAND
+    ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/PPDirectives.cpp clang/lib/Lex/PPDirectives.cpp
+  COMMAND
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/SemaDeclAttr.cpp clang/lib/Sema/SemaDeclAttr.cpp
   COMMAND
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/SemaStmtAttr.cpp clang/lib/Sema/SemaStmtAttr.cpp
@@ -38,6 +42,8 @@ if(NOT llvm_POPULATED)
         PARENT_SCOPE)
     set(LLVM_INCLUDE_DIRS
         ${llvm_SOURCE_DIR}/llvm/include ${llvm_BINARY_DIR}/include
+        PARENT_SCOPE)
+    set(CLANG_BIN_DIR ${llvm_BINARY_DIR}/bin/
         PARENT_SCOPE)
   endfunction()
   add_llvm()
@@ -97,3 +103,8 @@ target_sources(tapacc PRIVATE tapacc.cpp)
 target_compile_options(tapacc PRIVATE -fno-rtti)
 target_include_directories(tapacc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_link_libraries(tapacc PRIVATE task)
+
+add_custom_target(tapa-clang ALL DEPENDS clang
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${CLANG_BIN_DIR}/clang
+    ${CMAKE_CURRENT_BINARY_DIR}/tapa-clang)
