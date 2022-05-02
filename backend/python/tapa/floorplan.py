@@ -80,6 +80,9 @@ def get_floorplan_result(
 
 def extract_task_locations(config_with_floorplan) -> Dict[str, int]:
   task_inst_to_slr = {}
+  if config_with_floorplan.get('floorplan_status') == 'FAILED':
+    return task_inst_to_slr
+
   for v_name, props in config_with_floorplan['vertices'].items():
     # pseudo vertices don't have instances
     if 'instance' in props:
