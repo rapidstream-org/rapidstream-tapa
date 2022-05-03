@@ -195,6 +195,14 @@ def create_parser() -> argparse.ArgumentParser:
       help='Generate multiple floorplan configurations',
   )
   group.add_argument(
+      '--floorplan-dse-step',
+      type=int,
+      dest='floorplan_dse_step',
+      metavar='INT',
+      default=500,
+      help=('The minimal gap of slr_crossing_width between two design points.'),
+  )
+  group.add_argument(
       '--floorplan-output',
       type=argparse.FileType('w'),
       dest='floorplan_output',

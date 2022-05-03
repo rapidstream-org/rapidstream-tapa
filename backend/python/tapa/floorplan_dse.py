@@ -110,7 +110,7 @@ def get_cmd_to_explore_floorplan(
   return basic_cmd
 
 
-def run_floorplan_dse(args, explore_step: int = 500):
+def run_floorplan_dse(args):
   """Self-invoke tapac to generate multiple floorplan outputs"""
   # remove the file opened in argparse
   args.floorplan_output.close()
@@ -196,6 +196,6 @@ def run_floorplan_dse(args, explore_step: int = 500):
     min_area_limit = max(min_area_limit, actual_area_usage)
 
     # the slr limit in the next iteration will be at least explore_step smaller
-    max_slr_limit = min(max_slr_limit - explore_step, actual_slr_width)
+    max_slr_limit = min(max_slr_limit - args.floorplan_dse_step, actual_slr_width)
 
     id += 1
