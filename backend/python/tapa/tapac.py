@@ -34,6 +34,12 @@ def create_parser() -> argparse.ArgumentParser:
       description='Compiles TAPA C++ code into packaged RTL.',
   )
   parser.add_argument(
+      '-V',
+      '--version',
+      action='version',
+      version=tapa.__version__,
+  )
+  parser.add_argument(
       '-v',
       '--verbose',
       action='count',
@@ -393,9 +399,7 @@ def main(argv: Optional[List[str]] = None):
 
   tapa.util.setup_logging(args)
 
-  with open(os.path.join(os.path.dirname(tapa.__file__), 'VERSION')) as fp:
-    version = fp.read().strip()
-  _logger.info('tapa version: %s', version)
+  _logger.info('tapa version: %s', tapa.__version__)
 
   # RTL parsing may require a deep stack
   sys.setrecursionlimit(flags.FLAGS.recursionlimit)
