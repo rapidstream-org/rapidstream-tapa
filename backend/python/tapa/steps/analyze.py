@@ -20,7 +20,6 @@ _logger = logging.getLogger().getChild(__name__)
 @click.pass_context
 @click.option('--input',
               '-f',
-              metavar='sources',
               required=True,
               multiple=True,
               type=click.Path(dir_okay=False, readable=True, exists=True),
@@ -28,23 +27,20 @@ _logger = logging.getLogger().getChild(__name__)
               help='Input file, usually TAPA C++ source code.')
 @click.option('--top',
               '-t',
-              metavar='task',
+              metavar='TASK',
               required=True,
               type=str,
               help='Name of the top-level task.')
 @click.option('--cflags',
               '-c',
-              metavar='flags',
               multiple=True,
               type=str,
               default=(),
               help='Compiler flags for the kernel, may appear many times.')
 @click.option('--tapacc',
-              metavar='path',
               type=click.Path(dir_okay=False, readable=True, exists=True),
               help='Specify a `tapacc` instead of searching in `PATH`.')
 @click.option('--tapa-clang',
-              metavar='path',
               type=click.Path(dir_okay=False, readable=True, exists=True),
               help='Specify a `tapa-clang` instead of searching in `PATH`.')
 def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],

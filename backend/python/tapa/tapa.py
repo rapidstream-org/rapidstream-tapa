@@ -29,7 +29,7 @@ _logger = logging.getLogger().getChild(__name__)
               help='Decrease logging verbosity.')
 @click.option('--work-dir',
               '-w',
-              metavar='dir',
+              metavar='DIR',
               default='./work.out/',
               type=click.Path(file_okay=False),
               help='Specify working directory.')
