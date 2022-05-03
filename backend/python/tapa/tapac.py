@@ -443,7 +443,7 @@ def main(argv: Optional[List[str]] = None):
   parser = create_parser()
   args = parser.parse_args(argv)
 
-  tapa.util.setup_logging(args)
+  tapa.util.setup_logging(args.verbose, args.quiet, args.work_dir)
 
   _logger.info('tapa version: %s', tapa.__version__)
 
@@ -551,6 +551,7 @@ def main(argv: Optional[List[str]] = None):
       tapa_program_json_dict.setdefault('headers', {})
       with open(os.path.join(input_file_dirname, dep), 'r') as dep_fp:
         tapa_program_json_dict['headers'][dep] = dep_fp.read()
+    tapa_program_json_dict['cflags'] = cflag_list
     tapa_program_json_str = json.dumps(tapa_program_json_dict, indent=2)
 
     # save program.json if work_dir is set or run_tapacc is the last step
@@ -562,18 +563,15 @@ def main(argv: Optional[List[str]] = None):
       os.makedirs(os.path.dirname(tapa_program_json_file) or '.', exist_ok=True)
       with open(tapa_program_json_file, 'w') as output_fp:
         output_fp.write(tapa_program_json_str)
-    tapa_program_json = lambda: io.StringIO(tapa_program_json_str)
+    tapa_program_json = lambda: tapa_program_json_dict
   else:
     if args.input_file.endswith('.json') or args.work_dir is None:
-      tapa_program_json = lambda: open(args.input_file)
+      tapa_program_json = lambda: json.load(args.input_file)
     else:
-      tapa_program_json = lambda: open(
-          os.path.join(args.work_dir, 'program.json'))
+      tapa_program_json = lambda: json.load(os.path.join(args.work_dir, 'program.json'))
 
-  with tapa_program_json() as tapa_program_json_obj:
-    program = tapa.core.Program(tapa_program_json_obj,
-                                cflags=' '.join(args.cflags),
-                                work_dir=args.work_dir)
+  tapa_program_json_obj = tapa_program_json()
+  program = tapa.core.Program(tapa_program_json_obj, work_dir=args.work_dir)
 
   if args.frt_interface is not None and program.frt_interface is not None:
     with open(args.frt_interface, 'w') as output_fp:
@@ -651,6 +649,7 @@ def main(argv: Optional[List[str]] = None):
     except:
       _logger.error('Fail to create the v++ script at %s. Check if you have write'
                     'permission', script_name)
+
 
 def _get_device_info(
     parser: argparse.ArgumentParser,
