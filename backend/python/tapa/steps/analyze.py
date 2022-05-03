@@ -64,7 +64,7 @@ def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],
   program_json_file = os.path.join(work_dir, 'program.json')
   with open(program_json_file, 'w') as output_fp:
     output_fp.write(json.dumps(program_dict))
-  ctx.obj['program-dict'] = program_dict
+  ctx.obj['program'] = tapa.core.Program(program_dict, work_dir)
 
 
 def find_clang_binary(name: str, override: Optional[str]) -> str:
