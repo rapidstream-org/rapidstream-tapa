@@ -66,21 +66,16 @@ class Program:
     files: Dict mapping file names to contents that appear in the HDL directory.
   """
 
-  def __init__(self,
-               fp: TextIO,
-               cflags: str = None,
-               work_dir: Optional[str] = None):
+  def __init__(self, obj: Dict, work_dir: Optional[str] = None):
     """Construct Program object from a json file.
 
     Args:
-      fp: TextIO of json object.
-      cflags: The cflags send to HLS.
+      obj: json object.
       work_dir: Specifiy a working directory as a string. If None, a temporary
           one will be created.
     """
-    obj = json.load(fp)
     self.top: str = obj['top']
-    self.cflags = cflags
+    self.cflags = ' '.join(obj.get('cflags', []))
     self.headers: Dict[str, str] = obj.get('headers', {})
     if work_dir is None:
       self.work_dir = tempfile.mkdtemp(prefix='tapa-')

@@ -5,7 +5,7 @@ import os.path
 import shutil
 import subprocess
 import time
-from typing import Dict, Iterator, TextIO, Tuple
+from typing import Dict, Iterator, TextIO, Tuple, Optional
 
 import absl.logging
 import coloredlogs
@@ -82,6 +82,7 @@ def parse_connectivity(vitis_config_ini: TextIO) -> Dict[str, str]:
 
   return arg_name_to_external_port
 
+
 def parse_connectivity_and_check_completeness(
     vitis_config_ini: TextIO,
     top_task: Task,
@@ -93,9 +94,11 @@ def parse_connectivity_and_check_completeness(
     for arg in arg_list:
       if arg.cat in {Instance.Arg.Cat.ASYNC_MMAP, Instance.Arg.Cat.MMAP}:
         if arg.name not in arg_name_to_external_port:
-          raise AssertionError(f'Missing physical binding for {arg.name} in {vitis_config_ini}')
+          raise AssertionError(
+              f'Missing physical binding for {arg.name} in {vitis_config_ini}')
 
   return arg_name_to_external_port
+
 
 def parse_port(port: str) -> Tuple[str, int]:
   bra = port.find('[')
@@ -106,6 +109,7 @@ def parse_port(port: str) -> Tuple[str, int]:
   port_cat = port[:bra]
   port_id = int(port[bra + 1:ket])
   return port_cat, port_id
+
 
 def get_max_addr_width(part_num: str) -> int:
   """ get the max addr width based on the memory capacity """
@@ -139,10 +143,12 @@ def nproc() -> int:
   return int(subprocess.check_output(['nproc']))
 
 
-def setup_logging(args: argparse.Namespace,
+def setup_logging(verbose: Optional[int],
+                  quiet: Optional[int],
+                  work_dir: Optional[str],
                   program_name: str = 'tapac') -> None:
-  verbose = 0 if args.verbose is None else args.verbose
-  quiet = 0 if args.quiet is None else args.quiet
+  verbose = 0 if verbose is None else verbose
+  quiet = 0 if quiet is None else quiet
   logging_level = (quiet - verbose) * 10 + logging.INFO
   logging_level = max(logging.DEBUG, min(logging.CRITICAL, logging_level))
 
@@ -153,8 +159,8 @@ def setup_logging(args: argparse.Namespace,
   )
 
   log_dir = None
-  if args.work_dir is not None:
-    log_dir = os.path.join(args.work_dir, 'log')
+  if work_dir is not None:
+    log_dir = os.path.join(work_dir, 'log')
     os.makedirs(log_dir, exist_ok=True)
 
   # The following is copied and modified from absl-py.

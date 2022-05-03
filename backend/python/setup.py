@@ -44,9 +44,13 @@ setup(
         'pyyaml>=5.1',
         'tapa-fast-cosim>=0.0.20220424.1',
         'toposort',
+        'click>=7.1.2',
     ],
     entry_points={
-        'console_scripts': ['tapac=tapa.tapac:main', 'tapav=tapa.tapav:main'],
+        'console_scripts': [
+            'tapa=tapa.tapa:entry_point', 'tapac=tapa.tapac:main',
+            'tapav=tapa.tapav:main'
+        ],
     },
     include_package_data=True,
 )
