@@ -18,7 +18,6 @@ def load_program(flow_ctx: Dict) -> tapa.core.Program:
   Returns:
     Loaded program description.
   """
-  
   work_dir: str
   work_dir = flow_ctx['work-dir']
 
@@ -31,5 +30,5 @@ def load_program(flow_ctx: Dict) -> tapa.core.Program:
     _logger.info(f'loading TAPA program from json `{program_json_file}`.')
     with open(program_json_file, 'r') as input_fp:
       obj = json.loads(input_fp.read())
-
-  return tapa.core.Program(obj, work_dir)
+    flow_ctx['program'] = tapa.core.Program(obj, work_dir)
+    return flow_ctx['program']

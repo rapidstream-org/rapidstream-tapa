@@ -58,7 +58,7 @@ def entry_point(ctx, verbose, quiet, work_dir, recursion_limit):
 
 entry_point.add_command(tapa.steps.analyze.analyze)
 entry_point.add_command(tapa.steps.synth.synth)
-entry_point.add_command(tapa.steps.optimize.optimize)
+entry_point.add_command(tapa.steps.optimize.optimize_floorplan)
 entry_point.add_command(tapa.steps.link.link)
 entry_point.add_command(tapa.steps.pack.pack)
 

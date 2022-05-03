@@ -33,6 +33,9 @@ def synth(ctx, part_num: str, clock_period: float,
           additional_fifo_pipelining: bool):
 
   program = common.load_program(ctx.obj)
+  ctx.obj['part-num'] = part_num
+  ctx.obj['clock-period'] = clock_period
+  ctx.obj['additional-fifo-pipelining'] = additional_fifo_pipelining
 
   program.run_hls(clock_period, part_num)
   program.generate_task_rtl(additional_fifo_pipelining, part_num)
