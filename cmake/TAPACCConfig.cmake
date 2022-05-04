@@ -21,8 +21,9 @@ function(add_tapa_target target_name)
   # Optional Named Arguments:
   #
   # * OUTPUT: Optional, output filename, default to ${TOP}.${PLATFORM}.hw.xo
-  # * TAPAC: Optional, path to the tapac executable.
+  # * TAPA_CLI: Optional, path to the tapa executable.
   # * TAPACC: Optional, path to the tapacc executable.
+  # * TAPA_CLANG: Optional, path to the tapa-clang executable.
   # * CFLAGS: Optional, cflags for kernel, space separated.
   # * FRT_INTERFACE: Optional, output FRT interface filename.
   # * CLOCK_PERIOD: Optional, override the clock period.
@@ -34,7 +35,7 @@ function(add_tapa_target target_name)
   cmake_parse_arguments(
     TAPA
     ""
-    "OUTPUT;INPUT;TOP;PLATFORM;TAPAC;TAPACC;CFLAGS;FRT_INTERFACE;CLOCK_PERIOD;PART_NUM;DIRECTIVE;CONNECTIVITY;CONSTRAINT"
+    "OUTPUT;INPUT;TOP;PLATFORM;TAPA_CLI;TAPACC;TAPA_CLANG;CFLAGS;FRT_INTERFACE;CLOCK_PERIOD;PART_NUM;DIRECTIVE;CONNECTIVITY;CONSTRAINT"
     ""
     ${ARGN})
   if(NOT TAPA_INPUT)
@@ -54,14 +55,14 @@ function(add_tapa_target target_name)
   get_filename_component(TAPA_INPUT ${TAPA_INPUT} ABSOLUTE)
   get_filename_component(TAPA_OUTPUT ${TAPA_OUTPUT} ABSOLUTE)
 
-  if(TAPA_TAPAC)
-    set(TAPAC ${TAPA_TAPAC})
+  if(TAPA_TAPA_CLI)
+    set(TAPA_CLI ${TAPA_TAPA_CLI})
   endif()
-  if(NOT TAPAC)
-    find_program(TAPAC tapac PATHS $ENV{HOME}/.local/bin)
+  if(NOT TAPA_CLI)
+    find_program(TAPA tapa PATHS $ENV{HOME}/.local/bin)
   endif()
-  if(NOT TAPAC)
-    message(FATAL_ERROR "cannot find tapac")
+  if(NOT TAPA_CLI)
+    message(FATAL_ERROR "cannot find tapa")
   endif()
 
   if(TAPA_TAPACC)
@@ -74,44 +75,53 @@ function(add_tapa_target target_name)
     message(FATAL_ERROR "cannot find tapacc")
   endif()
 
-  if(TAPA_DIRECTIVE)
-    if(NOT TAPA_CONSTRAINT)
-      message(FATAL_ERROR "CONSTRAINT not set but DIRECTIVE is")
-    endif()
+  if(TAPA_TAPA_CLANG)
+    set(TAPA_CLANG ${TAPA_TAPA_CLANG})
+  endif()
+  if(NOT TAPA_CLANG)
+    find_program(TAPA_CLANG tapa-clang)
+  endif()
+  if(NOT TAPA_CLANG)
+    message(FATAL_ERROR "cannot find tapa-clang")
   endif()
 
-  set(tapac_cmd ${TAPAC} ${TAPA_INPUT})
-  list(APPEND tapac_cmd --top ${TAPA_TOP})
-  list(APPEND tapac_cmd --tapacc ${TAPACC})
-  list(APPEND tapac_cmd --platform ${TAPA_PLATFORM})
-  list(APPEND tapac_cmd --output ${TAPA_OUTPUT})
-  list(APPEND tapac_cmd --work-dir ${TAPA_OUTPUT}.tapa)
+  set(tapa_cmd ${TAPA_CLI} --work-dir ${TAPA_OUTPUT}.tapa)
+  list(APPEND tapa_cmd analyze)
+  list(APPEND tapa_cmd -f ${TAPA_INPUT})
+  list(APPEND tapa_cmd --top ${TAPA_TOP})
+  list(APPEND tapa_cmd --tapacc ${TAPACC})
+  list(APPEND tapa_cmd --tapa-clang ${TAPA_CLANG})
   if(TAPA_CFLAGS)
-    list(APPEND tapac_cmd --cflags=${TAPA_CFLAGS})
+    list(APPEND tapa_cmd --cflags ${TAPA_CFLAGS})
   endif()
-  if(TAPA_FRT_INTERFACE)
-    list(APPEND tapac_cmd --frt-interface ${TAPA_FRT_INTERFACE})
-  endif()
+
+  list(APPEND tapa_cmd synth)
+  list(APPEND tapa_cmd --platform ${TAPA_PLATFORM})
   if(TAPA_CLOCK_PERIOD)
-    list(APPEND tapac_cmd --clock-period ${TAPA_CLOCK_PERIOD})
+    list(APPEND tapa_cmd --clock-period ${TAPA_CLOCK_PERIOD})
   endif()
   if(TAPA_PART_NUM)
-    list(APPEND tapac_cmd --part-num ${TAPA_PART_NUM})
+    list(APPEND tapa_cmd --part-num ${TAPA_PART_NUM})
   endif()
-  if(TAPA_DIRECTIVE)
-    list(APPEND tapac_cmd --directive ${TAPA_DIRECTIVE})
-  endif()
+
   if(TAPA_CONNECTIVITY)
-    list(APPEND tapac_cmd --connectivity ${TAPA_CONNECTIVITY})
+    list(APPEND tapa_cmd optimize-floorplan)
+    list(APPEND tapa_cmd --connectivity ${TAPA_CONNECTIVITY})
   endif()
+
+  list(APPEND tapa_cmd link)
   if(TAPA_CONSTRAINT)
-    list(APPEND tapac_cmd --constraint ${TAPA_CONSTRAINT})
+    list(APPEND tapa_cmd --floorplan-output ${TAPA_CONSTRAINT})
   endif()
-  list(APPEND tapac_cmd ${TAPA_UNPARSED_ARGUMENTS})
+
+  list(APPEND tapa_cmd pack)
+  list(APPEND tapa_cmd --output ${TAPA_OUTPUT})
+
+  list(APPEND tapa_cmd ${TAPA_UNPARSED_ARGUMENTS})
 
   add_custom_command(
-    OUTPUT ${TAPA_OUTPUT} ${TAPA_FRT_INTERFACE}
-    COMMAND ${tapac_cmd}
+    OUTPUT ${TAPA_OUTPUT}
+    COMMAND ${tapa_cmd}
     DEPENDS ${TAPA_INPUT}
     VERBATIM)
 
