@@ -114,6 +114,7 @@ list(
   "libfrt-dev (>= 0.0.20220403.1)" # required by libtapa for host-kernel
                                    # interface
   "libgoogle-glog-dev" # required by libtapa for logging messages
+  "rsync" # required by AutoBridge DSE
 )
 list(SORT CPACK_DEBIAN_PACKAGE_DEPENDS)
 list(JOIN CPACK_DEBIAN_PACKAGE_DEPENDS ", " CPACK_DEBIAN_PACKAGE_DEPENDS)
@@ -129,6 +130,7 @@ list(
   "gcc-c++" # required by tapac for dependence analysis
   "glog-devel" # required by libtapa for logging messages
   "iverilog" # required by tapac for RTL instrumentation
+  "rsync" # required by AutoBridge DSE
 )
 list(SORT CPACK_RPM_PACKAGE_REQUIRES)
 list(JOIN CPACK_RPM_PACKAGE_REQUIRES ", " CPACK_RPM_PACKAGE_REQUIRES)

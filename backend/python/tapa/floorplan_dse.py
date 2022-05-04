@@ -41,11 +41,11 @@ def get_basic_tapa_command(args_dict: Dict[str, Any], output_dir: str) -> List[s
     if k == 'run_floorplan_dse':
       continue
     # filter args with default empty list
-    if type(v) == list and len(v) == 0:
+    if isinstance(v, list) and not v:
       continue
     if k == 'input_file':
       continue
-    if type(v) == bool and not v:
+    if isinstance(v, bool) and not v:
       continue
 
     # convert args of file type
@@ -53,7 +53,7 @@ def get_basic_tapa_command(args_dict: Dict[str, Any], output_dir: str) -> List[s
       v = v.name
 
     # for store_true/store_false options
-    if type(v) == bool:
+    if isinstance(v, bool):
       cmd += [to_tapac_option(k)]
     elif k == 'output_file':
       cmd += ['-o', output_dir + '/' + str(v)]
@@ -132,16 +132,17 @@ def run_floorplan_dse(args):
   _logger.info(f'-----------------------------------------------------------------------------')
   _logger.info(f'')
 
-  hls_dir = f'{os.getcwd()}/{top_work_dir}/.csynth/'
-  hls_cmd = get_cmd_to_csynth_tasks(args_dict, hls_dir, tempfile.gettempdir())
-  try:
-    subprocess.run(hls_cmd,
-                    stdout=subprocess.PIPE,
-                    check=True,
-                    universal_newlines=True)
-  except subprocess.CalledProcessError as e:
-    _logger.error('Fail to run command: %s', ' '.join(hls_cmd) )
-    exit(1)
+  hls_dir = f'{os.getcwd()}/{top_work_dir}/csynth/'
+  with tempfile.TemporaryDirectory() as temp_dir:
+    hls_cmd = get_cmd_to_csynth_tasks(args_dict, hls_dir, temp_dir)
+    try:
+      subprocess.run(hls_cmd,
+                      stdout=subprocess.PIPE,
+                      check=True,
+                      universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+      _logger.error('Fail to run command: %s', ' '.join(hls_cmd) )
+      exit(1)
 
   # start exploring the pareto optimal curve
   min_slr_limit = args.min_slr_width_limit
@@ -183,13 +184,14 @@ def run_floorplan_dse(args):
       exit(1)
 
     # extract the floorplan metrics
-    config = json.load(open(f'{top_work_dir}/run-{id}/run/autobridge/post-floorplan-config.json', 'r'))
-    if config['floorplan_status'] != 'SUCCEED':
-      _logger.info(f'Failed to generate design point {id} with --max-slr-width-limit {max_slr_limit}')
-      break
+    with open(f'{top_work_dir}/run-{id}/run/autobridge/post-floorplan-config.json', 'r') as config_json:
+      config = json.load(config_json)
+      if config['floorplan_status'] != 'SUCCEED':
+        _logger.info(f'Failed to generate design point {id} with --max-slr-width-limit {max_slr_limit}')
+        break
 
-    actual_slr_width = config['actual_slr_width_usage']
-    actual_area_usage = config['actual_area_usage']
+      actual_slr_width = config['actual_slr_width_usage']
+      actual_area_usage = config['actual_area_usage']
 
     # in the next iteration we decrease the slr limit, so the area usage
     # could only be higher
