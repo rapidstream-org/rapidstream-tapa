@@ -134,6 +134,7 @@ module async_mmap #(
     .DATA_WIDTH(AddrWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableWriteChannel)
   ) write_addr (
     .clk  (clk),
@@ -218,6 +219,7 @@ module async_mmap #(
     .DATA_WIDTH(BurstLenWidth + AddrWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableWriteChannel)
   ) burst_write_addr (
     .clk  (clk),
@@ -240,6 +242,7 @@ module async_mmap #(
     .DATA_WIDTH(BurstLenWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableWriteChannel)
   ) burst_write_len (
     .clk  (clk),
@@ -279,6 +282,7 @@ module async_mmap #(
     .DATA_WIDTH(BurstLenWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableWriteChannel)
   ) write_req (
     .clk  (clk),
@@ -302,6 +306,7 @@ module async_mmap #(
     .DATA_WIDTH(1),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableWriteChannel)
   ) burst_write_last (
     .clk  (clk),
@@ -328,6 +333,7 @@ module async_mmap #(
     .DATA_WIDTH(DataWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableWriteChannel)
   ) write_data (
     .clk  (clk),
@@ -355,6 +361,7 @@ module async_mmap #(
     .DATA_WIDTH(BurstLenWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableWriteChannel)
   ) write_resp (
     .clk  (clk),
@@ -405,6 +412,7 @@ module async_mmap #(
     .DATA_WIDTH(AddrWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableReadChannel)
   ) read_addr (
     .clk  (clk),
@@ -435,6 +443,7 @@ module async_mmap #(
     .DATA_WIDTH(BurstLenWidth + AddrWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableReadChannel)
   ) burst_read_addr (
     .clk  (clk),
@@ -494,6 +503,7 @@ module async_mmap #(
     .DATA_WIDTH(DataWidth),
     .ADDR_WIDTH(BufferSizeLog),
     .DEPTH     (BufferSize),
+    .LEVEL     (1),
     .CONNECT   (EnableReadChannel)
   ) read_data (
     .clk  (clk),
