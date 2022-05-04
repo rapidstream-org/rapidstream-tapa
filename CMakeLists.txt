@@ -90,6 +90,8 @@ set(ConfigPackageLocation lib/cmake/tapa)
 set(ConfigFiles cmake/TAPAConfig.cmake)
 if(TAPA_BUILD_BACKEND)
   install(TARGETS tapacc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(FILES ${CMAKE_BINARY_DIR}/backend/tapa-clang
+    DESTINATION ${CMAKE_INSTALL_BINDIR})
   list(APPEND ConfigFiles cmake/TAPACCConfig.cmake)
 endif()
 install(
