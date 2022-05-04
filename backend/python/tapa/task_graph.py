@@ -196,6 +196,7 @@ def get_port_vertices(
 
     port_vertices[get_physical_port_vertex_name(arg_name)] = {
       'module': f'external_{port_cat}_controller',
+      'top_arg_name': arg_name,
       'area': area,
       'category': 'PORT_VERTEX',
       'port_cat': port_cat,

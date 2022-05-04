@@ -54,7 +54,10 @@ def get_vitis_script(args) -> str:
     script.append(CHECK_CONSTRAINT)
     vitis_command += FLOORPLAN_OPTION
 
-  if args.connectivity:
+  if args.enable_hbm_binding_adjustment:
+    script.append(f'CONFIG_FILE=\'{os.path.abspath(args.work_dir)}/link_config.ini\'')
+    vitis_command += CONFIG_OPTION
+  elif args.connectivity:
     script.append(f'CONFIG_FILE=\'{os.path.abspath(args.connectivity.name)}\'')
     vitis_command += CONFIG_OPTION
 

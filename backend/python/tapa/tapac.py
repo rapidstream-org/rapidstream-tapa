@@ -203,6 +203,15 @@ def create_parser() -> argparse.ArgumentParser:
       help=('The minimal gap of slr_crossing_width between two design points.'),
   )
   group.add_argument(
+      '--enable-hbm-binding-adjustment',
+      action='store_true',
+      dest='enable_hbm_binding_adjustment',
+      default=False,
+      help='Allow the top arguments to be binded to different physical ports '
+           'based on the floorplan results. Overwrite the binding from the '
+           '--connectivity option',
+  )
+  group.add_argument(
       '--floorplan-output',
       type=argparse.FileType('w'),
       dest='floorplan_output',
@@ -407,6 +416,15 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
     if not args.work_dir:
       parser.error('--work-dir must be set to enable floorplan DSE.')
 
+  if args.enable_hbm_binding_adjustment:
+    if not _get_device_info(parser, args)['part_num'].startswith('xcu280'):
+      parser.error('--enable-hbm-binding-adjustment only works with U280')
+    if not args.work_dir:
+      parser.error('--work-dir must be set to enable automatic HBM binding adjustment.')
+
+    _logger.warning('HBM port binding adjustment is enabled. The final binding may be '
+                    'different from %s', args.connectivity.name)
+
   return all_steps, last_step
 
 
@@ -579,6 +597,7 @@ def main(argv: Optional[List[str]] = None):
         'max_search_time',
         'floorplan_strategy',
         'floorplan_opt_priority',
+        'enable_hbm_binding_adjustment',
       )
       for param in floorplan_params:
         if hasattr(args, param):

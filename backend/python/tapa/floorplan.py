@@ -191,6 +191,24 @@ def checkpoint_floorplan(config_with_floorplan, autobridge_dir):
   )
 
 
+def generate_new_connectivity_ini(config_with_floorplan, work_dir, top_name):
+  """If the HBM binding is adjusted, generate the new binding configuration"""
+  if config_with_floorplan.get('enable_hbm_binding_adjustment', False):
+    new_binding = config_with_floorplan.get('new_hbm_binding', {})
+    if not new_binding:
+      _logger.error('Adjusted HBM binding not recorded in post-floorplan config')
+      exit(1)
+
+    cfg = []
+    cfg += ['[connectivity]']
+    for arg_name, port_id in new_binding.items():
+      cfg += [f'sp={top_name}_1.{arg_name}:HBM[{port_id}]']
+
+    cfg_path = f'{work_dir}/link_config.ini'
+    _logger.info('generate new port binding at %s', cfg_path)
+    open(cfg_path, 'w').write('\n'.join(cfg))
+
+
 def get_floorplan_config(
     autobridge_dir: str,
     part_num: str,
@@ -215,6 +233,7 @@ def get_floorplan_config(
                                 part_num,
                                 user_floorplan_pre_assignments,
                                 vertices,
+                                **kwargs,
                               )
 
   grouping_constraints = get_grouping_constraints(edges)
@@ -245,7 +264,8 @@ def get_grouping_constraints(edges: Dict) -> List[List[str]]:
 def get_floorplan_pre_assignments(
     part_num: str,
     user_floorplan_pre_assignments_io: Optional[TextIO],
-    vertices: Dict[str, Dict]
+    vertices: Dict[str, Dict],
+    **kwargs: Dict,
 ) -> Dict[str, List[str]]:
   """ constraints of which modules must be assigned to which slots
       including user pre-assignments and system ones
@@ -266,8 +286,11 @@ def get_floorplan_pre_assignments(
   floorplan_pre_assignments[ctrl_region] += ctrl_vertex
 
   # port vertices pre assignment
+  skip_pre_assign_hbm_ports = kwargs.get('enable_hbm_binding_adjustment', False)
   for v_name, properties in vertices.items():
     if properties['category'] == 'PORT_VERTEX':
+      if skip_pre_assign_hbm_ports and properties['port_cat'] == 'HBM':
+        continue
       region = get_port_region(part_num, properties['port_cat'], properties['port_id'])
       floorplan_pre_assignments[region].append(v_name)
 

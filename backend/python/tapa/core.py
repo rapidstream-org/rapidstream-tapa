@@ -24,6 +24,7 @@ from tapa.floorplan import (
   generate_floorplan,
   get_floorplan_result,
   get_post_synth_area,
+  generate_new_connectivity_ini,
 )
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
@@ -326,6 +327,7 @@ class Program:
     open(f'{self.autobridge_dir}/pre-floorplan-config.json', 'w').write(json.dumps(config, indent=2))
     open(f'{self.autobridge_dir}/post-floorplan-config.json', 'w').write(json.dumps(config_with_floorplan, indent=2))
     checkpoint_floorplan(config_with_floorplan, self.autobridge_dir)
+    generate_new_connectivity_ini(config_with_floorplan, self.work_dir, self.top)
 
     return self
 
