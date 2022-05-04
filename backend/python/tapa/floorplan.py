@@ -132,13 +132,21 @@ def get_vivado_tcl(config_with_floorplan):
   for i in range(num_copy):
     region_to_inst[f'pblock_dynamic_SLR{i}'].append(f'control_s_axi_U_slr_{i}')
 
+  # tapa central FSM
+  region_to_inst[f'pblock_dynamic_SLR0'].append('tapa_state.*')
+
   # floorplan vertices
   for vertex, properties in config_with_floorplan['vertices'].items():
     if properties['category'] == 'PORT_VERTEX':
       continue
     region = properties['floorplan_region']
     inst = properties['instance']
+
+    # floorplan the task instances
     region_to_inst[region].append(inst)
+
+    # floorplan some control signals
+    region_to_inst[region].append(f'{inst}__state.*')
 
   # floorplan pipeline registers
   for edge, properties in config_with_floorplan['edges'].items():
