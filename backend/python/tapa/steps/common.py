@@ -1,7 +1,10 @@
+from cmath import exp
 import json
 import logging
 import os
 from typing import Dict
+
+import click
 
 import tapa.core
 import tapa.util
@@ -24,11 +27,18 @@ def load_program(flow_ctx: Dict) -> tapa.core.Program:
   if flow_ctx.get('program', None) is not None:
     _logger.info('reusing the TAPA program from upstream flow.')
     return flow_ctx.get('program', None)
-    
+
   else:
     program_json_file = os.path.join(work_dir, 'program.json')
     _logger.info(f'loading TAPA program from json `{program_json_file}`.')
-    with open(program_json_file, 'r') as input_fp:
-      obj = json.loads(input_fp.read())
+
+    try:
+      with open(program_json_file, 'r') as input_fp:
+        obj = json.loads(input_fp.read())
+    except FileNotFoundError:
+      raise click.BadArgumentUsage(
+          f'Program description {program_json_file} does not exist.  Either '
+          '`tapa analyze` wasn\'t executed, or you specified a wrong path.')
+
     flow_ctx['program'] = tapa.core.Program(obj, work_dir)
     return flow_ctx['program']
