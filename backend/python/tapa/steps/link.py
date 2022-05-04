@@ -34,6 +34,7 @@ def link(ctx, floorplan_output: str, register_level: int):
   if ctx.obj.get('floorplanned', False):
     if floorplan_output is None:
       floorplan_output = os.path.join(work_dir, 'constraints.tcl')
+    ctx.obj['floorplan-output'] = floorplan_output
     floorplan_output_file = open(floorplan_output, 'w')
 
   program.generate_top_rtl(
