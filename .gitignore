@@ -3,4 +3,5 @@
 /.vscode
 /build/
 /compile_commands.json
-/work.out
+work.out
+work.xo
