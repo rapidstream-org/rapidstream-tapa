@@ -182,6 +182,7 @@ def setup_logging(args: argparse.Namespace,
                '%(name)s:%(lineno)d] %(message)s'),
           datefmt='%m%d %H:%M:%S',
       ))
+  handler.setLevel(logging.DEBUG)
   logging.getLogger().addHandler(handler)
 
   _logger.info('logging level set to %s', logging.getLevelName(logging_level))
