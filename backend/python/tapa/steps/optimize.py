@@ -13,7 +13,6 @@ _logger = logging.getLogger().getChild(__name__)
 @click.option(
     '--connectivity',
     type=click.File(mode='r'),
-    required=True,
     help='Input ``connectivity.ini`` specification for mmaps. '
     'This is the same file passed to ``v++``.',
 )
@@ -125,6 +124,9 @@ _logger = logging.getLogger().getChild(__name__)
     'crossing wires.',
 )
 def optimize_floorplan(ctx, **kwargs: Dict):
+
+  if kwargs['connectivity'] is None:
+    raise click.BadArgumentUsage('Missing option: --connectivity')
 
   program: tapa.core.Program
   program = ctx.obj.get('program', None)

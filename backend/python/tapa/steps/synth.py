@@ -4,7 +4,7 @@ from typing import Dict, Optional
 import click
 import haoda.backend.xilinx
 
-from . import common
+import tapa.steps.common as common
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -64,7 +64,7 @@ def get_device_info(part_num: Optional[str], platform: Optional[str],
   class ShimParser:
 
     def error(self, message: str):
-      raise click.BadOptionUsage(message)
+      raise click.BadArgumentUsage(message)
 
     @classmethod
     def make_option_pair(cls, dest: str, option: str):
