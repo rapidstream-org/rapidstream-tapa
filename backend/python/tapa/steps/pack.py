@@ -44,10 +44,14 @@ def pack(ctx, output: str, bitstream_script: Optional[str]):
     if floorplan_output is not None:
       args.floorplan_output = Object()
       args.floorplan_output.name = floorplan_output
+    else:
+      args.floorplan_output = None
     connectivity = settings.get('connectivity', None)
     if connectivity is not None:
       args.connectivity = Object()
       args.connectivity = connectivity
+    else:
+      args.connectivity = None
     args.clock_period = settings.get('clock-period', None)
     args.platform = settings.get('platform', None)
     args.enable_hbm_binding_adjustment = \
