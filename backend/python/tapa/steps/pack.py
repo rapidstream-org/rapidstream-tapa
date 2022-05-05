@@ -22,7 +22,12 @@ _logger = logging.getLogger().getChild(__name__)
               help='Output packed .xo Xilinx object file.')
 def pack(ctx, output: str, bitstream_script: Optional[str]):
 
-  program = common.load_program(ctx.obj)
+  program = tapa.steps.common.load_tapa_program()
+  settings = tapa.steps.common.load_persistent_context('settings')
+
+  if not settings.get('linked', False):
+    raise click.BadArgumentUsage('You must run `link` before you can `pack`.')
+  
   with open(output, 'wb') as packed_obj:
     program.pack_rtl(packed_obj)
     _logger.info('generate the v++ xo file at %s', output)
@@ -35,19 +40,21 @@ def pack(ctx, output: str, bitstream_script: Optional[str]):
     args = Object()
     args.top = program.top
     args.output_file = output
-    floorplan_output = ctx.obj.get('floorplan-output', None)
+    floorplan_output = settings.get('floorplan-output', None)
     if floorplan_output is not None:
       args.floorplan_output = Object()
       args.floorplan_output.name = floorplan_output
-    connectivity = ctx.obj.get('connectivity', None)
+    connectivity = settings.get('connectivity', None)
     if connectivity is not None:
       args.connectivity = Object()
       args.connectivity = connectivity
-    args.clock_period = ctx.obj.get('clock-period', None)
-    args.platform = ctx.obj.get('platform', None)
+    args.clock_period = settings.get('clock-period', None)
+    args.platform = settings.get('platform', None)
     args.enable_hbm_binding_adjustment = \
-      ctx.obj.get('enable-hbm-binding-adjustment', False)
+      settings.get('enable-hbm-binding-adjustment', False)
 
     with open(bitstream_script, 'w') as script:
       script.write(tapa.bitstream.get_vitis_script(args))
       _logger.info('generate the v++ script at %s', bitstream_script)
+
+  tapa.steps.common.is_pipelined('pack', True)

@@ -12,6 +12,7 @@ import click
 import tapa
 import tapa.core
 import tapa.util
+import tapa.steps.common
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -49,7 +50,7 @@ def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],
   tapacc = find_clang_binary('tapacc', tapacc)
   tapa_clang = find_clang_binary('tapa-clang', tapa_clang)
 
-  work_dir = ctx.obj['work-dir']
+  work_dir = tapa.steps.common.get_work_dir()
   cflags += ('-std=c++17',)
 
   flatten_files = run_flatten(tapa_clang, input, cflags, work_dir)
@@ -57,10 +58,13 @@ def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],
   program_dict = run_tapacc(tapacc, flatten_files, top, tapacc_cflags)
   program_dict['cflags'] = tapacc_cflags
 
-  program_json_file = os.path.join(work_dir, 'program.json')
-  with open(program_json_file, 'w') as output_fp:
-    output_fp.write(json.dumps(program_dict))
-  ctx.obj['program'] = tapa.core.Program(program_dict, work_dir)
+  tapa.steps.common.store_tapa_program(tapa.core.Program(
+      program_dict, work_dir))
+
+  tapa.steps.common.store_persistent_context('program', program_dict)
+  tapa.steps.common.store_persistent_context('settings', {})
+  
+  tapa.steps.common.is_pipelined('analyze', True)
 
 
 def find_clang_binary(name: str, override: Optional[str]) -> str:

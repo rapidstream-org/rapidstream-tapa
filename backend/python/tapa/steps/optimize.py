@@ -4,6 +4,7 @@ from typing import Dict
 import click
 
 import tapa.core
+from tapa.steps.common import forward_applicable
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -128,14 +129,20 @@ def optimize_floorplan(ctx, **kwargs: Dict):
   if kwargs['connectivity'] is None:
     raise click.BadArgumentUsage('Missing option: --connectivity')
 
-  program: tapa.core.Program
-  program = ctx.obj.get('program', None)
-  if program is None:
-    raise click.BadArgumentUsage(
-        'Optimize commands must be chained after synth.')
+  program = tapa.steps.common.load_tapa_program()
+  settings = tapa.steps.common.load_persistent_context('settings')
 
-  kwargs['work_dir'] = ctx.obj['work-dir']
-  kwargs['part_num'] = ctx.obj['part-num']
+  if not tapa.steps.common.is_pipelined('synth'):
+    _logger.warn('The `optimize_floorplan` command must be chained after '
+                 'the `synth` command in a single execution.')
+    if settings['synthed']:
+      _logger.warn('Executing `synth` using saved options.')
+      forward_applicable(ctx, tapa.steps.synth.synth, settings)
+    else:
+      raise click.BadArgumentUsage('Please run `synth` first.')
+
+  kwargs['work_dir'] = tapa.steps.common.get_work_dir()
+  kwargs['part_num'] = settings['part-num']
 
   if kwargs['enable_hbm_binding_adjustment']:
     if not kwargs['part_num'].startswith('xcu280'):
@@ -150,7 +157,10 @@ def optimize_floorplan(ctx, **kwargs: Dict):
                                           kwargs['max_parallel_synth_jobs'])
 
   program.run_floorplanning(**kwargs)
-  ctx.obj['connectivity'] = kwargs['connectivity']
-  ctx.obj['enable-hbm-binding-adjustment'] = \
+  settings['connectivity'] = kwargs['connectivity'].name
+  settings['enable-hbm-binding-adjustment'] = \
       kwargs['enable_hbm_binding_adjustment']
-  ctx.obj['floorplanned'] = True
+
+  tapa.steps.common.store_persistent_context('settings')
+
+  tapa.steps.common.is_pipelined('optimize-floorplan', True)

@@ -6,6 +6,7 @@ import tapa.steps.synth as synth
 import tapa.steps.optimize as optimize
 import tapa.steps.link as link
 import tapa.steps.pack as pack
+from tapa.steps.common import forward_applicable
 
 
 @click.command()
@@ -29,10 +30,3 @@ compile.params.extend(synth.synth.params)
 compile.params.extend(optimize.optimize_floorplan.params)
 compile.params.extend(link.link.params)
 compile.params.extend(pack.pack.params)
-
-
-def forward_applicable(ctx: click.Context, command: click.Command,
-                       kwargs: Dict):
-  names = list(map(lambda param: param.name, command.params))
-  args = {key: value for (key, value) in kwargs.items() if key in names}
-  ctx.invoke(command, **args)
