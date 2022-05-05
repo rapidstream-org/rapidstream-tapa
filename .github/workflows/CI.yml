@@ -71,7 +71,9 @@ jobs:
         run: |
           .github/scripts/install-build-deps.sh
           .github/scripts/setup-self-hosted.sh
-          python3 -m pip install --editable backend/python
+          python3 -m pip install --upgrade build
+          python3 -m build backend/python
+          python3 -m pip install backend/python/dist/*.whl
 
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
