@@ -4,7 +4,8 @@ from typing import Dict, Optional
 import click
 import haoda.backend.xilinx
 
-import tapa.steps.common as common
+import tapa.core
+import tapa.steps.common
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -32,7 +33,8 @@ _logger = logging.getLogger().getChild(__name__)
 def synth(ctx, part_num: Optional[str], platform: Optional[str],
           clock_period: Optional[float], additional_fifo_pipelining: bool):
 
-  program = common.load_program(ctx.obj)
+  program = tapa.steps.common.load_tapa_program()
+  settings = tapa.steps.common.load_persistent_context('settings')
 
   # Automatically infer the information of the given device
   device = get_device_info(part_num, platform, clock_period)
@@ -40,14 +42,19 @@ def synth(ctx, part_num: Optional[str], platform: Optional[str],
   clock_period = device['clock_period']
 
   # Save the context for downstream flows
-  ctx.obj['part-num'] = part_num
-  ctx.obj['platform'] = platform
-  ctx.obj['clock-period'] = clock_period
-  ctx.obj['additional-fifo-pipelining'] = additional_fifo_pipelining
+  settings['part-num'] = part_num
+  settings['platform'] = platform
+  settings['clock-period'] = clock_period
+  settings['additional-fifo-pipelining'] = additional_fifo_pipelining
 
   # Generate RTL code
   program.run_hls(clock_period, part_num)
   program.generate_task_rtl(additional_fifo_pipelining, part_num)
+
+  settings['synthed'] = True
+  tapa.steps.common.store_persistent_context('settings')
+  
+  tapa.steps.common.is_pipelined('synth', True)
 
 
 def get_device_info(part_num: Optional[str], platform: Optional[str],

@@ -1,9 +1,14 @@
+import logging
 import os
 from typing import Optional
 
 import click
 
 import tapa.core
+import tapa.steps.synth
+from tapa.steps.common import forward_applicable
+
+_logger = logging.getLogger().getChild(__name__)
 
 
 @click.command()
@@ -23,24 +28,40 @@ import tapa.core
 )
 def link(ctx, floorplan_output: Optional[str], register_level: int):
 
-  work_dir: str
-  work_dir = ctx.obj['work-dir']
+  program = tapa.steps.common.load_tapa_program()
+  settings = tapa.steps.common.load_persistent_context('settings')
 
-  program: tapa.core.Program
-  program = ctx.obj.get('program', None)
-  if program is None:
-    raise click.BadArgumentUsage('Link commands must be chained after synth.')
+  if not tapa.steps.common.is_pipelined('synth'):
+    _logger.warn('The `link` command must be chained after the `synth` '
+                 'command in a single execution.')
+    if settings['synthed']:
+      _logger.warn('Executing `synth` using saved options.')
+      forward_applicable(ctx, tapa.steps.synth.synth, settings)
+    else:
+      raise click.BadArgumentUsage('Please run `synth` first.')
 
   floorplan_output_file = None
-  if ctx.obj.get('floorplanned', False):
+  if floorplan_output is not None:
+    if not tapa.steps.common.is_pipelined('optimize-floorplan'):
+      raise click.BadArgumentUsage(
+          'To write floorplaning results, the `link` command must '
+          'be chained after the `optimize-floorplan` command.')
+
+  work_dir = tapa.steps.common.get_work_dir()
+  if tapa.steps.common.is_pipelined('optimize-floorplan'):
     if floorplan_output is None:
       floorplan_output = os.path.join(work_dir, 'constraints.tcl')
-    ctx.obj['floorplan-output'] = floorplan_output
+    settings['floorplan-output'] = floorplan_output
     floorplan_output_file = open(floorplan_output, 'w')
 
   program.generate_top_rtl(
       floorplan_output_file,
       register_level,
-      ctx.obj['additional-fifo-pipelining'],
-      ctx.obj['part-num'],
+      settings['additional-fifo-pipelining'],
+      settings['part-num'],
   )
+
+  settings['linked'] = True
+  tapa.steps.common.store_persistent_context('settings')
+
+  tapa.steps.common.is_pipelined('link', True)
