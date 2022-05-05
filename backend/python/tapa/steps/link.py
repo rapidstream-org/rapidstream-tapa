@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import click
 
@@ -20,7 +21,7 @@ import tapa.core
     help='Use a specific register level of top-level scalar signals '
     'instead of inferring from the floorplanning directive.',
 )
-def link(ctx, floorplan_output: str, register_level: int):
+def link(ctx, floorplan_output: Optional[str], register_level: int):
 
   work_dir: str
   work_dir = ctx.obj['work-dir']

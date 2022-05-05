@@ -4,7 +4,7 @@ from typing import Optional
 import click
 
 import tapa.bitstream
-from . import common
+import tapa.steps.common as common
 
 _logger = logging.getLogger().getChild(__name__)
 

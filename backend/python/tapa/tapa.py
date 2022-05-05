@@ -11,6 +11,7 @@ import tapa.steps.synth
 import tapa.steps.optimize
 import tapa.steps.link
 import tapa.steps.pack
+import tapa.steps.meta
 import tapa.util
 
 _logger = logging.getLogger().getChild(__name__)
@@ -61,6 +62,7 @@ entry_point.add_command(tapa.steps.synth.synth)
 entry_point.add_command(tapa.steps.optimize.optimize_floorplan)
 entry_point.add_command(tapa.steps.link.link)
 entry_point.add_command(tapa.steps.pack.pack)
+entry_point.add_command(tapa.steps.meta.compile)
 
 if __name__ == '__main__':
   entry_point()
