@@ -97,6 +97,9 @@ inline std::vector<const clang::FunctionDecl*> FindChildrenTasks(
         if (func_decl->isTemplateInstantiation()) {
           func_decl = func_decl->getPrimaryTemplate()->getTemplatedDecl();
         }
+
+        // skip function definitions.
+        if (!func_decl->isThisDeclarationADefinition()) continue;
         tasks.push_back(func_decl);
       }
     }
