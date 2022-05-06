@@ -4,7 +4,7 @@ from typing import Optional
 import click
 
 import tapa.bitstream
-import tapa.steps.common as common
+import tapa.steps.common
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -49,7 +49,7 @@ def pack(ctx, output: str, bitstream_script: Optional[str]):
     connectivity = settings.get('connectivity', None)
     if connectivity is not None:
       args.connectivity = Object()
-      args.connectivity = connectivity
+      args.connectivity.name = connectivity
     else:
       args.connectivity = None
     args.clock_period = settings.get('clock-period', None)

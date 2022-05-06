@@ -51,14 +51,14 @@ def link(ctx, floorplan_output: Optional[str], register_level: int):
   if tapa.steps.common.is_pipelined('optimize-floorplan'):
     if floorplan_output is None:
       floorplan_output = os.path.join(work_dir, 'constraints.tcl')
-    settings['floorplan-output'] = floorplan_output
+    settings['floorplan_output'] = floorplan_output
     floorplan_output_file = open(floorplan_output, 'w')
 
   program.generate_top_rtl(
       floorplan_output_file,
       register_level,
-      settings['additional-fifo-pipelining'],
-      settings['part-num'],
+      settings['additional_fifo_pipelining'],
+      settings['part_num'],
   )
 
   settings['linked'] = True

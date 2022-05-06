@@ -42,10 +42,10 @@ def synth(ctx, part_num: Optional[str], platform: Optional[str],
   clock_period = device['clock_period']
 
   # Save the context for downstream flows
-  settings['part-num'] = part_num
+  settings['part_num'] = part_num
   settings['platform'] = platform
-  settings['clock-period'] = clock_period
-  settings['additional-fifo-pipelining'] = additional_fifo_pipelining
+  settings['clock_period'] = clock_period
+  settings['additional_fifo_pipelining'] = additional_fifo_pipelining
 
   # Generate RTL code
   program.run_hls(clock_period, part_num)
