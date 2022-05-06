@@ -7,6 +7,11 @@
 
 #include "tapa/base/util.h"
 
+// FIXME: TAPA should provide its equivalence
+#ifndef ap_wait
+void ap_wait(void);
+#endif
+
 namespace tapa {
 
 /// Obtain a value of type @c To by reinterpreting the object representation of
