@@ -3,41 +3,42 @@ import decimal
 import itertools
 import json
 import logging
-import os.path
 import os
+import os.path
 import shutil
 import sys
 import tarfile
 import tempfile
 import xml.etree.ElementTree as ET
 from concurrent import futures
-from typing import (Any, BinaryIO, Dict, List, Optional, Set, TextIO, Tuple,
-                    Union)
+from typing import BinaryIO, Dict, List, Optional, TextIO, Tuple, Union
 
 import toposort
 import yaml
 from haoda.backend import xilinx as hls
 
 from tapa import util
+from tapa.codegen.axi_pipeline import get_axi_pipeline_wrapper
+from tapa.codegen.duplicate_s_axi_control import duplicate_s_axi_ctrl
 from tapa.floorplan import (
-  checkpoint_floorplan,
-  generate_floorplan,
-  get_floorplan_result,
-  get_post_synth_area,
-  generate_new_connectivity_ini,
+    checkpoint_floorplan,
+    generate_floorplan,
+    generate_new_connectivity_ini,
+    get_floorplan_result,
+    get_post_synth_area,
 )
+from tapa.hardware import (
+    DEFAULT_REGISTER_LEVEL,
+    get_slr_count,
+    is_part_num_supported,
+)
+from tapa.safety_check import check_mmap_arg_name
+from tapa.task import Task
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
-from tapa.hardware import (
-  get_slr_count,
-  is_part_num_supported,
-  DEFAULT_REGISTER_LEVEL,
-)
+
+# TODO: resolve cyclic dependency
 from .instance import Instance, Port
-from .codegen.axi_pipeline import get_axi_pipeline_wrapper
-from .codegen.duplicate_s_axi_control import duplicate_s_axi_ctrl
-from .task import Task
-from .safety_check import check_mmap_arg_name
 
 _logger = logging.getLogger().getChild(__name__)
 

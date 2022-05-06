@@ -7,17 +7,17 @@ from collections import defaultdict
 from concurrent import futures
 from typing import Optional, Dict, Callable, List, Tuple, TextIO
 
+from autobridge.main import annotate_floorplan
 from haoda.report.xilinx import rtl as report
-from tapa import util
-from tapa.task import Task
 
-from .task_graph import get_edges, get_vertices
-from .hardware import (
+from tapa import util
+from tapa.hardware import (
   get_ctrl_instance_region,
   get_port_region,
   get_slr_count,
 )
-from autobridge.main import annotate_floorplan
+from tapa.task import Task
+from tapa.task_graph import get_edges, get_vertices
 
 _logger = logging.getLogger().getChild(__name__)
 

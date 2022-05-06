@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from .task import Task
+from tapa.task import Task
 
 DISABLED_MMAP_NAME_LIST = {
     "begin",

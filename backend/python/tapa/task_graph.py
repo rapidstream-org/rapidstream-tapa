@@ -3,12 +3,20 @@ import re
 from typing import Callable, Dict, List
 
 from tapa import util
+from tapa.hardware import (
+    get_async_mmap_area,
+    get_hbm_controller_area,
+    get_zero_area,
+)
+from tapa.task import Task
 from tapa.verilog import xilinx as rtl
-from tapa.verilog.xilinx.async_mmap import ADDR_CHANNEL_DATA_WIDTH, RESP_CHANNEL_DATA_WIDTH
+from tapa.verilog.xilinx.async_mmap import (
+    ADDR_CHANNEL_DATA_WIDTH,
+    RESP_CHANNEL_DATA_WIDTH,
+)
 
+# TODO: resolve cyclic dependency
 from .instance import Instance
-from .task import Task
-from .hardware import get_async_mmap_area, get_hbm_controller_area, get_zero_area
 
 _logger = logging.getLogger().getChild(__name__)
 
