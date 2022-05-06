@@ -350,7 +350,7 @@ class Program:
 
     # extract the floorplan result
     if constraint:
-      fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr = get_floorplan_result(
+      fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr, fifo_to_depth = get_floorplan_result(
         self.autobridge_dir, constraint
       )
 
@@ -359,6 +359,10 @@ class Program:
 
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
       self.top_task.module.axi_pipeline_level = axi_pipeline_level
+
+      # adjust fifo depth for rebalancing
+      for fifo_name, depth in fifo_to_depth.items():
+        self.top_task.fifos[fifo_name]['depth'] = depth
 
     if register_level:
       assert register_level > 0

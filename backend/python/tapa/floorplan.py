@@ -60,7 +60,7 @@ def generate_floorplan(
 def get_floorplan_result(
     autobridge_dir: str,
     constraint: TextIO,
-) -> Tuple[Dict[str, str], Dict[str, int], Dict[str, int]]:
+) -> Tuple[Dict[str, str], Dict[str, int], Dict[str, int], Dict[str, int]]:
   """ extract floorplan results from the checkpointed config file """
   try:
     config_with_floorplan = json.loads(open(f'{autobridge_dir}/post-floorplan-config.json', 'r').read())
@@ -74,9 +74,26 @@ def get_floorplan_result(
 
   fifo_pipeline_level, axi_pipeline_level = extract_pipeline_level(config_with_floorplan)
   task_inst_to_slr = extract_task_locations(config_with_floorplan)
+  fifo_to_depth = extract_fifo_depth(config_with_floorplan)
 
-  return fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr
+  return fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr, fifo_to_depth
 
+def extract_fifo_depth(config_with_floorplan) -> Dict[str, int]:
+  """Get the adjusted FIFO depth"""
+  fifo_to_depth = {}
+  if config_with_floorplan.get('floorplan_status') == 'FAILED':
+    return fifo_to_depth
+
+  for e_name, props in config_with_floorplan['edges'].items():
+    # skip axi edges
+    if 'instance' in props:
+      if 'adjusted_depth' not in props:
+        _logger.warning('No latency balancing information found, skip FIFO depth adjusting')
+        break
+
+      fifo_to_depth[props['instance']] = props['adjusted_depth']
+
+  return fifo_to_depth
 
 def extract_task_locations(config_with_floorplan) -> Dict[str, int]:
   task_inst_to_slr = {}
