@@ -226,7 +226,7 @@ void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl *func,
     if (IsTapaType(param, "(async_)?mmap")) {
       rewriter.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "uint64_t");
+          "uint64_t ");
     } else if (IsTapaType(param, "(async_)?mmaps")) {
       std::string rewritten_text;
       for (int i = 0; i < GetArraySize(param); ++i) {
