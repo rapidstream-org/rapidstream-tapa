@@ -132,7 +132,7 @@ def run_floorplan_dse(args):
   _logger.info(f'-----------------------------------------------------------------------------')
   _logger.info(f'')
 
-  hls_dir = f'{os.getcwd()}/{top_work_dir}/csynth/'
+  hls_dir = os.path.abspath(os.path.join(top_work_dir, 'csynth'))
   with tempfile.TemporaryDirectory() as temp_dir:
     hls_cmd = get_cmd_to_csynth_tasks(args_dict, hls_dir, temp_dir)
     try:
