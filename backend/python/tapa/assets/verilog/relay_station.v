@@ -269,10 +269,13 @@ parameter DEPTH       = 5'd16;
 parameter GRACE_PERIOD = 2;
 /*******************************************/
 
-wire[ADDR_WIDTH - 1:0] shiftReg_addr ;
+parameter REAL_DEPTH = DEPTH < 4 ? 4 : DEPTH;
+parameter REAL_ADDR_WIDTH = $clog2(REAL_DEPTH)+1;
+
+wire[REAL_ADDR_WIDTH - 1:0] shiftReg_addr ;
 wire[DATA_WIDTH - 1:0] shiftReg_data, shiftReg_q;
 wire                     shiftReg_ce;
-reg[ADDR_WIDTH:0] mOutPtr = ~{(ADDR_WIDTH+1){1'b0}};
+reg[REAL_ADDR_WIDTH:0] mOutPtr = ~{(REAL_ADDR_WIDTH+1){1'b0}};
 reg internal_empty_n = 0, internal_full_n = 1;
 
 assign if_empty_n = internal_empty_n;
@@ -280,7 +283,7 @@ assign if_empty_n = internal_empty_n;
 /*******************************************/
 // assign if_full_n = internal_full_n;
 reg almost_full_q;
-wire almost_full = mOutPtr >= DEPTH - 1 - GRACE_PERIOD - 1 && mOutPtr != ~{ADDR_WIDTH+1{1'b0}};
+wire almost_full = mOutPtr >= REAL_DEPTH - 1 - GRACE_PERIOD - 1 && mOutPtr != ~{REAL_ADDR_WIDTH+1{1'b0}};
 always @ (posedge clk) almost_full_q <= almost_full;
 assign if_full_n = ~almost_full_q;
 /*******************************************/
@@ -291,7 +294,7 @@ assign if_dout = shiftReg_q;
 always @ (posedge clk) begin
     if (reset == 1'b1)
     begin
-        mOutPtr <= ~{ADDR_WIDTH+1{1'b0}};
+        mOutPtr <= ~{REAL_ADDR_WIDTH+1{1'b0}};
         internal_empty_n <= 1'b0;
         internal_full_n <= 1'b1;
     end
@@ -309,20 +312,20 @@ always @ (posedge clk) begin
         begin
             mOutPtr <= mOutPtr + 5'd1;
             internal_empty_n <= 1'b1;
-            if (mOutPtr == DEPTH - 5'd2)
+            if (mOutPtr == REAL_DEPTH - 5'd2)
                 internal_full_n <= 1'b0;
         end
     end
 end
 
-assign shiftReg_addr = mOutPtr[ADDR_WIDTH] == 1'b0 ? mOutPtr[ADDR_WIDTH-1:0]:{ADDR_WIDTH{1'b0}};
+assign shiftReg_addr = mOutPtr[REAL_ADDR_WIDTH] == 1'b0 ? mOutPtr[REAL_ADDR_WIDTH-1:0]:{REAL_ADDR_WIDTH{1'b0}};
 assign shiftReg_ce = (if_write & if_write_ce) & internal_full_n;
 
 fifo_srl_almost_full_internal
 #(
     .DATA_WIDTH(DATA_WIDTH),
-    .ADDR_WIDTH(ADDR_WIDTH),
-    .DEPTH(DEPTH))
+    .ADDR_WIDTH(REAL_ADDR_WIDTH),
+    .DEPTH(REAL_DEPTH))
 U_fifo_w32_d16_A_ram (
     .clk(clk),
     .data(shiftReg_data),
@@ -344,7 +347,7 @@ parameter DATA_WIDTH = 32'd32;
 parameter ADDR_WIDTH = 32'd4;
 parameter DEPTH = 5'd16;
 
-reg[DATA_WIDTH-1:0] SRL_SIG [0:DEPTH-1];
+(* shreg_extract = "yes" *) reg[DATA_WIDTH-1:0] SRL_SIG [0:DEPTH-1];
 integer i;
 
 always @ (posedge clk)
