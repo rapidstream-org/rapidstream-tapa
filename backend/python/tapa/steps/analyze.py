@@ -195,8 +195,11 @@ def run_flatten(tapa_clang: str, files: Tuple[str, ...],
 
     # Output flatten code to the file
     with open(flatten_path, 'w') as output_fp:
+      # FIXME: workaround by -D__SYNTHESIS__.  However, this should not be
+      #        hardcoded for all targets.  TAPA should provide a
+      #        target-specific directive for the users.
       tapa_clang_cmd = (tapa_clang, '-E', '-nostdinc', '-nostdinc++', '-CC',
-                        '-P') + cflags + (file,)
+                        '-P', '-D__SYNTHESIS__') + cflags + (file,)
       flatten_code = run_and_check(tapa_clang_cmd)
       formated_code = tapa.util.clang_format(flatten_code)
       output_fp.write(formated_code)
