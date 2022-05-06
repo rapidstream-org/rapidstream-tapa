@@ -1,6 +1,5 @@
 from typing import Optional
 
-import haoda.backend.xilinx
 from tapa.verilog import ast
 
 __all__ = [
@@ -35,7 +34,6 @@ __all__ = [
     'ALL_SENS_LIST',
     'STATE',
     'BUILTIN_INSTANCES',
-    'OTHER_MODULES',
     'get_stream_width',
 ]
 
@@ -136,23 +134,6 @@ ALL_SENS_LIST = ast.SensList((ast.Sens(None, type='all'),))
 STATE = ast.Identifier('tapa_state')
 
 BUILTIN_INSTANCES = {'hmss_0'}
-
-OTHER_MODULES = {
-    'fifo_bram':
-        haoda.backend.xilinx.BRAM_FIFO_TEMPLATE.format(
-            name='fifo_bram',
-            width=32,
-            depth=32,
-            addr_width=(32 - 1).bit_length(),
-        ),
-    'fifo_srl':
-        haoda.backend.xilinx.SRL_FIFO_TEMPLATE.format(
-            name='fifo_srl',
-            width=32,
-            depth=32,
-            addr_width=(32 - 1).bit_length(),
-        ),
-}
 
 def get_stream_width(port: str, data_width: int) -> Optional[ast.Width]:
   width = STREAM_PORT_WIDTH[port]

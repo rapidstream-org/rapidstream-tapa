@@ -242,18 +242,14 @@ class Program:
       with tarfile.open(self.get_tar(task.name), 'r') as tarfileobj:
         tarfileobj.extractall(path=self.work_dir)
 
-    # these files are needed before running RTL synthesis for resource report
-    _logger.info('writing basic auxiliary RTL files')
-    for name, content in rtl.OTHER_MODULES.items():
-      with open(self.get_rtl(name, prefix=False), 'w') as rtl_code:
-        rtl_code.write(content)
-
     for file_name in (
         'async_mmap.v',
         'axi_pipeline.v',
         'detect_burst.v',
-        'fifo_fwd.v',
         'fifo.v',
+        'fifo_bram.v',
+        'fifo_fwd.v',
+        'fifo_srl.v',
         'generate_last.v',
         'relay_station.v',
         'a_axi_write_broadcastor_1_to_3.v',
