@@ -12,6 +12,9 @@ import tapa.steps.optimize
 import tapa.steps.link
 import tapa.steps.pack
 import tapa.steps.meta
+import tapa.steps.dse
+
+import tapa.steps.common
 import tapa.util
 
 _logger = logging.getLogger().getChild(__name__)
@@ -44,8 +47,7 @@ def entry_point(ctx, verbose, quiet, work_dir, recursion_limit):
 
   # Setup execution context
   obj = ctx.ensure_object(dict)
-  obj['work-dir'] = work_dir
-  os.makedirs(work_dir, exist_ok=True)
+  tapa.steps.common.switch_work_dir(work_dir)
 
   # Read versions from VERSION file and write log
   with open(os.path.join(os.path.dirname(tapa.__file__), 'VERSION')) as fp:
@@ -63,6 +65,7 @@ entry_point.add_command(tapa.steps.optimize.optimize_floorplan)
 entry_point.add_command(tapa.steps.link.link)
 entry_point.add_command(tapa.steps.pack.pack)
 entry_point.add_command(tapa.steps.meta.compile)
+entry_point.add_command(tapa.steps.dse.dse_floorplan)
 
 if __name__ == '__main__':
   entry_point()
