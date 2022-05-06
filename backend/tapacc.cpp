@@ -76,6 +76,8 @@ class Consumer : public ASTConsumer {
     unordered_map<string, vector<const FunctionDecl*>> func_table;
     for (auto func : funcs_) {
       auto func_name = func->getNameAsString();
+      // skip function definitions.
+      if (!func->isThisDeclarationADefinition()) continue;
       // If a key exists, its corresponding value won't be empty.
       func_table[func_name].push_back(func);
     }
