@@ -106,11 +106,46 @@ def extract_pipeline_level(
   for edge, properties in config_with_floorplan['edges'].items():
     if properties['category'] == 'AXI_EDGE':
       # if the AXI module is at the same region as the external port, then no pipelining
+      # sync with get_vivado_tcl
       level = len(properties['path']) - 1
 
       axi_pipeline_level[properties['port_name']] = level
 
   return fifo_pipeline_level, axi_pipeline_level
+
+
+def _get_axi_pipeline_tcl(config_with_floorplan) -> List[str]:
+  vivado_tcl = []
+  region_to_axi_pipeline_inst = defaultdict(list)
+
+  for edge, properties in config_with_floorplan['edges'].items():
+    if properties['category'] == 'AXI_EDGE':
+      port_name = properties['port_name']
+      path = properties['path']
+      pipeline_level = len(path) - 1  # sync with extract_pipeline_level
+
+      if pipeline_level:
+        # R and B channels go from AXI port to the task instance
+        for i in range(pipeline_level):
+          for ch in ('R_pipeline', 'B_pipeline'):
+            region = path[i+1]
+            pipeline_reg_id = i
+            region_to_axi_pipeline_inst[region].append(f'{port_name}/{ch}/inst\\\\[{pipeline_reg_id}]\\\\.unit')
+
+        # AR, AW, W channels go from the task instance to the AXI port
+        reversed_path = [e for e in reversed(path)]
+        for i in range(pipeline_level):
+          for ch in ('AR_pipeline', 'AW_pipeline', 'W_pipeline'):
+            region = reversed_path[i+1]
+            pipeline_reg_id = i
+            region_to_axi_pipeline_inst[region].append(f'{port_name}/{ch}/inst\\\\[{pipeline_reg_id}]\\\\.unit')
+
+  for region, inst_list in region_to_axi_pipeline_inst.items():
+    vivado_tcl.append(f'add_cells_to_pblock [get_pblocks {region}] [get_cells -regex {{')
+    vivado_tcl += [f'  pfm_top_i/dynamic_region/.*/inst/{inst}' for inst in inst_list]
+    vivado_tcl.append(f'}} ]')
+
+  return vivado_tcl
 
 
 def get_vivado_tcl(config_with_floorplan):
@@ -162,8 +197,13 @@ def get_vivado_tcl(config_with_floorplan):
   # print out the constraints
   for region, inst_list in region_to_inst.items():
     vivado_tcl.append(f'add_cells_to_pblock [get_pblocks {region}] [get_cells -regex {{')
+    # note the .* after inst
+    # this is because we add a wrapper around user logic for AXI pipelining
     vivado_tcl += [f'  pfm_top_i/dynamic_region/.*/inst/.*/{inst}' for inst in inst_list]
     vivado_tcl.append(f'}} ]')
+
+  # floorplan the axi pipelines
+  vivado_tcl += _get_axi_pipeline_tcl(config_with_floorplan)
 
   # redundant clean up code for extra safety
   vivado_tcl.append('foreach pblock [get_pblocks -regexp CR_X\\\\d+Y\\\\d+_To_CR_X\\\\d+Y\\\\d+] {')
