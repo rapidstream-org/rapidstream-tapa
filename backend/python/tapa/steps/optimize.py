@@ -135,14 +135,14 @@ def optimize_floorplan(ctx, **kwargs: Dict):
   if not tapa.steps.common.is_pipelined('synth'):
     _logger.warn('The `optimize_floorplan` command must be chained after '
                  'the `synth` command in a single execution.')
-    if settings['synthed']:
+    if 'synthed' in settings:
       _logger.warn('Executing `synth` using saved options.')
       forward_applicable(ctx, tapa.steps.synth.synth, settings)
     else:
       raise click.BadArgumentUsage('Please run `synth` first.')
 
   kwargs['work_dir'] = tapa.steps.common.get_work_dir()
-  kwargs['part_num'] = settings['part-num']
+  kwargs['part_num'] = settings['part_num']
 
   if kwargs['enable_hbm_binding_adjustment']:
     if not kwargs['part_num'].startswith('xcu280'):
@@ -158,7 +158,7 @@ def optimize_floorplan(ctx, **kwargs: Dict):
 
   program.run_floorplanning(**kwargs)
   settings['connectivity'] = kwargs['connectivity'].name
-  settings['enable-hbm-binding-adjustment'] = \
+  settings['enable_hbm_binding_adjustment'] = \
       kwargs['enable_hbm_binding_adjustment']
 
   tapa.steps.common.store_persistent_context('settings')
