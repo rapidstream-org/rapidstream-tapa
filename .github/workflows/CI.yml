@@ -54,10 +54,18 @@ jobs:
 
     strategy:
       matrix:
+        xocl-platform:
+          - xilinx_u250_xdma_201830_2
         xocl-version:
-          - 2020.2
-          - 2021.1
-          - 2021.2
+          - "2020.2"
+          - "2021.1"
+          - "2021.2"
+        include:
+          # Test different tool versions
+          - xocl-platform: xilinx_u250_xdma_201830_2
+          # Test a platform that does not support floorplanning yet
+          - xocl-platform: xilinx_u200_xdma_201830_2
+            xocl-version: "2021.2"
 
     env:
       XILINX_HLS: /opt/tools/xilinx/Vitis_HLS/${{ matrix.xocl-version }}
@@ -77,11 +85,11 @@ jobs:
 
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
+            xilinx-u200-xdma-dev \
             xilinx-u250-xdma-dev \
-            xilinx-u280-xdma-dev \
 
       - name: Configure myself
-        run: cmake -S . -B build
+        run: cmake -S . -B build -D PLATFORM=${{ matrix.xocl-platform }}
       - name: Build myself
         run: cmake --build build --target all --parallel $(nproc)
       - name: Test myself
