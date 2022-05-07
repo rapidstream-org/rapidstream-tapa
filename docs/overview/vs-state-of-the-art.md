@@ -1,16 +1,14 @@
 
-# TAPA vs State-of-the-Art
+# Summary
 
-## Summary
-
-### Programmability Improvement
+## Programmability Improvement
 
 + [Convenient kernel communication APIs](#kernel-communication-interface)
 + [Simple host-kernel interface](#host-kernel-interface)
 + [Universal software simulation w/ coroutines](#software-simulation)
 + [Hierarchical code generator w/ Xilinx HLS backend](#rtl-code-generation)
 
-### Beyond Programmability
+## Beyond Programmability
 
 + [Asynchronous/concurrent memory accesses](#memory-system)
 + [Flexible detached (autorun/free-running) tasks](#detached-tasks)
@@ -52,7 +50,7 @@ Compared with these state of the art, TAPA provides a more flexible and producti
 In many cases, TAPA can even improve the quality of result (QoR).
 Details are as follows.
 
-## Kernel Communication Interface
+# Kernel Communication Interface
 
 In addition to blocking/non-blocking read/write operations, TAPA also supports *peeking* and *transactions*.
 Peeking is defined as reading a token from a channel without removing the token from the channel.
@@ -64,7 +62,7 @@ TAPA uses separate `tapa::istream<T>&` and `tapa::ostream<T>&` classes for commu
 This makes the communication directions of each interface visually obvious in the source code.
 IDEs will also only suggest available functions for code completion (e.g., `read` won't show up for `tapa::ostream<T>&`).
 
-## Host-Kernel Interface
+# Host-Kernel Interface
 
 Both Intel FPGA SDK for OpenCL and Xilinx Vitis provide high-level host-kernel interface as specified in the OpenCL standard.
 While programmers are relived from writing their own operating system drivers, they still have to write lengthy OpenCL host API calls.
@@ -84,7 +82,7 @@ tapa::invoke(
   size);                                    // Kernel argument 3, scalar.
 ```
 
-## Software Simulation
+# Software Simulation
 
 C++ functions in a `#pragma HLS dataflow` region is called sequentially for software simulation.
 This works correctly only for programs that do not have cyclic communication patterns (e.g., an image-processing pipeline).
@@ -96,7 +94,7 @@ TAPA takes a coroutine-based approach to solve the scalability problem.
 Coroutines are managed by user space programs and do not have the contention issue.
 Moreover, [context switch between coroutines are much faster than threads](https://www.boost.org/doc/libs/1_76_0/libs/coroutine/doc/html/coroutine/performance.html).
 
-## RTL Code Generation
+# RTL Code Generation
 
 Although Vitis HLS can reuse HLS results for different instances of the same C++ function, it is not supported in a `#pragma HLS dataflow` region.
 Both Intel FPGA SDK for OpenCL and Xilinx Vitis HLS run HLS for each instance of tasks as if they are different for task-parallel programs.
@@ -104,7 +102,7 @@ This can lead to long compilation time for programs with many identical task ins
 To work around this problem, [SODA][soda] implements an RTL backend that calls Vivado HLS for each task and then create the top-level RTL code by itself.
 TAPA generalizes this approach and makes it available to all task-parallel programs.
 
-## Memory System
+# Memory System
 
 Vitis HLS provides DRAM access via AXI4 memory-mapped (`m_axi`) interfaces.
 However, in a `#pragma HLS dataflow` regions, task instances may not access the same `m_axi` interface.
@@ -121,7 +119,7 @@ Note that *with great power comes great responsibility*.
 The AXI interconnect do not provide built-in locking mechanisms.
 Programmers must take care of correctness with concurrent reads and writes.
 
-## Detached Tasks
+# Detached Tasks
 
 Controlling tasks as OpenCL kernels can be expensive, yet often times each task instance is small and do not need runtime management.
 Intel FPGA SDK for OpenCL supports “autorun” kernels, which are started as soon as the accelerator starts and is restarted when it stops.
@@ -136,14 +134,14 @@ By default, a TAPA task is not considered finished until all its children instan
 Detach task instances resembles the concept of `std::thread::detach()`, and the parent task will not wait for it to finish.
 This makes it possible to do necessary initialization before entering an infinite loop in detached tasks, thus having both resource efficiency and programming flexibility.
 
-## Hardware FIFO
+# Hardware FIFO
 
 Vitis HLS can generate two different implementations for the communication channels, using shift-registers (SLR) and block RAMs (BRAM).
 However, it seems to unnecessarily prefer BRAM in many cases (e.g., when the FIFO is wide but shallow).
 TAPA uses a larger threshold that reduces BRAM usage.
 Moreover, when URAM is more efficient (width ≥ 36 and depth ≥ 4096), it is used in place of BRAM.
 
-## Timing Closure
+# Timing Closure
 
 TAPA natively supports [AutoBridge][autobridge].
 By specifying a filename for the output TCL constraints, TAPA can generate coarse-grained floorplans that were often necessary to achieve good timing closure.

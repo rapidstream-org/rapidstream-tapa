@@ -1,8 +1,5 @@
 
-Floorplanning with `AutoBridge <https://github.com/Licheng-Guo/AutoBridge>`_
-----------------------------------------------------------------------------------
-
-This section covers the usage of AutoBridge in TAPA.
+This section covers the usage of `AutoBridge <https://github.com/Licheng-Guo/AutoBridge>`_ in TAPA.
 
 AutoBridge is an automated floorplanning and pipelining tool for HLS designs.
 By leveraging the high-level design hierarchies,
@@ -13,10 +10,47 @@ This is natively integrated with TAPA.
 Supported Devices
 ::::::::::::::::::::::::::::
 
-Currently AutoBridge supports the Xilinx Alveo U250 and U280 FPGAs. Specifically, the tool has been tested on Vitis version ``xilinx_u250_xdma_201830_2`` and ``xilinx_u280_xdma_201920_3``.
+While TAPA supports any Xilinx FPGA device, the floorplanning plug-in only supports the Xilinx Alveo U250 and U280 FPGAs. Specifically, the tool has been tested on Vitis version ``xilinx_u250_xdma_201830_2`` and ``xilinx_u280_xdma_201920_3``.
 
 - Feel free to contact us for support of other devices.
 - Note that the methodology works on large devices (like UltraScale+).
+
+
+.. note::
+
+  You can still use TAPA for other platforms without the floorplanning step.
+
+Introduction to AutoBridge
+:::::::::::::::::::::::::::::::
+
+
+The key idea of AutoBridge is that it utilizes the pipelining flexibility of data flow designs.
+
+.. image:: https://user-images.githubusercontent.com/32432619/165635895-6955f6e2-3517-4dad-9f54-4203e997eb8a.png
+  :width: 75 %
+
+- To relieve local congestion, AutoBridge tries to spread the logic evenly across the entire device.
+- To resolve global critical paths, AutoBridge adds additional pipelines to the latency-insensitive interfaces between tasks.
+
+
+.. image:: https://user-images.githubusercontent.com/32432619/165636025-a85940ac-70f9-4a2d-8376-c1a96510e449.png
+  :width: 75 %
+
+
+This figure visualizes the difference in the final bitstream with or without AutoBridge.
+
+.. image:: https://user-images.githubusercontent.com/32432619/165637029-9595b37b-6323-463b-a206-aa73ad7c1519.png
+  :width: 50 %
+
+It  shows a CNN accelerator implemented on
+the Xilinx U250 FPGA. It interacts with three DDR controllers, as
+marked in grey, pink, and yellow blocks in the figure. In the original
+implementation result, the whole design is packed close together
+within die 2 and die 3. To demonstrate our proposed idea, we first
+manually floorplan the design to distribute the logic in four dies
+and to avoid overlapping the user logic with DDR controllers. Additionally, we pipeline the FIFO channels connecting modules in
+different dies as demonstrated in the figure. The manual approach
+improves the final frequency by 53%, from 216 MHz to 329 MHz.
 
 Basic Usage
 ::::::::::::
@@ -60,7 +94,20 @@ Here is an example of the connectivity file. The syntax is the same as required 
   sp=VecAdd_1.b:DDR[1]
   sp=VecAdd_1.c:DDR[2]
 
-- Note that if you invoke tapac from the command line, you must append an ``_1`` suffix to the top name. On the other hand, you must not append this suffix if you use the cmake flow.
+.. note::
+  If you invoke tapac from the command line, you must append an ``_1`` suffix to the top name. On the other hand, you must not append this suffix if you use the cmake flow.
+
+
+AutoBridge will generate a ``.dot`` representation of how your tasks and streams are connected. You could generate a figure from it online, for example at `GraphvizOnline <https://dreampuf.github.io/GraphvizOnline/>`_. Here is an example of the ``vadd`` application.
+
+.. image:: https://user-images.githubusercontent.com/32432619/166062922-f69bf372-a15c-4d8c-ac11-0fa4f43a3a7e.png
+  :width: 80 %
+
+Blue boxes represent external memory ports. The number beside each edge represents its width.
+
+
+Improve Floorplan Quality
+:::::::::::::::::::::::::::
 
 
 By default, AutoBridge uses the resource estimation from HLS report.
@@ -85,7 +132,7 @@ This option instructs TAPA to run logic synthesis of each task to get a more acc
   Tasks are synthesized in parallel for the post-synthesis area report. Still, this step could takes a while as RTL synthesis is much slower than C synthesis. By default, tapac will invoke 8 parallel Vivado processes to synthesize each task. You could allow more processes through the ``--max-parallel-synth-jobs`` option, though you should be careful to not run out of memory.
 
 
-If an external memory port is only read from or only write to, you should mark it through the ``--read-only-args`` and ``--write-only-args`` options. They will help improve the floorplan quality. Those options accept regular expressions representing multiple ports. In the example, ports whose names match the pattern ``hbm_[0-3]`` will be marked as read-only, while ports ``my_out_port`` and ``another_out_port`` will be marked as write-only.
+If an external memory port is only read from or only written to, you should mark it through the ``--read-only-args`` and ``--write-only-args`` options. They will help improve the floorplan quality. Those options accept regular expressions representing multiple ports. In the example, ports whose names match the pattern ``hbm_[0-3]`` will be marked as read-only, while ports ``my_out_port`` and ``another_out_port`` will be marked as write-only.
 
 .. code-block:: shell
   :emphasize-lines: 9,10,11
@@ -102,86 +149,73 @@ If an external memory port is only read from or only write to, you should mark i
     --write-only-args "my_out_port" \
     --write-only-args "another_out_port" \
 
-Visualize the Impact of AutoBridge
+Automatic HBM Channel Binding
 ::::::::::::::::::::::::::::::::::::::
 
-This figure visualizes the difference in the final bitstream with or without AutoBridge.
-
-.. image:: https://user-images.githubusercontent.com/32432619/165637029-9595b37b-6323-463b-a206-aa73ad7c1519.png
-  :width: 50 %
-
-It  shows a CNN accelerator implemented on
-the Xilinx U250 FPGA. It interacts with three DDR controllers, as
-marked in grey, pink, and yellow blocks in the figure. In the original
-implementation result, the whole design is packed close together
-within die 2 and die 3. To demonstrate our proposed idea, we first
-manually floorplan the design to distribute the logic in four dies
-and to avoid overlapping the user logic with DDR controllers. Additionally, we pipeline the FIFO channels connecting modules in
-different dies as demonstrated in the figure. The manual approach
-improves the final frequency by 53%, from 216 MHz to 329 MHz.
-
-Basic Idea of AutoBridge
-::::::::::::::::::::::::::
-
-The key idea of AutoBridge is that it utilizes the pipelining flexibility of data flow designs.
-
-.. image:: https://user-images.githubusercontent.com/32432619/165635895-6955f6e2-3517-4dad-9f54-4203e997eb8a.png
-  :width: 75 %
-
-- To relieve local congestion, AutoBridge tries to spread the logic evenly across the entire device.
-- To resolve global critical paths, AutoBridge adds additional pipelines to the latency-insensitive interfaces between tasks.
-
-
-.. image:: https://user-images.githubusercontent.com/32432619/165636025-a85940ac-70f9-4a2d-8376-c1a96510e449.png
-  :width: 75 %
-
-
-Skip Repetitive HLS Synthesis
-::::::::::::::::::::::::::::::::::::::
-
-The following sections discuss how to manipulate the floorplanning process and you may need to run floorplanning multiple times on the same design. To avoid re-running HLS compilation of the tasks, you could specify which steps of TAPA you want to activate. By default, TAPA will execute all steps.
+The Alveo U280 HBM boards have 32 HBM channels and Vitis users have to manually bind each top level argument to one physical channels.
+AutoBridge could automatically search for the optimal binding in the floorplan process.
 
 .. code-block:: shell
+  :emphasize-lines: 12
 
   tapac -o vadd.$platform.hw.xo vadd.cpp \
     --platform $platform \
     --top VecAdd \
     --work-dir vadd.$platform.hw.xo.tapa \
+    --enable-floorplan \
+    --floorplan-output constraint.tcl \
+    --connectivity connectivity.ini \
+    --enable-synth-util \
+    --read-only-args "hbm_[0-3]" \
+    --write-only-args "my_out_port" \
+    --write-only-args "another_out_port" \
+    --enable-hbm-binding-adjustment \
 
-This is equivalent to:
 
-.. code-block:: shell
-  :emphasize-lines: 5,6,7,8,9,10
+.. note::
 
-  tapac -o vadd.$platform.hw.xo vadd.cpp \
-    --platform $platform \
-    --top VecAdd \
-    --work-dir vadd.$platform.hw.xo.tapa \
-    --run-tapacc \
-    --run-hls \
-    --generate-task-rtl \
-    --run-floorplanning \
-    --generate-top-rtl \
-    --pack-xo \
+  AutoBridge treats each HBM channel as independent and equivalent and does not consider the complex internal micro-architecture of the HBM module.
 
-If you want to re-run floorplanning only, you could only specify the last four steps:
 
-.. code-block:: shell
-  :emphasize-lines: 5,6,7,8
-
-  tapac -o vadd.$platform.hw.xo vadd.cpp \
-    --platform $platform \
-    --top VecAdd \
-    --work-dir vadd.$platform.hw.xo.tapa \
-    --generate-task-rtl \
-    --run-floorplanning \
-    --generate-top-rtl \
-    --pack-xo \
-
-Manipulate the Floorplan Parameters
-::::::::::::::::::::::::::::::::::::::::
+Get Best Results with Multi-Floorplanning
+::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 The floorplanning process is about the tradeoff between two factors:
+
+- Area limit: the maximal percentage of occupied resources in each slot
+- SLR crossing limit: the maximal number of wires crossing an SLR boundary
+
+Very often it is infeasible to tell which factor is more important for a given design. To obtain the best timing quality, we could generate all pareto-optimal floorplan choices. We place and route all of them in parallel and use the one with the highest frequency.
+
+To do that, add the ``--run-floorplan-dse`` option. TAPA will generate a set of floorplan projects named ``run-1``, ``run-2``, ... and there will be an script in each project to invoke ``v++``.
+
+.. code-block:: shell
+  :emphasize-lines: 13
+
+  tapac -o vadd.$platform.hw.xo vadd.cpp \
+    --platform $platform \
+    --top VecAdd \
+    --work-dir vadd.$platform.hw.xo.tapa \
+    --enable-floorplan \
+    --floorplan-output constraint.tcl \
+    --connectivity connectivity.ini \
+    --enable-synth-util \
+    --read-only-args "hbm_[0-3]" \
+    --write-only-args "my_out_port" \
+    --write-only-args "another_out_port" \
+    --enable-hbm-binding-adjustment \
+    --run-floorplan-dse \
+
+
+.. note::
+
+  When you run multiple Vivado processes for different floorplanning, be careful of how much memory you have. A rule of thumb is that for a large design (say with over 50% resource usage) Vivado uses around 40 GB of memory in its peak.
+
+
+Adjust the Floorplan Parameters (Experts Only)
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+All important floorplan parameters are adjustable by the users.
 
 - Area limit: the maximal percentage of occupied resources in each slot
 - SLR crossing limit: the maximal number of wires crossing an SLR boundary
@@ -195,8 +229,8 @@ You could manipulate AutoBridge through the following options:
 - ``--min-slr-width-limit`` and ``--max-slr-width-limit`` specify the range of acceptable SLR crossing limit that AutoBridge chooses from.
 - ``--floorplan-opt-priority`` controls the priority between the two factors. By default, AutoBridge takes priority in selecting a smaller area limit (``AREA_PRIORITIZED``). You could change it by providing the ``SLR_CROSSING_PRIORITIZED`` option.
 
-Manual Floorplanning
-:::::::::::::::::::::::
+Manual Floorplanning (Experts Only)
+::::::::::::::::::::::::::::::::::::::::
 
 You could enforce the tool to assign certain task instances to specified slots. To do this, use the ``--floorplan-pre-assignments`` option to provide a json file that includes the manual floorplanning.
 
@@ -231,17 +265,6 @@ AutoBridge has been tested on designs from <20 tasks to designs with >1000 tasks
 - By default, each solving process is allowed for 600 seconds. You could adjust the threshold by the ``--max-search-time`` option.
 
 
-Visualize Your Design topology
-:::::::::::::::::::::::::::::::::::::
-
-AutoBridge will generate a ``.dot`` representation of how your tasks and streams are connected. You could generate a figure from it online, for example at `GraphvizOnline <https://dreampuf.github.io/GraphvizOnline/>`_. Here is an example of the ``vadd`` application.
-
-.. image:: https://user-images.githubusercontent.com/32432619/166062922-f69bf372-a15c-4d8c-ac11-0fa4f43a3a7e.png
-  :width: 80 %
-
-Blue boxes represent external memory ports. The number beside each edge represents its width.
-
-
 Tips to Improve Frequency
 :::::::::::::::::::::::::::::::
 
@@ -255,3 +278,23 @@ Tips to Improve Frequency
   whole. You may need to take this into consideration when designing the kernel. This limitation is expected to be addressed soon.
 
 - AutoBridge will generate a ``.dot`` file that helps you visualize the topology of your design.
+
+
+How to Find Post-Routing Critical Paths
+:::::::::::::::::::::::::::::::::::::::::
+
+By default, the auto-generated ``v++`` script will save all intermediate checkpoints. To look for the post-routing checkpoint, you could try:
+
+.. code-block:: bash
+
+  find . -name "*route*dcp"
+
+You could use Vivado to open the checkpoint in a GUI environment:
+
+.. code-block:: bash
+
+  vivado $path_to_dcp
+
+Then you could follow Vivado guidelines to analyze the placement/routing results and debug potential issues.
+
+Feel free to contact the TAPA team if the final frequency is unsatisfactory.

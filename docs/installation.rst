@@ -1,8 +1,8 @@
 Install TAPA
 ============
 
-Option 1: Install from Binary
------------------------------
+Option 1: One-Click Install from Binary
+------------------------------------------
 
 TAPA is developed and tested in Ubuntu.
 If you use Ubuntu as well (highly recommended),
@@ -104,18 +104,6 @@ Build and Installation
   git clone https://github.com/UCLA-VAST/tapa
   python3 -m pip install tapa/backend/python
 
-.. tip::
-
-  Since the Python part of TAPA is being actively updated,
-  you could install the Python package as *editable*:
-
-  .. code-block:: bash
-
-    python3 -m pip install --editable tapa/backend/python
-
-  Any changes made to the source will be reflected when you run ``tapac``.
-  Therefore, it is easy to upgrade your local installation:
-  simply pull the latest change from GitHub.
 
 2. Create a build directory.
 
@@ -208,19 +196,3 @@ you may need to add ``${HOME}/.local/bin`` to your ``PATH``:
 .. code-block:: bash
 
   PATH="${HOME}/.local/bin:${PATH}"
-
-Troubleshooting
-===============
-
-CMake Returns an Error
-----------------------
-
-Please check ``cmake --version``.
-CMake 3.13 or higher is required,
-which can be easily installed via ``pip install cmake``.
-If you have installed an appropriate version of CMake but still encounter
-problems, please check ``which cmake`` to see the full path of CMake in use.
-If your ``PATH`` is polluted by environmental setup scripts,
-please make sure you *prepend* the path containing ``cmake``
-(e.g., ``${HOME}/.local/bin``) to ``PATH``
-*after* all such scripts are sourced.
