@@ -402,15 +402,15 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
     _logger.warning('The floorplan option is automatically enabled because a '
                     'floorplan output file is provided')
 
-  if args.run_floorplanning and not args.enable_floorplan:
-    parser.error('Floorplan is disabled but the --run-floorplan step is set')
-
-  if all_steps or args.run_floorplanning is not None:
+  # if floorplanning is enabled, check if the device is supported
+  if args.enable_floorplan and args.floorplan_output:
     part_num = _get_device_info(parser, args)['part_num']
-
     if not is_part_num_supported(part_num):
       parser.error('The part_num %s is not supported for floorplanning. '
                     'Contact the authors to add support for this device.', part_num)
+
+  if args.run_floorplanning and not args.enable_floorplan:
+    parser.error('Floorplan is disabled but the --run-floorplan step is set')
 
   if args.run_floorplan_dse:
     if not args.work_dir:
