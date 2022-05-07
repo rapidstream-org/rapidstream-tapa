@@ -109,3 +109,7 @@ def switch_work_dir(path: str):
   """Switch working directory to `path`."""
   os.makedirs(path, exist_ok=True)
   click.get_current_context().obj['work-dir'] = path
+
+  # update tapa.core.Program if created
+  if 'tapa-program' in click.get_current_context().obj:
+    click.get_current_context().obj['tapa-program'].work_dir = path

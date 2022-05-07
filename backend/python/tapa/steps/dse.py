@@ -2,6 +2,7 @@ from copy import copy
 import json
 import logging
 import os
+import shutil
 from typing import Dict
 
 import click
@@ -29,10 +30,10 @@ def dse_floorplan(ctx: click.Context, min_area_limit: int,
                   floorplan_dse_step: int, **kwargs: Dict):
 
   work_dir = common.get_work_dir()
-  run_dir = os.path.abspath(os.path.join(work_dir, 'run'))
+  synth_dir = os.path.abspath(os.path.join(work_dir, 'csynth'))
 
   log_info_header('DSE preparation: synthesize each task into RTL')
-  common.switch_work_dir(run_dir)
+  common.switch_work_dir(synth_dir)
   forward_applicable(ctx, analyze.analyze, kwargs)
   forward_applicable(ctx, synth.synth, kwargs)
 
@@ -43,7 +44,11 @@ def dse_floorplan(ctx: click.Context, min_area_limit: int,
 
     # Setup the design point environment and output dir
     output_dir = os.path.join(work_dir, f'run-{id}')
-    os.makedirs(output_dir, exist_ok=True)
+    common.switch_work_dir(output_dir)
+
+    run_dir = os.path.abspath(os.path.join(output_dir, 'run'))
+    shutil.copytree(synth_dir, run_dir)
+    common.switch_work_dir(run_dir)
 
     args = copy(kwargs)
     args['output'] = os.path.join(output_dir, f'design-point.xo')
