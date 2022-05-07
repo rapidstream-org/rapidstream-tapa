@@ -192,7 +192,7 @@ class Program:
     return self
 
   def run_hls(self, clock_period: Union[int, float, str],
-              part_num: str) -> 'Program':
+              part_num: str, other_configs: str = '') -> 'Program':
     """Run HLS with extracted HLS C++ files and generate tarballs."""
     self.extract_cpp()
 
@@ -210,6 +210,7 @@ class Program:
             auto_prefix=True,
             hls='vitis_hls',
             std='c++17',
+            other_configs=other_configs,
         ) as proc:
           stdout, stderr = proc.communicate()
       if proc.returncode != 0:

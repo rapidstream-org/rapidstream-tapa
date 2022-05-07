@@ -121,7 +121,14 @@ def create_parser() -> argparse.ArgumentParser:
       metavar='file',
       help='Input file, usually TAPA C++ source code.',
   )
-
+  parser.add_argument(
+      '--other-hls-configs',
+      type=str,
+      dest='other_hls_configs',
+      default='',
+      help='Additional compile options for Vitis HLS. '
+           ' E.g., --other-hls-configs "config_compile -unsafe_math_optimizations" ',
+  )
   group = parser.add_argument_group(
       title='Compilation Steps',
       description='Selectively run compilation steps (advanced usage).',
@@ -573,7 +580,8 @@ def main(argv: Optional[List[str]] = None):
       output_fp.write(program.frt_interface)
 
   if all_steps or args.run_hls is not None:
-    program.run_hls(**_get_device_info(parser, args))
+    program.run_hls(**_get_device_info(parser, args),
+                    other_configs=args.other_hls_configs)
 
   if all_steps or args.generate_task_rtl is not None:
     program.generate_task_rtl(
