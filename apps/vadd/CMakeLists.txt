@@ -14,21 +14,34 @@ target_link_libraries(vadd PRIVATE ${TAPA} gflags)
 add_test(NAME vadd COMMAND vadd)
 
 if(SDx_FOUND)
+  if(${PLATFORM} EQUAL xilinx_u250_xdma_201830_2
+     OR ${PLATFORM} EQUAL xilinx_u280_xdma_201920_3
+  )
+    list(APPEND TAPA_ARGS CONSTRAINT ${CMAKE_CURRENT_BINARY_DIR}/constraint.tcl)
+    list(
+      APPEND
+      VPP_ARGS
+      --vivado.prop=run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=${CMAKE_CURRENT_BINARY_DIR}/constraint.tcl
+    )
+  endif()
+
   add_tapa_target(
     vadd-hw-xo
+    ${TAPA_ARGS}
     INPUT vadd.cpp
     TOP VecAdd
     CONNECTIVITY ${CMAKE_CURRENT_SOURCE_DIR}/link_config.ini
-    CONSTRAINT ${CMAKE_CURRENT_BINARY_DIR}/constraint.tcl
-    PLATFORM ${PLATFORM})
+    PLATFORM ${PLATFORM}
+  )
 
   add_xocc_hw_link_targets(
     ${CMAKE_CURRENT_BINARY_DIR}
     --config=${CMAKE_CURRENT_SOURCE_DIR}/link_config.ini
-    --vivado.prop=run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=${CMAKE_CURRENT_BINARY_DIR}/constraint.tcl
+    ${VPP_ARGS}
     INPUT vadd-hw-xo
     HW_EMU_XCLBIN hw_emu_xclbin
-    HW_XCLBIN hw_xclbin)
+    HW_XCLBIN hw_xclbin
+  )
 
   add_custom_target(
     vadd-cosim
