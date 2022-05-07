@@ -12,13 +12,11 @@ Before you start, make sure you have
 Hello World: Vector Add
 :::::::::::::::::::::::
 
-This section covers the basic steps to design and run an FPGA accelerator with
-TAPA.
-
 Let's start with the following TAPA C++ source code:
 
 .. literalinclude:: ../apps/vadd/vadd.cpp
    :language: cpp
+
 
 The above code adds two variable-length ``float`` vectors, ``a`` and ``b``,
 to produce a new vector ``c`` with the same length.
@@ -61,6 +59,11 @@ It is also the *top-level* task that defines the interface between the kernel
 and the host.
 Once the 4 children task instances are instantiated,
 they will run in parallel and their parent will wait until all children finish.
+
+
+
+Run Software Simulation
+:::::::::::::::::::::::
 
 Next, let's actually run the program.
 We will need a host program to driver the kernel.
@@ -150,6 +153,13 @@ This time the elapsed time should be much shorter:
 
 The above runs software simulation of the program,
 which helps you quickly verify the correctness.
+
+
+
+Synthesize into RTL
+:::::::::::::::::::::::
+
+
 The next step is to synthesize it.
 The first step would be to run high-level synthesize (HLS):
 
@@ -165,6 +175,10 @@ This will take a couple of minutes.
 HLS reports will be available in the working directory
 ``vadd.$platform.hw.xo.tapa/report``.
 
+
+Run Hardware Simulation with Vitis
+::::::::::::::::::::::::::::::::::::
+
 To generate bitstream for hardware simulation:
 
 .. code-block:: bash
@@ -179,6 +193,7 @@ To generate bitstream for hardware simulation:
 This would take 5--10 minutes.
 
 TAPA will automatically generate a script called ``vadd.$platform.hw_generate_bitstream.sh`` that includes the command to invoke v++.
+
 
 To run hardware simulation with the generated ``hw_emu`` bitstream:
 
@@ -234,6 +249,20 @@ It will take about half a minute until it says
   You can use ``std::vector<T, tapa::aligned_allocator<T>>`` instead of
   ``std::vector`` to allocate memory with aligned addresses
   and get rid of this extra copy.
+
+
+Run Hardware Simulation with TAPA Simulator
+:::::::::::::::::::::::::::::::::::::::::::::
+
+Simply replace the ``vadd.$platform.hw_emu.xclbin`` by the previously generated ``xo`` object. See this :ref:`tutorial <tutorial/fast_cosim:TAPA RTL Simulation>` for more details.
+
+.. code-block:: bash
+
+  ./vadd --bitstream=vadd.$platform.hw.xo 1000
+
+
+Generate Bitstream
+::::::::::::::::::::::::::::::::::::
 
 To generate bitstream for on-board execution:
 
