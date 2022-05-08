@@ -406,8 +406,9 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
   if args.enable_floorplan and args.floorplan_output:
     part_num = _get_device_info(parser, args)['part_num']
     if not is_part_num_supported(part_num):
-      parser.error('The part_num %s is not supported for floorplanning. '
-                    'Contact the authors to add support for this device.', part_num)
+      parser.error(
+          f'The part_num {part_num} is not supported for floorplanning. '
+          'Contact the authors to add support for this device.')
 
   if args.run_floorplanning and not args.enable_floorplan:
     parser.error('Floorplan is disabled but the --run-floorplan step is set')
