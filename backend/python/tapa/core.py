@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import os.path
+import re
 import shutil
 import sys
 import tarfile
@@ -363,7 +364,16 @@ class Program:
 
       # adjust fifo depth for rebalancing
       for fifo_name, depth in fifo_to_depth.items():
-        self.top_task.fifos[fifo_name]['depth'] = depth
+        if fifo_name in self.top_task.fifos:
+          self.top_task.fifos[fifo_name]['depth'] = depth
+        else:
+          # streams has different naming convention
+          # change fifo_name_0 to fifo_name[0]
+          streams_fifo_name = re.sub(r'_(\d+)$', r'[\1]', fifo_name)
+          if streams_fifo_name in self.top_task.fifos:
+            self.top_task.fifos[streams_fifo_name]['depth'] = depth
+          else:
+            _logger.critical('unrecognized FIFO %s, skip depth adjustment', fifo_name)
 
     if register_level:
       assert register_level > 0
