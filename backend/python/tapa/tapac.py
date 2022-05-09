@@ -445,8 +445,6 @@ def main(argv: Optional[List[str]] = None):
 
   tapa.util.setup_logging(args.verbose, args.quiet, args.work_dir)
 
-  _logger.error('You are using a legacy CLI.  This CLI will be removed soon')
-
   _logger.info('tapa version: %s', tapa.__version__)
 
   # RTL parsing may require a deep stack
