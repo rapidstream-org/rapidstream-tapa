@@ -81,21 +81,15 @@ AutoBridge needs to know how the AXI interfaces bind to the physical ports, thus
     --floorplan-output constraint.tcl \
     --connectivity connectivity.ini
 
-.. note::
-
-  Be careful with the connectivity file. An inferior port binding will cause unnecessary routing congestion. Especially for U280 users, since all the 32 HBM channels are placed on the bottom SLR, you want to balance the usage of channel 0-15 and channel 16-21.
 
 Here is an example of the connectivity file. The syntax is the same as required by the Vitis workflow:
 
 .. code-block:: shell
 
   [connectivity]
-  sp=VecAdd_1.a:DDR[0]
-  sp=VecAdd_1.b:DDR[1]
-  sp=VecAdd_1.c:DDR[2]
-
-.. note::
-  If you invoke tapac from the command line, you must append an ``_1`` suffix to the top name. On the other hand, you must not append this suffix if you use the cmake flow.
+  sp=VecAdd.a:DDR[0]
+  sp=VecAdd.b:DDR[1]
+  sp=VecAdd.c:DDR[2]
 
 
 AutoBridge will generate a ``.dot`` representation of how your tasks and streams are connected. You could generate a figure from it online, for example at `GraphvizOnline <https://dreampuf.github.io/GraphvizOnline/>`_. Here is an example of the ``vadd`` application.
@@ -132,7 +126,7 @@ This option instructs TAPA to run logic synthesis of each task to get a more acc
   Tasks are synthesized in parallel for the post-synthesis area report. Still, this step could takes a while as RTL synthesis is much slower than C synthesis. By default, tapac will invoke 8 parallel Vivado processes to synthesize each task. You could allow more processes through the ``--max-parallel-synth-jobs`` option, though you should be careful to not run out of memory.
 
 
-If an external memory port is only read from or only written to, you should mark it through the ``--read-only-args`` and ``--write-only-args`` options. They will help improve the floorplan quality. Those options accept regular expressions representing multiple ports. In the example, ports whose names match the pattern ``hbm_[0-3]`` will be marked as read-only, while ports ``my_out_port`` and ``another_out_port`` will be marked as write-only.
+If an external memory port is only read from or only written to, you should mark it through the ``--read-only-args`` and ``--write-only-args`` options. They will help improve the floorplan quality. Those options accept regular expressions representing multiple ports. In the example shown below, ports whose names match the pattern ``example_arg_hbm_[0-3]`` will be marked as read-only, while ports ``my_out_port_foo`` and ``another_out_port_bar`` will be marked as write-only. Note that the arguments here are just for demonstration, you need to replace them by your own argument names.
 
 .. code-block:: shell
   :emphasize-lines: 9,10,11
@@ -145,15 +139,16 @@ If an external memory port is only read from or only written to, you should mark
     --floorplan-output constraint.tcl \
     --connectivity connectivity.ini \
     --enable-synth-util \
-    --read-only-args "hbm_[0-3]" \
-    --write-only-args "my_out_port" \
-    --write-only-args "another_out_port" \
+    --read-only-args "example_arg_hbm_[0-3]" \
+    --write-only-args "my_out_port_foo" \
+    --write-only-args "another_out_port_bar" \
 
 Automatic HBM Channel Binding
 ::::::::::::::::::::::::::::::::::::::
 
 The Alveo U280 HBM boards have 32 HBM channels and Vitis users have to manually bind each top level argument to one physical channels.
-AutoBridge could automatically search for the optimal binding in the floorplan process.
+Be careful with the connectivity file. An inferior port binding will cause unnecessary routing congestion. Especially for U280 users, since all the 32 HBM channels are placed on the bottom SLR.
+To address this issue, AutoBridge could automatically search for the optimal binding in the floorplan process.
 
 .. code-block:: shell
   :emphasize-lines: 12
