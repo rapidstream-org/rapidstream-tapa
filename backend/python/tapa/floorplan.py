@@ -267,7 +267,7 @@ def generate_new_connectivity_ini(config_with_floorplan, work_dir, top_name):
     cfg = []
     cfg += ['[connectivity]']
     for arg_name, port_id in new_binding.items():
-      cfg += [f'sp={top_name}_1.{arg_name}:HBM[{port_id}]']
+      cfg += [f'sp={top_name}.{arg_name}:HBM[{port_id}]']
 
     cfg_path = f'{work_dir}/link_config.ini'
     _logger.info('generate new port binding at %s', cfg_path)
