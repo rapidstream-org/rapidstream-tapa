@@ -409,16 +409,25 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
     _logger.warning('The floorplan option is automatically enabled because a '
                     'floorplan output file is provided')
 
-  # if floorplanning is enabled, check if the device is supported
-  if args.enable_floorplan and args.floorplan_output:
+  # if floorplanning is enabled
+  if (args.enable_floorplan and args.floorplan_output) or args.run_floorplan_dse:
+    # check if the device is supported
     part_num = _get_device_info(parser, args)['part_num']
     if not is_part_num_supported(part_num):
       parser.error(
           f'The part_num {part_num} is not supported for floorplanning. '
           'Contact the authors to add support for this device.')
 
-  if args.run_floorplanning and not args.enable_floorplan:
-    parser.error('Floorplan is disabled but the --run-floorplan step is set')
+    # check if connectivity is given
+    if not args.connectivity:
+      parser.error('Must provide --connectivity to enable floorplanning.')
+
+    # if target U280, warn if port binding adjustment is not enabled
+    if part_num.startswith('xcu280'):
+      if not args.enable_hbm_binding_adjustment:
+        _logger.warning('HBM port binding adjustment is not enabled. '
+                        'Use --enable-hbm-binding-adjustment to allow '
+                        'optimal port binding selection.')
 
   if args.run_floorplan_dse:
     if not args.work_dir:
