@@ -17,7 +17,7 @@ if(SDx_FOUND)
   if(${PLATFORM} EQUAL xilinx_u250_xdma_201830_2
      OR ${PLATFORM} EQUAL xilinx_u280_xdma_201920_3
   )
-    list(APPEND TAPA_ARGS CONSTRAINT ${CMAKE_CURRENT_BINARY_DIR}/constraint.tcl)
+    list(APPEND TAPA_ARGS --floorplan-output ${CMAKE_CURRENT_BINARY_DIR}/constraint.tcl)
     list(
       APPEND
       VPP_ARGS
