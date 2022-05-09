@@ -10,15 +10,15 @@ VITIS_COMMAND_BASIC = [
   '  --report_level 2 \\',
   '  --temp_dir "${OUTPUT_DIR}/${TOP}_${PLATFORM}.temp" \\',
   '  --optimize 3 \\',
-  '  --connectivity.nk ${TOP}:1:${TOP}_1 \\',
+  '  --connectivity.nk ${TOP}:1:${TOP} \\',
   '  --save-temps \\',
-  '  ${XO} \\',
+  '  "${XO}" \\',
   '  --vivado.synth.jobs ${MAX_SYNTH_JOBS} \\',
   '  --vivado.prop=run.impl_1.STEPS.PHYS_OPT_DESIGN.IS_ENABLED=1 \\',
   '  --vivado.prop=run.impl_1.STEPS.OPT_DESIGN.ARGS.DIRECTIVE=$STRATEGY \\',
-  '  --vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=$PLACEMENT_STRATEGY \\',
+  '  --vivado.prop=run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=$PLACEMENT_STRATEGY \\',
   '  --vivado.prop=run.impl_1.STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE=$STRATEGY \\',
-  '  --vivado.prop run.impl_1.STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE=$STRATEGY \\',
+  '  --vivado.prop=run.impl_1.STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE=$STRATEGY \\',
 ]
 FLOORPLAN_OPTION = ['  --vivado.prop run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=$CONSTRAINT \\']
 CONFIG_OPTION = ['  --config "${CONFIG_FILE}" \\']
