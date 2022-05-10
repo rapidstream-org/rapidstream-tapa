@@ -568,7 +568,7 @@ def main(argv: Optional[List[str]] = None):
     if args.input_file.endswith('.json') or args.work_dir is None:
       tapa_program_json = lambda: json.load(args.input_file)
     else:
-      tapa_program_json = lambda: json.load(os.path.join(args.work_dir, 'program.json'))
+      tapa_program_json = lambda: json.load(open(os.path.join(args.work_dir, 'program.json'), 'r'))
 
   tapa_program_json_obj = tapa_program_json()
   program = tapa.core.Program(tapa_program_json_obj, work_dir=args.work_dir)
