@@ -93,8 +93,10 @@ def get_cmd_to_explore_floorplan(
     args_dict: Dict[str, Any],
     work_dir: str,
     output_dir: str,
+    min_slr_limit: int,
     max_slr_limit: int,
     min_area_limit: float,
+    max_area_limit: float,
 ) -> List[str]:
   """Command to get one design point. Reuse HLS synthesis and enable_synth_util"""
   basic_cmd = get_basic_tapa_command(args_dict, output_dir)
@@ -104,8 +106,10 @@ def get_cmd_to_explore_floorplan(
     '--run-floorplanning',
     '--generate-top-rtl',
     '--pack-xo',
+    '--min-slr-width-limit', str(min_slr_limit),
     '--max-slr-width-limit', str(max_slr_limit),
     '--min-area-limit', str(min_area_limit),
+    '--max-area-limit', str(max_area_limit),
   ]
   return basic_cmd
 
@@ -148,6 +152,7 @@ def run_floorplan_dse(args):
   min_slr_limit = args.min_slr_width_limit
   max_slr_limit = args.max_slr_width_limit
   min_area_limit = args.min_area_limit
+  max_area_limit = args.max_area_limit
   id = 1
 
   while min_slr_limit < max_slr_limit:
@@ -173,7 +178,15 @@ def run_floorplan_dse(args):
       exit(1)
 
     # run floorplanning
-    run_cmd = get_cmd_to_explore_floorplan(args_dict, run_dir, output_dir, max_slr_limit, min_area_limit)
+    run_cmd = get_cmd_to_explore_floorplan(
+      args_dict,
+      run_dir,
+      output_dir,
+      min_slr_limit,
+      max_slr_limit,
+      min_area_limit,
+      max_area_limit
+    )
     try:
       subprocess.run(run_cmd,
                     stdout=subprocess.PIPE,
