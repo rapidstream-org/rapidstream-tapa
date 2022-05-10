@@ -18,14 +18,21 @@ function install-tapa-for-ubuntu() {
     python3-pip \
     wget
 
-  wget -O - https://about.blaok.me/tapa/tapa.gpg.key | sudo apt-key add -
-  wget -O - https://about.blaok.me/fpga-runtime/frt.gpg.key | sudo apt-key add -
-  sudo tee /etc/apt/sources.list.d/tapa.list <<EOF
-deb [arch=amd64] https://about.blaok.me/tapa ${codename} main
-EOF
+  wget -O- https://about.blaok.me/fpga-runtime/frt.gpg.key | gpg --dearmor |
+    sudo tee /usr/share/keyrings/.frt.gpg.tmp >/dev/null
+  sudo mv /usr/share/keyrings/.frt.gpg.tmp /usr/share/keyrings/frt.gpg
   sudo tee /etc/apt/sources.list.d/frt.list <<EOF
-deb [arch=amd64] https://about.blaok.me/fpga-runtime ${codename} main
+deb [arch=amd64 signed-by=/usr/share/keyrings/frt.gpg] https://about.blaok.me/fpga-runtime ${codename} main
 EOF
+  sudo apt-key del A3DB8B24636B33EE || true
+
+  wget -O- https://about.blaok.me/tapa/tapa.gpg.key | gpg --dearmor |
+    sudo tee /usr/share/keyrings/.tapa.gpg.tmp >/dev/null
+  sudo mv /usr/share/keyrings/.tapa.gpg.tmp /usr/share/keyrings/tapa.gpg
+  sudo tee /etc/apt/sources.list.d/tapa.list <<EOF
+deb [arch=amd64 signed-by=/usr/share/keyrings/tapa.gpg] https://about.blaok.me/tapa ${codename} main
+EOF
+  sudo apt-key del 4F0F08E885049E30 || true
 
   sudo apt-get update
   sudo apt-get install -y xrt --no-install-recommends || true
