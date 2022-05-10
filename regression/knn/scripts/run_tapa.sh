@@ -8,15 +8,9 @@ tapac \
   --clock-period 3.33 \
   -o knn.xo \
   --enable-synth-util \
-  --run-tapacc \
-  --run-hls \
-  --generate-task-rtl \
-  --run-floorplanning \
-  --generate-top-rtl \
-  --pack-xo \
-  --constraint knn_floorplan.tcl \
+  --floorplan-output knn_floorplan.tcl \
   --connectivity ../src/knn.ini \
-  --reuse-hbm-path-pipelining \
-  --floorplan-strategy SLR_LEVEL_FLOORPLANNING \
+  --enable-hbm-binding-adjustment \
+  --run-floorplan-dse \
   --max-parallel-synth-jobs 16 \
   ../src/knn.cpp
