@@ -65,9 +65,10 @@ TAPA is a dataflow HLS framework that features fast compilation, expressive prog
 
 ## Getting Started
 
-+ [Installation](https://tapa.readthedocs.io/en/latest/installation.html)
-+ [Tutorial](https://tapa.readthedocs.io/en/latest/tutorial.html)
-+ [API Reference](https://tapa.readthedocs.io/en/latest/api.html)
++ [Documentation](https://tapa.readthedocs.io/en/release/)
++ [Installation](https://tapa.readthedocs.io/en/release/installation.html)
++ [Hello World](https://tapa.readthedocs.io/en/release/getting_started.html)
++ [API Reference](https://tapa.readthedocs.io/en/release/api.html)
 
 ## TAPA Publications
 
