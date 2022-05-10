@@ -104,13 +104,13 @@ function(add_tapa_target target_name)
     list(APPEND tapa_cmd --part-num ${TAPA_PART_NUM})
   endif()
 
-  if(TAPA_CONNECTIVITY)
+  if(TAPA_CONNECTIVITY AND TAPA_CONSTRAINT)
     list(APPEND tapa_cmd optimize-floorplan)
     list(APPEND tapa_cmd --connectivity ${TAPA_CONNECTIVITY})
   endif()
 
   list(APPEND tapa_cmd link)
-  if(TAPA_CONSTRAINT)
+  if(TAPA_CONNECTIVITY AND TAPA_CONSTRAINT)
     list(APPEND tapa_cmd --floorplan-output ${TAPA_CONSTRAINT})
   endif()
 
