@@ -196,3 +196,13 @@ you may need to add ``${HOME}/.local/bin`` to your ``PATH``:
 .. code-block:: bash
 
   PATH="${HOME}/.local/bin:${PATH}"
+
+
+Update TAPA
+===============
+
+TAPA is in active development and we are adding more features quickly. To update TAPA to the latest release:
+
+- If you use one-click installation before, then simply run the one-click script again.
+
+- If you install TAPA from source, you need to go through the steps again.
