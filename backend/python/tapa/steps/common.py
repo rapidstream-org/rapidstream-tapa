@@ -36,7 +36,7 @@ def load_persistent_context(name: str) -> Dict:
   """Try load context from the flow or from the workdir.
 
   Args:
-    name: Name of the context, e.g. program, settings.
+    name: Name of the context, e.g. graph, settings.
   
   Returns:
     The context.
@@ -48,14 +48,14 @@ def load_persistent_context(name: str) -> Dict:
 
   else:
     json_file = os.path.join(get_work_dir(), f'{name}.json')
-    _logger.info(f'loading TAPA program from json `{json_file}`.')
+    _logger.info(f'loading TAPA graph from json `{json_file}`.')
 
     try:
       with open(json_file, 'r') as input_fp:
         obj = json.loads(input_fp.read())
     except FileNotFoundError:
       raise click.BadArgumentUsage(
-          f'Program description {json_file} does not exist.  Either '
+          f'Graph description {json_file} does not exist.  Either '
           '`tapa analyze` wasn\'t executed, or you specified a wrong path.')
     local_ctx[name] = obj
 
@@ -71,7 +71,7 @@ def load_tapa_program() -> tapa.core.Program:
   local_ctx = click.get_current_context().obj
   if 'tapa-program' not in local_ctx:
     local_ctx['tapa-program'] = tapa.core.Program(
-        load_persistent_context('program'), local_ctx['work-dir'])
+        load_persistent_context('graph'), local_ctx['work-dir'])
 
   return local_ctx['tapa-program']
 

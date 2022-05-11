@@ -14,6 +14,8 @@ import tapa.core
 import tapa.util
 import tapa.steps.common
 
+from tapa.common.graph import Graph as TapaGraph
+
 _logger = logging.getLogger().getChild(__name__)
 
 
@@ -55,13 +57,16 @@ def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],
 
   flatten_files = run_flatten(tapa_clang, input, cflags, work_dir)
   tapacc_cflags = find_tapacc_cflags(cflags)
-  program_dict = run_tapacc(tapacc, flatten_files, top, tapacc_cflags)
-  program_dict['cflags'] = tapacc_cflags
+  graph_dict = run_tapacc(tapacc, flatten_files, top, tapacc_cflags)
+  graph_dict['cflags'] = tapacc_cflags
+
+  # Flatten the graph
+  graph_dict = TapaGraph(None, graph_dict).get_flatten_graph().to_dict()
 
   tapa.steps.common.store_tapa_program(tapa.core.Program(
-      program_dict, work_dir))
+      graph_dict, work_dir))
 
-  tapa.steps.common.store_persistent_context('program', program_dict)
+  tapa.steps.common.store_persistent_context('graph', graph_dict)
   tapa.steps.common.store_persistent_context('settings', {})
   
   tapa.steps.common.is_pipelined('analyze', True)
