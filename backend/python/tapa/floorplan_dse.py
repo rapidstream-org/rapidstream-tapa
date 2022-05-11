@@ -56,9 +56,12 @@ def get_basic_tapa_command(args_dict: Dict[str, Any], output_dir: str) -> List[s
     if isinstance(v, bool):
       cmd += [to_tapac_option(k)]
     elif k == 'output_file':
-      cmd += ['-o', output_dir + '/' + str(v)]
+      # handle the case if the provided output name is hierarchical
+      output_name = str(v).split('/')[-1]
+      cmd += ['-o', output_dir + '/' + output_name]
     elif k == 'floorplan_output':
-      cmd += [to_tapac_option(k), output_dir + '/' + str(v)]
+      output_name = str(v).split('/')[-1]
+      cmd += [to_tapac_option(k), output_dir + '/' +output_name]
     # these two are of "append" type, convert list to multiple invokation
     elif k == 'write_only_args' or k == 'read_only_args':
       for regexp in v:
