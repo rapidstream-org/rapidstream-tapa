@@ -438,6 +438,8 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
       parser.error('--enable-hbm-binding-adjustment only works with U280')
     if not args.work_dir:
       parser.error('--work-dir must be set to enable automatic HBM binding adjustment.')
+    if args.floorplan_strategy == 'QUICK_FLOORPLANNING':
+      parser.error('--enable-hbm-binding-adjustment not supported yet for QUICK_FLOORPLANNING')
 
     _logger.warning('HBM port binding adjustment is enabled. The final binding may be '
                     'different from %s', args.connectivity.name)
