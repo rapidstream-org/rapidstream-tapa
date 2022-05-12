@@ -37,7 +37,7 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         'absl-py',
-        'autobridge>=0.0.20220509.dev1',
+        'autobridge>=0.0.20220512.dev1',
         'coloredlogs>=9.3',
         'haoda>=0.0.20220507.dev1',
         'pyverilog>=1.2.0',
