@@ -369,7 +369,7 @@ class Program:
         self.autobridge_dir, constraint
       )
 
-      if not fifo_pipeline_level:
+      if not task_inst_to_slr:
         _logger.warning('generate top rtl without floorplanning')
 
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
