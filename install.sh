@@ -67,3 +67,8 @@ esac
 
 python3 -m pip install --upgrade --user setuptools wheel
 python3 -m pip install --upgrade --user tapa
+
+# check if PATH is correctly set
+if ! which tapac >/dev/null; then
+  echo "*** Please add \"~/.local/bin\" to PATH ***" >&2
+fi
