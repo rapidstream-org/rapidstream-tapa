@@ -174,7 +174,7 @@ class Program:
 
   def extract_cpp(self) -> bool:
     """Extract HLS C++ files.
-    
+
     Returns:
       True if any C++ code is changed or newly added to the work dir.
       Otherwise, returns False.
@@ -528,7 +528,7 @@ class Program:
     # now that each SLR has an control_s_axi, slightly reduce the
     # pipeline level of the scalars
     if instance_name_to_slr:
-      scalar_register_level = 1
+      scalar_register_level = 2
     else:
       scalar_register_level = self.register_level
 
