@@ -11,4 +11,6 @@
 
 #endif
 
+#include "tapa/traits.h"
+
 #endif  // TAPA_TAPA_H_

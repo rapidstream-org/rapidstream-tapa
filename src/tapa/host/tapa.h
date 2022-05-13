@@ -7,7 +7,6 @@
 #include "tapa/host/mmap.h"
 #include "tapa/host/stream.h"
 #include "tapa/host/task.h"
-#include "tapa/host/traits.h"
 #include "tapa/host/util.h"
 #include "tapa/host/vec.h"
 
@@ -23,35 +22,9 @@
 #include <utility>
 #include <vector>
 
-#include <frt.h>
-#include <glog/logging.h>
 #include <sys/types.h>
 
 namespace tapa {
-
-namespace internal {
-
-struct seq {
-  int pos = 0;
-};
-
-template <typename Param, typename Arg>
-struct accessor {
-  static Param access(Arg&& arg) { return arg; }
-  static void access(fpga::Instance& instance, int& idx, Arg&& arg) {
-    instance.SetArg(idx++, static_cast<Param>(arg));
-  }
-};
-
-template <typename T>
-struct accessor<T, seq> {
-  static T access(seq&& arg) { return arg.pos++; }
-  static void access(fpga::Instance& instance, int& idx, seq&& arg) {
-    instance.SetArg(idx++, static_cast<T>(arg.pos++));
-  }
-};
-
-}  // namespace internal
 
 // Host-only invoke that takes path to a bistream file as an argument. Returns
 // the kernel time in nanoseconds.

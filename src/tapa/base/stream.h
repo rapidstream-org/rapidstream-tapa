@@ -1,8 +1,6 @@
 #ifndef TAPA_BASE_STREAM_H_
 #define TAPA_BASE_STREAM_H_
 
-#include <cstdint>
-
 namespace tapa {
 
 inline constexpr int kStreamDefaultDepth = 2;

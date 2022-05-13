@@ -3,11 +3,38 @@
 
 #include "tapa/base/task.h"
 
+#include "tapa/host/coroutine.h"
+#include "tapa/host/logging.h"
+
 #include <sys/wait.h>
+#include <chrono>
+#include <memory>
+
+#include <frt.h>
 
 namespace tapa {
 
 namespace internal {
+
+struct seq {
+  int pos = 0;
+};
+
+template <typename Param, typename Arg>
+struct accessor {
+  static Param access(Arg&& arg) { return arg; }
+  static void access(fpga::Instance& instance, int& idx, Arg&& arg) {
+    instance.SetArg(idx++, static_cast<Param>(arg));
+  }
+};
+
+template <typename T>
+struct accessor<T, seq> {
+  static T access(seq&& arg) { return arg.pos++; }
+  static void access(fpga::Instance& instance, int& idx, seq&& arg) {
+    instance.SetArg(idx++, static_cast<T>(arg.pos++));
+  }
+};
 
 void* allocate(size_t length);
 void deallocate(void* addr, size_t length);

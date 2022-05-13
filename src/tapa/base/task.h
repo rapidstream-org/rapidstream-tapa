@@ -3,8 +3,8 @@
 
 namespace tapa {
 
-constexpr int join = 0;
-constexpr int detach = -1;
+inline constexpr int join = 0;
+inline constexpr int detach = -1;
 
 }  // namespace tapa
 

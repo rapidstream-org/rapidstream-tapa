@@ -1,7 +1,7 @@
-#ifndef TAPA_BASE_TRAITS_H_
-#define TAPA_BASE_TRAITS_H_
+#ifndef TAPA_TRAITS_H_
+#define TAPA_TRAITS_H_
 
-#include "tapa/base/stream.h"
+#include "tapa/stream.h"
 
 namespace tapa {
 
@@ -29,4 +29,4 @@ struct elem_type<ostreams<T, S>&> {
 #define TAPA_ELEM_TYPE(variable) \
   typename ::tapa::elem_type<decltype(variable)>::type
 
-#endif  // TAPA_BASE_TRAITS_H_
+#endif  // TAPA_TRAITS_H_

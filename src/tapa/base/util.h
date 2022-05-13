@@ -1,9 +1,10 @@
 #ifndef TAPA_BASE_UTIL_H_
 #define TAPA_BASE_UTIL_H_
 
+#include <climits>
 #include <cstdint>
 
-#include <iostream>
+#include <ostream>
 #include <type_traits>
 
 namespace tapa {

@@ -11,6 +11,7 @@
 #include <functional>
 #include <ostream>
 
+#include "tapa/xilinx/hls/logging.h"
 #include "tapa/xilinx/hls/util.h"
 
 namespace tapa {
