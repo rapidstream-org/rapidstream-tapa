@@ -234,10 +234,6 @@ def get_vivado_tcl(config_with_floorplan):
   vivado_tcl.append(f'  report_utilization -pblocks $pblock')
   vivado_tcl.append('}',)
 
-  # do not place pipeline registers to lagunas
-  # otherwise they will cause unnecessary hold violation and routing congestion
-  vivado_tcl.append(r'set_property USER_SLL_REG 0 [get_cells -hierarchical -regexp {.*_q\d+_reg.*} ]')
-
   return vivado_tcl
 
 
