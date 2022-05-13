@@ -92,39 +92,6 @@ module async_mmap #(
   output wire       write_resp_empty_n
 );
 
-  // add flow control between the read_addr channel and the read_data channel
-  // if the read_data channel is close to full, stop issuing more read requests
-  // buffer size set by FlowControlBufferDepth
-  parameter FlowControlThreshold = 48;
-  parameter FlowControlThresholdLog2 = $clog2(FlowControlThreshold)+1; // make the counter larger in case overflow
-  reg [FlowControlThresholdLog2: 0] counter; // # of outstanding read
-
-  wire allow_issue_read_addr = counter < FlowControlThreshold;
-  reg allow_issue_read_addr_q;
-  always @ (posedge clk) allow_issue_read_addr_q <= allow_issue_read_addr;
-
-  wire read_addr_write_internal;
-  wire read_addr_full_n_internal;
-  assign read_addr_write_internal = read_addr_write & allow_issue_read_addr_q;
-  assign read_addr_full_n = read_addr_full_n_internal & allow_issue_read_addr_q;
-
-  wire addr_write_en = read_addr_write_internal & read_addr_full_n_internal;
-  wire data_read_en = read_data_read & read_data_empty_n;
-
-  always @ (posedge clk) begin
-    if (rst) begin
-      counter <= 0;
-    end
-    else begin
-      if (addr_write_en & !data_read_en) begin
-        counter <= counter + 1;
-      end
-      else if (!addr_write_en & data_read_en) begin
-        counter <= counter - 1;
-      end
-    end
-  end
-
   // write addr buffer, from user to burst detector
   wire [AddrWidth-1:0] write_addr_dout;
   wire                 write_addr_empty_n;
@@ -419,9 +386,9 @@ module async_mmap #(
     .reset(rst),
 
     // from user
-    .if_full_n  (read_addr_full_n_internal),
+    .if_full_n  (read_addr_full_n),
     .if_write_ce(1'b1),
-    .if_write   (read_addr_write_internal),
+    .if_write   (read_addr_write),
     .if_din     (read_addr_din),
 
     // to axi
