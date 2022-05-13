@@ -195,7 +195,12 @@ class Program:
     _logger.info('running HLS')
     def worker(task: Task, idx: int) -> None:
       os.nice(idx % 19)
-      hls_cflags = self.cflags + ' -DTAPA_TARGET_=XILINX_HLS'
+      hls_cflags = ' '.join((
+          self.cflags,
+          *(f'-isystem {x}/../tps/lnx64/gcc-6.2.0/include/c++/6.2.0'
+            for x in util.get_vendor_include_paths()),
+          '-DTAPA_TARGET_=XILINX_HLS',
+      ))
       with open(self.get_tar(task.name), 'wb') as tarfileobj:
         with hls.RunHls(
             tarfileobj,
