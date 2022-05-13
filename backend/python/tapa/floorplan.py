@@ -348,12 +348,6 @@ def get_floorplan_pre_assignments(
     for region, modules in user_pre_assignments.items():
       floorplan_pre_assignments[region] += modules
 
-  # ctrl vertex pre assignment
-  ctrl_region = get_ctrl_instance_region(part_num)
-  ctrl_vertex = [v_name for v_name, properties in vertices.items() if properties['category'] == 'CTRL_VERTEX']
-  assert len(ctrl_vertex) == 1, f'more than 1 ctrl instance found: {ctrl_vertex}'
-  floorplan_pre_assignments[ctrl_region] += ctrl_vertex
-
   # port vertices pre assignment
   skip_pre_assign_hbm_ports = kwargs.get('enable_hbm_binding_adjustment', False)
   for v_name, properties in vertices.items():

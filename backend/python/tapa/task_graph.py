@@ -217,7 +217,6 @@ def get_port_vertices(
 def get_vertices(top_task: Task, arg_name_to_external_port: Dict[str, str]):
   all_vertices = {}
   all_vertices.update(get_task_vertices(top_task))
-  all_vertices.update(get_ctrl_vertices(top_task))
   all_vertices.update(get_async_mmap_vertices(top_task))
   all_vertices.update(get_port_vertices(arg_name_to_external_port))
 
