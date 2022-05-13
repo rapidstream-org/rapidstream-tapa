@@ -503,11 +503,12 @@ class Module:
                           arg="{}'d{}".format(max_wait_time.bit_length(),
                                               max_wait_time)))
     if max_burst_len is None:
-      max_burst_len = max(0, 4096 // data_width - 1)
+      # 1KB burst length
+      max_burst_len = max(0, 8192 // data_width - 1)
     paramargs.append(
-        ast.ParamArg(paramname='BurstLenWidth', argname=ast.Constant(8)))
+        ast.ParamArg(paramname='BurstLenWidth', argname=ast.Constant(9)))
     portargs.append(
-        ast.make_port_arg(port='max_burst_len', arg=f"8'd{max_burst_len}"))
+        ast.make_port_arg(port='max_burst_len', arg=f"9'd{max_burst_len}"))
 
     for channel, ports in M_AXI_PORTS.items():
       for port, direction in ports:
