@@ -12,6 +12,10 @@
 void ap_wait(void);
 #endif
 
+#ifndef ap_wait_n
+void ap_wait_n(int);
+#endif
+
 namespace tapa {
 
 /// Obtain a value of type @c To by reinterpreting the object representation of
