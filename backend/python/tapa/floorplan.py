@@ -265,8 +265,8 @@ def generate_new_connectivity_ini(config_with_floorplan, work_dir, top_name):
   if config_with_floorplan.get('enable_hbm_binding_adjustment', False):
     new_binding = config_with_floorplan.get('new_hbm_binding', {})
     if not new_binding:
-      _logger.error('Adjusted HBM binding not recorded in post-floorplan config')
-      exit(1)
+      _logger.warning('Adjusted HBM binding not recorded in post-floorplan config')
+      return(1)
 
     cfg = []
     cfg += ['[connectivity]']

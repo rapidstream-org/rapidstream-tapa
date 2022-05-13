@@ -1,4 +1,7 @@
+import logging
 import os
+
+_logger = logging.getLogger().getChild(__name__)
 
 VITIS_COMMAND_BASIC = [
   'v++ ${DEBUG} \\',
@@ -54,12 +57,18 @@ def get_vitis_script(args) -> str:
     script.append(CHECK_CONSTRAINT)
     vitis_command += FLOORPLAN_OPTION
 
-  if args.enable_hbm_binding_adjustment:
-    script.append(f'CONFIG_FILE=\'{os.path.abspath(args.work_dir)}/link_config.ini\'')
+  new_config_path = f'{os.path.abspath(args.work_dir)}/link_config.ini'
+  orig_config_path = os.path.abspath(args.connectivity.name)
+  if args.enable_hbm_binding_adjustment and os.path.exists(new_config_path):
+    _logger.info(f'use the new connectivity configuration at {new_config_path} in the v++ script')
+    script.append(f'CONFIG_FILE=\'{new_config_path}\'')
     vitis_command += CONFIG_OPTION
   elif args.connectivity:
-    script.append(f'CONFIG_FILE=\'{os.path.abspath(args.connectivity.name)}\'')
+    _logger.info(f'use the original connectivity configuration at {orig_config_path} in the v++ script')
+    script.append(f'CONFIG_FILE=\'{orig_config_path}\'')
     vitis_command += CONFIG_OPTION
+  else:
+    assert False, 'no connectivity file'
 
   # if not specified in tapac, use platform default
   if args.clock_period:

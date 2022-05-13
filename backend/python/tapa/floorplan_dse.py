@@ -133,11 +133,7 @@ def run_floorplan_dse(args):
     _logger.error('Fail to make directory at %s. Check the --work-dir option.', top_work_dir)
     exit(1)
 
-  _logger.info(f'')
-  _logger.info(f'-----------------------------------------------------------------------------')
-  _logger.info(f'DSE preparation: synthesize each task into RTL')
-  _logger.info(f'-----------------------------------------------------------------------------')
-  _logger.info(f'')
+  dse_log('DSE preparation: synthesize each task into RTL')
 
   hls_dir = os.path.abspath(os.path.join(top_work_dir, 'csynth'))
   with tempfile.TemporaryDirectory() as temp_dir:
@@ -159,11 +155,7 @@ def run_floorplan_dse(args):
   id = 1
 
   while min_slr_limit < max_slr_limit:
-    _logger.info(f'')
-    _logger.info(f'-----------------------------------------------------------------------------')
-    _logger.info(f'Start generating design point {id} with --max-slr-width-limit {max_slr_limit}')
-    _logger.info(f'-----------------------------------------------------------------------------')
-    _logger.info(f'')
+    dse_log(f'Start generating design point {id} with --max-slr-width-limit {max_slr_limit}')
 
     output_dir = f'{top_work_dir}/run-{id}'
     run_dir = f'{output_dir}/run'
@@ -178,7 +170,7 @@ def run_floorplan_dse(args):
                     universal_newlines=True)
     except:
       _logger.error('Failed to run rsync from %s to %s. Check if rsync is installed', hls_dir, run_dir)
-      exit(1)
+      break
 
     # run floorplanning
     run_cmd = get_cmd_to_explore_floorplan(
@@ -217,3 +209,13 @@ def run_floorplan_dse(args):
     max_slr_limit = min(max_slr_limit - args.floorplan_dse_step, actual_slr_width)
 
     id += 1
+
+  dse_log('Floorplan DSE Finished.')
+
+
+def dse_log(msg: str):
+  _logger.info('')
+  _logger.info('-----------------------------------------------------------------------------')
+  _logger.info(msg)
+  _logger.info('-----------------------------------------------------------------------------')
+  _logger.info('')
