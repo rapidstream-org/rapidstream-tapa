@@ -40,15 +40,18 @@ TAPA Documentation
   tutorial/debug_tips
 
 .. toctree::
+  :caption: Example Designs
+
+  example
+
+.. toctree::
   :caption: More about TAPA
 
   overview/vs-state-of-the-art
 
 
-.. toctree::
-  :caption: Example Designs
 
-  example
+
 
 .. toctree::
   :caption: Reference
