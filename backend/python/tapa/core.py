@@ -172,43 +172,25 @@ class Program:
                                             '/SummaryOfTimingAnalysis'
                                             '/EstimatedClockPeriod').text)
 
-  def extract_cpp(self) -> bool:
-    """Extract HLS C++ files.
-
-    Returns:
-      True if any C++ code is changed or newly added to the work dir.
-      Otherwise, returns False.
-    """
+  def extract_cpp(self) -> 'Program':
+    """Extract HLS C++ files."""
     _logger.info('extracting HLS C++ files')
     check_mmap_arg_name(self._tasks.values())
 
-    def write_code(filename, code):
-      if os.path.exists(filename):
-        # Compare the content
-        if open(filename, 'r').read() == code:
-          return False  # No need to overwrite
-      with open(filename, 'w') as src_code:
-        src_code.write(code)
-        return True
-
-    changed = False
     for task in self._tasks.values():
-      changed |= write_code(self.get_cpp(task.name), util.clang_format(task.code))
-
+      with open(self.get_cpp(task.name), 'w') as src_code:
+        src_code.write(util.clang_format(task.code))
     for name, content in self.headers.items():
       header_path = os.path.join(self.cpp_dir, name)
       os.makedirs(os.path.dirname(header_path), exist_ok=True)
-      changed |= write_code(header_path, content)
-
-    return changed
+      with open(header_path, 'w') as header_fp:
+        header_fp.write(content)
+    return self
 
   def run_hls(self, clock_period: Union[int, float, str],
               part_num: str, other_configs: str = '') -> 'Program':
     """Run HLS with extracted HLS C++ files and generate tarballs."""
-    if not self.extract_cpp():
-      # if no source code is changed, no need to rerun hls
-      _logger.info('HLS is skipped since nothing is changed')
-      return
+    self.extract_cpp()
 
     _logger.info('running HLS')
     def worker(task: Task, idx: int) -> None:
