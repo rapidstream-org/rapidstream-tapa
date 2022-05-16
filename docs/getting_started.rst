@@ -169,6 +169,17 @@ The first step would be to run high-level synthesize (HLS):
     --top VecAdd \
     --work-dir vadd.$platform.hw.xo.tapa
 
+If you do not intend to use the Vitis backend, you could use ``--part-num`` instead. In this case, you must provide the target clock period as well.
+
+.. code-block:: bash
+
+  partnum=xcu250-figd2104-2L-e  # replace with your target partnum
+  tapac -o vadd.$platform.hw.xo vadd.cpp \
+    --part-num $partnum \
+    --clock-period 3.33 \
+    --top VecAdd \
+    --work-dir vadd.$platform.hw.xo.tapa
+
 This will take a couple of minutes.
 HLS reports will be available in the working directory
 ``vadd.$platform.hw.xo.tapa/report``.
