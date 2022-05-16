@@ -58,17 +58,17 @@ def get_vitis_script(args) -> str:
     vitis_command += FLOORPLAN_OPTION
 
   new_config_path = f'{os.path.abspath(args.work_dir)}/link_config.ini'
-  orig_config_path = os.path.abspath(args.connectivity.name)
   if args.enable_hbm_binding_adjustment and os.path.exists(new_config_path):
     _logger.info(f'use the new connectivity configuration at {new_config_path} in the v++ script')
     script.append(f'CONFIG_FILE=\'{new_config_path}\'')
     vitis_command += CONFIG_OPTION
   elif args.connectivity:
+    orig_config_path = os.path.abspath(args.connectivity.name)
     _logger.info(f'use the original connectivity configuration at {orig_config_path} in the v++ script')
     script.append(f'CONFIG_FILE=\'{orig_config_path}\'')
     vitis_command += CONFIG_OPTION
   else:
-    assert False, 'no connectivity file'
+    _logger.warning('No connectivity file is provided, skip this part in the v++ script.')
 
   # if not specified in tapac, use platform default
   if args.clock_period:
