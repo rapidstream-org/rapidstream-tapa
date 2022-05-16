@@ -647,14 +647,18 @@ def main(argv: Optional[List[str]] = None):
       _logger.error('Fail to create the v++ xo file at %s. Check if you have write'
                     'permission', args.output_file)
 
-    try:
-      # trim the '.xo' from the end
-      assert args.output_file.endswith('.xo')
+    # trim the '.xo' from the end
+    if args.output_file.endswith('.xo'):
       vitis_script = args.output_file[:-3]
       script_name = f'{vitis_script}_generate_bitstream.sh'
+    else:
+      script_name = f'{args.output_file}_generate_bitstream.sh'
 
+    vpp_script = get_vitis_script(args)
+
+    try:
       with open(script_name, 'w') as script:
-        script.write(get_vitis_script(args))
+        script.write(vpp_script)
         _logger.info('generate the v++ script at %s', script_name)
 
     except:
