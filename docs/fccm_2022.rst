@@ -1,0 +1,11 @@
+
+FCCM 2022 Tutorial
+:::::::::::::::::::::::
+
+We presented the TAPA framework at the FCCM 2022 tutorial session. You could refer to our materials here:
+
+- `Poster <https://drive.google.com/file/d/1DoJQ4ps_HHAmH3AuQ811oNlpD-17Oa6r/view?usp=sharing>`_
+
+- `Slides <https://drive.google.com/file/d/12y8UjAitkL-_34hWvavfiUFkdkB-MmHQ/view?usp=sharing>`_
+
+- `Video <https://youtu.be/UAbtcWxTPr4>`_

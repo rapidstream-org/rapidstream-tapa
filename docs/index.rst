@@ -18,6 +18,11 @@ TAPA Documentation
   getting_started
 
 .. toctree::
+  :caption: FCCM 2022 Tutorial
+
+  fccm_2022
+
+.. toctree::
   :caption: Tutorial: High Frequency
 
   tutorial/autobridge
