@@ -126,13 +126,14 @@ def get_end():
   return ['endmodule']
 
 
-def get_axi_pipeline_wrapper(orig_top_name: str, top_name_suffix: str, top_task, part_num: str):
+def get_axi_pipeline_wrapper(orig_top_name: str, top_name_suffix: str, top_task):
   """
   Given the original top RTL module
   Generate a wrapper that (1) instantiate the previous top module
   (2) pipeline all AXI interfaces
   """
-  addr_width = get_max_addr_width(part_num)
+  # the address space may not start from 0
+  addr_width = 64
 
   ast = top_task.module.ast
   axi_list = []

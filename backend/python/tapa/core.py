@@ -872,9 +872,9 @@ class Program:
     is_done_signals = self._instantiate_children_tasks(task, width_table, part_num, instance_name_to_slr)
     self._instantiate_global_fsm(task, is_done_signals)
 
-    self._pipeline_top_task(task, part_num)
+    self._pipeline_top_task(task)
 
-  def _pipeline_top_task(self, task: Task, part_num: str) -> None:
+  def _pipeline_top_task(self, task: Task) -> None:
     """
     add axi pipelines to the top task
     """
@@ -886,7 +886,7 @@ class Program:
 
     # generate the wrapper that becomes the final top module
     with open(self.get_rtl(task.name), 'w') as rtl_code:
-      rtl_code.write(get_axi_pipeline_wrapper(task.name, top_suffix, task, part_num))
+      rtl_code.write(get_axi_pipeline_wrapper(task.name, top_suffix, task))
 
   def _get_fifo_width(self, task: Task, fifo: str) -> int:
     producer_task, _, fifo_port = task.get_connection_to(fifo, 'produced_by')
