@@ -66,6 +66,9 @@ jobs:
           # Test a platform that does not support floorplanning yet
           - xocl-platform: xilinx_u200_xdma_201830_2
             xocl-version: "2021.2"
+          # Vitis 2022.1 requires this platform
+          - xocl-platform: xilinx_u250_gen3x16_xdma_4_1_202210_1
+            xocl-version: "2022.1"
 
     env:
       XILINX_HLS: /opt/tools/xilinx/Vitis_HLS/${{ matrix.xocl-version }}
@@ -87,6 +90,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             xilinx-u200-xdma-dev \
             xilinx-u250-xdma-dev \
+            xilinx-u250-gen3x16-xdma-4.1-202210-1-dev \
 
       - name: Configure myself
         run: cmake -S . -B build -D PLATFORM=${{ matrix.xocl-platform }}
