@@ -9,7 +9,7 @@ on:
       - "**/docs?"
 
 jobs:
-  build:
+  build-cpp:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -26,10 +26,11 @@ jobs:
           done
       - name: Install dependencies
         run: |
+          sudo apt-get purge -y libgcc-*-dev || true
           ./.github/scripts/install-build-deps.sh
           ./.github/scripts/setup-github-hosted.sh
       - name: Configure myself
-        run: cmake -S . -B build
+        run: cmake -S . -B build -D CMAKE_BUILD_TYPE=Release
       - name: Cache llvm-src
         uses: actions/cache@v1
         with:
@@ -49,9 +50,60 @@ jobs:
         run: cmake --build build --target all
       - name: Test myself
         run: cmake --build build --target test
+      - name: Package myself
+        run: cmake --build build --target package
+      - name: Upload deb package
+        uses: actions/upload-artifact@v3
+        with:
+          name: tapa-cpp-${{ matrix.os }}
+          path: build/*.deb
+      - name: Cache APT database
+        uses: actions/cache@v3
+        with:
+          path: apt-db-cache
+          key: ${{ runner.os }}-apt-db-cache
+      - name: Update APT repository
+        if: github.event_name == 'push' && github.repository == 'Blaok/tapa' && startsWith(github.event.ref, 'refs/tags')
+        run: ./.github/scripts/upload-apt-repo.sh
+        env:
+          BUILD_DIR: build
+          CACHE_DIR: apt-db-cache
+          LABEL: Extending High-Level Synthesis for Task-Parallel Programs
+          GPG_KEY: ${{ secrets.GPG_KEY }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+
+  build-python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.6
+      - name: Install build
+        run: pip install --upgrade build
+      - name: Checkout myself
+        uses: actions/checkout@v3
+      - name: Build myself
+        run: python -m build backend/python
+      - name: Upload whl package
+        uses: actions/upload-artifact@v3
+        with:
+          name: tapa-python
+          path: backend/python/dist/*.whl
+      - name: Publish to PyPI
+        if: github.event_name == 'push' && github.repository == 'Blaok/tapa' && startsWith(github.event.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_password }}
+          packages_dir: backend/python/dist/
 
   cosim:
     if: github.event_name == 'push' && github.repository == 'UCLA-VAST/tapa'
+
+    needs:
+      - build-cpp
+      - build-python
 
     runs-on:
       - self-hosted
@@ -84,26 +136,37 @@ jobs:
     steps:
       - name: Checkout myself
         uses: actions/checkout@v1
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
       - name: Install dependencies
         run: |
-          .github/scripts/install-build-deps.sh
           .github/scripts/setup-self-hosted.sh
-          python3 -m pip install --upgrade build
-          python3 -m build backend/python
-          python3 -m pip install backend/python/dist/*.whl
 
           sudo apt-get update
+          eval "$(grep ^VERSION_ID /etc/os-release)"
+          sudo apt-get install -y --no-install-recommends -f \
+            ./artifacts/tapa-cpp-ubuntu-"${VERSION_ID}"/*.deb
+          python3 -m pip install artifacts/tapa-python/*.whl
           sudo apt-get install -y --no-install-recommends \
             xilinx-u200-xdma-dev \
             xilinx-u250-xdma-dev \
             xilinx-u250-gen3x16-xdma-4.1-202210-1-dev \
 
-      - name: Configure myself
-        run: cmake -S . -B build -D PLATFORM=${{ matrix.xocl-platform }}
-      - name: Build myself
-        run: cmake --build build --target all --parallel $(nproc)
-      - name: Test myself
-        working-directory: build
+      - name: Configure apps
+        run: |
+          for app in apps/*; do
+            [[ ! -d "${app}" ]] && continue
+            cmake \
+              -S "${app}" \
+              -B "${app}"/build \
+              -D PLATFORM=${{ matrix.xocl-platform }}
+          done
+      - name: Test apps
         run: |
           source ${XILINX_VITIS}/settings64.sh
-          /usr/local/bin/ctest --verbose --parallel $(nproc)
+          # Run all apps in parallel, each with a parallelism of $(nproc).
+          parallel -ij100 \
+            make -C apps/{}/build {}-cosim -j $(nproc) \
+            -- $(find apps -mindepth 1 -maxdepth 1 -type d -printf "%f\n")
