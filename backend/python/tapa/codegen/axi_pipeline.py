@@ -5,7 +5,6 @@ from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 
 from tapa.verilog.xilinx.m_axi import M_AXI_SUFFIXES_COMPACT
 from tapa.instance import Instance
-from tapa.util import get_max_addr_width
 
 
 class AXI:

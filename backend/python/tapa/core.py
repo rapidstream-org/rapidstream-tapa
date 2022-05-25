@@ -723,7 +723,8 @@ class Program:
       )
 
     # instantiate async_mmap modules at the upper levels
-    addr_width = util.get_max_addr_width(part_num)
+    # the base address may not be 0, so must use full 64 bit
+    addr_width = 64
     _logger.debug('Set the address width of async_mmap to %d', addr_width)
 
     if task.is_upper:
