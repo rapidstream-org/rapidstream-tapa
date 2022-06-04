@@ -21,16 +21,21 @@ if(NOT llvm_POPULATED)
   function(add_llvm)
     FetchContent_Populate(llvm)
     set(CMAKE_BUILD_TYPE Release)
+    set(CLANG_ANALYZER_ENABLE_Z3_SOLVER OFF)
+    set(CLANG_BUILD_TOOLS OFF)
+    set(CLANG_ENABLE_ARCMT OFF)
+    set(CLANG_ENABLE_STATIC_ANALYZER OFF)
     set(LLVM_ENABLE_PROJECTS
         clang
         CACHE STRING "enable clang in llvm")
     set(LLVM_APPEND_VC_REV OFF)
     set(LLVM_ENABLE_BINDINGS OFF)
+    set(LLVM_ENABLE_LIBXML2 OFF)
     set(LLVM_TARGETS_TO_BUILD X86)
+    set(LLVM_INCLUDE_BENCHMARKS OFF)
     set(LLVM_INCLUDE_TOOLS ON)
     set(LLVM_INCLUDE_EXAMPLES OFF)
     set(LLVM_INCLUDE_TESTS OFF)
-    set(LLVM_INCLUDE_BENCHMlRKS OFF)
     unset(CMAKE_CXX_CLANG_TIDY)
     set(CMAKE_CXX_STANDARD 11)
 
@@ -104,7 +109,11 @@ target_compile_options(tapacc PRIVATE -fno-rtti)
 target_include_directories(tapacc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_link_libraries(tapacc PRIVATE task)
 
-add_custom_target(tapa-clang ALL DEPENDS clang
-  COMMAND ${CMAKE_COMMAND} -E copy
-    ${CLANG_BIN_DIR}/clang
-    ${CMAKE_CURRENT_BINARY_DIR}/tapa-clang)
+add_custom_target(
+  tapa-clang
+  ALL
+  DEPENDS clang
+  COMMAND
+    ${CMAKE_COMMAND} -E copy_if_different ${CLANG_BIN_DIR}/clang
+    ${CMAKE_CURRENT_BINARY_DIR}/tapa-clang
+)
