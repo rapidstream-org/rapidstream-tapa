@@ -18,6 +18,12 @@ jobs:
     steps:
       - name: Checkout myself
         uses: actions/checkout@v1
+      - name: Restore timestamp for patched clang files
+        run: |
+          for file in backend/clang/*; do
+            touch "${file}" \
+              --date="$(git log --max-count=1 --pretty=format:%cD -- "${file}")"
+          done
       - name: Install dependencies
         run: |
           ./.github/scripts/install-build-deps.sh
