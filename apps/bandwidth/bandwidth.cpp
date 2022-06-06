@@ -33,7 +33,12 @@ void Copy(tapa::async_mmap<Elem>& mem, uint64_t n, uint64_t flags) {
     int64_t read_addr = random ? uint64_t(lfsr_rd & mask) : i_rd_req;
     int64_t write_addr = random ? uint64_t(lfsr_wr & mask) : i_wr_req;
 
-    if (read && i_rd_req < n && mem.read_addr.try_write(read_addr)) {
+    if (read
+        // `i_rd_req < i_rd_resp + 50` is required for Vitis cosim on some
+        // platforms. Without it, cosim might end up stuck because the AXI
+        // interface from the Vitis platform never responds.
+        && i_rd_req < i_rd_resp + 50 && i_rd_req < n &&
+        mem.read_addr.try_write(read_addr)) {
       ++i_rd_req;
       ++lfsr_rd;
       VLOG(3) << "RD REQ [" << std::setw(5) << read_addr << "]";
