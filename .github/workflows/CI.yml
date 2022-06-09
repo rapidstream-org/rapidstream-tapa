@@ -59,13 +59,32 @@ jobs:
         with:
           name: tapa-cpp-${{ matrix.os }}
           path: build/*.deb
+
+  release-cpp:
+    if: github.event_name == 'push' && github.repository == 'Blaok/tapa' && startsWith(github.event.ref, 'refs/tags')
+    runs-on: ${{ matrix.os }}
+    concurrency: release-cpp
+    strategy:
+      matrix:
+        os:
+          - ubuntu-18.04
+          - ubuntu-20.04
+    needs:
+      - build-cpp
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: tapa-cpp-${{ matrix.os }}
+          path: build
       - name: Cache APT database
         uses: actions/cache@v3
         with:
           path: apt-db-cache
           key: ${{ runner.os }}-apt-db-cache
+      - name: Checkout myself
+        uses: actions/checkout@v3
       - name: Update APT repository
-        if: github.event_name == 'push' && github.repository == 'Blaok/tapa' && startsWith(github.event.ref, 'refs/tags')
         run: ./.github/scripts/upload-apt-repo.sh
         env:
           BUILD_DIR: build
