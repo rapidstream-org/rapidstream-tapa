@@ -132,6 +132,7 @@ jobs:
       - xilinx-tools
 
     strategy:
+      fail-fast: false
       matrix:
         xocl-platform:
           - xilinx_u250_xdma_201830_2
