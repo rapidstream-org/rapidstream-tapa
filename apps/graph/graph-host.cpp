@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
   tapa::invoke(Graph, FLAGS_bitstream, num_partitions,
                tapa::read_only_mmap<const Vid>(num_vertices),
                tapa::read_only_mmap<const Eid>(num_edges),
-               tapa::read_only_mmap<VertexAttr>(vertices),
+               tapa::read_write_mmap<VertexAttr>(vertices),
                tapa::read_only_mmap<const Edge>(edges),
                tapa::write_only_mmap<Update>(updates));
   GraphBaseline(base_vid, vertices_baseline, edges);
@@ -158,5 +158,5 @@ int main(int argc, char* argv[]) {
     clog << "FAIL!" << endl;
   }
 
-  return 0;
+  return num_errors > 0 ? 1 : 0;
 }
