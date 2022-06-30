@@ -203,8 +203,8 @@ void Jacobi(tapa::mmap<float> bank_0_t0, tapa::mmap<const float> bank_0_t1,
       "from_t0_pe_1_to_super_sink");
 
   tapa::task()
-      .invoke(Mmap2Stream, "Mmap2Stream", bank_0_t1,
-              coalesced_data_num, bank_0_t1_buf)
+      .invoke(Mmap2Stream, "Mmap2Stream", bank_0_t1, coalesced_data_num,
+              bank_0_t1_buf)
       .invoke(Module0Func, "Module0Func",
               /*output*/ from_super_source_to_t1_offset_0,
               /*output*/ from_super_source_to_t1_offset_1,
