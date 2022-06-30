@@ -5,7 +5,6 @@
 
 #ifdef __SYNTHESIS__
 
-
 #include "tapa/xilinx/hls/mmap.h"
 #include "tapa/xilinx/hls/stream.h"
 #include "tapa/xilinx/hls/task.h"
