@@ -9,9 +9,7 @@ using tapa::stream;
 using tapa::task;
 
 void Add(istream<float>& a, istream<float>& b, ostream<float>& c) {
-  TAPA_WHILE_NEITHER_EOT(a, b) {
-    c.write(a.read(nullptr) + b.read(nullptr));
-  }
+  TAPA_WHILE_NEITHER_EOT(a, b) { c.write(a.read(nullptr) + b.read(nullptr)); }
   c.close();
 }
 
@@ -31,9 +29,7 @@ void Stream2Mmap(istream<float>& stream, mmap<float> mmap, int offset,
 }
 
 void Load(mmap<float> srcs, uint64_t n, ostream<float>& a, ostream<float>& b) {
-  task()
-      .invoke(Mmap2Stream, srcs, 0, n, a)
-      .invoke(Mmap2Stream, srcs, 1, n, b);
+  task().invoke(Mmap2Stream, srcs, 0, n, a).invoke(Mmap2Stream, srcs, 1, n, b);
 }
 
 void Store(istream<float>& stream, mmap<float> mmap, uint64_t n) {
