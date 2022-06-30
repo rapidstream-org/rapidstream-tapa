@@ -132,13 +132,13 @@ void Cannon(tapa::mmap<const float> a_vec, tapa::mmap<const float> b_vec,
   tapa::task()
       .invoke(Scatter, a_vec, a_00, a_01, a_10, a_11)
       .invoke(Scatter, b_vec, b_00, b_01, b_10, b_11)
-      .invoke(ProcElem, a_00, b_00, c_00, fifo_00_10, fifo_10_00,
-              fifo_00_01, fifo_01_00)
-      .invoke(ProcElem, a_01, b_01, c_01, fifo_01_11, fifo_11_01,
-              fifo_01_00, fifo_00_01)
-      .invoke(ProcElem, a_10, b_10, c_10, fifo_10_00, fifo_00_10,
-              fifo_10_11, fifo_11_10)
-      .invoke(ProcElem, a_11, b_11, c_11, fifo_11_01, fifo_01_11,
-              fifo_11_10, fifo_10_11)
+      .invoke(ProcElem, a_00, b_00, c_00, fifo_00_10, fifo_10_00, fifo_00_01,
+              fifo_01_00)
+      .invoke(ProcElem, a_01, b_01, c_01, fifo_01_11, fifo_11_01, fifo_01_00,
+              fifo_00_01)
+      .invoke(ProcElem, a_10, b_10, c_10, fifo_10_00, fifo_00_10, fifo_10_11,
+              fifo_11_10)
+      .invoke(ProcElem, a_11, b_11, c_11, fifo_11_01, fifo_01_11, fifo_11_10,
+              fifo_10_11)
       .invoke(Gather, c_vec, c_00, c_01, c_10, c_11);
 }
