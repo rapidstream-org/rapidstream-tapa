@@ -367,12 +367,10 @@ void Graph(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
   tapa::stream<UpdateReq, 32> update_req("update_req");
 
   tapa::task()
-      .invoke(Control, num_partitions, num_vertices, num_edges,
-              update_config, task_req, task_resp)
-      .invoke(UpdateHandler, num_partitions, update_config,
-              update_req, update_pe2handler, update_handler2pe,
-              updates)
-      .invoke(ProcElem, task_req, task_resp, update_req,
-              update_handler2pe, update_pe2handler, vertices,
-              edges);
+      .invoke(Control, num_partitions, num_vertices, num_edges, update_config,
+              task_req, task_resp)
+      .invoke(UpdateHandler, num_partitions, update_config, update_req,
+              update_pe2handler, update_handler2pe, updates)
+      .invoke(ProcElem, task_req, task_resp, update_req, update_handler2pe,
+              update_pe2handler, vertices, edges);
 }
