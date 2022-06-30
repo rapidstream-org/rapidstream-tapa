@@ -1,6 +1,6 @@
 
-#include <hls_vector.h>
 #include <hls_stream.h>
+#include <hls_vector.h>
 #include "assert.h"
 
 #define MEMORY_DWIDTH 512
@@ -9,44 +9,35 @@
 
 #define DATA_SIZE 4096
 
-void load_input(
-    hls::vector<uint32_t, NUM_WORDS>* in,
-    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& inStream,
-    int i
-) {
-  #pragma HLS pipeline II=1
-    inStream << in[i];
+void load_input(hls::vector<uint32_t, NUM_WORDS>* in,
+                hls::stream<hls::vector<uint32_t, NUM_WORDS>>& inStream,
+                int i) {
+#pragma HLS pipeline II = 1
+  inStream << in[i];
 }
 
-void compute_add(
-    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& in1_stream,
-    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& in2_stream,
-    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& out_stream
-) {
-  #pragma HLS pipeline II=1
-    out_stream << (in1_stream.read() + in2_stream.read());
+void compute_add(hls::stream<hls::vector<uint32_t, NUM_WORDS>>& in1_stream,
+                 hls::stream<hls::vector<uint32_t, NUM_WORDS>>& in2_stream,
+                 hls::stream<hls::vector<uint32_t, NUM_WORDS>>& out_stream) {
+#pragma HLS pipeline II = 1
+  out_stream << (in1_stream.read() + in2_stream.read());
 }
 
-void store_result(
-    hls::vector<uint32_t, NUM_WORDS>* out,
-    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& out_stream,
-    int i
-) {
-  #pragma HLS pipeline II=1
-    out[i] = out_stream.read();
+void store_result(hls::vector<uint32_t, NUM_WORDS>* out,
+                  hls::stream<hls::vector<uint32_t, NUM_WORDS>>& out_stream,
+                  int i) {
+#pragma HLS pipeline II = 1
+  out[i] = out_stream.read();
 }
 
 extern "C" {
 
-void vadd(
-    hls::vector<uint32_t, NUM_WORDS>* in1,
-    hls::vector<uint32_t, NUM_WORDS>* in2,
-    hls::vector<uint32_t, NUM_WORDS>* out,
-    int size
-) {
-  #pragma HLS INTERFACE m_axi port = in1 bundle = gmem0
-  #pragma HLS INTERFACE m_axi port = in2 bundle = gmem1
-  #pragma HLS INTERFACE m_axi port = out bundle = gmem0
+void vadd(hls::vector<uint32_t, NUM_WORDS>* in1,
+          hls::vector<uint32_t, NUM_WORDS>* in2,
+          hls::vector<uint32_t, NUM_WORDS>* out, int size) {
+#pragma HLS INTERFACE m_axi port = in1 bundle = gmem0
+#pragma HLS INTERFACE m_axi port = in2 bundle = gmem1
+#pragma HLS INTERFACE m_axi port = out bundle = gmem0
 
   hls::stream<hls::vector<uint32_t, NUM_WORDS>> in1_stream("input_stream_1");
   hls::stream<hls::vector<uint32_t, NUM_WORDS>> in2_stream("input_stream_2");
@@ -54,7 +45,7 @@ void vadd(
 
   size /= NUM_WORDS;
   for (int i = 0; i < size; i++) {
-    #pragma HLS dataflow
+#pragma HLS dataflow
 
     load_input(in1, in1_stream, i);
     load_input(in2, in2_stream, i);
@@ -62,5 +53,4 @@ void vadd(
     store_result(out, out_stream, i);
   }
 }
-
 }
