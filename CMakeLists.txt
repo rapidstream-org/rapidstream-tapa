@@ -159,3 +159,8 @@ if(TAPA_BUILD_BACKEND)
   add_subdirectory(apps/shared-vadd)
   add_subdirectory(apps/vadd)
 endif()
+
+add_executable(tarocc)
+target_sources(tarocc PRIVATE backend/tarocc.cpp)
+target_compile_options(tarocc PRIVATE -fno-rtti)
+target_link_libraries(tarocc PRIVATE task)
