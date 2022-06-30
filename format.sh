@@ -12,4 +12,4 @@ find \( \
   -path '*/build/*' \
   \) -prune -or \( \
   -iname '*.h' -or -iname '*.cpp' \
-  \) -print0 | xargs --null clang-format -i
+  \) -print0 | xargs --null clang-format -i --verbose

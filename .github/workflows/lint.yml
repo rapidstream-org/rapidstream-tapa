@@ -14,8 +14,9 @@ jobs:
         run: |
           curl --location --output /tmp/clang-format \
             https://github.com/muttleyxd/clang-tools-static-binaries/releases/download/master-208096c1/clang-format-14_linux-amd64
-          install /tmp/clang-format /usr/local/bin/clang-format
+          sudo install /tmp/clang-format /usr/local/bin/clang-format
           rm /tmp/clang-format
+          clang-format --version
       - name: Check format
         run: |
           ./format.sh
