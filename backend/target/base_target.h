@@ -120,9 +120,9 @@ class BaseTarget : public Target {
                                     const clang::Stmt *body);
 
   virtual void RewriteUnrolledDecl(REWRITE_DECL_ARGS_DEF,
-                                 const clang::Stmt *body);
+                                   const clang::Stmt *body);
   virtual void RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
-                                 const clang::Stmt *body);
+                                   const clang::Stmt *body);
 
   static tapa::internal::Target *GetInstance() = delete;
   BaseTarget(BaseTarget const &) = delete;
