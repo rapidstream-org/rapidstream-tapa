@@ -1,4 +1,3 @@
-from cmath import exp
 import json
 import logging
 import os
@@ -37,7 +36,7 @@ def load_persistent_context(name: str) -> Dict:
 
   Args:
     name: Name of the context, e.g. graph, settings.
-  
+
   Returns:
     The context.
   """
