@@ -8,8 +8,7 @@ import tapa.core
 
 
 def main():
-  parser = argparse.ArgumentParser(
-      prog='tapav', description='TAPA Visualizer')
+  parser = argparse.ArgumentParser(prog='tapav', description='TAPA Visualizer')
   parser.add_argument(dest='program',
                       help='input ‘program.json’, default to stdin',
                       nargs='?',
