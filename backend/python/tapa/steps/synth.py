@@ -53,7 +53,7 @@ def synth(ctx, part_num: Optional[str], platform: Optional[str],
 
   settings['synthed'] = True
   tapa.steps.common.store_persistent_context('settings')
-  
+
   tapa.steps.common.is_pipelined('synth', True)
 
 
