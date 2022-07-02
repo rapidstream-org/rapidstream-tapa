@@ -1,18 +1,18 @@
-from copy import copy
 import json
 import logging
 import os
 import shutil
+from copy import copy
 from typing import Dict
 
 import click
 
 import tapa.steps.analyze as analyze
-import tapa.steps.synth as synth
-import tapa.steps.optimize as optimize
-import tapa.steps.link as link
-import tapa.steps.pack as pack
 import tapa.steps.common as common
+import tapa.steps.link as link
+import tapa.steps.optimize as optimize
+import tapa.steps.pack as pack
+import tapa.steps.synth as synth
 from tapa.steps.common import forward_applicable
 
 _logger = logging.getLogger().getChild(__name__)
