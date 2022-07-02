@@ -10,8 +10,9 @@ import sys
 import tempfile
 from typing import IO, BinaryIO, Dict, Iterable, Iterator, List, TextIO, Union
 
-import tapa.instance
 from haoda.backend import xilinx as backend
+
+import tapa.instance
 from tapa.verilog import ast
 # pylint: disable=wildcard-import,unused-wildcard-import
 from tapa.verilog.util import *
@@ -114,7 +115,9 @@ def print_constraints(
     output.write('}]\n')
 
   # remove empty pblocks to prevent vitis complaints
-  output.write('foreach pblock [get_pblocks -regexp CR_X\\\\d+Y\\\\d+_To_CR_X\\\\d+Y\\\\d+] {\n')
+  output.write(
+      'foreach pblock [get_pblocks -regexp CR_X\\\\d+Y\\\\d+_To_CR_X\\\\d+Y\\\\d+] {\n'
+  )
   output.write('  if {[get_property CELL_COUNT $pblock] == 0} {\n')
   output.write('    puts "WARNING: delete empty pblock $pblock "\n')
   output.write('    delete_pblocks $pblock\n')
