@@ -1,11 +1,10 @@
 import enum
-from typing import Iterator, Tuple, Union
+from typing import TYPE_CHECKING, Iterator, Tuple, Union
 
 from tapa import util
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
   from .task import Task
 
