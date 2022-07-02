@@ -127,7 +127,7 @@ def create_parser() -> argparse.ArgumentParser:
       dest='other_hls_configs',
       default='',
       help='Additional compile options for Vitis HLS. '
-           ' E.g., --other-hls-configs "config_compile -unsafe_math_optimizations" ',
+      ' E.g., --other-hls-configs "config_compile -unsafe_math_optimizations" ',
   )
   group = parser.add_argument_group(
       title='Compilation Steps',
@@ -191,8 +191,8 @@ def create_parser() -> argparse.ArgumentParser:
       action='store_true',
       dest='enable_floorplan',
       default=False,
-      help='Enable the floorplanning step. This option could be skipped if '
-           'the --floorplan-output option is given.',
+      help=('Enable the floorplanning step. This option could be skipped if '
+            'the --floorplan-output option is given.'),
   )
   group.add_argument(
       '--run-floorplan-dse',
@@ -214,24 +214,26 @@ def create_parser() -> argparse.ArgumentParser:
       action='store_true',
       dest='enable_hbm_binding_adjustment',
       default=False,
-      help='Allow the top arguments to be binded to different physical ports '
-           'based on the floorplan results. Overwrite the binding from the '
-           '--connectivity option',
+      help=('Allow the top arguments to be binded to different physical ports '
+            'based on the floorplan results. Overwrite the binding from the '
+            '--connectivity option'),
   )
   group.add_argument(
       '--floorplan-output',
       type=argparse.FileType('w'),
       dest='floorplan_output',
       metavar='file',
-      help='Specify the name of the output tcl file that encodes the floorplan results. '
-           'If provided this option, floorplan will be enabled automatically.',
+      help=('Specify the name of the output tcl file that encodes the '
+            'floorplan results. If provided this option, floorplan will be '
+            'enabled automatically.'),
   )
   group.add_argument(
       '--constraint',
       type=argparse.FileType('w'),
       dest='floorplan_output',
       metavar='file',
-      help='[deprecated] Specify the name of the output tcl file that encodes the floorplan results.',
+      help=('[deprecated] Specify the name of the output tcl file that encodes '
+            'the floorplan results.'),
   )
   group.add_argument(
       '--register-level',
@@ -247,8 +249,8 @@ def create_parser() -> argparse.ArgumentParser:
       dest='min_area_limit',
       default=0.65,
       metavar='0-1',
-      help=('The floorplanner will try to find solution with the resource usage '
-            'of each slot betweeen min-area-limit and max-area-limit'),
+      help=('The floorplanner will try to find solution with the resource '
+            'usage of each slot betweeen min-area-limit and max-area-limit'),
   )
   group.add_argument(
       '--max-area-limit',
@@ -256,24 +258,26 @@ def create_parser() -> argparse.ArgumentParser:
       dest='max_area_limit',
       default=0.85,
       metavar='0-1',
-      help=('The floorplanner will try to find solution with the resource usage '
-            'of each slot betweeen min-area-limit and max-area-limit'),
+      help=('The floorplanner will try to find solution with the resource '
+            'usage of each slot betweeen min-area-limit and max-area-limit'),
   )
   group.add_argument(
       '--min-slr-width-limit',
       type=int,
       dest='min_slr_width_limit',
       default=10000,
-      help=('The floorplanner will try to find solution with the number of SLR crossing wires '
-            'of each die boundary betweeen min-slr-width-limit and max-slr-width-limit'),
+      help=('The floorplanner will try to find solution with the number of SLR '
+            'crossing wires of each die boundary betweeen min-slr-width-limit '
+            'and max-slr-width-limit'),
   )
   group.add_argument(
       '--max-slr-width-limit',
       type=int,
       dest='max_slr_width_limit',
       default=15000,
-      help=('The floorplanner will try to find solution with the number of SLR crossing wires '
-            'of each die boundary betweeen min-slr-width-limit and max-slr-width-limit'),
+      help=('The floorplanner will try to find solution with the number of SLR '
+            'crossing wires of each die boundary betweeen min-slr-width-limit '
+            'and max-slr-width-limit'),
   )
   group.add_argument(
       '--max-search-time',
@@ -303,16 +307,17 @@ def create_parser() -> argparse.ArgumentParser:
       type=int,
       dest='max_parallel_synth_jobs',
       default=8,
-      help='Limit the number of parallel synthesize jobs if enable_synth_util is set',
+      help=('Limit the number of parallel synthesize jobs if enable_synth_util '
+            'is set'),
   )
   group.add_argument(
       '--floorplan-pre-assignments',
       type=argparse.FileType('r'),
       dest='floorplan_pre_assignments',
-      help='Providing a json file of type Dict[str, List[str]] '
-           'storing the manual assignments to be used in floorplanning. '
-           'The key is the region name, the value is a list of modules.'
-           'Replace the outdated --directive option.'
+      help=('Providing a json file of type Dict[str, List[str]] '
+            'storing the manual assignments to be used in floorplanning. '
+            'The key is the region name, the value is a list of modules.'
+            'Replace the outdated --directive option.'),
   )
   group.add_argument(
       '--read-only-args',
@@ -320,8 +325,8 @@ def create_parser() -> argparse.ArgumentParser:
       dest='read_only_args',
       default=[],
       type=str,
-      help='Optionally specify which mmap/async_mmap arguments of the top function are read-only. '
-           'Regular expression supported. '
+      help=('Optionally specify which mmap/async_mmap arguments of the top '
+            'function are read-only. Regular expression supported.'),
   )
   group.add_argument(
       '--write-only-args',
@@ -329,8 +334,8 @@ def create_parser() -> argparse.ArgumentParser:
       dest='write_only_args',
       default=[],
       type=str,
-      help='Optionally specify which mmap/async_mmap arguments of the top function are write-only. '
-           'Regular expression supported. '
+      help=('Optionally specify which mmap/async_mmap arguments of the top '
+            'function are write-only. Regular expression supported. '),
   )
 
   strategies = parser.add_argument_group(
@@ -342,21 +347,27 @@ def create_parser() -> argparse.ArgumentParser:
       '--additional-fifo-pipelining',
       dest='additional_fifo_pipelining',
       action='store_true',
-      help='Pipelining a FIFO whose source and destination are in the same region'
+      help=('Pipelining a FIFO whose source and destination are in the same '
+            'region'),
   )
   strategies.add_argument(
       '--floorplan-strategy',
       dest='floorplan_strategy',
       type=str,
       default='HALF_SLR_LEVEL_FLOORPLANNING',
-      choices=['QUICK_FLOORPLANNING', 'SLR_LEVEL_FLOORPLANNING', 'HALF_SLR_LEVEL_FLOORPLANNING'],
-      help='Override the automatic choosed floorplanning method. '
-           'QUICK_FLOORPLANNING: use iterative bi-partitioning, which has the best scalability. '
-           'Typically used for designs with hundreds of tasks. '
-           'SLR_LEVEL_FLOORPLANNING: only partition the device into SLR level slots. '
-           'Do not perform half-SLR-level floorplanning. '
-           'HALF_SLR_LEVEL_FLOORPLANNING: partition the device into half-SLR level slots. '
-
+      choices=[
+          'QUICK_FLOORPLANNING',
+          'SLR_LEVEL_FLOORPLANNING',
+          'HALF_SLR_LEVEL_FLOORPLANNING',
+      ],
+      help=(
+          'Override the automatic choosed floorplanning method. '
+          'QUICK_FLOORPLANNING: use iterative bi-partitioning, which has the '
+          'best scalability. Typically used for designs with hundreds of '
+          'tasks. SLR_LEVEL_FLOORPLANNING: only partition the device into SLR '
+          'level slots. Do not perform half-SLR-level floorplanning. '
+          'HALF_SLR_LEVEL_FLOORPLANNING: partition the device into half-SLR '
+          'level slots. '),
   )
   strategies.add_argument(
       '--floorplan-opt-priority',
@@ -364,8 +375,9 @@ def create_parser() -> argparse.ArgumentParser:
       type=str,
       default='AREA_PRIORITIZED',
       choices=['AREA_PRIORITIZED', 'SLR_CROSSING_PRIORITIZED'],
-      help='AREA_PRIORITIZED: give priority to the area usage ratio of each slot. '
-           'SLR_CROSSING_PRIORITIZED: give priority to the number of SLR crossing wires. '
+      help=('AREA_PRIORITIZED: give priority to the area usage ratio of each '
+            'slot. SLR_CROSSING_PRIORITIZED: give priority to the number of '
+            'SLR crossing wires.'),
   )
   return parser
 
@@ -373,8 +385,14 @@ def create_parser() -> argparse.ArgumentParser:
 def parse_steps(args, parser) -> Tuple[bool, str]:
   """ extract which steps of tapac to execute
   """
-  manual_step_args = ('run_tapacc', 'run_hls', 'generate_task_rtl',
-              'run_floorplanning', 'generate_top_rtl', 'pack_xo')
+  manual_step_args = (
+      'run_tapacc',
+      'run_hls',
+      'generate_task_rtl',
+      'run_floorplanning',
+      'generate_top_rtl',
+      'pack_xo',
+  )
 
   if any(getattr(args, arg) for arg in manual_step_args):
     all_steps = False
@@ -401,7 +419,8 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
   # enable_floorplan is False by default
   # if --enable-floorplan is set, --floorplan-output must be set
   if args.enable_floorplan and args.floorplan_output is None:
-    parser.error('Floorplan is enabled but floorplan output file is not provided')
+    parser.error(
+        'Floorplan is enabled but floorplan output file is not provided')
 
   # if --floorplan-output is set, enable floorplan anyway for backward compatibility
   if not args.enable_floorplan and args.floorplan_output:
@@ -410,7 +429,8 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
                     'floorplan output file is provided')
 
   # if floorplanning is enabled
-  if (args.enable_floorplan and args.floorplan_output) or args.run_floorplan_dse:
+  if ((args.enable_floorplan and args.floorplan_output) or
+      args.run_floorplan_dse):
     # check if the device is supported
     part_num = _get_device_info(parser, args)['part_num']
     if not is_part_num_supported(part_num):
@@ -437,12 +457,15 @@ def parse_steps(args, parser) -> Tuple[bool, str]:
     if not _get_device_info(parser, args)['part_num'].startswith('xcu280'):
       parser.error('--enable-hbm-binding-adjustment only works with U280')
     if not args.work_dir:
-      parser.error('--work-dir must be set to enable automatic HBM binding adjustment.')
+      parser.error(
+          '--work-dir must be set to enable automatic HBM binding adjustment.')
     if args.floorplan_strategy == 'QUICK_FLOORPLANNING':
-      parser.error('--enable-hbm-binding-adjustment not supported yet for QUICK_FLOORPLANNING')
+      parser.error('--enable-hbm-binding-adjustment not supported '
+                   'yet for QUICK_FLOORPLANNING')
 
-    _logger.warning('HBM port binding adjustment is enabled. The final binding may be '
-                    'different from %s', args.connectivity.name)
+    _logger.warning(
+        'HBM port binding adjustment is enabled. The final binding may be '
+        'different from %s', args.connectivity.name)
 
   return all_steps, last_step
 
@@ -579,7 +602,8 @@ def main(argv: Optional[List[str]] = None):
     if args.input_file.endswith('.json') or args.work_dir is None:
       tapa_program_json = lambda: json.load(args.input_file)
     else:
-      tapa_program_json = lambda: json.load(open(os.path.join(args.work_dir, 'program.json'), 'r'))
+      tapa_program_json = lambda: json.load(
+          open(os.path.join(args.work_dir, 'program.json'), 'r'))
 
   tapa_program_json_obj = tapa_program_json()
   program = tapa.core.Program(tapa_program_json_obj, work_dir=args.work_dir)
@@ -594,40 +618,40 @@ def main(argv: Optional[List[str]] = None):
 
   if all_steps or args.generate_task_rtl is not None:
     program.generate_task_rtl(
-      args.additional_fifo_pipelining,
-      _get_device_info(parser, args)['part_num'],
+        args.additional_fifo_pipelining,
+        _get_device_info(parser, args)['part_num'],
     )
 
     if args.enable_synth_util:
       program.generate_post_synth_task_area(
-        _get_device_info(parser, args)['part_num'],
-        args.max_parallel_synth_jobs,
+          _get_device_info(parser, args)['part_num'],
+          args.max_parallel_synth_jobs,
       )
 
   if all_steps or args.run_floorplanning is not None:
     if args.floorplan_output is not None:
       kwargs = {}
       floorplan_params = (
-        'min_area_limit',
-        'max_area_limit',
-        'min_slr_width_limit',
-        'max_slr_width_limit',
-        'max_search_time',
-        'floorplan_strategy',
-        'floorplan_opt_priority',
-        'enable_hbm_binding_adjustment',
+          'min_area_limit',
+          'max_area_limit',
+          'min_slr_width_limit',
+          'max_slr_width_limit',
+          'max_search_time',
+          'floorplan_strategy',
+          'floorplan_opt_priority',
+          'enable_hbm_binding_adjustment',
       )
       for param in floorplan_params:
         if hasattr(args, param):
           kwargs[param] = getattr(args, param)
 
       program.run_floorplanning(
-        _get_device_info(parser, args)['part_num'],
-        args.connectivity,
-        args.floorplan_pre_assignments,
-        read_only_args=args.read_only_args,
-        write_only_args=args.write_only_args,
-        **kwargs,
+          _get_device_info(parser, args)['part_num'],
+          args.connectivity,
+          args.floorplan_pre_assignments,
+          read_only_args=args.read_only_args,
+          write_only_args=args.write_only_args,
+          **kwargs,
       )
 
   if all_steps or args.generate_top_rtl is not None:
@@ -644,8 +668,9 @@ def main(argv: Optional[List[str]] = None):
         program.pack_rtl(packed_obj)
         _logger.info('generate the v++ xo file at %s', args.output_file)
     except:
-      _logger.error('Fail to create the v++ xo file at %s. Check if you have write'
-                    'permission', args.output_file)
+      _logger.error(
+          'Fail to create the v++ xo file at %s. Check if you have write'
+          'permission', args.output_file)
 
     # trim the '.xo' from the end
     if args.output_file.endswith('.xo'):
@@ -662,8 +687,9 @@ def main(argv: Optional[List[str]] = None):
         _logger.info('generate the v++ script at %s', script_name)
 
     except:
-      _logger.error('Fail to create the v++ script at %s. Check if you have write'
-                    'permission', script_name)
+      _logger.error(
+          'Fail to create the v++ script at %s. Check if you have write'
+          'permission', script_name)
 
 
 def _get_device_info(
