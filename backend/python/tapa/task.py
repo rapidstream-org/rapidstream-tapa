@@ -4,10 +4,9 @@ import enum
 import logging
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
+from tapa.instance import Instance, Port
 from tapa.verilog import ast, axi_xbar
 from tapa.verilog import xilinx as rtl
-
-from .instance import Instance, Port
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -98,7 +97,7 @@ class Task:
     for instance in instances:
       for arg in instance.args:
         self._args[arg.name].append(arg)
-        if arg.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
+        if arg.cat.is_mmap:
           mmaps[arg.name].append(arg)
 
     self._mmaps = {}

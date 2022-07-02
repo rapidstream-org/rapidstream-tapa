@@ -10,12 +10,6 @@ from typing import Dict, Iterator, Optional, TextIO, Tuple
 import absl.logging
 import coloredlogs
 
-# TODO(blaok): fix cyclic dependency
-# isort: off
-from .task import Task
-from .instance import Instance
-# isort: on
-
 _logger = logging.getLogger().getChild(__name__)
 
 
@@ -82,23 +76,6 @@ def parse_connectivity(vitis_config_ini: TextIO) -> Dict[str, str]:
     port = connectivity[colon + 1:]
 
     arg_name_to_external_port[kernel_arg] = port
-
-  return arg_name_to_external_port
-
-
-def parse_connectivity_and_check_completeness(
-    vitis_config_ini: TextIO,
-    top_task: Task,
-) -> Dict[str, str]:
-  arg_name_to_external_port = parse_connectivity(vitis_config_ini)
-
-  # check that every MMAP/ASYNC_MMAP port has a physical mapping
-  for arg_list in top_task.args.values():
-    for arg in arg_list:
-      if arg.cat in {Instance.Arg.Cat.ASYNC_MMAP, Instance.Arg.Cat.MMAP}:
-        if arg.name not in arg_name_to_external_port:
-          raise AssertionError(
-              f'Missing physical binding for {arg.name} in {vitis_config_ini}')
 
   return arg_name_to_external_port
 

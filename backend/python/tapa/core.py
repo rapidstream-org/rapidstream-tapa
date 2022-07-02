@@ -33,13 +33,11 @@ from tapa.hardware import (
     get_slr_count,
     is_part_num_supported,
 )
+from tapa.instance import Instance, Port
 from tapa.safety_check import check_mmap_arg_name
 from tapa.task import Task
 from tapa.verilog import ast
 from tapa.verilog import xilinx as rtl
-
-# TODO: resolve cyclic dependency
-from .instance import Instance, Port
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -570,12 +568,9 @@ class Program:
 
       # add signal delcarations
       for arg in instance.args:
-        if arg.cat not in {
-            Instance.Arg.Cat.ISTREAM,
-            Instance.Arg.Cat.OSTREAM,
-        }:
+        if not arg.cat.is_stream:
           width = 64  # 64-bit address
-          if arg.cat == Instance.Arg.Cat.SCALAR:
+          if arg.cat.is_scalar:
             width = width_table.get(arg.name, 0)
             if width == 0:
               width = int(arg.name.split("'d")[0])
@@ -597,7 +592,7 @@ class Program:
         # arg.port is the lower-level name
 
         # check which ports are used for async_mmap
-        if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+        if arg.cat.is_async_mmap:
           for tag in rtl.ASYNC_MMAP_SUFFIXES:
             if set(x.portname for x in rtl.generate_async_mmap_ports(
                 tag=tag,
@@ -728,22 +723,22 @@ class Program:
       # add task module instances
       portargs = list(rtl.generate_handshake_ports(instance, rst_q))
       for arg in instance.args:
-        if arg.cat == Instance.Arg.Cat.SCALAR:
+        if arg.cat.is_scalar:
           portargs.append(
               ast.PortArg(portname=arg.port, argname=arg_table[arg.name][-1]))
-        elif arg.cat == Instance.Arg.Cat.ISTREAM:
+        elif arg.cat.is_istream:
           portargs.extend(
               instance.task.module.generate_istream_ports(
                   port=arg.port,
                   arg=arg.name,
               ))
-        elif arg.cat == Instance.Arg.Cat.OSTREAM:
+        elif arg.cat.is_ostream:
           portargs.extend(
               instance.task.module.generate_ostream_ports(
                   port=arg.port,
                   arg=arg.name,
               ))
-        elif arg.cat == Instance.Arg.Cat.MMAP:
+        elif arg.cat.is_sync_mmap:
           portargs.extend(
               rtl.generate_m_axi_ports(
                   module=instance.task.module,
@@ -751,7 +746,7 @@ class Program:
                   arg=arg.mmap_name,
                   arg_reg=arg_table[arg.name][-1].name,
               ))
-        elif arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+        elif arg.cat.is_async_mmap:
           for tag in async_mmap_args[arg]:
             portargs.extend(
                 rtl.generate_async_mmap_ports(

@@ -3,7 +3,6 @@ from typing import List
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import Input, Output, Parameter
 
-from tapa.instance import Instance
 from tapa.verilog.xilinx.m_axi import M_AXI_SUFFIXES_COMPACT
 
 
@@ -145,7 +144,7 @@ def get_axi_pipeline_wrapper(
   ast = top_task.module.ast
   axi_list = []
   for port in top_task.ports.values():
-    if port.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}:
+    if port.cat.is_mmap:
       pipeline_level = top_task.module.get_axi_pipeline_level(port.name)
       axi_list.append(AXI(port.name, port.width, addr_width, pipeline_level))
 

@@ -72,10 +72,7 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
             port.name: {
                 'HAS_BURST': '0',
                 'SUPPORTS_NARROW_BURST': '0',
-            } for port in port_tuple if port.cat in {
-                tapa.instance.Instance.Arg.Cat.MMAP,
-                tapa.instance.Instance.Arg.Cat.ASYNC_MMAP,
-            }
+            } for port in port_tuple if port.cat.is_mmap
         },
     ) as proc:
       stdout, stderr = proc.communicate()
@@ -138,16 +135,13 @@ def print_kernel_xml(name: str, ports: Iterable[tapa.instance.Port],
   """
   args = []
   for port in ports:
-    if port.cat == tapa.instance.Instance.Arg.Cat.SCALAR:
+    if port.cat.is_scalar:
       cat = backend.Cat.SCALAR
-    elif port.cat in {
-        tapa.instance.Instance.Arg.Cat.MMAP,
-        tapa.instance.Instance.Arg.Cat.ASYNC_MMAP
-    }:
+    elif port.cat.is_mmap:
       cat = backend.Cat.MMAP
-    elif port.cat == tapa.instance.Instance.Arg.Cat.ISTREAM:
+    elif port.cat.is_istream:
       cat = backend.Cat.ISTREAM
-    elif port.cat == tapa.instance.Instance.Arg.Cat.OSTREAM:
+    elif port.cat.is_ostream:
       cat = backend.Cat.OSTREAM
     else:
       raise ValueError(f'unexpected port.cat: {port.cat}')

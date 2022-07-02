@@ -39,6 +39,34 @@ class Instance:
       ISTREAM = STREAM | INPUT
       OSTREAM = STREAM | OUTPUT
 
+      @property
+      def is_scalar(self) -> bool:
+        return self == self.SCALAR
+
+      @property
+      def is_istream(self) -> bool:
+        return self == self.ISTREAM
+
+      @property
+      def is_ostream(self) -> bool:
+        return self == self.OSTREAM
+
+      @property
+      def is_stream(self) -> bool:
+        return bool(self.value & self.STREAM.value)
+
+      @property
+      def is_sync_mmap(self) -> bool:
+        return self == self.MMAP
+
+      @property
+      def is_async_mmap(self) -> bool:
+        return self == self.ASYNC_MMAP
+
+      @property
+      def is_mmap(self) -> bool:
+        return bool(self.value & self.MMAP.value)
+
     def __init__(self,
                  name: str,
                  instance: 'Instance',

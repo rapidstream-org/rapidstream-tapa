@@ -15,9 +15,6 @@ from tapa.verilog.xilinx.async_mmap import (
     RESP_CHANNEL_DATA_WIDTH,
 )
 
-# TODO: resolve cyclic dependency
-from .instance import Instance
-
 _logger = logging.getLogger().getChild(__name__)
 
 
@@ -63,7 +60,7 @@ def get_axi_edges(
 
   for arg_list in top_task.args.values():
     for arg in arg_list:
-      if arg.cat in {Instance.Arg.Cat.ASYNC_MMAP, Instance.Arg.Cat.MMAP}:
+      if arg.cat.is_mmap:
         # total width of an AXI channel
         # wr_data, wr_addr, rd_data, rd_addr, resp + other control signals (approximately 50)
         arg_width = port_name_to_width[arg.name]
@@ -109,7 +106,7 @@ def get_async_mmap_edges(top_task):
   async_mmap_edges = {}
   for arg_name, arg_list in top_task.args.items():
     for arg in arg_list:
-      if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+      if arg.cat.is_async_mmap:
         e_name = f'async_mmap_infinite_from_{rtl.async_mmap_instance_name(arg.mmap_name)}_to_{arg.instance.name}'
         async_mmap_edges[e_name] = {
             'produced_by':
@@ -185,7 +182,7 @@ def get_async_mmap_vertices(top_task):
   port_name_to_width = get_port_name_to_width(top_task)
   for instance in top_task.instances:
     for arg in instance.args:
-      if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
+      if arg.cat.is_async_mmap:
         v_name = rtl.async_mmap_instance_name(arg.mmap_name)
         data_channel_width = max(port_name_to_width[arg.name], 32)
         v_area = get_async_mmap_area(data_channel_width)

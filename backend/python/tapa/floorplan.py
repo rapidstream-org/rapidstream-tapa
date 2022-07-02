@@ -293,6 +293,23 @@ def generate_new_connectivity_ini(config_with_floorplan, work_dir, top_name):
     open(cfg_path, 'w').write('\n'.join(cfg))
 
 
+def parse_connectivity_and_check_completeness(
+    vitis_config_ini: TextIO,
+    top_task: 'Task',
+) -> Dict[str, str]:
+  arg_name_to_external_port = util.parse_connectivity(vitis_config_ini)
+
+  # check that every MMAP/ASYNC_MMAP port has a physical mapping
+  for arg_list in top_task.args.values():
+    for arg in arg_list:
+      if arg.cat.is_mmap:
+        if arg.name not in arg_name_to_external_port:
+          raise AssertionError(
+              f'Missing physical binding for {arg.name} in {vitis_config_ini}')
+
+  return arg_name_to_external_port
+
+
 def get_floorplan_config(
     autobridge_dir: str,
     part_num: str,
@@ -306,7 +323,7 @@ def get_floorplan_config(
 ) -> Dict:
   """ Generate a json encoding the task graph for the floorplanner
   """
-  arg_name_to_external_port = util.parse_connectivity_and_check_completeness(
+  arg_name_to_external_port = parse_connectivity_and_check_completeness(
       physical_connectivity,
       top_task,
   )
