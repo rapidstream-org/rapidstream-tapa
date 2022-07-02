@@ -55,33 +55,33 @@ OSTREAM_SUFFIXES = (
 
 # {port_suffix: direction}
 STREAM_PORT_DIRECTION = {
-    '_dout':    'input',
+    '_dout': 'input',
     '_empty_n': 'input',
-    '_read':    'output',
-    '_din':     'output',
-    '_full_n':  'input',
-    '_write':   'output',
+    '_read': 'output',
+    '_din': 'output',
+    '_full_n': 'input',
+    '_write': 'output',
 }
 
 # {port_suffix: opposite_suffix}
 # used when connecting two FIFOs head to tail
 STREAM_PORT_OPPOSITE = {
-    '_dout':    '_din',
+    '_dout': '_din',
     '_empty_n': '_write',
-    '_read':    '_full_n',
-    '_din':     '_dout',
-    '_full_n':  '_read',
-    '_write':   '_empty_n',
+    '_read': '_full_n',
+    '_din': '_dout',
+    '_full_n': '_read',
+    '_write': '_empty_n',
 }
 
 # {port_suffix: width}, 0 is variable
 STREAM_PORT_WIDTH = {
-    '_dout':    0,
+    '_dout': 0,
     '_empty_n': 1,
-    '_read':    1,
-    '_din':     0,
-    '_full_n':  1,
-    '_write':   1,
+    '_read': 1,
+    '_din': 0,
+    '_full_n': 1,
+    '_write': 1,
 }
 
 FIFO_READ_PORTS = (
@@ -135,6 +135,7 @@ STATE = ast.Identifier('tapa_state')
 
 BUILTIN_INSTANCES = {'hmss_0'}
 
+
 def get_stream_width(port: str, data_width: int) -> Optional[ast.Width]:
   width = STREAM_PORT_WIDTH[port]
   if width == 0:
@@ -142,4 +143,4 @@ def get_stream_width(port: str, data_width: int) -> Optional[ast.Width]:
   if width == 1:
     return None
   else:
-    return ast.Width(msb=ast.Constant(width-1), lsb=ast.Constant(0))
+    return ast.Width(msb=ast.Constant(width - 1), lsb=ast.Constant(0))
