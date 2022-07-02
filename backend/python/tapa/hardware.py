@@ -64,27 +64,33 @@ ZERO_AREA = {
 DEFAULT_REGISTER_LEVEL = 3
 
 SUPPORTED_PART_NUM_PREFIXS = (
-  'xcu280-',
-  'xcu250-',
+    'xcu280-',
+    'xcu250-',
 )
+
 
 def get_zero_area():
   return ZERO_AREA
+
 
 def get_hbm_controller_area():
   """ area of one hbm controller """
   return AREA_PER_HBM_CHANNEL
 
+
 def get_async_mmap_area(data_channel_width: int):
   return AREA_OF_ASYNC_MMAP[_next_power_of_2(data_channel_width)]
 
+
 def _next_power_of_2(x):
   return 1 if x == 0 else 2**(x - 1).bit_length()
+
 
 def get_ctrl_instance_region(part_num: str) -> str:
   if part_num.startswith('xcu250-') or part_num.startswith('xcu280-'):
     return 'COARSE_X1Y0'
   raise NotImplementedError(f'unknown {part_num}')
+
 
 def get_port_region(part_num: str, port_cat: str, port_id: int) -> str:
   """
@@ -105,7 +111,9 @@ def get_port_region(part_num: str, port_cat: str, port_id: int) -> str:
     if port_cat == 'PLRAM' and 0 <= port_id < 4:
       return f'COARSE_X1Y{port_id}'
 
-  raise NotImplementedError(f'unknown port_cat {port_cat}, port_id {port_id} for {part_num}')
+  raise NotImplementedError(
+      f'unknown port_cat {port_cat}, port_id {port_id} for {part_num}')
+
 
 def get_slr_count(part_num: str):
   if part_num.startswith('xcu280-'):
@@ -115,5 +123,7 @@ def get_slr_count(part_num: str):
   else:
     raise NotImplementedError('unknown part_num %s', part_num)
 
+
 def is_part_num_supported(part_num: str):
-  return any(part_num.startswith(prefix) for prefix in SUPPORTED_PART_NUM_PREFIXS)
+  return any(
+      part_num.startswith(prefix) for prefix in SUPPORTED_PART_NUM_PREFIXS)
