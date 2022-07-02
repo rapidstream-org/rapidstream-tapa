@@ -2,65 +2,66 @@ import re
 from copy import deepcopy
 from typing import Iterator, List
 
-from tapa.task import Task
 from pyverilog.vparser.ast import (
-  InstanceList,
-  PortArg,
-  Node,
-  ModuleDef,
-  Decl,
-  Wire,
-  Input,
-  Output,
-  Parameter,
-  Instance,
-  Identifier,
-  ParamArg,
+    Decl,
+    Identifier,
+    Input,
+    Instance,
+    InstanceList,
+    ModuleDef,
+    Node,
+    Output,
+    ParamArg,
+    Parameter,
+    PortArg,
+    Wire,
 )
 
+from tapa.task import Task
+
 DONT_TOUCH_PORTS = (
-  'CLK',
-  'ACLK',
-  'ARESET',
-  'RESET',
-  'ACLK_EN',
-  'ap_clk',
-  'ap_rst',
-  'ap_rst_n'
+    'CLK',
+    'ACLK',
+    'ARESET',
+    'RESET',
+    'ACLK_EN',
+    'ap_clk',
+    'ap_rst',
+    'ap_rst_n',
 )
 
 S_AXI_AW_AND_W_PORTS = (
-  'AWVALID',
-  'AWREADY',
-  'AWADDR',
-  'WVALID',
-  'WREADY',
-  'WDATA',
-  'WSTRB',
+    'AWVALID',
+    'AWREADY',
+    'AWADDR',
+    'WVALID',
+    'WREADY',
+    'WDATA',
+    'WSTRB',
 )
 
 S_AXI_AR_AND_R_PORTS = (
-  'ARVALID',
-  'ARREADY',
-  'ARADDR',
-  'RVALID',
-  'RREADY',
-  'RDATA',
-  'RRESP',
+    'ARVALID',
+    'ARREADY',
+    'ARADDR',
+    'RVALID',
+    'RREADY',
+    'RDATA',
+    'RRESP',
 )
 
 S_AXI_B_PORTS = (
-  'BVALID',
-  'BREADY',
-  'BRESP',
+    'BVALID',
+    'BREADY',
+    'BRESP',
 )
 
 CONTROL_SIGNALS = (
-  'ap_start',
-  'interrupt',
-  'ap_ready',
-  'ap_done',
-  'ap_idle',
+    'ap_start',
+    'interrupt',
+    'ap_ready',
+    'ap_done',
+    'ap_idle',
 )
 
 
@@ -79,7 +80,8 @@ def get_ctrl_instance(top_task: Task, ctrl_inst_name) -> InstanceList:
       ctrl_instance_list.append(inst_list)
 
   if len(ctrl_instance_list) != 1:
-    raise NotImplementedError('%d control_s_axi instances detected', len(ctrl_instance_list))
+    raise NotImplementedError('%d control_s_axi instances detected',
+                              len(ctrl_instance_list))
 
   return ctrl_instance_list[0]
 
@@ -98,12 +100,9 @@ def get_updated_ctrl_instance(
 
   if is_root:
     for port_arg in _get_nodes(inst_list, PortArg):
-      if any(p == port_arg.portname for p in
-          (DONT_TOUCH_PORTS +
-          CONTROL_SIGNALS +
-          S_AXI_AR_AND_R_PORTS +
-          S_AXI_B_PORTS)
-      ):
+      if any(p == port_arg.portname
+             for p in (DONT_TOUCH_PORTS + CONTROL_SIGNALS +
+                       S_AXI_AR_AND_R_PORTS + S_AXI_B_PORTS)):
         continue
       else:
         port_arg.argname.name += suffix
@@ -134,12 +133,10 @@ def get_updated_wire_names(ctrl_instance: InstanceList) -> List[str]:
   """Return the modified wires when updating ctrl instances"""
   updated_wires = []
   for port_arg in _get_nodes(ctrl_instance, PortArg):
-    if any(re.match(p, port_arg.portname) for p in
-        (DONT_TOUCH_PORTS +
-        CONTROL_SIGNALS +
-        S_AXI_AR_AND_R_PORTS +
-        S_AXI_B_PORTS)
-    ):
+    if any(
+        re.match(p, port_arg.portname)
+        for p in (DONT_TOUCH_PORTS + CONTROL_SIGNALS + S_AXI_AR_AND_R_PORTS +
+                  S_AXI_B_PORTS)):
       continue
     else:
       updated_wires.append(port_arg.argname.name)
@@ -206,7 +203,8 @@ def get_module_def(ast: Node) -> ModuleDef:
     module_def_list.append(item)
 
   if len(module_def_list) != 1:
-    raise NotImplementedError('%d modules detected in the same file', len(module_def_list))
+    raise NotImplementedError('%d modules detected in the same file',
+                              len(module_def_list))
 
   return module_def_list[0]
 
@@ -215,9 +213,8 @@ def remove_ctrl_instance_list(ast: Node) -> Node:
   ast = deepcopy(ast)
   module_def = get_module_def(ast)
 
-  module_def.items = tuple(filter(
-    lambda x: not isinstance(x, InstanceList), module_def.items
-  ))
+  module_def.items = tuple(
+      filter(lambda x: not isinstance(x, InstanceList), module_def.items))
 
   return ast
 
@@ -226,10 +223,11 @@ def get_paramarg_list(top_task: Task) -> List[ParamArg]:
   """The ParamArg for the axi interconnect"""
   param_list = []
   for param in top_task.module.get_nodes_of_type(Parameter):
-    param_list.append(ParamArg(
-      paramname=param.name,
-      argname=Identifier(param.name),
-    ))
+    param_list.append(
+        ParamArg(
+            paramname=param.name,
+            argname=Identifier(param.name),
+        ))
   return param_list
 
 
@@ -238,45 +236,40 @@ def get_s_axi_write_broadcastor(top_task, slr_num) -> InstanceList:
   param_list = get_paramarg_list(top_task)
   portlist = []
 
-  portlist.append(
-    PortArg(
+  portlist.append(PortArg(
       portname='ap_clk',
       argname=Identifier('ap_clk'),
-    )
-  )
+  ))
 
   # ports connecting to each s_axi_control instances
   for i in range(slr_num):
     for axi_port in S_AXI_AW_AND_W_PORTS:
       port_name = f's_axi_control_{axi_port}_slr_{i}'
       portlist.append(
-        PortArg(
-          portname=port_name,
-          argname=Identifier(port_name),
-        )
-      )
+          PortArg(
+              portname=port_name,
+              argname=Identifier(port_name),
+          ))
 
   # ports connecting to the top AXI interface
   for axi_port in S_AXI_AW_AND_W_PORTS:
     port_name = f's_axi_control_{axi_port}'
-    portlist.append(
-      PortArg(
+    portlist.append(PortArg(
         portname=port_name,
         argname=Identifier(port_name),
-      )
-    )
+    ))
 
   inst = Instance(
-    module=f'a_axi_write_broadcastor_1_to_{slr_num}',
-    name='s_axi_write_broadcastor',
-    portlist=portlist,
-    parameterlist=param_list,
+      module=f'a_axi_write_broadcastor_1_to_{slr_num}',
+      name='s_axi_write_broadcastor',
+      portlist=portlist,
+      parameterlist=param_list,
   )
 
   inst_list = InstanceList(
-    module=f'a_axi_write_broadcastor_1_to_{slr_num}',
-    parameterlist=param_list,
-    instances=[inst],
+      module=f'a_axi_write_broadcastor_1_to_{slr_num}',
+      parameterlist=param_list,
+      instances=[inst],
   )
 
   return inst_list
@@ -301,7 +294,7 @@ def duplicate_s_axi_ctrl(top_task: Task, slr_num: int) -> None:
   # add updated ctrl instances
   for i in range(slr_num):
     suffix = f'_slr_{i}'
-    _ctrl_inst = get_updated_ctrl_instance(ctrl_inst, suffix, i==0)
+    _ctrl_inst = get_updated_ctrl_instance(ctrl_inst, suffix, i == 0)
     top_task.module.add_instancelist(_ctrl_inst)
 
   # add the updated wires
