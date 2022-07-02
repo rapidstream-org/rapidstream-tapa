@@ -3,6 +3,7 @@ import copy
 from typing import Dict, Iterable, Optional, Tuple, Union
 
 from haoda.backend.xilinx import M_AXI_PREFIX
+
 from tapa.verilog import ast
 from tapa.verilog.xilinx.typing import IOPort
 
@@ -84,7 +85,6 @@ M_AXI_PORTS: Dict[str, Tuple[Tuple[str, str], ...]] = collections.OrderedDict(
         ('VALID', 'output'),
     ),
 )
-
 
 M_AXI_SUFFIXES_COMPACT = (
     '_ARADDR',
