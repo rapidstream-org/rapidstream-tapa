@@ -5,13 +5,16 @@ import os.path
 import shutil
 import subprocess
 import time
-from typing import Dict, Iterator, TextIO, Tuple, Optional
+from typing import Dict, Iterator, Optional, TextIO, Tuple
 
 import absl.logging
 import coloredlogs
 
+# TODO(blaok): fix cyclic dependency
+# isort: off
 from .task import Task
 from .instance import Instance
+# isort: on
 
 _logger = logging.getLogger().getChild(__name__)
 
