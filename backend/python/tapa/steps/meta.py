@@ -1,11 +1,12 @@
 from typing import Dict
+
 import click
 
 import tapa.steps.analyze as analyze
-import tapa.steps.synth as synth
-import tapa.steps.optimize as optimize
 import tapa.steps.link as link
+import tapa.steps.optimize as optimize
 import tapa.steps.pack as pack
+import tapa.steps.synth as synth
 from tapa.steps.common import forward_applicable
 
 
@@ -16,7 +17,7 @@ from tapa.steps.common import forward_applicable
               default=False,
               help="Enable floorplanning for the design")
 def compile(ctx: click.Context, floorplan: bool, **kwargs: Dict):
-  
+
   forward_applicable(ctx, analyze.analyze, kwargs)
   forward_applicable(ctx, synth.synth, kwargs)
   if floorplan:
