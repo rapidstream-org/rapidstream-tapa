@@ -27,7 +27,7 @@ def pack(ctx, output: str, bitstream_script: Optional[str]):
 
   if not settings.get('linked', False):
     raise click.BadArgumentUsage('You must run `link` before you can `pack`.')
-  
+
   with open(output, 'wb') as packed_obj:
     program.pack_rtl(packed_obj)
     _logger.info('generate the v++ xo file at %s', output)
