@@ -5,21 +5,22 @@ import os
 import sys
 from collections import defaultdict
 from concurrent import futures
-from typing import Optional, Dict, Callable, List, Tuple, TextIO
+from typing import Callable, Dict, List, Optional, TextIO, Tuple
 
 from autobridge.main import annotate_floorplan
 from haoda.report.xilinx import rtl as report
 
 from tapa import util
 from tapa.hardware import (
-  get_ctrl_instance_region,
-  get_port_region,
-  get_slr_count,
+    get_ctrl_instance_region,
+    get_port_region,
+    get_slr_count,
 )
 from tapa.task import Task
 from tapa.task_graph import get_edges, get_vertices
 
 _logger = logging.getLogger().getChild(__name__)
+
 
 class InputError(Exception):
   pass
@@ -41,15 +42,15 @@ def generate_floorplan(
   get the pipeline level of each edge
   """
   config = get_floorplan_config(
-    autobridge_dir,
-    part_num,
-    physical_connectivity,
-    top_task,
-    fifo_width_getter,
-    user_floorplan_pre_assignments,
-    read_only_args,
-    write_only_args,
-    **kwargs,
+      autobridge_dir,
+      part_num,
+      physical_connectivity,
+      top_task,
+      fifo_width_getter,
+      user_floorplan_pre_assignments,
+      read_only_args,
+      write_only_args,
+      **kwargs,
   )
 
   config_with_floorplan = annotate_floorplan(config)
@@ -63,20 +64,25 @@ def get_floorplan_result(
 ) -> Tuple[Dict[str, str], Dict[str, int], Dict[str, int], Dict[str, int]]:
   """ extract floorplan results from the checkpointed config file """
   try:
-    config_with_floorplan = json.loads(open(f'{autobridge_dir}/post-floorplan-config.json', 'r').read())
+    config_with_floorplan = json.loads(
+        open(f'{autobridge_dir}/post-floorplan-config.json', 'r').read())
   except:
-    raise FileNotFoundError(f'no valid floorplanning results found in work directory {autobridge_dir}')
+    raise FileNotFoundError(
+        f'no valid floorplanning results found in work directory {autobridge_dir}'
+    )
 
   # generate the constraint file
   vivado_tcl = get_vivado_tcl(config_with_floorplan)
   constraint.write('\n'.join(vivado_tcl))
   _logger.info('generate the floorplan constraint at %s', constraint.name)
 
-  fifo_pipeline_level, axi_pipeline_level = extract_pipeline_level(config_with_floorplan)
+  fifo_pipeline_level, axi_pipeline_level = extract_pipeline_level(
+      config_with_floorplan)
   task_inst_to_slr = extract_task_locations(config_with_floorplan)
   fifo_to_depth = extract_fifo_depth(config_with_floorplan)
 
   return fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr, fifo_to_depth
+
 
 def extract_fifo_depth(config_with_floorplan) -> Dict[str, int]:
   """Get the adjusted FIFO depth"""
@@ -88,12 +94,14 @@ def extract_fifo_depth(config_with_floorplan) -> Dict[str, int]:
     # skip axi edges
     if 'instance' in props:
       if 'adjusted_depth' not in props:
-        _logger.warning('No latency balancing information found, skip FIFO depth adjusting')
+        _logger.warning(
+            'No latency balancing information found, skip FIFO depth adjusting')
         break
 
       fifo_to_depth[props['instance']] = props['adjusted_depth']
 
   return fifo_to_depth
+
 
 def extract_task_locations(config_with_floorplan) -> Dict[str, int]:
   task_inst_to_slr = {}
@@ -108,8 +116,7 @@ def extract_task_locations(config_with_floorplan) -> Dict[str, int]:
 
 
 def extract_pipeline_level(
-  config_with_floorplan,
-) -> Tuple[Dict[str, str], Dict[str, int]]:
+    config_with_floorplan,) -> Tuple[Dict[str, str], Dict[str, int]]:
   """ extract the pipeline level of fifos and axi edges """
   if config_with_floorplan.get('floorplan_status') == 'FAILED':
     return {}, {}
@@ -145,21 +152,26 @@ def _get_axi_pipeline_tcl(config_with_floorplan) -> List[str]:
         # R and B channels go from AXI port to the task instance
         for i in range(pipeline_level):
           for ch in ('R_pipeline', 'B_pipeline'):
-            region = path[i+1]
+            region = path[i + 1]
             pipeline_reg_id = i
-            region_to_axi_pipeline_inst[region].append(f'{port_name}/{ch}/inst\\\\[{pipeline_reg_id}]\\\\.unit')
+            region_to_axi_pipeline_inst[region].append(
+                f'{port_name}/{ch}/inst\\\\[{pipeline_reg_id}]\\\\.unit')
 
         # AR, AW, W channels go from the task instance to the AXI port
         reversed_path = [e for e in reversed(path)]
         for i in range(pipeline_level):
           for ch in ('AR_pipeline', 'AW_pipeline', 'W_pipeline'):
-            region = reversed_path[i+1]
+            region = reversed_path[i + 1]
             pipeline_reg_id = i
-            region_to_axi_pipeline_inst[region].append(f'{port_name}/{ch}/inst\\\\[{pipeline_reg_id}]\\\\.unit')
+            region_to_axi_pipeline_inst[region].append(
+                f'{port_name}/{ch}/inst\\\\[{pipeline_reg_id}]\\\\.unit')
 
   for region, inst_list in region_to_axi_pipeline_inst.items():
-    vivado_tcl.append(f'add_cells_to_pblock [get_pblocks {region}] [get_cells -regex {{')
-    vivado_tcl += [f'  pfm_top_i/dynamic_region/.*/inst/{inst}' for inst in inst_list]
+    vivado_tcl.append(
+        f'add_cells_to_pblock [get_pblocks {region}] [get_cells -regex {{')
+    vivado_tcl += [
+        f'  pfm_top_i/dynamic_region/.*/inst/{inst}' for inst in inst_list
+    ]
     vivado_tcl.append(f'}} ]')
 
   return vivado_tcl
@@ -171,11 +183,13 @@ def get_vivado_tcl(config_with_floorplan):
 
   vivado_tcl = []
 
-  vivado_tcl.append('puts "applying partitioning constraints generated by tapac"')
+  vivado_tcl.append(
+      'puts "applying partitioning constraints generated by tapac"')
   vivado_tcl.append('write_checkpoint before_add_floorplan_constraints.dcp')
 
   # pblock definitions
-  vivado_tcl += list(config_with_floorplan['floorplan_region_pblock_tcl'].values())
+  vivado_tcl += list(
+      config_with_floorplan['floorplan_region_pblock_tcl'].values())
 
   region_to_inst = defaultdict(list)
 
@@ -213,17 +227,22 @@ def get_vivado_tcl(config_with_floorplan):
 
   # print out the constraints
   for region, inst_list in region_to_inst.items():
-    vivado_tcl.append(f'add_cells_to_pblock [get_pblocks {region}] [get_cells -regex {{')
+    vivado_tcl.append(
+        f'add_cells_to_pblock [get_pblocks {region}] [get_cells -regex {{')
     # note the .* after inst
     # this is because we add a wrapper around user logic for AXI pipelining
-    vivado_tcl += [f'  pfm_top_i/dynamic_region/.*/inst/.*/{inst}' for inst in inst_list]
+    vivado_tcl += [
+        f'  pfm_top_i/dynamic_region/.*/inst/.*/{inst}' for inst in inst_list
+    ]
     vivado_tcl.append(f'}} ]')
 
   # floorplan the axi pipelines
   vivado_tcl += _get_axi_pipeline_tcl(config_with_floorplan)
 
   # redundant clean up code for extra safety
-  vivado_tcl.append('foreach pblock [get_pblocks -regexp CR_X\\\\d+Y\\\\d+_To_CR_X\\\\d+Y\\\\d+] {')
+  vivado_tcl.append(
+      'foreach pblock [get_pblocks -regexp CR_X\\\\d+Y\\\\d+_To_CR_X\\\\d+Y\\\\d+] {'
+  )
   vivado_tcl.append('  if {[get_property CELL_COUNT $pblock] == 0} {')
   vivado_tcl.append('    puts "WARNING: delete empty pblock $pblock "')
   vivado_tcl.append('    delete_pblocks $pblock')
@@ -251,9 +270,8 @@ def checkpoint_floorplan(config_with_floorplan, autobridge_dir):
     region = properties['floorplan_region']
     region_to_inst[region].append(vertex)
 
-  open(f'{autobridge_dir}/floorplan-region-to-instances.json', 'w').write(
-    json.dumps(region_to_inst, indent=2)
-  )
+  open(f'{autobridge_dir}/floorplan-region-to-instances.json',
+       'w').write(json.dumps(region_to_inst, indent=2))
 
 
 def generate_new_connectivity_ini(config_with_floorplan, work_dir, top_name):
@@ -261,8 +279,9 @@ def generate_new_connectivity_ini(config_with_floorplan, work_dir, top_name):
   if config_with_floorplan.get('enable_hbm_binding_adjustment', False):
     new_binding = config_with_floorplan.get('new_hbm_binding', {})
     if not new_binding:
-      _logger.warning('Adjusted HBM binding not recorded in post-floorplan config')
-      return(1)
+      _logger.warning(
+          'Adjusted HBM binding not recorded in post-floorplan config')
+      return (1)
 
     cfg = []
     cfg += ['[connectivity]']
@@ -288,28 +307,29 @@ def get_floorplan_config(
   """ Generate a json encoding the task graph for the floorplanner
   """
   arg_name_to_external_port = util.parse_connectivity_and_check_completeness(
-                                physical_connectivity,
-                                top_task,
-                              )
+      physical_connectivity,
+      top_task,
+  )
 
-  edges = get_edges(top_task, fifo_width_getter, read_only_args, write_only_args)
+  edges = get_edges(top_task, fifo_width_getter, read_only_args,
+                    write_only_args)
   vertices = get_vertices(top_task, arg_name_to_external_port)
   floorplan_pre_assignments = get_floorplan_pre_assignments(
-                                part_num,
-                                user_floorplan_pre_assignments,
-                                vertices,
-                                **kwargs,
-                              )
+      part_num,
+      user_floorplan_pre_assignments,
+      vertices,
+      **kwargs,
+  )
 
   grouping_constraints = get_grouping_constraints(edges)
 
   config = {
-    'work_dir': autobridge_dir,
-    'part_num': part_num,
-    'edges': edges,
-    'vertices': vertices,
-    'floorplan_pre_assignments': floorplan_pre_assignments,
-    'grouping_constraints': grouping_constraints,
+      'work_dir': autobridge_dir,
+      'part_num': part_num,
+      'edges': edges,
+      'vertices': vertices,
+      'floorplan_pre_assignments': floorplan_pre_assignments,
+      'grouping_constraints': grouping_constraints,
   }
 
   config.update(kwargs)
@@ -350,7 +370,8 @@ def get_floorplan_pre_assignments(
     if properties['category'] == 'PORT_VERTEX':
       if skip_pre_assign_hbm_ports and properties['port_cat'] == 'HBM':
         continue
-      region = get_port_region(part_num, properties['port_cat'], properties['port_id'])
+      region = get_port_region(part_num, properties['port_cat'],
+                               properties['port_id'])
       floorplan_pre_assignments[region].append(v_name)
 
   return floorplan_pre_assignments
@@ -365,6 +386,7 @@ def get_post_synth_area(
     cpp_getter: Callable[[str], str],
     max_parallel_synth_jobs: int,
 ):
+
   def worker(module_name: str, idx: int) -> report.HierarchicalUtilization:
     _logger.debug('synthesizing %s', module_name)
     rpt_path = post_syn_rpt_getter(module_name)
@@ -396,10 +418,13 @@ def get_post_synth_area(
       return report.parse_hierarchical_utilization_report(rpt_file)
 
   _logger.info('generating post-synthesis resource utilization reports')
-  _logger.info('this step runs logic synthesis of each task for accurate area info, it may take a while')
+  _logger.info(
+      'this step runs logic synthesis of each task for accurate area info, it may take a while'
+  )
   worker_num = min(max_parallel_synth_jobs, util.nproc())
-  _logger.info('spawn %d workers for parallel logic synthesis. '
-               'use --max-parallel-synth-jobs to enable more workers.', worker_num)
+  _logger.info(
+      'spawn %d workers for parallel logic synthesis. '
+      'use --max-parallel-synth-jobs to enable more workers.', worker_num)
   with futures.ThreadPoolExecutor(max_workers=worker_num) as executor:
     for utilization in executor.map(
         worker,
