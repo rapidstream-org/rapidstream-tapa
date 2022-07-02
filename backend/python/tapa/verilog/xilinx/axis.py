@@ -20,18 +20,19 @@ AXIS_PORT_WIDTHS = dict(
 
 # {port_suffix: [axis_port_suffixes in order]}
 STREAM_TO_AXIS = {
-    '_dout':    ['TDATA', 'TLAST'],
+    '_dout': ['TDATA', 'TLAST'],
     '_empty_n': ['TVALID'],
-    '_read':    ['TREADY'],
-    '_din':     ['TDATA', 'TLAST'],
-    '_full_n':  ['TREADY'],
-    '_write':   ['TVALID'],
+    '_read': ['TREADY'],
+    '_din': ['TDATA', 'TLAST'],
+    '_full_n': ['TREADY'],
+    '_write': ['TVALID'],
 }
 
 # {port_suffix: bit_to_fill}
 AXIS_CONSTANTS = {
-    'TKEEP':    1
+    'TKEEP': 1,
 }
+
 
 def get_axis_port_width_int(port: str, data_width: int) -> int:
   width = AXIS_PORT_WIDTHS[port]
