@@ -80,7 +80,7 @@ class istream {
   }
 
   T read() {
-#pragma HLS inlinemmap
+#pragma HLS inline
     return _.read().val;
   }
 
