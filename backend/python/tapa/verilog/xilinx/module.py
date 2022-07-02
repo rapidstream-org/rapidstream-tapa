@@ -7,6 +7,7 @@ from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple, Union
 
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
+
 from tapa.verilog import ast
 # pylint: disable=wildcard-import,unused-wildcard-import
 from tapa.verilog.util import *
@@ -156,7 +157,6 @@ class Module:
 
   def get_axi_pipeline_level(self, port_name: str) -> int:
     return getattr(self, 'axi_pipeline_level', {}).get(port_name, 0)
-
 
   @property
   def ports(self) -> Dict[str, IOPort]:
@@ -350,8 +350,7 @@ class Module:
 
   def add_instancelist(self, item: ast.InstanceList) -> 'Module':
     self._module_def.items = (
-        self._module_def.items[:self._last_instance_idx + 1] +
-        (item,) +
+        self._module_def.items[:self._last_instance_idx + 1] + (item,) +
         self._module_def.items[self._last_instance_idx + 1:])
     self._increment_idx(1, 'instance')
     return self
@@ -365,11 +364,11 @@ class Module:
   ) -> 'Module':
     keep_hier_pragma = '(* keep_hierarchy = "yes" *) '
     item = ast.InstanceList(module=keep_hier_pragma + module_name,
-                          parameterlist=params,
-                          instances=(ast.Instance(module=None,
-                                                  name=instance_name,
-                                                  parameterlist=None,
-                                                  portlist=ports),))
+                            parameterlist=params,
+                            instances=(ast.Instance(module=None,
+                                                    name=instance_name,
+                                                    parameterlist=None,
+                                                    portlist=ports),))
     self.add_instancelist(item)
     return self
 
@@ -391,6 +390,7 @@ class Module:
     self._filter(func, 'param')
 
   def del_instances(self, prefix: str = '', suffix: str = '') -> None:
+
     def func(item: ast.Node) -> bool:
       if isinstance(item, ast.InstanceList) and \
           item.module.startswith(prefix) and \
@@ -597,6 +597,7 @@ class Module:
   def get_nodes_of_type(self, *target_types) -> Iterator:
     yield from self._get_nodes_of_type(self.ast, *target_types)
 
+
 def generate_m_axi_ports(
     module: Module,
     port: str,
@@ -624,9 +625,10 @@ def generate_m_axi_ports(
     port_name = module.find_port(prefix=port, suffix=suffix)
     if port_name is not None:
       if port_name != port + suffix:
-        _logger.warn("unexpected offset port `%s' in module"
-                     " `%s'; please double check if this is the "
-                     "offset port for m_axi port `%s'", port_name, module.name, port)
+        _logger.warn(
+            "unexpected offset port `%s' in module"
+            " `%s'; please double check if this is the "
+            "offset port for m_axi port `%s'", port_name, module.name, port)
       yield ast.make_port_arg(port=port_name, arg=arg_reg or arg)
       break
   else:
