@@ -1,20 +1,19 @@
 #!/usr/bin/python3
 
-import os
 import logging
+import os
 import sys
 
 import click
 
 import tapa.steps.analyze
-import tapa.steps.synth
-import tapa.steps.optimize
-import tapa.steps.link
-import tapa.steps.pack
-import tapa.steps.meta
-import tapa.steps.dse
-
 import tapa.steps.common
+import tapa.steps.dse
+import tapa.steps.link
+import tapa.steps.meta
+import tapa.steps.optimize
+import tapa.steps.pack
+import tapa.steps.synth
 import tapa.util
 
 _logger = logging.getLogger().getChild(__name__)
