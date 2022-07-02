@@ -187,12 +187,17 @@ class Program:
         header_fp.write(content)
     return self
 
-  def run_hls(self, clock_period: Union[int, float, str],
-              part_num: str, other_configs: str = '') -> 'Program':
+  def run_hls(
+      self,
+      clock_period: Union[int, float, str],
+      part_num: str,
+      other_configs: str = '',
+  ) -> 'Program':
     """Run HLS with extracted HLS C++ files and generate tarballs."""
     self.extract_cpp()
 
     _logger.info('running HLS')
+
     def worker(task: Task, idx: int) -> None:
       os.nice(idx % 19)
       hls_cflags = ' '.join((
@@ -227,16 +232,19 @@ class Program:
         raise RuntimeError('HLS failed for {}'.format(task.name))
 
     worker_num = util.nproc()
-    _logger.info('spawn %d workers for parallel HLS synthesis of the tasks', worker_num)
+    _logger.info(
+        'spawn %d workers for parallel HLS synthesis of the tasks',
+        worker_num,
+    )
     with futures.ThreadPoolExecutor(max_workers=worker_num) as executor:
       any(executor.map(worker, self._tasks.values(), itertools.count(0)))
 
     return self
 
   def generate_task_rtl(
-    self,
-    additional_fifo_pipelining: bool = False,
-    part_num: str = '',
+      self,
+      additional_fifo_pipelining: bool = False,
+      part_num: str = '',
   ) -> 'Program':
     """Extract HDL files from tarballs generated from HLS."""
     _logger.info('extracting RTL files')
@@ -290,19 +298,27 @@ class Program:
     _logger.info('instrumenting upper-level RTL')
     for task in self._tasks.values():
       if task.is_upper and task.name != self.top:
-        self._instrument_non_top_upper_task(task, part_num, additional_fifo_pipelining)
+        self._instrument_non_top_upper_task(
+            task,
+            part_num,
+            additional_fifo_pipelining,
+        )
 
     return self
 
-  def generate_post_synth_task_area(self, part_num: str, max_parallel_synth_jobs: int = 8):
+  def generate_post_synth_task_area(
+      self,
+      part_num: str,
+      max_parallel_synth_jobs: int = 8,
+  ):
     get_post_synth_area(
-      self.rtl_dir,
-      part_num,
-      self.top_task,
-      self.get_post_syn_rpt,
-      self.get_task,
-      self.get_cpp,
-      max_parallel_synth_jobs,
+        self.rtl_dir,
+        part_num,
+        self.top_task,
+        self.get_post_syn_rpt,
+        self.get_task,
+        self.get_cpp,
+        max_parallel_synth_jobs,
     )
 
   def run_floorplanning(
@@ -320,21 +336,27 @@ class Program:
 
     # generate partitioning constraints if partitioning directive is given
     config, config_with_floorplan = generate_floorplan(
-      part_num,
-      connectivity,
-      read_only_args,
-      write_only_args,
-      user_floorplan_pre_assignments=floorplan_pre_assignments,
-      autobridge_dir=self.autobridge_dir,
-      top_task=self.top_task,
-      fifo_width_getter=self._get_fifo_width,
-      **kwargs,
+        part_num,
+        connectivity,
+        read_only_args,
+        write_only_args,
+        user_floorplan_pre_assignments=floorplan_pre_assignments,
+        autobridge_dir=self.autobridge_dir,
+        top_task=self.top_task,
+        fifo_width_getter=self._get_fifo_width,
+        **kwargs,
     )
 
-    open(f'{self.autobridge_dir}/pre-floorplan-config.json', 'w').write(json.dumps(config, indent=2))
-    open(f'{self.autobridge_dir}/post-floorplan-config.json', 'w').write(json.dumps(config_with_floorplan, indent=2))
+    open(f'{self.autobridge_dir}/pre-floorplan-config.json',
+         'w').write(json.dumps(config, indent=2))
+    open(f'{self.autobridge_dir}/post-floorplan-config.json',
+         'w').write(json.dumps(config_with_floorplan, indent=2))
     checkpoint_floorplan(config_with_floorplan, self.autobridge_dir)
-    generate_new_connectivity_ini(config_with_floorplan, self.work_dir, self.top)
+    generate_new_connectivity_ini(
+        config_with_floorplan,
+        self.work_dir,
+        self.top,
+    )
 
     return self
 
@@ -360,9 +382,12 @@ class Program:
 
     # extract the floorplan result
     if constraint:
-      fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr, fifo_to_depth = get_floorplan_result(
-        self.autobridge_dir, constraint
-      )
+      (
+          fifo_pipeline_level,
+          axi_pipeline_level,
+          task_inst_to_slr,
+          fifo_to_depth,
+      ) = get_floorplan_result(self.autobridge_dir, constraint)
 
       if not task_inst_to_slr:
         _logger.warning('generate top rtl without floorplanning')
@@ -381,7 +406,8 @@ class Program:
           if streams_fifo_name in self.top_task.fifos:
             self.top_task.fifos[streams_fifo_name]['depth'] = depth
           else:
-            _logger.critical('unrecognized FIFO %s, skip depth adjustment', fifo_name)
+            _logger.critical('unrecognized FIFO %s, skip depth adjustment',
+                             fifo_name)
 
     if register_level:
       assert register_level > 0
@@ -390,16 +416,18 @@ class Program:
       if is_part_num_supported(part_num):
         self.top_task.module.register_level = get_slr_count(part_num)
       else:
-        _logger.info('the part-num is not included in the hardware library, '
-                     'using the default register level %d.', DEFAULT_REGISTER_LEVEL)
+        _logger.info(
+            'the part-num is not included in the hardware library, '
+            'using the default register level %d.', DEFAULT_REGISTER_LEVEL)
         self.top_task.module.register_level = DEFAULT_REGISTER_LEVEL
 
     _logger.info('top task register level set to %d',
-                self.top_task.module.register_level)
+                 self.top_task.module.register_level)
 
     # instrument the top-level RTL
     _logger.info('instrumenting top-level RTL')
-    self._instrument_top_task(self.top_task, part_num, task_inst_to_slr, additional_fifo_pipelining)
+    self._instrument_top_task(self.top_task, part_num, task_inst_to_slr,
+                              additional_fifo_pipelining)
 
     _logger.info('generating report')
     task_report = self.top_task.report
@@ -447,7 +475,11 @@ class Program:
       if task.is_fifo_external(fifo_name):
         task.connect_fifo_externally(fifo_name, task.name == self.top)
 
-  def _instantiate_fifos(self, task: Task, additional_fifo_pipelining: bool) -> None:
+  def _instantiate_fifos(
+      self,
+      task: Task,
+      additional_fifo_pipelining: bool,
+  ) -> None:
     _logger.debug('  instantiating FIFOs in %s', task.name)
 
     # skip instantiating if the fifo is not declared in this task
@@ -858,7 +890,12 @@ class Program:
     self._instantiate_fifos(task, additional_fifo_pipelining)
     self._connect_fifos(task)
     width_table = {port.name: port.width for port in task.ports.values()}
-    is_done_signals = self._instantiate_children_tasks(task, width_table, part_num, {})
+    is_done_signals = self._instantiate_children_tasks(
+        task,
+        width_table,
+        part_num,
+        {},
+    )
     self._instantiate_global_fsm(task, is_done_signals)
 
     with open(self.get_rtl(task.name), 'w') as rtl_code:
@@ -883,7 +920,12 @@ class Program:
     self._instantiate_fifos(task, additional_fifo_pipelining)
     self._connect_fifos(task)
     width_table = {port.name: port.width for port in task.ports.values()}
-    is_done_signals = self._instantiate_children_tasks(task, width_table, part_num, instance_name_to_slr)
+    is_done_signals = self._instantiate_children_tasks(
+        task,
+        width_table,
+        part_num,
+        instance_name_to_slr,
+    )
     self._instantiate_global_fsm(task, is_done_signals)
 
     self._pipeline_top_task(task)
