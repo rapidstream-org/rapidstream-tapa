@@ -3,8 +3,11 @@ from typing import Iterator, Optional
 
 import tapa.instance
 from tapa.verilog import ast, util
-from tapa.verilog.xilinx.const import (ISTREAM_SUFFIXES, OSTREAM_SUFFIXES,
-                                       STREAM_PORT_DIRECTION)
+from tapa.verilog.xilinx.const import (
+    ISTREAM_SUFFIXES,
+    OSTREAM_SUFFIXES,
+    STREAM_PORT_DIRECTION,
+)
 from tapa.verilog.xilinx.typing import IOPort
 
 __all__ = [
