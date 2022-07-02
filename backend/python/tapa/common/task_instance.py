@@ -85,7 +85,7 @@ class TaskInstance(Base):
     # If not instantiated locally
     if self.definition.get_level() != TaskDefinition.Level.TOP:
       # 1. lookup its parents if this is not the top level task
-      insts_all  = self.parent.definition.obj['tasks']
+      insts_all = self.parent.definition.obj['tasks']
       insts_self = insts_all[self.definition.name]
       inst = insts_self[self.idx]
       arg = inst['args'][name]
