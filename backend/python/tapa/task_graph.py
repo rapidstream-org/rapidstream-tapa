@@ -32,12 +32,18 @@ def get_fifo_edges(
   # Generate edges for FIFOs instantiated in the top task.
   for fifo_name, fifo in top_task.fifos.items():
     fifo_edges[rtl.sanitize_array_name(fifo_name)] = {
-        'produced_by': 'TASK_VERTEX_' + util.get_instance_name(fifo['produced_by']),
-        'consumed_by': 'TASK_VERTEX_' + util.get_instance_name(fifo['consumed_by']),
-        'width': fifo_width_getter(top_task, fifo_name),
-        'depth': top_task.fifos[fifo_name]['depth'],
-        'instance': rtl.sanitize_array_name(fifo_name),
-        'category': 'FIFO_EDGE',
+        'produced_by':
+            'TASK_VERTEX_' + util.get_instance_name(fifo['produced_by']),
+        'consumed_by':
+            'TASK_VERTEX_' + util.get_instance_name(fifo['consumed_by']),
+        'width':
+            fifo_width_getter(top_task, fifo_name),
+        'depth':
+            top_task.fifos[fifo_name]['depth'],
+        'instance':
+            rtl.sanitize_array_name(fifo_name),
+        'category':
+            'FIFO_EDGE',
     }
 
   return type_marked(fifo_edges, 'FIFO_EDGE')
@@ -69,27 +75,32 @@ def get_axi_edges(
           _logger.info('%s is specified as write-only', arg.name)
           total_connection_width = arg_width + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH + 50
         else:
-          _logger.warning('%s is assumed to be both read from and written to. '
-                       'If not, please use --read-only-args or --write-only-args '
-                       'for better optimization results.' , arg.name)
+          _logger.warning(
+              '%s is assumed to be both read from and written to. '
+              'If not, please use --read-only-args or --write-only-args '
+              'for better optimization results.', arg.name)
           total_connection_width = arg_width + arg_width + ADDR_CHANNEL_DATA_WIDTH + ADDR_CHANNEL_DATA_WIDTH + RESP_CHANNEL_DATA_WIDTH + 50
 
         # the edge represents the AXI pipeline between the DDR/HBM IP and the mmap module
         axi_edges[get_axi_edge_name(arg)] = {
-          'produced_by': 'PORT_VERTEX_' + get_physical_port_vertex_name(arg.name),
-          'consumed_by': 'TASK_VERTEX_' + arg.instance.name,
-          'width': total_connection_width,
-          'depth': 0,
-          'category': 'AXI_EDGE',
-          'port_name': arg.name,
+            'produced_by':
+                'PORT_VERTEX_' + get_physical_port_vertex_name(arg.name),
+            'consumed_by':
+                'TASK_VERTEX_' + arg.instance.name,
+            'width':
+                total_connection_width,
+            'depth':
+                0,
+            'category':
+                'AXI_EDGE',
+            'port_name':
+                arg.name,
         }
 
   return type_marked(axi_edges, 'AXI_EDGE')
 
 
-def get_async_mmap_edges(
-    top_task,
-):
+def get_async_mmap_edges(top_task):
   """
   In fact the async_mmap are directly wired to the task that uses it.
   Therefore we create edges of infinite width so that they will be
@@ -101,11 +112,17 @@ def get_async_mmap_edges(
       if arg.cat == Instance.Arg.Cat.ASYNC_MMAP:
         e_name = f'async_mmap_infinite_from_{rtl.async_mmap_instance_name(arg.mmap_name)}_to_{arg.instance.name}'
         async_mmap_edges[e_name] = {
-          'produced_by': 'ASYNC_MMAP_VERTEX_' + rtl.async_mmap_instance_name(arg.mmap_name),
-          'consumed_by': 'TASK_VERTEX_' + arg.instance.name,
-          'width': 1000000,
-          'depth': 0,
-          'category': 'ASYNC_MMAP_EDGE',
+            'produced_by':
+                'ASYNC_MMAP_VERTEX_' +
+                rtl.async_mmap_instance_name(arg.mmap_name),
+            'consumed_by':
+                'TASK_VERTEX_' + arg.instance.name,
+            'width':
+                1000000,
+            'depth':
+                0,
+            'category':
+                'ASYNC_MMAP_EDGE',
         }
 
   return type_marked(async_mmap_edges, 'ASYNC_MMAP_EDGE')
@@ -135,10 +152,10 @@ def get_task_vertices(top_task):
     # Total area handles hierarchical designs for AutoBridge.
     task_area = make_autobridge_area(inst.task.total_area)
     task_vertices[inst.name] = {
-      'module': inst.task.name,
-      'instance': inst.name,
-      'area':task_area,
-      'category': 'TASK_VERTEX',
+        'module': inst.task.name,
+        'instance': inst.name,
+        'area': task_area,
+        'category': 'TASK_VERTEX',
     }
     _logger.debug('area of %s: %s', inst.task.name, task_area)
 
@@ -147,13 +164,13 @@ def get_task_vertices(top_task):
 
 def get_ctrl_vertices(top_task):
   # Self area for top task represents mainly the control_s_axi instance.
-  ctrl_vertices = {rtl.ctrl_instance_name(top_task.name):
-    {
-      'module': top_task.name,
-      'instance': rtl.ctrl_instance_name(top_task.name),
-      'area': make_autobridge_area(top_task.self_area),
-      'category': 'CTRL_VERTEX',
-    }
+  ctrl_vertices = {
+      rtl.ctrl_instance_name(top_task.name): {
+          'module': top_task.name,
+          'instance': rtl.ctrl_instance_name(top_task.name),
+          'area': make_autobridge_area(top_task.self_area),
+          'category': 'CTRL_VERTEX',
+      }
   }
   return type_marked(ctrl_vertices, 'CTRL_VERTEX')
 
@@ -173,18 +190,16 @@ def get_async_mmap_vertices(top_task):
         data_channel_width = max(port_name_to_width[arg.name], 32)
         v_area = get_async_mmap_area(data_channel_width)
         async_mmap_vertices[v_name] = {
-          'module': 'async_mmap',
-          'instance': v_name,
-          'area': v_area,
-          'category': 'ASYNC_MMAP_VERTEX',
+            'module': 'async_mmap',
+            'instance': v_name,
+            'area': v_area,
+            'category': 'ASYNC_MMAP_VERTEX',
         }
 
   return type_marked(async_mmap_vertices, 'ASYNC_MMAP_VERTEX')
 
 
-def get_port_vertices(
-    arg_name_to_external_port,
-):
+def get_port_vertices(arg_name_to_external_port):
   """
   FIXME: currently assume the DDR/HBM channels are 512 bit wide
   """
@@ -203,12 +218,12 @@ def get_port_vertices(
       raise NotImplementedError(f'unrecognized port type {port_cat}')
 
     port_vertices[get_physical_port_vertex_name(arg_name)] = {
-      'module': f'external_{port_cat}_controller',
-      'top_arg_name': arg_name,
-      'area': area,
-      'category': 'PORT_VERTEX',
-      'port_cat': port_cat,
-      'port_id': port_id,
+        'module': f'external_{port_cat}_controller',
+        'top_arg_name': arg_name,
+        'area': area,
+        'category': 'PORT_VERTEX',
+        'port_cat': port_cat,
+        'port_id': port_id,
     }
 
   return type_marked(port_vertices, 'PORT_VERTEX')
@@ -229,12 +244,15 @@ def get_vertices(top_task: Task, arg_name_to_external_port: Dict[str, str]):
 def type_marked(name_to_obj, obj_type):
   return {f'{obj_type}_{name}': obj for name, obj in name_to_obj.items()}
 
+
 def get_physical_port_vertex_name(arg_name):
   return f'{arg_name}_external_controller'
+
 
 def get_axi_edge_name(port_arg):
   port_vertex = get_physical_port_vertex_name(port_arg.name)
   return f'axi_edge_from_{port_vertex}_to_{port_arg.instance.name}'
+
 
 def get_port_name_to_width(top_task):
   """
@@ -242,6 +260,7 @@ def get_port_name_to_width(top_task):
   but we are using "args" to look up the table
   """
   return {port.name: port.width for port in top_task.ports.values()}
+
 
 def make_autobridge_area(area: Dict[str, int]) -> Dict[str, int]:
   return {{'BRAM_18K': 'BRAM'}.get(k, k): v for k, v in area.items()}
