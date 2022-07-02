@@ -17,7 +17,12 @@ jobs:
           sudo install /tmp/clang-format /usr/local/bin/clang-format
           rm /tmp/clang-format
           clang-format --version
+
+          python3 -m pip install \
+            isort==5.10.1 \
+            yapf==0.32.0 \
+
       - name: Check format
         run: |
           ./format.sh
-          git diff --quiet
+          git diff --color --exit-code
