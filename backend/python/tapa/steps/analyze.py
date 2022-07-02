@@ -11,9 +11,8 @@ import click
 
 import tapa
 import tapa.core
-import tapa.util
 import tapa.steps.common
-
+import tapa.util
 from tapa.common.graph import Graph as TapaGraph
 
 _logger = logging.getLogger().getChild(__name__)
@@ -63,12 +62,11 @@ def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],
   # Flatten the graph
   graph_dict = TapaGraph(None, graph_dict).get_flatten_graph().to_dict()
 
-  tapa.steps.common.store_tapa_program(tapa.core.Program(
-      graph_dict, work_dir))
+  tapa.steps.common.store_tapa_program(tapa.core.Program(graph_dict, work_dir))
 
   tapa.steps.common.store_persistent_context('graph', graph_dict)
   tapa.steps.common.store_persistent_context('settings', {})
-  
+
   tapa.steps.common.is_pipelined('analyze', True)
 
 
