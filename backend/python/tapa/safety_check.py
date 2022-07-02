@@ -26,5 +26,7 @@ def check_mmap_arg_name(task_list: List[Task]) -> None:
     if task.is_upper:
       for port_name in task.ports.keys():
         if port_name in DISABLED_MMAP_NAME_LIST:
-          _logger.error('Task arguments cannot be among the reserved keywords: %s', DISABLED_MMAP_NAME_LIST)
+          _logger.error(
+              'Task arguments cannot be among the reserved keywords: %s',
+              DISABLED_MMAP_NAME_LIST)
           raise AssertionError
