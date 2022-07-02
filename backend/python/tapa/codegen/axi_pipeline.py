@@ -1,20 +1,23 @@
 from typing import List
 
-from pyverilog.vparser.ast import Input, Output, Parameter
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
+from pyverilog.vparser.ast import Input, Output, Parameter
 
-from tapa.verilog.xilinx.m_axi import M_AXI_SUFFIXES_COMPACT
 from tapa.instance import Instance
+from tapa.verilog.xilinx.m_axi import M_AXI_SUFFIXES_COMPACT
 
 
 class AXI:
+
   def __init__(self, name, data_width, addr_width, pipeline_level):
     self.name = name
     self.data_width = data_width
     self.addr_width = addr_width
     self.pipeline_level = pipeline_level
 
+
 class IOPort:
+
   def __init__(self, name: str, direction: str, width: str):
     self.name = name
     self.direction = direction
@@ -90,7 +93,8 @@ def get_pipeline_inst(axi_list: List[AXI]):
     pp_inst.append(f'axi_pipeline #(')
     pp_inst.append(f'  .C_M_AXI_ADDR_WIDTH({axi.addr_width}),')
     pp_inst.append(f'  .C_M_AXI_DATA_WIDTH({axi.data_width}),')
-    pp_inst.append(f'  .PIPELINE_LEVEL    ({axi.pipeline_level})') # FIXME: adjust based on floorplanning
+    # FIXME: adjust based on floorplanning
+    pp_inst.append(f'  .PIPELINE_LEVEL    ({axi.pipeline_level})')
     pp_inst.append(f') {axi.name} (')
 
     for axi_port in M_AXI_SUFFIXES_COMPACT:
@@ -125,7 +129,11 @@ def get_end():
   return ['endmodule']
 
 
-def get_axi_pipeline_wrapper(orig_top_name: str, top_name_suffix: str, top_task):
+def get_axi_pipeline_wrapper(
+    orig_top_name: str,
+    top_name_suffix: str,
+    top_task,
+):
   """
   Given the original top RTL module
   Generate a wrapper that (1) instantiate the previous top module
@@ -148,7 +156,8 @@ def get_axi_pipeline_wrapper(orig_top_name: str, top_name_suffix: str, top_task)
   wrapper += get_params(ast)
   wrapper += get_wire_decl(io_list) + ['\n\n']
   wrapper += get_pipeline_inst(axi_list) + ['\n\n']
-  wrapper += get_top_inst(f'{orig_top_name}{top_name_suffix}', io_list) + ['\n\n']
+  wrapper += (get_top_inst(f'{orig_top_name}{top_name_suffix}', io_list) +
+              ['\n\n'])
   wrapper += get_end()
 
   return '\n'.join(wrapper)
