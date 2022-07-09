@@ -1,5 +1,5 @@
 #!/bin/bash
-# Requires: clang-format, yapf, isort
+# Requires: clang-format, yapf, isort, shfmt
 
 set -e
 
@@ -10,7 +10,7 @@ find \( \
   -path './backend/clang' -or \
   -path './backend/python/tapa/assets/clang' -or \
   -path './regression' -or \
-  -path '*/build/*' \
+  -path '*/build' \
   \) -prune -or \( \
   -iname '*.h' -or -iname '*.cpp' \
   \) -print0 | xargs --null clang-format -i --verbose
@@ -21,7 +21,7 @@ trap 'rm -f "${tmp}"' EXIT
 find \( \
   -path './backend/python/tapa/verilog/axi_xbar.py' -or \
   -path './regression' -or \
-  -path '*/build/*' \
+  -path '*/build' \
   \) -prune -or \( \
   -iname '*.py' \
   \) -print0 >"${tmp}"
@@ -29,3 +29,11 @@ which yapf
 xargs --null yapf --in-place --verbose <"${tmp}"
 which isort
 xargs --null isort <"${tmp}"
+
+which shfmt
+find \( \
+  -path './regression' -or \
+  -path '*/build' \
+  \) -prune -or \( \
+  -iname '*.sh' \
+  \) -print0 | xargs --null shfmt --write --indent=2

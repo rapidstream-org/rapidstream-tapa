@@ -22,6 +22,14 @@ jobs:
             isort==5.10.1 \
             yapf==0.32.0 \
 
+          isort --version
+          yapf --version
+
+          curl --location --output /tmp/shfmt \
+            https://github.com/mvdan/sh/releases/download/v3.5.1/shfmt_v3.5.1_linux_amd64
+          sudo install /tmp/shfmt /usr/local/bin/shfmt
+          rm /tmp/shfmt
+          shfmt --version
       - name: Check format
         run: |
           ./format.sh
