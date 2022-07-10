@@ -494,21 +494,26 @@ class Module:
                         ast.ParamArg(paramname='BufferSizeLog',
                                      argname=ast.Constant(
                                          (buffer_size - 1).bit_length()))))
+
     max_wait_time = max(1, max_wait_time)
     paramargs.append(
         ast.ParamArg(paramname='WaitTimeWidth',
                      argname=ast.Constant(max_wait_time.bit_length())))
-    portargs.append(
-        ast.make_port_arg(port='max_wait_time',
-                          arg="{}'d{}".format(max_wait_time.bit_length(),
-                                              max_wait_time)))
+    paramargs.append(
+        ast.ParamArg(paramname='MaxWaitTime',
+                     argname=ast.Constant(max(1, max_wait_time))))
+
+    # the base address for this memory channel
+    portargs.append(ast.make_port_arg(port='offset', arg=offset_name or name))
+
     if max_burst_len is None:
       # 1KB burst length
       max_burst_len = max(0, 8192 // data_width - 1)
     paramargs.append(
         ast.ParamArg(paramname='BurstLenWidth', argname=ast.Constant(9)))
-    portargs.append(
-        ast.make_port_arg(port='max_burst_len', arg=f"9'd{max_burst_len}"))
+    paramargs.append(
+        ast.ParamArg(paramname='MaxBurstLen',
+                     argname=ast.Constant(max_burst_len)))
 
     for channel, ports in M_AXI_PORTS.items():
       for port, direction in ports:
@@ -521,13 +526,6 @@ class Module:
       for suffix in ASYNC_MMAP_SUFFIXES[tag]:
         if tag in tags:
           arg = async_mmap_arg_name(arg=name, tag=tag, suffix=suffix)
-          if tag.endswith('_addr') and suffix.endswith('_din'):
-            elem_size_bytes_m1 = data_width // 8 - 1
-            arg = "{name} + {{{arg}[{}:0], {}'d0}}".format(
-                addr_width - elem_size_bytes_m1.bit_length() - 1,
-                elem_size_bytes_m1.bit_length(),
-                arg=arg,
-                name=offset_name or name)
         else:
           if suffix.endswith('_read') or suffix.endswith('_write'):
             arg = "1'b0"

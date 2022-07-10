@@ -12,14 +12,16 @@ module async_mmap #(
   // implement the FIFOs for the read channel
   // if set to 0: disconnect the data link
   parameter EnableReadChannel = 1,
-  parameter EnableWriteChannel= 1
+  parameter EnableWriteChannel= 1,
+  // for burst inference
+  parameter MaxWaitTime       = 3,
+  parameter MaxBurstLen       = 15
 ) (
   input wire clk,
   input wire rst, // active high
 
-  // for burst inference
-  input wire [WaitTimeWidth-1:0] max_wait_time,
-  input wire [BurstLenWidth-1:0] max_burst_len,
+  // base address for the memory region
+  input wire [63:0] offset,
 
   // axi write addr channel
   output wire                 m_axi_AWVALID,
@@ -111,7 +113,7 @@ module async_mmap #(
     .if_full_n  (write_addr_full_n),
     .if_write_ce(1'b1),
     .if_write   (write_addr_write),
-    .if_din     (write_addr_din),
+    .if_din     (offset + {write_addr_din, { $clog2(DataWidth/8) {1'b0} } }),
 
     // to burst detector
     .if_empty_n(write_addr_empty_n),
@@ -158,8 +160,8 @@ module async_mmap #(
     .clk(clk),
     .rst(rst),
 
-    .max_wait_time(max_wait_time),
-    .max_burst_len(max_burst_len),
+    .max_wait_time(MaxWaitTime),
+    .max_burst_len(MaxBurstLen),
 
     // input: individual addresses
     .addr_dout   (write_addr_dout),
@@ -389,7 +391,7 @@ module async_mmap #(
     .if_full_n  (read_addr_full_n),
     .if_write_ce(1'b1),
     .if_write   (read_addr_write),
-    .if_din     (read_addr_din),
+    .if_din     (offset + {read_addr_din, { $clog2(DataWidth/8) {1'b0} } }),
 
     // to axi
     .if_empty_n(read_addr_empty_n),
@@ -438,8 +440,8 @@ module async_mmap #(
     .clk(clk),
     .rst(rst),
 
-    .max_wait_time(max_wait_time),
-    .max_burst_len(max_burst_len),
+    .max_wait_time(MaxWaitTime),
+    .max_burst_len(MaxBurstLen),
 
     // input: individual addresses
     .addr_dout   (read_addr_dout),
