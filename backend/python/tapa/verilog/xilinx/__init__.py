@@ -53,6 +53,14 @@ def fifo_partition_name(name: str, idx: int) -> str:
 
 def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
          output_file: Union[str, BinaryIO]) -> None:
+  """Create a .xo file that archives all generated RTL files
+
+     Note that if an RTL file has syntax errors, Vivado will secretly leave
+     it out from the .xo instead of reporting an error.
+
+     The .xo file is essentially a zip file, you could check the contents by
+     unzip it.
+  """
   port_tuple = tuple(ports)
   if isinstance(output_file, str):
     xo_file = output_file
