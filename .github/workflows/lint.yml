@@ -30,7 +30,14 @@ jobs:
           sudo install /tmp/shfmt /usr/local/bin/shfmt
           rm /tmp/shfmt
           shfmt --version
+
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            iverilog \
+
       - name: Check format
         run: |
           ./format.sh
           git diff --color --exit-code
+      - name: Lint
+        run: .github/scripts/lint.sh
