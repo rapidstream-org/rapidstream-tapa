@@ -15,20 +15,17 @@ find \( \
   -iname '*.h' -or -iname '*.cpp' \
   \) -print0 | xargs --null clang-format -i --verbose
 
-tmp="$(mktemp --suffix=tapa-formatter)"
-trap 'rm -f "${tmp}"' EXIT
-
+which yapf
+which isort
 find \( \
   -path './backend/python/tapa/verilog/axi_xbar.py' -or \
   -path './regression' -or \
   -path '*/build' \
   \) -prune -or \( \
   -iname '*.py' \
-  \) -print0 >"${tmp}"
-which yapf
-xargs --null yapf --in-place --verbose <"${tmp}"
-which isort
-xargs --null isort <"${tmp}"
+  \) \
+  -execdir yapf --in-place --verbose '{}' ';' \
+  -execdir isort '{}' ';'
 
 which shfmt
 find \( \
