@@ -113,7 +113,7 @@ module async_mmap #(
     .if_full_n  (write_addr_full_n),
     .if_write_ce(1'b1),
     .if_write   (write_addr_write),
-    .if_din     (offset + {write_addr_din, { $clog2(DataWidth/8) {1'b0} } }),
+    .if_din     (offset + (write_addr_din << $clog2(DataWidth/8))),
 
     // to burst detector
     .if_empty_n(write_addr_empty_n),
@@ -160,8 +160,8 @@ module async_mmap #(
     .clk(clk),
     .rst(rst),
 
-    .max_wait_time(MaxWaitTime),
-    .max_burst_len(MaxBurstLen),
+    .max_wait_time(MaxWaitTime[WaitTimeWidth-1:0]),
+    .max_burst_len(MaxBurstLen[BurstLenWidth-1:0]),
 
     // input: individual addresses
     .addr_dout   (write_addr_dout),
@@ -391,7 +391,7 @@ module async_mmap #(
     .if_full_n  (read_addr_full_n),
     .if_write_ce(1'b1),
     .if_write   (read_addr_write),
-    .if_din     (offset + {read_addr_din, { $clog2(DataWidth/8) {1'b0} } }),
+    .if_din     (offset + (read_addr_din << $clog2(DataWidth/8))),
 
     // to axi
     .if_empty_n(read_addr_empty_n),
@@ -440,8 +440,8 @@ module async_mmap #(
     .clk(clk),
     .rst(rst),
 
-    .max_wait_time(MaxWaitTime),
-    .max_burst_len(MaxBurstLen),
+    .max_wait_time(MaxWaitTime[WaitTimeWidth-1:0]),
+    .max_burst_len(MaxBurstLen[BurstLenWidth-1:0]),
 
     // input: individual addresses
     .addr_dout   (read_addr_dout),
