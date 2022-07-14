@@ -1,5 +1,5 @@
 #!/bin/bash
-# Requires iverilog.
+# Requires iverilog and ifne.
 
 set -e
 
@@ -11,4 +11,6 @@ find \( \
   -path '*/build' \
   \) -prune -or \( \
   -iname '*.v' -or -iname '*.sv' \
-  \) -execdir iverilog -y. -tnull -Wall '{}' '+'
+  \) -execdir iverilog -y. -tnull -Wall '{}' ';' |&
+  tee /dev/stderr |
+  ifne false
