@@ -72,6 +72,8 @@ jobs:
     needs:
       - build-cpp
     steps:
+      - name: Checkout myself
+        uses: actions/checkout@v3
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
@@ -82,8 +84,6 @@ jobs:
         with:
           path: apt-db-cache
           key: ${{ runner.os }}-apt-db-cache
-      - name: Checkout myself
-        uses: actions/checkout@v3
       - name: Update APT repository
         run: ./.github/scripts/upload-apt-repo.sh
         env:
