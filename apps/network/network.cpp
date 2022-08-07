@@ -4,7 +4,6 @@ using tapa::detach;
 using tapa::istream;
 using tapa::istreams;
 using tapa::mmap;
-using tapa::ostream;
 using tapa::ostreams;
 using tapa::streams;
 using tapa::task;
@@ -13,9 +12,14 @@ using tapa::vec_t;
 using pkt_t = uint64_t;
 constexpr int kN = 8;  // kN x kN network
 
+constexpr int kStageCount = 3;  // log2(kN)
+
 void Switch2x2(int b, istream<pkt_t>& pkt_in_q0, istream<pkt_t>& pkt_in_q1,
                ostreams<pkt_t, 2>& pkt_out_q) {
   uint8_t priority = 0;
+
+  b = kStageCount - 1 - b;
+
   [[tapa::pipeline(1)]] for (bool valid_0, valid_1;;) {
 #pragma HLS latency max = 0
     auto pkt_0 = pkt_in_q0.peek(valid_0);
@@ -91,15 +95,10 @@ consume:
 
 void Network(mmap<vec_t<pkt_t, kN>> mmap_in, mmap<vec_t<pkt_t, kN>> mmap_out,
              uint64_t n) {
-  streams<pkt_t, kN, 4096> q0("q0");
-  streams<pkt_t, kN, 4096> q1("q1");
-  streams<pkt_t, kN, 4096> q2("q2");
-  streams<pkt_t, kN, 4096> q3("q3");
+  streams<pkt_t, kN*(kStageCount + 1), 4096> qs("qs");
 
   task()
-      .invoke(Produce, mmap_in, n, q0)
-      .invoke(Stage, 2, q0, q1)
-      .invoke(Stage, 1, q1, q2)
-      .invoke(Stage, 0, q2, q3)
-      .invoke(Consume, mmap_out, n, q3);
+      .invoke(Produce, mmap_in, n, qs)
+      .invoke<tapa::join, kStageCount>(Stage, tapa::seq(), qs, qs)
+      .invoke(Consume, mmap_out, n, qs);
 }
