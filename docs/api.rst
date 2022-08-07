@@ -9,6 +9,9 @@ task
 .. doxygenstruct:: tapa::task
   :members:
 
+.. doxygenstruct:: tapa::seq
+  :members:
+
 The Streaming Library
 :::::::::::::::::::::
 
