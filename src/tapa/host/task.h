@@ -16,10 +16,6 @@ namespace tapa {
 
 namespace internal {
 
-struct seq {
-  int pos = 0;
-};
-
 template <typename Param, typename Arg>
 struct accessor {
   static Param access(Arg&& arg) { return arg; }
