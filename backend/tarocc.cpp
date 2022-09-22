@@ -477,7 +477,42 @@ void GetStreamInfo(const clang::Stmt* root, std::vector<StreamInfo>& arg_streams
 	}
 }
 
-void GetRefStream(const clang::Stmt* loop_body, std::vector<StreamInfo> arg_streams, std::vector<StreamInfo> & ref_stream ) 
+void GetPipeLoopList(const clang::Stmt* loop_body, std::vector<const clang::Stmt*> & loop_list ) 
+{
+	if( auto decl = dyn_cast<const clang::DeclRefExpr>(loop_body) ){
+#ifdef DEBUG
+		//cout << "GetPipeLoopList name: " << decl->getNameInfo().getName().getAsString() << endl;
+#endif
+	}
+
+	for (auto stmt : loop_body->children()) {
+		if (stmt == nullptr) {
+			continue;
+		}
+		GetPipeLoopList(stmt, loop_list); //check: should it be body?
+
+		if( const auto attr_stmt = dyn_cast<clang::AttributedStmt>(stmt) ){
+			auto sub_stmt = attr_stmt->getSubStmt();
+			if( IsStmtLoop(sub_stmt) ){
+#ifdef DEBUG
+				//cout << "Loop attr stmt found" << endl;
+#endif
+				auto attr_list = attr_stmt->getAttrs();
+
+				for (const auto* attr : attr_list) {
+					if (auto pipeline = llvm::dyn_cast<clang::TapaPipelineAttr>(attr)) {
+#ifdef DEBUG
+						//cout << "TAPA PIPELINE attribute found with II " << pipeline->getII() << endl;
+#endif
+						loop_list.push_back(sub_stmt);
+					}
+				}
+			}
+		}
+	}
+}
+
+void GetRefStream(const clang::Stmt* loop_body, std::vector<StreamInfo> arg_streams, std::vector<StreamInfo> & ref_stream) 
 {
 	if( auto decl = dyn_cast<const clang::DeclRefExpr>(loop_body) ){
 #ifdef DEBUG
@@ -517,6 +552,73 @@ void GetRefStream(const clang::Stmt* loop_body, std::vector<StreamInfo> arg_stre
 	}
 }
 
+bool GetFLRDRefStream(const clang::Stmt* cur_stmt, std::vector<StreamInfo> arg_streams, std::vector<StreamInfo> & ref_stream, bool & has_stream) 
+{
+	if( auto decl = dyn_cast<const clang::DeclRefExpr>(cur_stmt) ){
+#ifdef DEBUG
+		//cout << "GetFLRDRefStream name: " << decl->getNameInfo().getName().getAsString() << endl;
+#endif
+	}
+
+	bool isFL = true;
+
+	for (auto child_stmt : cur_stmt->children()) {
+		if (child_stmt == nullptr) {
+			continue;
+		}
+
+		if (const auto call_expr = dyn_cast<clang::CXXMemberCallExpr>(child_stmt)) {
+			const string callee = call_expr->getMethodDecl()->getNameAsString();
+			const string caller = GetNameOfFirst<clang::DeclRefExpr>(call_expr->getImplicitObjectArgument());
+			for (auto stream : arg_streams) {
+				if (stream.name == caller) {
+#ifdef DEBUG
+					//cout << "GetFLRDRefStream stream.name: " << caller << endl;
+#endif
+					if( stream.is_consumer == true ){
+						has_stream = true;
+
+						if( stream.is_non_blocking == true ){
+							isFL = false;
+						}
+
+						bool exists = false;
+						for(int i = 0; i < ref_stream.size(); i++ ){
+							if(stream.name == ref_stream[i].name){
+								exists = true;
+								isFL = false; //only one RD allowed per IS
+								break;
+							}
+						}
+						if( exists == false ){
+							ref_stream.push_back(stream);
+						}
+					}
+					break;
+				}
+			}
+		}
+		else{ 
+			bool child_has_stream = false;
+			bool isChildFL = GetFLRDRefStream(child_stmt, arg_streams, ref_stream, child_has_stream);
+			if( isChildFL == false ){
+				isFL = false;
+			}
+			if( child_has_stream == true ){
+				has_stream = true;
+			}
+		}
+	}
+
+	if( auto if_stmt = dyn_cast<clang::IfStmt>(cur_stmt) ){ // conditional access may not be properly blocked
+		if( has_stream == true ){
+			isFL = false;
+		}
+	}
+
+	return isFL;
+}
+
 
 void CheckFRDWR(const clang::Stmt* cur_stmt, bool & has_FWR, bool & is_FRD_blocked, bool & has_break_continue, bool & is_Pipe1Loop, std::vector<StreamInfo> arg_streams){
 	if( auto decl = dyn_cast<const clang::DeclRefExpr>(cur_stmt) ){
@@ -548,6 +650,8 @@ void CheckFRDWR(const clang::Stmt* cur_stmt, bool & has_FWR, bool & is_FRD_block
                 has_break_continue = true;
         }
 	else{
+		bool known_FRD_blocked = false;
+
 		const clang::Stmt* adj_stmt = cur_stmt;
 
 		if( const auto attr_stmt = dyn_cast<clang::AttributedStmt>(cur_stmt) ){
@@ -571,10 +675,11 @@ void CheckFRDWR(const clang::Stmt* cur_stmt, bool & has_FWR, bool & is_FRD_block
 					}
 				}
 			}
-
 		}
-
-		bool known_FRD_blocked = false;
+		else if( auto if_stmt = dyn_cast<clang::IfStmt>(cur_stmt) ){ // conditional access may not be properly blocked
+			is_FRD_blocked = false;
+			known_FRD_blocked = true;
+		}
 
 		for (auto child_stmt : adj_stmt->children()) {
 			if (child_stmt == nullptr) {
@@ -609,11 +714,106 @@ void CheckFRDWR(const clang::Stmt* cur_stmt, bool & has_FWR, bool & is_FRD_block
 	}
 }
 
-bool ApplyOpt( clang::Rewriter & rewriter_base, clang::Rewriter & rewriter_opt, const clang::Stmt* loop_stmt, std::vector<StreamInfo> arg_streams, bool is_Pipe1Loop){
+void ApplyOptPipe( clang::Rewriter & rewriter_base, clang::Rewriter & rewriter_opt, const clang::Stmt* loop_stmt, std::vector<StreamInfo> arg_streams, bool FL_only ){
 
 	auto loop_body = tapa::internal::GetLoopBody(loop_stmt);
 	auto cond_expr = GetLoopCond(loop_stmt);
 	auto init_stmt = GetLoopInit(loop_stmt);
+	auto inc_expr = GetLoopInc(loop_stmt);
+
+#ifdef DEBUG
+		cout << "Optimizing pipelined loop (FL_only:";
+		cout << (int)FL_only << ")" << endl;
+#endif
+		string base_loop_head;
+		string opt_loop_head;
+
+		std::vector<StreamInfo> ref_stream;
+		
+		bool has_stream = false;
+		bool isFL = GetFLRDRefStream(loop_body, arg_streams, ref_stream, has_stream); 
+		if( isFL == false ){
+			cout << "Error. This loop cannot be made FL. Exiting..." << endl;
+			exit(1);
+		}
+
+
+		string rd_avail;
+		for (const auto stream : ref_stream) {
+			if (stream.is_consumer && stream.is_blocking) {
+				if (!rd_avail.empty()) {
+					rd_avail += " && ";
+				}
+				rd_avail += "!" + stream.name + ".empty()";
+			}
+		}
+#ifdef DEBUG
+		cout << "read available condition : " << rd_avail << endl;
+#endif
+		if( !rd_avail.empty() ){
+
+			base_loop_head += "for(";
+
+			if( init_stmt != nullptr ){
+				string init_str = rewriter_base.getRewrittenText(init_stmt->getSourceRange());
+				base_loop_head += init_str;
+#ifdef DEBUG
+				cout << "init: " << init_str << endl;
+#endif
+			}
+			else{
+				base_loop_head += ";";
+			}
+
+			string cond_str;
+			if( cond_expr != nullptr ){
+				string cond_str = rewriter_base.getRewrittenText(cond_expr->getSourceRange());
+				base_loop_head += cond_str;
+#ifdef DEBUG
+				cout << "cond: " << cond_str << endl;
+#endif
+			}
+			base_loop_head += ";){";
+
+			if( inc_expr != nullptr ){
+				string inc_str = rewriter_base.getRewrittenText(inc_expr->getSourceRange());
+				inc_str += ";\n";
+				rewriter_base.InsertText(loop_body->getEndLoc(), inc_str);
+
+				if( FL_only == true ){
+					rewriter_opt.InsertText(loop_body->getEndLoc(), inc_str);
+				}
+#ifdef DEBUG
+				cout << "inc: " << inc_str << endl;
+#endif
+			}
+
+			string if_rd_avail = "\nif(" + rd_avail + "){";
+			base_loop_head += if_rd_avail;
+			opt_loop_head += if_rd_avail;
+			rewriter_base.InsertText(loop_body->getEndLoc(), "}\n");
+			rewriter_opt.InsertText(loop_body->getEndLoc(), "}\n");
+
+
+			clang::SourceRange LoopHead;
+			LoopHead.clang::SourceRange::setBegin(loop_stmt->getBeginLoc());
+			LoopHead.clang::SourceRange::setEnd(loop_body->getBeginLoc());
+			rewriter_base.ReplaceText(LoopHead, base_loop_head);
+
+			if( FL_only == true ){
+				rewriter_opt.ReplaceText(LoopHead, base_loop_head);
+			}
+			else{
+				rewriter_opt.InsertTextAfterToken(loop_body->getBeginLoc(), opt_loop_head);
+			}
+		}
+}
+
+bool ApplyOpt( clang::Rewriter & rewriter_base, clang::Rewriter & rewriter_opt, const clang::Stmt* loop_stmt, std::vector<StreamInfo> arg_streams, std::vector<const clang::Stmt*> & pipeloop_list, bool is_Pipe1Loop){
+
+	auto loop_body = tapa::internal::GetLoopBody(loop_stmt);
+	//auto cond_expr = GetLoopCond(loop_stmt);
+	//auto init_stmt = GetLoopInit(loop_stmt);
 	auto inc_expr = GetLoopInc(loop_stmt);
 
 
@@ -663,7 +863,7 @@ bool ApplyOpt( clang::Rewriter & rewriter_base, clang::Rewriter & rewriter_opt, 
 
 		if( child_is_FRD_blocked == true ){
 			if( IsStmtLoop(opt_child_stmt) == true ){
-				child_optimized = ApplyOpt( rewriter_base, rewriter_opt, opt_child_stmt, arg_streams, child_is_Pipe1Loop );
+				child_optimized = ApplyOpt( rewriter_base, rewriter_opt, opt_child_stmt, arg_streams, pipeloop_list, child_is_Pipe1Loop );
 #ifdef DEBUG
 				cout << "Optimizing child loop" << endl;
 #endif
@@ -671,7 +871,7 @@ bool ApplyOpt( clang::Rewriter & rewriter_base, clang::Rewriter & rewriter_opt, 
 			else if( const auto attr_stmt = dyn_cast<clang::AttributedStmt>(opt_child_stmt) ){
 				auto sub_stmt = attr_stmt->getSubStmt();
 				if( IsStmtLoop(sub_stmt) ){
-					child_optimized = ApplyOpt( rewriter_base, rewriter_opt, sub_stmt, arg_streams, child_is_Pipe1Loop );
+					child_optimized = ApplyOpt( rewriter_base, rewriter_opt, sub_stmt, arg_streams,pipeloop_list, child_is_Pipe1Loop );
 				}
 			}
 		}
@@ -698,74 +898,15 @@ bool ApplyOpt( clang::Rewriter & rewriter_base, clang::Rewriter & rewriter_opt, 
 	}
 
 	if( is_Pipe1Loop == true ){
-#ifdef DEBUG
-		cout << "Optimizing pipelined loop" << endl;
-#endif
-		string base_loop_head;
-		string opt_loop_head;
+		ApplyOptPipe( rewriter_base, rewriter_opt, loop_stmt, arg_streams, false );
 
-		std::vector<StreamInfo> ref_stream;
-		GetRefStream(loop_body, arg_streams, ref_stream );
-
-		string rd_avail;
-		for (const auto stream : ref_stream) {
-			if (stream.is_consumer && stream.is_blocking) {
-				if (!rd_avail.empty()) {
-					rd_avail += " && ";
-				}
-				rd_avail += "!" + stream.name + ".empty()";
-			}
+		auto loop_it = std::find( pipeloop_list.begin(), pipeloop_list.end(), loop_stmt );
+		if( loop_it == pipeloop_list.end() ){
+			cout << "Error. The loop not found in pipeloop list." << endl;
+			exit(1);
 		}
-#ifdef DEBUG
-		cout << "read available condition : " << rd_avail << endl;
-#endif
-		if( !rd_avail.empty() ){
-
-			base_loop_head += "for(";
-
-			if( init_stmt != nullptr ){
-				string init_str = rewriter_base.getRewrittenText(init_stmt->getSourceRange());
-				base_loop_head += init_str;
-#ifdef DEBUG
-				cout << "init: " << init_str << endl;
-#endif
-			}
-			else{
-				base_loop_head += ";";
-			}
-
-			string cond_str;
-			if( cond_expr != nullptr ){
-				string cond_str = rewriter_base.getRewrittenText(cond_expr->getSourceRange());
-				base_loop_head += cond_str;
-#ifdef DEBUG
-				cout << "cond: " << cond_str << endl;
-#endif
-			}
-			base_loop_head += ";){";
-
-			if( inc_expr != nullptr ){
-				string inc_str = rewriter_base.getRewrittenText(inc_expr->getSourceRange());
-				inc_str += ";\n";
-				rewriter_base.InsertText(loop_body->getEndLoc(), inc_str);
-#ifdef DEBUG
-				cout << "inc: " << inc_str << endl;
-#endif
-			}
-
-			string if_rd_avail = "\nif(" + rd_avail + "){";
-			base_loop_head += if_rd_avail;
-			opt_loop_head += if_rd_avail;
-			rewriter_base.InsertText(loop_body->getEndLoc(), "}\n");
-			rewriter_opt.InsertText(loop_body->getEndLoc(), "}\n");
-
-
-			clang::SourceRange LoopHead;
-			LoopHead.clang::SourceRange::setBegin(loop_stmt->getBeginLoc());
-			LoopHead.clang::SourceRange::setEnd(loop_body->getBeginLoc());
-			rewriter_base.ReplaceText(LoopHead, base_loop_head);
-
-			rewriter_opt.InsertTextAfterToken(loop_body->getBeginLoc(), opt_loop_head);
+		else{
+			pipeloop_list.erase(loop_it);
 		}
 	}
 
@@ -874,6 +1015,9 @@ class Consumer : public ASTConsumer {
 
 				GetStreamInfo(func_body, arg_streams);
 
+				std::vector<const clang::Stmt*> pipeloop_list;
+				GetPipeLoopList(func_body, pipeloop_list);
+
 				auto size = std::distance(func_body->children().begin(), func_body->children().end());
 				for( int i = 0 ; i < size; i++ ){
 					auto child_iter = func_body->children().begin();
@@ -904,12 +1048,12 @@ class Consumer : public ASTConsumer {
 					}
 					else{
 						if( IsStmtLoop(*child_iter) == true ){
-							ApplyOpt( rewriter_base, rewriter_opt, *child_iter, arg_streams, child_is_Pipe1Loop );
+							ApplyOpt( rewriter_base, rewriter_opt, *child_iter, arg_streams, pipeloop_list, child_is_Pipe1Loop );
 						}
 						else if( const auto attr_stmt = dyn_cast<clang::AttributedStmt>(*child_iter) ){
 							auto sub_stmt = attr_stmt->getSubStmt();
 							if( IsStmtLoop(sub_stmt) ){
-								ApplyOpt( rewriter_base, rewriter_opt, sub_stmt, arg_streams, child_is_Pipe1Loop );
+								ApplyOpt( rewriter_base, rewriter_opt, sub_stmt, arg_streams, pipeloop_list, child_is_Pipe1Loop );
 							}
 						}
 						else{
@@ -919,6 +1063,10 @@ class Consumer : public ASTConsumer {
 						}
 						break;
 					}
+				}
+	
+				for (auto loop : pipeloop_list) {
+					ApplyOptPipe( rewriter_base, rewriter_opt, loop, arg_streams, true );
 				}
 			}
 

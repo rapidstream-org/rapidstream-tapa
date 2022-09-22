@@ -304,16 +304,12 @@ void ptr_datacollect(
 #pragma HLS INLINE off
 	for (int row_counter = 0; row_counter < BLEN; row_counter++){
 		[[tapa::pipeline(1)]]
-		for (int col_counter = 0; col_counter < pe_col_id+1; col_counter++){
-			int ptr_in_data;
-			if( col_counter == pe_col_id ){
-				ptr_in_data = ptr_collect.read();
-			}
-			else{
-				ptr_in_data = ptr_trans_in.read();
-			}
+		for (int col_counter = 0; col_counter < pe_col_id; col_counter++){
+			int ptr_in_data = ptr_trans_in.read();
 			ptr_trans_out.write(ptr_in_data);
 		}
+		int ptr_in_data = ptr_collect.read();
+		ptr_trans_out.write(ptr_in_data);
 	}
 }
 
