@@ -7,33 +7,33 @@ namespace tapa {
 
 using default_addr_t = int;
 
-template <typename T, int elem_count, int part_count, typename addr_t>
+template <typename T, int part_count, typename addr_t>
 class buffer;
 
-template <typename T, int elem_count, int part_count,
-          typename addr_t = default_addr_t>
+template <typename T, int part_count, typename addr_t = default_addr_t>
 class partition {
  public:
-  T& operator[](addr_t i) {
+  operator T&() {
 #pragma HLS inline
-    T* ptr = &data.data[partition_id][i];
-    last = ptr;
-    return *ptr;
+    last = true;
+    return data.data[partition_id];
   }
 
-  const T& operator[](addr_t i) const {
+  operator const T&() const {
 #pragma HLS inline
-    last = &data.data[partition_id][i];
-    return *last;
+    last = true;
+    return data.data[partition_id];
   }
 
   ~partition() {
 #pragma HLS inline
-    data.sink.write({partition_id, *last});
+    if (last) {
+      data.sink.write(partition_id);
+    }
   }
 
  private:
-  using buffer_t = buffer<T, elem_count, part_count, addr_t>;
+  using buffer_t = buffer<T, part_count, addr_t>;
   friend buffer_t;
 
   partition(buffer_t& data) : data(data) {
@@ -43,26 +43,20 @@ class partition {
 
   buffer_t& data;
   int partition_id;
-  mutable const T* last = nullptr;
+  mutable volatile bool last = true;
 };
 
-template <typename T, int elem_count, int part_count,
-          typename addr_t = default_addr_t>
+template <typename T, int part_count, typename addr_t = default_addr_t>
 class buffer {
  public:
-  struct sink_elem_t {
-    int addr;
-    T val;
-  };
-
-  partition<T, elem_count, part_count, addr_t> acquire() {
+  partition<T, part_count, addr_t> acquire() {
 #pragma HLS inline
     return *this;
   }
 
-  hls::stream<int> src;
-  hls::stream<sink_elem_t> sink;
-  T data[part_count][elem_count];
+  hls::stream<addr_t> src;
+  hls::stream<addr_t> sink;
+  T data[part_count];
 };
 
 }  // namespace tapa
