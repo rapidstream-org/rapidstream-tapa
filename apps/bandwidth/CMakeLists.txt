@@ -20,6 +20,7 @@ if(SDx_FOUND)
 
   add_tapa_target(
     bandwidth-hw-xo
+    ${TAPA_ARGS}
     INPUT bandwidth.cpp
     TOP Bandwidth
     CONNECTIVITY ${CMAKE_CURRENT_SOURCE_DIR}/link_config.ini
@@ -27,6 +28,7 @@ if(SDx_FOUND)
 
   add_xocc_hw_link_targets(
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${VPP_ARGS}
     --config=${CMAKE_CURRENT_SOURCE_DIR}/link_config.ini
     INPUT bandwidth-hw-xo
     HW_EMU_XCLBIN
@@ -34,14 +36,9 @@ if(SDx_FOUND)
     HW_XCLBIN
     hw_xclbin
       --remote_ip_cache=$ENV{HOME}/.remote_ip_cache
-      --connectivity.sp=Bandwidth.m_axi_chan_0:DDR[0]
-      --connectivity.sp=Bandwidth.m_axi_chan_1:DDR[1]
-      --connectivity.sp=Bandwidth.m_axi_chan_2:DDR[2]
-      --connectivity.sp=Bandwidth.m_axi_chan_3:DDR[3]
       --vivado.prop
       run.impl_1.STRATEGY=Performance_EarlyBlockPlacement
-      --vivado.prop
-      run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=${CMAKE_CURRENT_SOURCE_DIR}/slr.tcl)
+  )
 
   add_custom_target(
     bandwidth-cosim
