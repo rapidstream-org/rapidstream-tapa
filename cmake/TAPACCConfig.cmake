@@ -109,6 +109,10 @@ function(add_tapa_target target_name)
     list(APPEND tapa_cmd --connectivity ${TAPA_CONNECTIVITY})
   endif()
 
+  # If we have to put unparsed arguments somewhere, this is the best place; most
+  # additional arguments are for `tapa synth` and `tapa optimize-floorplan`.
+  list(APPEND tapa_cmd ${TAPA_UNPARSED_ARGUMENTS})
+
   list(APPEND tapa_cmd link)
   if(TAPA_CONNECTIVITY AND TAPA_CONSTRAINT)
     list(APPEND tapa_cmd --floorplan-output ${TAPA_CONSTRAINT})
@@ -116,8 +120,6 @@ function(add_tapa_target target_name)
 
   list(APPEND tapa_cmd pack)
   list(APPEND tapa_cmd --output ${TAPA_OUTPUT})
-
-  list(APPEND tapa_cmd ${TAPA_UNPARSED_ARGUMENTS})
 
   add_custom_command(
     OUTPUT ${TAPA_OUTPUT}
