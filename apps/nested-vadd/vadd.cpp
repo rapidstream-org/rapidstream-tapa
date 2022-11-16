@@ -22,6 +22,10 @@ void Add(uint64_t n_int, tapa::istream<float>& a_int,
     }
   }
   c_int.close();
+
+  // Clear the eot tokens.
+  a_int.open();
+  b_int.open();
 }
 
 void Compute(uint64_t n_ext, tapa::istream<float>& a_ext,
@@ -63,6 +67,9 @@ void Store(tapa::istream<float>& stream, tapa::mmap<float> mmap, uint64_t n) {
   for (uint64_t i = 0; i < n; ++i) {
     mmap[i] = stream.read();
   }
+
+  // Clear the eot token.
+  stream.open();
 }
 
 void VecAddNested(tapa::mmap<float> a_array, tapa::mmap<float> b_array,
