@@ -120,7 +120,7 @@ jobs:
           packages_dir: backend/python/dist/
 
   cosim:
-    if: github.event_name == 'push' && github.repository == 'UCLA-VAST/tapa'
+    if: github.repository == 'UCLA-VAST/tapa'
 
     needs:
       - build-cpp
