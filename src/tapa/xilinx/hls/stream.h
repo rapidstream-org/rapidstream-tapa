@@ -5,6 +5,7 @@
 
 #ifdef __SYNTHESIS__
 
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
