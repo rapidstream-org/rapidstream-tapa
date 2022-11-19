@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <chrono>
 #include <memory>
+#include <type_traits>
 
 #include <frt.h>
 
@@ -160,6 +161,9 @@ struct task {
 
   template <int mode, typename Func, typename... Args, size_t name_size>
   task& invoke(Func&& func, const char (&name)[name_size], Args&&... args) {
+    static_assert(
+        std::is_function_v<typename std::remove_reference_t<Func>>,
+        "the first argument for tapa::task::invoke() must be a function");
     internal::invoker<Func>::template invoke<Args...>(
         /* detach= */ mode < 0, std::forward<Func>(func),
         std::forward<Args>(args)...);
