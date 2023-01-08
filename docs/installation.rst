@@ -151,6 +151,13 @@ This number should be adjusted according to your available cores and memory.
   sudo ln -sf "${PWD}"/../src/tapa{,.h} /usr/local/include/
   sudo ln -sf "${PWD}"/libtapa.{a,so} /usr/local/lib/
 
+.. note::
+
+  The compiler may not search ``/usr/local/lib`` for linking by default.
+  Consider adding ``/usr/local/lib`` to the ``LIBRARY_PATH`` environment
+  variable,
+  or adding ``-L/usr/local/lib`` to the compiler arguments for linking.
+
 Additional Build Prerequisites for Documentation
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
