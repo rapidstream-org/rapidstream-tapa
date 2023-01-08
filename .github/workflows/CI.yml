@@ -34,17 +34,17 @@ jobs:
       - name: Configure myself
         run: cmake -S . -B build -D CMAKE_BUILD_TYPE=Release
       - name: Cache llvm-src
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: build/_deps/llvm-src
           key: ${{ matrix.os }}-llvm-src-202206-2
       - name: Cache llvm-build
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: build/_deps/llvm-build
           key: ${{ matrix.os }}-llvm-build-202206-2
       - name: Cache llvm-subbuild
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: build/_deps/llvm-subbuild
           key: ${{ matrix.os }}-llvm-subbuild-202206-2
