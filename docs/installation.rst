@@ -104,6 +104,15 @@ Build and Installation
   git clone https://github.com/UCLA-VAST/tapa
   python3 -m pip install tapa/backend/python
 
+.. note::
+  If you encounter
+  ``FileNotFoundError: [Errno 2] No such file or directory: 'README.md'``,
+  please consider upgrading ``pip``:
+
+  .. code-block:: bash
+
+    python3 -m pip install pip --upgrade
+
 
 2. Create a build directory.
 
