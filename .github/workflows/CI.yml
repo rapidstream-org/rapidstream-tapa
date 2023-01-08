@@ -97,9 +97,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.6
+          python-version: "3.x"
       - name: Install build
         run: pip install --upgrade build
       - name: Checkout myself
