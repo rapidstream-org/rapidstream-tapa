@@ -9,6 +9,7 @@
 
 #include "clang/AST/AST.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 
 #include "nlohmann/json.hpp"

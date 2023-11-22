@@ -1,15 +1,17 @@
 include(FetchContent)
 FetchContent_Declare(
   llvm
-  URL "https://github.com/llvm/llvm-project/archive/llvmorg-8.0.1.tar.gz"
+  URL "https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-17.0.5.tar.gz"
   URL_HASH
-    "SHA512=6098efa217d6c5fcdf6d6cbc6051020e728bdbf6190ca3d5be90e9fc382b8d666f1649506f7b4b70abff6084481799eba0fb0a44ad82a0bedfab98ee855e8d22"
+    "SHA512=e33bbd67667fe70613776d676334535c0aa3f374a0ab73f3d41fa6881f154d65787ce65bed8a604001fe63e69f5978f9bc04c0ce535b457719b0c7bad0efa9ae"
   PATCH_COMMAND
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/Attr.td clang/include/clang/Basic/Attr.td
   COMMAND
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/Preprocessor.h clang/include/clang/Lex/Preprocessor.h
   COMMAND
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/PPDirectives.cpp clang/lib/Lex/PPDirectives.cpp
+  COMMAND
+    ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/Preprocessor.cpp clang/lib/Lex/Preprocessor.cpp
   COMMAND
     ln -sf ${CMAKE_CURRENT_LIST_DIR}/clang/SemaDeclAttr.cpp clang/lib/Sema/SemaDeclAttr.cpp
   COMMAND
@@ -22,7 +24,7 @@ if(NOT llvm_POPULATED)
     FetchContent_Populate(llvm)
     set(CMAKE_BUILD_TYPE Release)
     unset(CMAKE_CXX_CLANG_TIDY)
-    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD 17)
 
     # Disable unnecessary components to speed up build and reduce binary size.
     set(CLANG_ANALYZER_ENABLE_Z3_SOLVER OFF CACHE BOOL "" FORCE)

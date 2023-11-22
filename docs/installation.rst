@@ -87,9 +87,9 @@ Runtime Dependency
 
   * ``sudo apt install iverilog``
 
-* Clang 8 and its headers
+* Clang 17 and its headers
 
-  *  ``sudo apt install clang-8 libclang-8-dev``
+  * ``sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" 17 all``
 
 * Vitis 2020.2, 2021.1, or 2021.2
 * `Xilinx Runtime <https://github.com/Xilinx/XRT>`_
@@ -112,6 +112,14 @@ Build and Installation
   .. code-block:: bash
 
     python3 -m pip install pip --upgrade
+
+.. tip::
+  If you are installing TAPA for development, you may want to install the
+  Python part in editable mode instead:
+
+  .. code-block:: bash
+
+    python3 -m pip install -e tapa/backend/python
 
 
 2. Create a build directory.
@@ -142,6 +150,12 @@ This number should be adjusted according to your available cores and memory.
     cmake .. -GNinja
     ninja
     ninja test
+
+  If you are building for development, you may want to enable debug symbols:
+
+  .. code-block:: bash
+
+    cmake .. -DCMAKE_BUILD_TYPE=Debug
 
 4. Install TAPA.
 

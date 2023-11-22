@@ -8,6 +8,7 @@
 
 #include "clang/AST/AST.h"
 #include "clang/Lex/Lexer.h"
+#include "llvm/ADT/StringExtras.h"
 
 #include "nlohmann/json.hpp"
 
@@ -43,7 +44,6 @@ using clang::TemplateSpecializationType;
 using clang::VarDecl;
 
 using llvm::dyn_cast;
-using llvm::join;
 using llvm::StringRef;
 
 using nlohmann::json;
@@ -67,7 +67,8 @@ extern const string* top_name;
 const ExprWithCleanups* GetTapaTask(const Stmt* stmt) {
   for (auto child : stmt->children()) {
     if (auto expr = dyn_cast<ExprWithCleanups>(child)) {
-      if (expr->getType().getAsString() == "struct tapa::task") {
+      if (expr->getType().getCanonicalType().getAsString() ==
+          "struct tapa::task") {
         return expr;
       }
     }
@@ -310,8 +311,9 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         const auto ts_type =
             decl_ref->getType()->getAs<TemplateSpecializationType>();
         assert(ts_type != nullptr);
-        assert(ts_type->getNumArgs() > 1);
-        const auto length = this->EvalAsInt(ts_type->getArg(1).getAsExpr());
+        const auto ts_args = ts_type->template_arguments();
+        assert(ts_args.size() > 1);
+        const auto length = this->EvalAsInt(ts_args[1].getAsExpr());
         if (i >= length) {
           auto& diagnostics = context_.getDiagnostics();
           static const auto diagnostic_id =
@@ -345,7 +347,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
               dyn_cast<MaterializeTemporaryExpr>(arg);
           if (materialize_temporary) {
             const auto bind_temporary = dyn_cast<CXXBindTemporaryExpr>(
-                materialize_temporary->GetTemporaryExpr());
+                materialize_temporary->getSubExpr());
             if (bind_temporary) {
               op_call =
                   dyn_cast<CXXOperatorCallExpr>(bind_temporary->getSubExpr());

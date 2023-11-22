@@ -51,10 +51,12 @@ void BaseTarget::AddCodeForLowerLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForScalar(ADD_FOR_PARAMS_ARGS);
 }
 
-#define LINES_FUNCTIONS                                                      \
-  auto add_line = [&lines](llvm::StringRef line) { lines.push_back(line); }; \
-  auto add_pragma = [&lines](std::initializer_list<llvm::StringRef> args) {  \
-    lines.push_back("#pragma " + llvm::join(args, " "));                     \
+#define LINES_FUNCTIONS                                                     \
+  auto add_line = [&lines](llvm::StringRef line) {                          \
+    lines.push_back(line.str());                                            \
+  };                                                                        \
+  auto add_pragma = [&lines](std::initializer_list<llvm::StringRef> args) { \
+    lines.push_back("#pragma " + llvm::join(args, " "));                    \
   };
 
 std::vector<std::string> BaseTarget::GenerateCodeForTopLevelFunc(

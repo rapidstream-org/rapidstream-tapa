@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from typing import *
 
 import click
@@ -55,8 +56,10 @@ def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],
   cflags += ('-std=c++17',)
 
   flatten_files = run_flatten(tapa_clang, input, cflags, work_dir)
-  tapacc_cflags = find_tapacc_cflags(cflags)
-  graph_dict = run_tapacc(tapacc, flatten_files, top, tapacc_cflags)
+  tapacc_cflags, system_cflags = find_tapacc_cflags(tapacc, cflags)
+
+  graph_dict = run_tapacc(tapacc, flatten_files, top,
+                          tapacc_cflags + system_cflags)
   graph_dict['cflags'] = tapacc_cflags
 
   # Flatten the graph
@@ -109,14 +112,19 @@ def find_clang_binary(name: str, override: Optional[str]) -> str:
   return binary
 
 
-def find_tapacc_cflags(cflags: Tuple[str, ...]) -> Tuple[str, ...]:
+def find_tapacc_cflags(
+    tapacc: str, cflags: Tuple[str,
+                               ...]) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
   """Append tapa, system and vendor libraries to tapacc cflags.
 
   Args:
+    tapacc: The path of the tapacc binary.
     cflags: User-given CFLAGS.
 
   Returns:
-    CFLAGS with libraries for tapacc.
+    A tuple, the first element is the CFLAGS with vendor libraries for HLS,
+    including the tapa and HLS vnedor libraries, and the second element is
+    the CFLAGS for system libraries, such as clang and libc++.
 
   Raises:
     click.UsageError: Unable to find the include folders.
@@ -126,11 +134,15 @@ def find_tapacc_cflags(cflags: Tuple[str, ...]) -> Tuple[str, ...]:
   tapa_include = os.path.join(os.path.dirname(tapa.__file__), '..', '..', '..',
                               'src')
 
-  # Add system include files to tapacc cflags
-  clang_include = os.path.join(os.path.dirname(tapa.core.__file__), 'assets',
-                               'clang')
-  if not os.path.isdir(clang_include):
-    raise click.UsageError(f'missing clang include directory: {clang_include}')
+  # Find clang include location
+  tapacc_version = subprocess.check_output(
+      [tapacc, '-version'],
+      universal_newlines=True,
+  )
+  match = re.compile(R'LLVM version (\d+)(\.\d+)*').search(tapacc_version)
+  if match is None:
+    _logger.error(f'failed to parse tapacc output: {tapacc_version}')
+    sys.exit(-1)
 
   # Add vendor include files to tapacc cflags
   vendor_include_paths = ()
@@ -138,8 +150,16 @@ def find_tapacc_cflags(cflags: Tuple[str, ...]) -> Tuple[str, ...]:
     vendor_include_paths += ('-isystem', vendor_path)
     _logger.info('added vendor include path `%s`', vendor_path)
 
-  return cflags[:] + ('-I', tapa_include, '-isystem',
-                      clang_include) + vendor_include_paths
+  # Add system include files to tapacc cflags
+  system_includes = []
+  system_includes.extend(
+      ['-isystem', f"/usr/lib/llvm-{match[1]}/include/c++/v1/"])
+  system_includes.extend(
+      ['-isystem', f"/usr/include/clang/{match[1]}/include/"])
+  system_includes.extend(['-isystem', f"/usr/lib/clang/{match[1]}/include/"])
+
+  return (cflags[:] + ('-I', tapa_include) + vendor_include_paths,
+          tuple(system_includes))
 
 
 def run_and_check(cmd: Tuple[str, ...]) -> str:
@@ -225,4 +245,6 @@ def run_tapacc(tapacc: str, files: Tuple[str, ...], top: str,
 
   tapacc_args = ('-top', top, '--') + cflags
   tapacc_cmd = (tapacc,) + files + tapacc_args
+  _logger.info('Running tapacc command: %s', ' '.join(tapacc_cmd))
+
   return json.loads(run_and_check(tapacc_cmd))

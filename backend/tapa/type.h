@@ -66,7 +66,8 @@ inline std::string GetTemplateArgName(const clang::TemplateArgument& arg) {
   clang::LangOptions options;
   options.CPlusPlus = true;
   options.Bool = true;
-  arg.print(options, oss);
+  clang::PrintingPolicy policy(options);
+  arg.print(policy, oss, /* include_type */ false);
   return name;
 }
 

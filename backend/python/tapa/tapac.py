@@ -525,14 +525,10 @@ def main(argv: Optional[List[str]] = None):
     match = re.compile(R'LLVM version (\d+)(\.\d+)*').search(tapacc_version)
     if match is None:
       parser.error(f'failed to parse tapacc output: {tapacc_version}')
-    clang_include = os.path.join(
-        os.path.dirname(tapa.core.__file__),
-        'assets',
-        'clang',
-    )
-    if not os.path.isdir(clang_include):
-      parser.error(f'missing clang include directory: {clang_include}')
-    tapacc_cmd += '-isystem', clang_include
+
+    tapacc_cmd += '-isystem', f"/usr/lib/llvm-{match[1]}/include/c++/v1/"
+    tapacc_cmd += '-isystem', f"/usr/include/clang/{match[1]}/include/"
+    tapacc_cmd += '-isystem', f"/usr/lib/clang/{match[1]}/include/"
 
     # Append include paths that are automatically available in vendor tools.
     vendor_include_paths = []

@@ -4,6 +4,7 @@
 #include <string>
 
 #include "clang/AST/AST.h"
+#include "llvm/ADT/StringExtras.h"
 
 using std::regex;
 using std::regex_match;
@@ -27,8 +28,11 @@ const TemplateArgument* GetTemplateArg(QualType qual_type, int idx) {
       type = lv_ref->getPointeeType()->getAs<TemplateSpecializationType>();
     }
   }
-  if (type != nullptr && idx >= 0 && idx < type->getNumArgs()) {
-    return &type->getArg(idx);
+  if (type != nullptr) {
+    auto args = type->template_arguments();
+    if (idx >= 0 && idx < args.size()) {
+      return &(args.data()[idx]);
+    }
   }
   return nullptr;
 }

@@ -155,7 +155,7 @@ class Action : public ASTFrontendAction {
  public:
   unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance& compiler,
                                             StringRef file) override {
-    return llvm::make_unique<Consumer>(compiler.getASTContext(), funcs_);
+    return std::make_unique<Consumer>(compiler.getASTContext(), funcs_);
   }
 
  private:
@@ -171,7 +171,9 @@ static llvm::cl::opt<string> tapa_opt_top_name(
     llvm::cl::desc("Top-level task name"), llvm::cl::cat(tapa_option_category));
 
 int main(int argc, const char** argv) {
-  CommonOptionsParser parser{argc, argv, tapa_option_category};
+  auto expected_parser =
+      CommonOptionsParser::create(argc, argv, tapa_option_category);
+  auto& parser = expected_parser.get();
   ClangTool tool{parser.getCompilations(), parser.getSourcePathList()};
   string top_name{tapa_opt_top_name.getValue()};
   tapa::internal::top_name = &top_name;

@@ -4,6 +4,7 @@
 #include "clang/AST/AST.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "llvm/ADT/StringExtras.h"
 
 #define ADD_FOR_FUNC_ARGS_DEF                                           \
   const clang::FunctionDecl *func,                                      \
