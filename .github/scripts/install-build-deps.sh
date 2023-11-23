@@ -8,6 +8,7 @@ sudo apt-get install -y \
   libboost-stacktrace-dev \
   libgflags-dev \
   libgoogle-glog-dev \
+  libunwind-dev \
   python3-pip
 
 sudo apt-get autoremove -y

@@ -15,7 +15,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, ubuntu-20.04]
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
 
     steps:
       - name: Checkout myself
@@ -37,17 +39,17 @@ jobs:
         uses: actions/cache@v3
         with:
           path: build/_deps/llvm-src
-          key: ${{ matrix.os }}-llvm-src-202206-2
+          key: ${{ matrix.os }}-llvm-src-202311
       - name: Cache llvm-build
         uses: actions/cache@v3
         with:
           path: build/_deps/llvm-build
-          key: ${{ matrix.os }}-llvm-build-202206-2
+          key: ${{ matrix.os }}-llvm-build-202311
       - name: Cache llvm-subbuild
         uses: actions/cache@v3
         with:
           path: build/_deps/llvm-subbuild
-          key: ${{ matrix.os }}-llvm-subbuild-202206-2
+          key: ${{ matrix.os }}-llvm-subbuild-202311
       - name: Build myself
         run: cmake --build build --target all
       - name: Test myself
@@ -67,8 +69,8 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-18.04
           - ubuntu-20.04
+          - ubuntu-22.04
     needs:
       - build-cpp
     steps:
@@ -135,20 +137,10 @@ jobs:
       fail-fast: false
       matrix:
         xocl-platform:
-          - xilinx_u250_xdma_201830_2
+          - xilinx_u250_gen3x16_xdma_4_1_202210_1
         xocl-version:
-          - "2020.2"
-          - "2021.1"
-          - "2021.2"
-        include:
-          # Test different tool versions
-          - xocl-platform: xilinx_u250_xdma_201830_2
-          # Test a platform that does not support floorplanning yet
-          - xocl-platform: xilinx_u200_xdma_201830_2
-            xocl-version: "2021.2"
-          # Vitis 2022.1 requires this platform
-          - xocl-platform: xilinx_u250_gen3x16_xdma_4_1_202210_1
-            xocl-version: "2022.1"
+          - "2022.2"
+          - "2023.2"
 
     env:
       XILINX_HLS: /opt/tools/xilinx/Vitis_HLS/${{ matrix.xocl-version }}

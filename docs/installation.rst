@@ -28,8 +28,8 @@ you can easily install TAPA from pre-built packages:
 
 .. tip::
 
-  Ubuntu 18.04 and 20.04 are both supported.
-  Ubuntu 16.04 has reached end-of-life and is no longer supported.
+  Ubuntu 20.04 and 22.04 are both supported.
+  Ubuntu 16.04 and 18.04 has reached end-of-life and is no longer supported.
 
 .. tip::
 

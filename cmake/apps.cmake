@@ -17,4 +17,4 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wno-attributes")
 set(TAPA_CFLAGS "${TAPA_CFLAGS} -Wno-attributes")
-set(PLATFORM xilinx_u250_xdma_201830_2 CACHE STRING "Target FPGA platform")
+set(PLATFORM xilinx_u250_gen3x16_xdma_4_1_202210_1 CACHE STRING "Target FPGA platform")

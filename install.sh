@@ -60,7 +60,7 @@ function install-tapa-for-centos() {
 source /etc/os-release
 
 case "${ID}.${VERSION_ID}" in
-ubuntu.18.04 | ubuntu.20.04)
+ubuntu.20.04 | ubuntu.22.04)
   install-tapa-for-ubuntu "${UBUNTU_CODENAME}"
   ;;
 centos.7)
