@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-function install-tapa-for-ubuntu() {
-  local codename="$1"
+function install-tapa-ubuntu() {
+  local -r codename="$1"
+  local -r clang_version="$2"
 
   if ! which sudo >/dev/null; then
     apt-get update
@@ -18,6 +19,13 @@ function install-tapa-for-ubuntu() {
     python3-pip \
     wget
 
+  wget -O- https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor |
+    sudo tee /usr/share/keyrings/.llvm.gpg.tmp >/dev/null
+  sudo mv /usr/share/keyrings/.llvm.gpg.tmp /usr/share/keyrings/llvm.gpg
+  sudo tee /etc/apt/sources.list.d/llvm-${clang_version}.list <<EOF
+deb [signed-by=/usr/share/keyrings/llvm.gpg] http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${clang_version} main
+EOF
+
   wget -O- https://about.blaok.me/fpga-runtime/frt.gpg.key | gpg --dearmor |
     sudo tee /usr/share/keyrings/.frt.gpg.tmp >/dev/null
   sudo mv /usr/share/keyrings/.frt.gpg.tmp /usr/share/keyrings/frt.gpg
@@ -26,45 +34,44 @@ deb [arch=amd64 signed-by=/usr/share/keyrings/frt.gpg] https://about.blaok.me/fp
 EOF
   sudo apt-key del A3DB8B24636B33EE || true
 
-  wget -O- https://about.blaok.me/tapa/tapa.gpg.key | gpg --dearmor |
-    sudo tee /usr/share/keyrings/.tapa.gpg.tmp >/dev/null
-  sudo mv /usr/share/keyrings/.tapa.gpg.tmp /usr/share/keyrings/tapa.gpg
-  sudo tee /etc/apt/sources.list.d/tapa.list <<EOF
+  if [[ -z "${TAPA_DEB}" ]]; then
+    wget -O- https://about.blaok.me/tapa/tapa.gpg.key | gpg --dearmor |
+      sudo tee /usr/share/keyrings/.tapa.gpg.tmp >/dev/null
+    sudo mv /usr/share/keyrings/.tapa.gpg.tmp /usr/share/keyrings/tapa.gpg
+    sudo tee /etc/apt/sources.list.d/tapa.list <<EOF
 deb [arch=amd64 signed-by=/usr/share/keyrings/tapa.gpg] https://about.blaok.me/tapa ${codename} main
 EOF
-  sudo apt-key del 4F0F08E885049E30 || true
+    sudo apt-key del 4F0F08E885049E30 || true
+  fi
 
   sudo apt-get update
   sudo apt-get install -y xrt --no-install-recommends || true
-  sudo apt-get install -y tapa
+  if [[ -z "${TAPA_DEB}" ]]; then
+    sudo apt-get install -y tapa
+  else
+    sudo apt-get install -y -f "${TAPA_DEB}"
+  fi
 }
 
-function install-tapa-for-centos() {
-  local version="$1"
-
-  if ! type sudo >/dev/null 2>/dev/null; then
-    yum install -y sudo
+function install-tapa-python() {
+  python3 -m pip install --upgrade --user setuptools wheel
+  if [[ -z "${TAPA_WHL}" ]]; then
+    python3 -m pip install --upgrade --user tapa
+  else
+    python3 -m pip install --upgrade --user "${TAPA_WHL}"
   fi
 
-  if ! yum list installed epel-release >/dev/null 2>/dev/null; then
-    sudo yum install -y --setopt=skip_missing_names_on_install=False \
-      "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+  # check if PATH is correctly set
+  if ! which tapac >/dev/null; then
+    echo "*** Please add \"~/.local/bin\" to PATH ***" >&2
   fi
-
-  sudo yum install -y --setopt=skip_missing_names_on_install=False \
-    "https://github.com/Blaok/fpga-runtime/releases/latest/download/frt-devel.centos.${version}.x86_64.rpm" \
-    "https://github.com/Blaok/tapa/releases/latest/download/tapa.centos.${version}.x86_64.rpm" \
-    python3-pip
 }
 
 source /etc/os-release
 
 case "${ID}.${VERSION_ID}" in
 ubuntu.20.04 | ubuntu.22.04)
-  install-tapa-for-ubuntu "${UBUNTU_CODENAME}"
-  ;;
-centos.7)
-  install-tapa-for-centos "${VERSION_ID}"
+  install-tapa-ubuntu "${UBUNTU_CODENAME}" 17
   ;;
 *)
   echo "unsupported os" >&2
@@ -72,10 +79,4 @@ centos.7)
   ;;
 esac
 
-python3 -m pip install --upgrade --user setuptools wheel
-python3 -m pip install --upgrade --user tapa
-
-# check if PATH is correctly set
-if ! which tapac >/dev/null; then
-  echo "*** Please add \"~/.local/bin\" to PATH ***" >&2
-fi
+install-tapa-python

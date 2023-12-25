@@ -139,7 +139,6 @@ jobs:
         xocl-platform:
           - xilinx_u250_gen3x16_xdma_4_1_202210_1
         xocl-version:
-          - "2022.2"
           - "2023.2"
 
     env:
@@ -156,18 +155,15 @@ jobs:
           path: artifacts
       - name: Install dependencies
         run: |
-          .github/scripts/setup-self-hosted.sh
-
           sudo apt-get update
-          eval "$(grep ^VERSION_ID /etc/os-release)"
-          sudo apt-get install -y --no-install-recommends -f \
-            ./artifacts/tapa-cpp-ubuntu-"${VERSION_ID}"/*.deb
-          python3 -m pip install artifacts/tapa-python/*.whl
           sudo apt-get install -y --no-install-recommends \
-            xilinx-u200-xdma-dev \
-            xilinx-u250-xdma-dev \
-            xilinx-u250-gen3x16-xdma-4.1-202210-1-dev \
+            cmake \
 
+          eval "$(grep ^VERSION_ID /etc/os-release)"
+          env \
+            TAPA_DEB="$(ls ./artifacts/tapa-cpp-ubuntu-"${VERSION_ID}"/*.deb)" \
+            TAPA_WHL="$(ls artifacts/tapa-python/*.whl)" \
+            ./install.sh
       - name: Configure apps
         run: |
           for app in apps/*; do
@@ -180,7 +176,8 @@ jobs:
       - name: Test apps
         run: |
           source ${XILINX_VITIS}/settings64.sh
-          # Run all apps in parallel, each with a parallelism of $(nproc).
-          parallel -ij100 \
-            make -C apps/{}/build {}-cosim -j $(nproc) \
-            -- $(find apps -mindepth 1 -maxdepth 1 -type d -printf "%f\n")
+          {
+            printf 'all:\n'
+            find apps -mindepth 1 -maxdepth 1 -type d \
+              -printf '\t+$(MAKE) -C apps/%f/build %f-cosim\n'
+          } | make -f -
