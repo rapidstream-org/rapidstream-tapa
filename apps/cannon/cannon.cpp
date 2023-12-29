@@ -1,5 +1,5 @@
 #include <cassert>
-#include <cstring>
+#include <cstdint>
 
 #include <tapa.h>
 
@@ -75,19 +75,19 @@ void ProcElem(tapa::istream<float>& a_fifo, tapa::istream<float>& b_fifo,
   }
 
   for (int l = 0; l < p; ++l) {
-    for (uint64_t i = 0; i < kN / p; ++i) {
-      [[tapa::pipeline(1)]] for (uint64_t j = 0; j < kN / p; ++j) {
+    [[tapa::pipeline(1)]] for (int ij = 0; ij < kNumElems; ++ij) {
 #pragma HLS dependence false variable = c
-        float tmp = c[i * (kN / p) + j];
-        for (uint64_t k = 0; k < kN / p; ++k) {
-          tmp += a[i * (kN / p) + k] * b[k * (kN / p) + j];
-        }
-        c[i * (kN / p) + j] = tmp;
+      float tmp = 0.f;
+      const int i = ij / (kN / p);
+      const int j = ij % (kN / p);
+      for (int k = 0; k < kN / p; ++k) {
+        tmp += a[i * (kN / p) + k] * b[k * (kN / p) + j];
       }
+      c[ij] += tmp;
     }
-    for (uint64_t a_wr = 0, b_wr = 0, a_rd = 0, b_rd = 0;
-         a_wr < kNumElems || b_wr < kNumElems || a_rd < kNumElems ||
-         b_rd < kNumElems;) {
+    [[tapa::pipeline(1)]] for (uint64_t a_wr = 0, b_wr = 0, a_rd = 0, b_rd = 0;
+                               a_wr < kNumElems || b_wr < kNumElems ||
+                               a_rd < kNumElems || b_rd < kNumElems;) {
 #pragma HLS loop_tripcount min = kNumElems max = kNumElems
 #pragma HLS dependence false variable = a
 #pragma HLS dependence false variable = b
