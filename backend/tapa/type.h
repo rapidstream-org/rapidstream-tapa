@@ -1,9 +1,9 @@
 #ifndef TAPA_TYPE_H_
 #define TAPA_TYPE_H_
 
-#include <sstream>
+#include <cstdint>
 #include <string>
-#include <type_traits>
+#include <utility>
 
 #include "clang/AST/AST.h"
 
@@ -33,29 +33,40 @@ inline std::string GetArrayElem(const std::string& name, int idx) {
   return name + "_" + std::to_string(idx);
 }
 
-inline uint64_t GetArraySize(
+template <int idx>
+inline uint64_t GetIntegralTemplateArg(
     const clang::ClassTemplateSpecializationDecl* decl) {
-  return *decl->getTemplateArgs()[1].getAsIntegral().getRawData();
+  return *decl->getTemplateArgs()[idx].getAsIntegral().getRawData();
 }
-inline uint64_t GetArraySize(const clang::RecordDecl* decl) {
-  return GetArraySize(
+template <int idx>
+inline uint64_t GetIntegralTemplateArg(const clang::RecordDecl* decl) {
+  return GetIntegralTemplateArg<idx>(
       clang::dyn_cast<clang::ClassTemplateSpecializationDecl>(decl));
 }
-inline uint64_t GetArraySize(clang::QualType type);
-inline uint64_t GetArraySize(const clang::LValueReferenceType* decl) {
-  return GetArraySize(decl->getPointeeType());
+template <int idx>
+inline uint64_t GetIntegralTemplateArg(clang::QualType type);
+template <int idx>
+inline uint64_t GetIntegralTemplateArg(const clang::LValueReferenceType* decl) {
+  return GetIntegralTemplateArg<idx>(decl->getPointeeType());
 }
-inline uint64_t GetArraySize(clang::QualType type) {
+template <int idx>
+inline uint64_t GetIntegralTemplateArg(clang::QualType type) {
   if (auto ref = type->getAs<clang::LValueReferenceType>()) {
-    return GetArraySize(ref);
+    return GetIntegralTemplateArg<idx>(ref);
   }
   if (auto ref = type->getAsRecordDecl()) {
-    return GetArraySize(ref);
+    return GetIntegralTemplateArg<idx>(ref);
   }
   return 0;
 }
-inline uint64_t GetArraySize(const clang::ParmVarDecl* param) {
-  return GetArraySize(param->getType());
+template <int idx>
+inline uint64_t GetIntegralTemplateArg(const clang::ParmVarDecl* param) {
+  return GetIntegralTemplateArg<idx>(param->getType());
+}
+
+template <typename... Args>
+inline uint64_t GetArraySize(Args... args) {
+  return GetIntegralTemplateArg<1>(std::forward<Args>(args)...);
 }
 
 const clang::TemplateArgument* GetTemplateArg(clang::QualType type, int idx);

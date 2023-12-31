@@ -1,12 +1,9 @@
 #include "task.h"
 
-#include <cstdlib>
-#include <regex>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include "clang/AST/AST.h"
 #include "clang/Lex/Lexer.h"
 #include "llvm/ADT/StringExtras.h"
 
@@ -14,6 +11,7 @@
 
 #include "mmap.h"
 #include "stream.h"
+#include "type.h"
 
 using std::initializer_list;
 using std::string;
@@ -233,6 +231,16 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
       for (int i = 0; i < GetArraySize(param); ++i) {
         add_mmap_meta(param_name + "[" + to_string(i) + "]");
       }
+    } else if (IsTapaType(param, "hmap")) {
+      metadata["ports"].push_back({
+          {"name", param_name},
+          {"cat", "hmap"},
+          {"width",
+           GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
+          {"type", GetMmapElemType(param) + "*"},
+          {"chan_count", GetArraySize(param)},
+          {"chan_size", GetIntegralTemplateArg<2>(param)},
+      });
     } else if (IsStreamInterface(param)) {
       add_stream_meta(param_name);
     } else {

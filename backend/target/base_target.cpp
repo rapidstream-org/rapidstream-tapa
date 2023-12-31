@@ -69,7 +69,7 @@ std::vector<std::string> BaseTarget::GenerateCodeForTopLevelFunc(
       AddCodeForTopLevelStream(param, add_line, add_pragma);
     } else if (IsTapaType(param, "async_mmaps?")) {
       AddCodeForTopLevelAsyncMmap(param, add_line, add_pragma);
-    } else if (IsTapaType(param, "mmaps?")) {
+    } else if (IsTapaType(param, "(mmaps?|hmap)")) {
       AddCodeForTopLevelMmap(param, add_line, add_pragma);
     } else {
       AddCodeForTopLevelScalar(param, add_line, add_pragma);
@@ -93,7 +93,7 @@ std::vector<std::string> BaseTarget::GenerateCodeForMiddleLevelFunc(
       AddCodeForMiddleLevelStream(param, add_line, add_pragma);
     } else if (IsTapaType(param, "async_mmaps?")) {
       AddCodeForMiddleLevelAsyncMmap(param, add_line, add_pragma);
-    } else if (IsTapaType(param, "mmaps?")) {
+    } else if (IsTapaType(param, "(mmaps?|hmap)")) {
       AddCodeForMiddleLevelMmap(param, add_line, add_pragma);
     } else {
       AddCodeForMiddleLevelScalar(param, add_line, add_pragma);
@@ -114,7 +114,7 @@ std::vector<std::string> BaseTarget::GenerateCodeForLowerLevelFunc(
       AddCodeForLowerLevelStream(param, add_line, add_pragma);
     } else if (IsTapaType(param, "async_mmaps?")) {
       AddCodeForLowerLevelAsyncMmap(param, add_line, add_pragma);
-    } else if (IsTapaType(param, "mmaps?")) {
+    } else if (IsTapaType(param, "(mmaps?|hmap)")) {
       AddCodeForLowerLevelMmap(param, add_line, add_pragma);
     } else {
       AddCodeForLowerLevelScalar(param, add_line, add_pragma);

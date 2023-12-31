@@ -57,7 +57,7 @@ static void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {
 
 static void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {
   auto param_name = param->getNameAsString();
-  if (IsTapaType(param, "(async_)?mmaps")) {
+  if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
     for (int i = 0; i < GetArraySize(param); ++i) {
       add_line("{ auto val = reinterpret_cast<volatile uint8_t&>(" +
                GetArrayElem(param_name, i) + "); }");
@@ -86,7 +86,7 @@ void XilinxHLSTarget::AddCodeForTopLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 
 void XilinxHLSTarget::AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
   auto param_name = param->getNameAsString();
-  if (IsTapaType(param, "(async_)?mmaps")) {
+  if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
     for (int i = 0; i < GetArraySize(param); ++i) {
       add_pragma({"HLS interface s_axilite port =", GetArrayElem(param_name, i),
                   "bundle = control"});
@@ -193,6 +193,11 @@ void XilinxHLSTarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
     return;
   }
 
+  if (IsTapaType(param, "hmap")) {
+    add_line("#error hmap not supported for lower level tasks");
+    return;
+  }
+
   const auto name = param->getNameAsString();
   add_pragma(
       {"HLS interface m_axi port =", name, "offset = direct bundle =", name});
@@ -227,7 +232,7 @@ void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl *func,
       rewriter.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           "uint64_t ");
-    } else if (IsTapaType(param, "(async_)?mmaps")) {
+    } else if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
       std::string rewritten_text;
       for (int i = 0; i < GetArraySize(param); ++i) {
         if (!rewritten_text.empty()) rewritten_text += ", ";
