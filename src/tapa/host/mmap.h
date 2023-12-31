@@ -3,14 +3,10 @@
 
 #include <cstddef>
 
-#include <queue>
-#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
 #include <frt.h>
-
-#include "tapa/base/mmap.h"
 
 #include "tapa/host/coroutine.h"
 #include "tapa/host/stream.h"
@@ -155,7 +151,7 @@ class mmap {
              "sizeof(T) = "
           << sizeof(T) << ", sizeof(U) = " << sizeof(U);
     }
-    CHECK_EQ(reinterpret_cast<size_t>(get()) % alignof(U), 0)
+    CHECK_EQ(reinterpret_cast<std::size_t>(get()) % alignof(U), 0)
         << "data of mmap<T> must be " << alignof(U)
         << "-byte aligned when reinterpreted as mmap<U> (i.e., "
            "`reinterpret<U>()`) because alignof(U) = "
@@ -404,7 +400,7 @@ class mmaps {
                "sizeof(T) = "
             << sizeof(T) << ", sizeof(U) = " << sizeof(U);
       }
-      CHECK_EQ(reinterpret_cast<size_t>(mmaps_[i].get()) % alignof(U), 0)
+      CHECK_EQ(reinterpret_cast<std::size_t>(mmaps_[i].get()) % alignof(U), 0)
           << "data of mmap<T> must be " << alignof(U)
           << "-byte aligned when reinterpreted as mmap<U> (i.e., "
              "`reinterpret<U>()`) because alignof(U) = "
