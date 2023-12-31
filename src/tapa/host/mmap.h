@@ -2,6 +2,7 @@
 #define TAPA_HOST_MMAP_H_
 
 #include <cstddef>
+#include <cstdint>
 
 #include <type_traits>
 #include <vector>
@@ -425,6 +426,20 @@ class mmaps {
   }
 };
 
+template <typename T, int chan_count, int64_t chan_size>
+class hmap : public mmap<T> {
+ private:
+  using super = mmap<T>;
+
+ public:
+  hmap(const super& mem) : super(mem) {
+    CHECK_EQ(chan_size * chan_count, this->size())
+        << "hmap<T, " << chan_count << ", " << chan_size
+        << "> must have size = " << chan_size * chan_count << ", got "
+        << this->size();
+  }
+};
+
 // Host-only mmap types that must have correct size.
 #define TAPA_DEFINE_MMAP(tag)                          \
   template <typename T>                                \
@@ -514,25 +529,35 @@ struct accessor<async_mmap<T>&, mmaps<T, S>&> {
   }
 };
 
-#define TAPA_DEFINE_ACCESSER(tag, frt_tag)                     \
-  template <typename T>                                        \
-  struct accessor<mmap<T>, tag##_mmap<T>> {                    \
-    static mmap<T> access(tag##_mmap<T> arg) { return arg; }   \
-    static void access(fpga::Instance& instance, int& idx,     \
-                       tag##_mmap<T> arg) {                    \
-      auto buf = fpga::frt_tag(arg.get(), arg.size());         \
-      instance.SetArg(idx++, buf);                             \
-    }                                                          \
-  };                                                           \
-  template <typename T, uint64_t S>                            \
-  struct accessor<mmaps<T, S>, tag##_mmaps<T, S>> {            \
-    static void access(fpga::Instance& instance, int& idx,     \
-                       tag##_mmaps<T, S> arg) {                \
-      for (uint64_t i = 0; i < S; ++i) {                       \
-        auto buf = fpga::frt_tag(arg[i].get(), arg[i].size()); \
-        instance.SetArg(idx++, buf);                           \
-      }                                                        \
-    }                                                          \
+#define TAPA_DEFINE_ACCESSER(tag, frt_tag)                         \
+  template <typename T>                                            \
+  struct accessor<mmap<T>, tag##_mmap<T>> {                        \
+    static mmap<T> access(tag##_mmap<T> arg) { return arg; }       \
+    static void access(fpga::Instance& instance, int& idx,         \
+                       tag##_mmap<T> arg) {                        \
+      auto buf = fpga::frt_tag(arg.get(), arg.size());             \
+      instance.SetArg(idx++, buf);                                 \
+    }                                                              \
+  };                                                               \
+  template <typename T, uint64_t S>                                \
+  struct accessor<mmaps<T, S>, tag##_mmaps<T, S>> {                \
+    static void access(fpga::Instance& instance, int& idx,         \
+                       tag##_mmaps<T, S> arg) {                    \
+      for (uint64_t i = 0; i < S; ++i) {                           \
+        auto buf = fpga::frt_tag(arg[i].get(), arg[i].size());     \
+        instance.SetArg(idx++, buf);                               \
+      }                                                            \
+    }                                                              \
+  };                                                               \
+  template <typename T, int chan_count, int64_t chan_size>         \
+  struct accessor<hmap<T, chan_count, chan_size>, tag##_mmap<T>> { \
+    static void access(fpga::Instance& instance, int& idx,         \
+                       tag##_mmap<T> arg) {                        \
+      for (int i = 0; i < chan_count; ++i) {                       \
+        auto buf = fpga::frt_tag(&arg[i * chan_size], chan_size);  \
+        instance.SetArg(idx++, buf);                               \
+      }                                                            \
+    }                                                              \
   }
 TAPA_DEFINE_ACCESSER(placeholder, Placeholder);
 // read/write are with respect to the kernel in tapa but host in frt

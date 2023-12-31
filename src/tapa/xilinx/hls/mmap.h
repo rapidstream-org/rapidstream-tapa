@@ -29,6 +29,9 @@ struct async_mmap {
 template <typename T, uint64_t S>
 class mmaps;
 
+template <typename T, int chan_count, int64_t chan_size>
+class hmap;
+
 }  // namespace tapa
 
 #else  // __SYNTHESIS__
