@@ -1,5 +1,5 @@
 import enum
-from typing import TYPE_CHECKING, Iterator, Tuple, Union
+from typing import TYPE_CHECKING, Iterator, Optional, Tuple, Union
 
 from tapa import util
 from tapa.verilog import ast
@@ -91,6 +91,8 @@ class Instance:
       self.port = port
       self.width = None
       self.shared = False  # only set for (async) mmaps
+      self.chan_count: Optional[int] = None  # only set for hmap
+      self.chan_size: Optional[int] = None  # only set for hmap
 
     def __lt__(self, other):
       if isinstance(other, Instance.Arg):
@@ -99,10 +101,14 @@ class Instance:
 
     @property
     def mmap_name(self) -> str:
+      return self.get_mmap_name()
+
+    def get_mmap_name(self, idx: Optional[int] = None) -> str:
       assert self.cat in {Instance.Arg.Cat.MMAP, Instance.Arg.Cat.ASYNC_MMAP}
+      indexed_name = util.get_indexed_name(self.name, idx)
       if self.shared:
-        return f'{self.name}___{self.instance.name}___{self.port}'
-      return self.name
+        return f'{indexed_name}___{self.instance.name}___{self.port}'
+      return indexed_name
 
   def __init__(self, task: 'Task', instance_id: int, **kwargs):
     self.task = task
@@ -296,7 +302,13 @@ class Port:
         'scalar': Instance.Arg.Cat.SCALAR,
         'mmap': Instance.Arg.Cat.MMAP,
         'async_mmap': Instance.Arg.Cat.ASYNC_MMAP,
+        'hmap': Instance.Arg.Cat.MMAP,
     }[obj['cat']]
     self.name = rtl.sanitize_array_name(obj['name'])
     self.ctype = obj['type']
     self.width = obj['width']
+    self.chan_count = obj.get('chan_count')
+    self.chan_size = obj.get('chan_size')
+
+  def __str__(self) -> str:
+    return ', '.join(f'{k}: {v}' for k, v in self.__dict__.items())

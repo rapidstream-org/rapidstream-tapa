@@ -544,6 +544,7 @@ class Program:
       part_num: str,
       instance_name_to_slr: Dict[str, int],
   ) -> List[ast.Identifier]:
+    _logger.debug('  instantiating children tasks in %s', task.name)
     is_done_signals: List[rtl.Pipeline] = []
     arg_table: Dict[str, rtl.Pipeline] = {}
     async_mmap_args: Dict[Instance.Arg, List[str]] = collections.OrderedDict()
@@ -581,12 +582,18 @@ class Program:
           )
           arg_table[arg.name] = q
 
+          # If `arg` is an hmap, `arg.name` refers to the mmap offset, which
+          # needs to be set to 0. The actual address mapping will be handled
+          # between the AXI interconnect and the upstream M-AXI interface.
+          if arg.chan_count is not None:
+            id_name = "64'd0"
           # arg.name may be a constant
-          if arg.name in width_table:
+          elif arg.name in width_table:
             id_name = arg.name + argname_suffix
           else:
             id_name = arg.name
           task.module.add_pipeline(q, init=ast.Identifier(id_name))
+          _logger.debug("    pipelined signal: %s => %s", id_name, q.name)
 
         # arg.name is the upper-level name
         # arg.port is the lower-level name

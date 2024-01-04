@@ -4,6 +4,8 @@ This package defines constants and helper functions for verilog files generated
 for Xilinx devices.
 """
 
+import copy
+import logging
 import os
 import shutil
 import sys
@@ -13,6 +15,7 @@ from typing import IO, BinaryIO, Dict, Iterable, Iterator, List, TextIO, Union
 from haoda.backend import xilinx as backend
 
 import tapa.instance
+from tapa import util
 from tapa.verilog import ast
 # pylint: disable=wildcard-import,unused-wildcard-import
 from tapa.verilog.util import *
@@ -22,6 +25,8 @@ from tapa.verilog.xilinx.const import *
 from tapa.verilog.xilinx.m_axi import *
 from tapa.verilog.xilinx.module import *
 from tapa.verilog.xilinx.typing import *
+
+_logger = logging.getLogger().getChild(__name__)
 
 
 def ctrl_instance_name(top: str) -> str:
@@ -61,7 +66,14 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
      The .xo file is essentially a zip file, you could check the contents by
      unzip it.
   """
-  port_tuple = tuple(ports)
+  port_list = []
+  _logger.debug('RTL ports of %s:', top_name)
+  for port in ports:
+    for i in util.range_or_none(port.chan_count):
+      port_i = copy.copy(port)
+      port_i.name = util.get_indexed_name(port.name, i)
+      _logger.debug('  %s', port_i)
+      port_list.append(port_i)
   if isinstance(output_file, str):
     xo_file = output_file
   else:
@@ -69,7 +81,7 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
   with tempfile.NamedTemporaryFile(mode='w+',
                                    prefix='tapa_' + top_name + '_',
                                    suffix='_kernel.xml') as kernel_xml_obj:
-    print_kernel_xml(name=top_name, ports=port_tuple, kernel_xml=kernel_xml_obj)
+    print_kernel_xml(name=top_name, ports=port_list, kernel_xml=kernel_xml_obj)
     kernel_xml_obj.flush()
     with backend.PackageXo(
         xo_file=xo_file,
@@ -80,7 +92,7 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
             port.name: {
                 'HAS_BURST': '0',
                 'SUPPORTS_NARROW_BURST': '0',
-            } for port in port_tuple if port.cat.is_mmap
+            } for port in port_list if port.cat.is_mmap
         },
     ) as proc:
       stdout, stderr = proc.communicate()

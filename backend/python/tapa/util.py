@@ -5,7 +5,7 @@ import os.path
 import shutil
 import subprocess
 import time
-from typing import Dict, Iterator, Optional, TextIO, Tuple
+from typing import Dict, Iterator, Optional, TextIO, Tuple, Union
 
 import absl.logging
 import coloredlogs
@@ -30,6 +30,28 @@ def clang_format(code: str, *args: str) -> str:
     proc.check_returncode()
     return proc.stdout
   return code
+
+
+def get_indexed_name(name: str, idx: Optional[int]) -> str:
+  """Return `name` if `idx` is `None`, `f'{name}_{idx}'` otherwise."""
+  if idx is None:
+    return name
+  return f'{name}_{idx}'
+
+
+def range_or_none(count: Optional[int]) -> Union[Tuple[None], Iterator[int]]:
+  if count is None:
+    return (None,)
+  return range(count)
+
+
+def get_addr_width(chan_size: Optional[int], data_width: int) -> int:
+  if chan_size is None:
+    return 64
+  chan_size_in_bytes = chan_size * data_width // 8
+  addr_width = (chan_size_in_bytes - 1).bit_length()
+  assert 2**addr_width == chan_size * data_width // 8
+  return addr_width
 
 
 def get_instance_name(item: Tuple[str, int]) -> str:

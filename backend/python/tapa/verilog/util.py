@@ -15,6 +15,7 @@ __all__ = [
 class Pipeline:
 
   def __init__(self, name: str, level: int, width: Optional[int] = None):
+    self.name = name
     self.level = level
     self._ids = tuple(
         ast.Identifier(f'{name}__q%d' % i) for i in range(level + 1))
