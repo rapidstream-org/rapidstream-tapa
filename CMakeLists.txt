@@ -116,7 +116,9 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Task-Parallel High-Level Synthesis")
 list(
   APPEND
   CPACK_DEBIAN_PACKAGE_DEPENDS
+  "clang-17" # required by tapacc
   "g++" # required by tapac for dependence analysis
+  "libc++-17-dev" # required by tapacc
   "iverilog" # required by tapac for RTL instrumentation
   "libfrt-dev (>= 0.0.20220626.1)" # required by libtapa for host-kernel
                                    # interface

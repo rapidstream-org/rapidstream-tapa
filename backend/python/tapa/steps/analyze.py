@@ -151,7 +151,7 @@ def find_tapacc_cflags(
     _logger.info('added vendor include path `%s`', vendor_path)
 
   # Add system include files to tapacc cflags
-  system_includes = []
+  system_includes = ['-stdlib=libc++']
   system_includes.extend(
       ['-isystem', f"/usr/lib/llvm-{match[1]}/include/c++/v1/"])
   system_includes.extend(
