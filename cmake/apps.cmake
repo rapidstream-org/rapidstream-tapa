@@ -2,7 +2,7 @@ if(PROJECT_NAME STREQUAL "tapa")
   set(TAPA tapa)
   set(TAPA_CLI PYTHONPATH=${CMAKE_SOURCE_DIR}/backend/python python3 -m tapa.tapa)
   set(TAPACC $<TARGET_FILE:tapacc>)
-  set(TAPA_CLANG ${CMAKE_BINARY_DIR}/backend/tapa-clang)
+  set(TAPA_CLANG $<TARGET_FILE:clang>)
   include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/src")
 
   if(EXISTS "$ENV{XILINX_HLS}/include")
