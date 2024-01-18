@@ -30,8 +30,21 @@ _logger = logging.getLogger().getChild(__name__)
     default=False,
     help='Pipelining a FIFO whose source and destination are in the same region.'
 )
-def synth(ctx, part_num: Optional[str], platform: Optional[str],
-          clock_period: Optional[float], additional_fifo_pipelining: bool):
+@click.option('--skip-hls-based-on-mtime / --no-skip-hls-based-on-mtime',
+              type=bool,
+              default=False,
+              help=('Skip HLS if an output tarball exists '
+                    'and is newer than the source C++ file. '
+                    'This can lead to incorrect results; use at your own risk.')
+             )
+def synth(
+    ctx,
+    part_num: Optional[str],
+    platform: Optional[str],
+    clock_period: Optional[float],
+    additional_fifo_pipelining: bool,
+    skip_hls_based_on_mtime: bool,
+):
 
   program = tapa.steps.common.load_tapa_program()
   settings = tapa.steps.common.load_persistent_context('settings')
@@ -48,7 +61,7 @@ def synth(ctx, part_num: Optional[str], platform: Optional[str],
   settings['additional_fifo_pipelining'] = additional_fifo_pipelining
 
   # Generate RTL code
-  program.run_hls(clock_period, part_num)
+  program.run_hls(clock_period, part_num, skip_hls_based_on_mtime)
   program.generate_task_rtl(additional_fifo_pipelining, part_num)
 
   settings['synthed'] = True

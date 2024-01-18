@@ -176,8 +176,17 @@ class Program:
     check_mmap_arg_name(self._tasks.values())
 
     for task in self._tasks.values():
+      code_content = util.clang_format(task.code)
+      try:
+        with open(self.get_cpp(task.name), 'r') as src_code:
+          if src_code.read() == code_content:
+            _logger.debug('not updating %s since its content is up-to-date',
+                          src_code.name)
+            continue
+      except FileNotFoundError:
+        pass
       with open(self.get_cpp(task.name), 'w') as src_code:
-        src_code.write(util.clang_format(task.code))
+        src_code.write(code_content)
     for name, content in self.headers.items():
       header_path = os.path.join(self.cpp_dir, name)
       os.makedirs(os.path.dirname(header_path), exist_ok=True)
@@ -189,6 +198,7 @@ class Program:
       self,
       clock_period: Union[int, float, str],
       part_num: str,
+      skip_based_on_mtime: bool = False,
       other_configs: str = '',
   ) -> 'Program':
     """Run HLS with extracted HLS C++ files and generate tarballs."""
@@ -198,6 +208,16 @@ class Program:
 
     def worker(task: Task, idx: int) -> None:
       os.nice(idx % 19)
+      try:
+        if (skip_based_on_mtime and
+            os.path.getmtime(self.get_tar(task.name)) > os.path.getmtime(
+                self.get_cpp(task.name))):
+          _logger.info('skipping HLS for %s since %s is newer than %s',
+                       task.name, self.get_tar(task.name),
+                       self.get_cpp(task.name))
+          return
+      except OSError:
+        pass
       hls_cflags = ' '.join((
           self.cflags,
           *(f'-isystem {x}/../tps/lnx64/gcc-6.2.0/include/c++/6.2.0'
