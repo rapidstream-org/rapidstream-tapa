@@ -115,7 +115,7 @@ jobs:
           path: backend/python/dist/*.whl
       - name: Publish to PyPI
         if: github.event_name == 'push' && github.repository == 'Blaok/tapa' && startsWith(github.event.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}
