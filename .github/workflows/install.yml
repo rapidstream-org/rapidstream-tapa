@@ -1,15 +1,20 @@
 name: install
 
-on: page_build
+on:
+  - page_build
+  - workflow_dispatch
 
 jobs:
   build:
-    if: github.repository == 'Blaok/tapa'
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os:
+          - ubuntu:20.04
+          - ubuntu:22.04
 
     steps:
       - name: Checkout myself
