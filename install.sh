@@ -6,12 +6,12 @@ function install-tapa-ubuntu() {
   local -r clang_version="$2"
 
   if ! which sudo >/dev/null; then
-    apt-get update
-    apt-get install -y sudo
+    DEBIAN_FRONTEND=noninteractive apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
   fi
 
-  sudo apt-get update
-  sudo apt-get install -y \
+  sudo DEBIAN_FRONTEND=noninteractive apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
     apt-transport-https \
     ca-certificates \
     gnupg \
@@ -44,12 +44,12 @@ EOF
     sudo apt-key del 4F0F08E885049E30 || true
   fi
 
-  sudo apt-get update
-  sudo apt-get install -y xrt --no-install-recommends || true
+  sudo DEBIAN_FRONTEND=noninteractive apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y xrt --no-install-recommends || true
   if [[ -z "${TAPA_DEB}" ]]; then
-    sudo apt-get install -y tapa
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y tapa
   else
-    sudo apt-get install -y -f "${TAPA_DEB}"
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -f "${TAPA_DEB}"
   fi
 }
 
