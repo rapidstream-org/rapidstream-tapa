@@ -1,5 +1,6 @@
 import collections
 import decimal
+import glob
 import itertools
 import json
 import logging
@@ -11,8 +12,9 @@ import sys
 import tarfile
 import tempfile
 import xml.etree.ElementTree as ET
+import zipfile
 from concurrent import futures
-from typing import BinaryIO, Dict, List, Optional, TextIO, Tuple, Union
+from typing import Dict, List, Optional, TextIO, Tuple, Union
 
 import toposort
 import yaml
@@ -126,6 +128,10 @@ class Program:
     return os.path.join(self.work_dir, 'hdl')
 
   @property
+  def report_dir(self) -> str:
+    return os.path.join(self.work_dir, 'report')
+
+  @property
   def autobridge_dir(self) -> str:
     return os.path.join(self.work_dir, 'autobridge')
 
@@ -151,12 +157,12 @@ class Program:
                         rtl.RTL_SUFFIX)
 
   def get_post_syn_rpt(self, module_name: str) -> str:
-    return f'{self.work_dir}/report/{module_name}.hier.util.rpt'
+    return os.path.join(self.report_dir, f'{module_name}.hier.util.rpt')
 
   def _get_hls_report_xml(self, name: str) -> ET.ElementTree:
     tree = self._hls_report_xmls.get(name)
     if tree is None:
-      filename = os.path.join(self.work_dir, 'report', f'{name}_csynth.xml')
+      filename = os.path.join(self.report_dir, f'{name}_csynth.xml')
       self._hls_report_xmls[name] = tree = ET.parse(filename)
     return tree
 
@@ -462,12 +468,23 @@ class Program:
 
     return self
 
-  def pack_rtl(self, output_file: BinaryIO) -> 'Program':
+  def pack_rtl(self, output_file: str) -> 'Program':
     _logger.info('packaging RTL code')
-    rtl.pack(top_name=self.top,
-             ports=self.toplevel_ports,
-             rtl_dir=self.rtl_dir,
-             output_file=output_file)
+    with open(output_file, 'wb') as packed_obj:
+      rtl.pack(top_name=self.top,
+               ports=self.toplevel_ports,
+               rtl_dir=self.rtl_dir,
+               output_file=packed_obj)
+
+    _logger.info('packaging HLS report')
+    with zipfile.ZipFile(output_file, 'a', zipfile.ZIP_DEFLATED) as packed_obj:
+      report_glob = os.path.join(glob.escape(self.report_dir), '*_csynth.xml')
+      for filename in glob.iglob(report_glob):
+        arcname = os.path.join('report', os.path.basename(filename))
+        _logger.debug('  packing %s', arcname)
+        packed_obj.write(filename, arcname)
+
+    _logger.info('generated the v++ xo file at %s', output_file)
     return self
 
   def _populate_task(self, task: Task) -> None:

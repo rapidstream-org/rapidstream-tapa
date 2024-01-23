@@ -661,9 +661,7 @@ def main(argv: Optional[List[str]] = None):
 
   if all_steps or args.pack_xo is not None:
     try:
-      with open(args.output_file, 'wb') as packed_obj:
-        program.pack_rtl(packed_obj)
-        _logger.info('generate the v++ xo file at %s', args.output_file)
+      program.pack_rtl(args.output_file)
     except:
       _logger.error(
           'Fail to create the v++ xo file at %s. Check if you have write'
