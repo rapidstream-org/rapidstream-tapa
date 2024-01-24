@@ -434,6 +434,24 @@ class Module:
 
     self._filter(func, 'instance')
 
+  def add_rs_pragmas(self) -> 'Module':
+    """Add RapidStream pragmas for existing ports.
+
+    Note, this is based on port name suffix matching and may not be perfect.
+
+    Returns:
+        Module: self, for chaining.
+    """
+    items = []
+    for item in self._module_def.items:
+      if isinstance(item, ast.Decl):
+        items.append(with_rs_pragma(item))
+      else:
+        items.append(item)
+    self._module_def.items = tuple(items)
+    self._calculate_indices()
+    return self
+
   def del_pragmas(self, pragma: Iterable[str]) -> None:
 
     def func(item: ast.Node) -> bool:
@@ -591,10 +609,11 @@ class Module:
     for channel, ports in M_AXI_PORTS.items():
       io_ports = []
       for port, direction in ports:
-        io_ports.append((ast.Input if direction == 'input' else ast.Output)(
+        io_port = (ast.Input if direction == 'input' else ast.Output)(
             name=f'{M_AXI_PREFIX}{name}_{channel}{port}',
             width=get_m_axi_port_width(port, data_width, addr_width, id_width),
-        ))
+        )
+        io_ports.append(with_rs_pragma(io_port))
       self.add_ports(io_ports)
     return self
 
@@ -619,6 +638,7 @@ class Module:
             (HANDSHAKE_RST, HANDSHAKE_DONE, HANDSHAKE_IDLE, HANDSHAKE_READY)))
     self.add_pipeline(self.rst_n_q, init=RST_N)
     self.add_logics([ast.Assign(left=RST, right=ast.Unot(self.rst_n_q[-1]))])
+    self.add_rs_pragmas()
 
   def _get_nodes_of_type(self, node, *target_types) -> Iterator:
     if isinstance(node, target_types):
@@ -665,3 +685,53 @@ def generate_m_axi_ports(
       break
   else:
     raise ValueError(f'cannot find offset port for {port}')
+
+
+def get_rs_port(port: str) -> str:
+  """Return the RapidStream port for the given m_axi `port`."""
+  if port in {'READY', 'VALID'}:
+    return port.lower()
+  return 'data'
+
+
+def get_rs_pragma(node: Union[ast.Input, ast.Output]) -> Optional[ast.Pragma]:
+  """Return the RapidStream pragma for the given `node`."""
+  if isinstance(node, (ast.Input, ast.Output)):
+    if node.name == HANDSHAKE_CLK:
+      return ast.make_pragma('RS_CLK')
+
+    if node.name == HANDSHAKE_RST_N:
+      return ast.make_pragma('RS_RST', 'ff')
+
+    if node.name == 'interrupt':
+      return ast.make_pragma('RS_FF', node.name)
+
+    for channel, ports in M_AXI_PORTS.items():
+      for port, _ in ports:
+        if node.name.endswith(f'_{channel}{port}'):
+          return ast.make_pragma(
+              'RS_HS',
+              f'{node.name[:-len(port)]}.{get_rs_port(port)}',
+          )
+
+    _logger.error("not adding pragma for unknown port '%s'", node.name)
+
+  else:
+    raise ValueError(f'unexpected node: {node}')
+
+
+def with_rs_pragma(node: Union[ast.Input, ast.Output, ast.Decl]) -> ast.Decl:
+  """Return an `ast.Decl` with RapidStream pragma for the given `node`."""
+  items = []
+  if isinstance(node, (ast.Input, ast.Output)):
+    items.extend([get_rs_pragma(node), node])
+  elif isinstance(node, ast.Decl):
+    for item in node.list:
+      if isinstance(item, (ast.Input, ast.Output)):
+        items.append(get_rs_pragma(item))
+      # ast.Decl with other node types is OK.
+      items.append(item)
+  else:
+    raise ValueError(f'unexpected node: {node}')
+
+  return ast.Decl(tuple(x for x in items if x is not None))
