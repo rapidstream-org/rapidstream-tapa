@@ -126,11 +126,42 @@ from pyverilog.vparser.ast import (
     Xor,
 )
 
+# Please keep `make_*` functions sorted by their name.
+
 
 def make_block(statements: Union[Iterable[Node], Node], **kwargs) -> Block:
   if isinstance(statements, Node):
     statements = (statements,)
   return Block(statements=tuple(statements), **kwargs)
+
+
+def make_case_with_block(
+    comp: Node,
+    cases: Iterable[Tuple[Union[Iterable[Node], Node], Union[Iterable[Node],
+                                                             Node]]],
+) -> CaseStatement:
+  return CaseStatement(
+      comp=comp,
+      caselist=(Case(
+          cond=(cond,) if isinstance(cond, Node) else cond,
+          statement=make_block(statement),
+      ) for cond, statement in cases),
+  )
+
+
+def make_if_with_block(
+    cond: Node,
+    true: Union[Iterable[Node], Node],
+    false: Union[Iterable[Node], Node, None] = None) -> IfStatement:
+  if not (false is None or isinstance(false, IfStatement)):
+    false = make_block(false)
+  return IfStatement(cond=cond,
+                     true_statement=make_block(true),
+                     false_statement=false)
+
+
+def make_int(value: int, width: int = 0) -> IntConst:
+  return IntConst(f"{width or value.bit_length() or 1}'d{value}")
 
 
 def make_operation(operator: Type[Operator], nodes: Iterable[Node]) -> Operator:
@@ -168,36 +199,7 @@ def make_port_arg(port: str, arg: Union[str, Node]) -> PortArg:
                  argname=arg if isinstance(arg, Node) else Identifier(arg))
 
 
-def make_if_with_block(
-    cond: Node,
-    true: Union[Iterable[Node], Node],
-    false: Union[Iterable[Node], Node, None] = None) -> IfStatement:
-  if not (false is None or isinstance(false, IfStatement)):
-    false = make_block(false)
-  return IfStatement(cond=cond,
-                     true_statement=make_block(true),
-                     false_statement=false)
-
-
-def make_case_with_block(
-    comp: Node,
-    cases: Iterable[Tuple[Union[Iterable[Node], Node], Union[Iterable[Node],
-                                                             Node]]],
-) -> CaseStatement:
-  return CaseStatement(
-      comp=comp,
-      caselist=(Case(
-          cond=(cond,) if isinstance(cond, Node) else cond,
-          statement=make_block(statement),
-      ) for cond, statement in cases),
-  )
-
-
 def make_width(width: int) -> Optional[Width]:
   if width > 0:
     return Width(msb=IntConst(width - 1), lsb=IntConst(0))
   return None
-
-
-def make_int(value: int, width: int = 0) -> IntConst:
-  return IntConst(f"{width or value.bit_length() or 1}'d{value}")
