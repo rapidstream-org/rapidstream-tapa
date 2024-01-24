@@ -185,6 +185,12 @@ def make_operation(operator: Type[Operator], nodes: Iterable[Node]) -> Operator:
     return node
 
 
+def make_pragma(name: str, value: Optional[str] = None) -> Pragma:
+  if value is None:
+    return Pragma(PragmaEntry(name))
+  return Pragma(PragmaEntry(name, StringConst(value)))
+
+
 def make_port_arg(port: str, arg: Union[str, Node]) -> PortArg:
   """Make PortArg from port and arg names.
 
