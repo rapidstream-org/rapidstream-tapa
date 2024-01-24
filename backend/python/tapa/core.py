@@ -950,7 +950,13 @@ class Program:
     )
     self._instantiate_global_fsm(task, is_done_signals)
 
-    self._pipeline_top_task(task)
+    if instance_name_to_slr:
+      # if floorplan is enabled, pipeline the top-level task
+      self._pipeline_top_task(task)
+    else:
+      # otherwise, generate the top-level task as-is
+      with open(self.get_rtl(task.name), 'w') as rtl_code:
+        rtl_code.write(task.module.code)
 
   def _pipeline_top_task(self, task: Task) -> None:
     """
