@@ -825,7 +825,7 @@ class Program:
 
   def _instantiate_global_fsm(
       self,
-      task: Task,
+      module: rtl.Module,
       is_done_signals: List[rtl.Pipeline],
   ) -> None:
     # global state machine
@@ -839,7 +839,7 @@ class Program:
     countdown = ast.Identifier('countdown')
     countdown_width = (self.register_level - 1).bit_length()
 
-    task.module.add_signals([
+    module.add_signals([
         ast.Reg(rtl.STATE.name, width=ast.make_width(2)),
         ast.Reg(countdown.name, width=ast.make_width(countdown_width)),
     ])
@@ -898,7 +898,7 @@ class Program:
         ],
     )
 
-    task.module.add_logics([
+    module.add_logics([
         ast.Always(
             sens_list=rtl.CLK_SENS_LIST,
             statement=ast.make_block(
@@ -913,8 +913,8 @@ class Program:
         ast.Assign(left=rtl.READY, right=self.done_q[0]),
     ])
 
-    task.module.add_pipeline(self.start_q, init=rtl.START)
-    task.module.add_pipeline(self.done_q, init=is_state(STATE10))
+    module.add_pipeline(self.start_q, init=rtl.START)
+    module.add_pipeline(self.done_q, init=is_state(STATE10))
 
   def _instrument_non_top_upper_task(
       self,
@@ -935,7 +935,7 @@ class Program:
         part_num,
         {},
     )
-    self._instantiate_global_fsm(task, is_done_signals)
+    self._instantiate_global_fsm(task.module, is_done_signals)
 
     with open(self.get_rtl(task.name), 'w') as rtl_code:
       rtl_code.write(task.module.code)
@@ -965,7 +965,7 @@ class Program:
         part_num,
         instance_name_to_slr,
     )
-    self._instantiate_global_fsm(task, is_done_signals)
+    self._instantiate_global_fsm(task.module, is_done_signals)
 
     if instance_name_to_slr:
       # if floorplan is enabled, pipeline the top-level task
