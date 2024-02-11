@@ -223,11 +223,6 @@ class Instance:
     return ast.Eq(left=self.state, right=state)
 
   @property
-  def rst_n(self) -> ast.Identifier:
-    """The handshake synchronous active-low reset signal."""
-    return ast.Identifier(f'{self.name}__{rtl.HANDSHAKE_RST_N}')
-
-  @property
   def start(self) -> ast.Identifier:
     """The handshake start signal.
 

@@ -317,6 +317,7 @@ class Task:
     fifo_name = 'tapa_fifo_' + axis_name
     self.module.add_fifo_instance(
         name=fifo_name,
+        rst=rtl.RST,
         width=data_width + 1,
         depth=2,
         additional_fifo_pipelining=False,

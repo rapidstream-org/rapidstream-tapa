@@ -150,10 +150,6 @@ class Module:
   def register_level(self, level: int) -> None:
     self._register_level = level
 
-  @property
-  def rst_n_q(self) -> Pipeline:
-    return Pipeline(RST_N.name, level=self.register_level)
-
   def partition_count_of(self, fifo_name: str) -> int:
     """Get the partition count of each FIFO.
 
@@ -465,17 +461,16 @@ class Module:
   def add_fifo_instance(
       self,
       name: str,
+      rst: ast.Node,
       width: int,
       depth: int,
       additional_fifo_pipelining: bool,
   ) -> 'Module':
     name = sanitize_array_name(name)
-    rst_q = Pipeline(f'{name}__rst', level=self.register_level)
-    self.add_pipeline(rst_q, init=ast.Unot(RST_N))
 
     def ports() -> Iterator[ast.PortArg]:
       yield ast.make_port_arg(port='clk', arg=CLK)
-      yield ast.make_port_arg(port='reset', arg=rst_q[-1])
+      yield ast.make_port_arg(port='reset', arg=rst)
       yield from (
           ast.make_port_arg(port=port_name, arg=wire_name(name, arg_suffix))
           for port_name, arg_suffix in zip(FIFO_READ_PORTS, ISTREAM_SUFFIXES))
@@ -519,6 +514,7 @@ class Module:
       self,
       name: str,
       tags: Iterable[str],
+      rst: ast.Node,
       data_width: int,
       addr_width: int = 64,
       buffer_size: Optional[int] = None,
@@ -526,9 +522,6 @@ class Module:
       max_burst_len: Optional[int] = None,
       offset_name: str = '',
   ) -> 'Module':
-    rst_q = Pipeline(f'{name}__rst', level=self.register_level)
-    self.add_pipeline(rst_q, init=ast.Unot(RST_N))
-
     paramargs = [
         ast.ParamArg(paramname='DataWidth', argname=ast.Constant(data_width)),
         ast.ParamArg(paramname='DataWidthBytesLog',
@@ -536,7 +529,7 @@ class Module:
     ]
     portargs = [
         ast.make_port_arg(port='clk', arg=CLK),
-        ast.make_port_arg(port='rst', arg=rst_q[-1]),
+        ast.make_port_arg(port='rst', arg=rst),
     ]
     paramargs.append(
         ast.ParamArg(paramname='AddrWidth', argname=ast.Constant(addr_width)))
@@ -636,8 +629,10 @@ class Module:
     self.add_signals(
         map(ast.Wire,
             (HANDSHAKE_RST, HANDSHAKE_DONE, HANDSHAKE_IDLE, HANDSHAKE_READY)))
-    self.add_pipeline(self.rst_n_q, init=RST_N)
-    self.add_logics([ast.Assign(left=RST, right=ast.Unot(self.rst_n_q[-1]))])
+    self.add_logics([
+        # `s_axi_control` still uses `ap_rst_n_inv`.
+        ast.Assign(left=ast.Identifier(HANDSHAKE_RST), right=ast.Unot(RST_N)),
+    ])
     self.add_rs_pragmas()
 
   def _get_nodes_of_type(self, node, *target_types) -> Iterator:

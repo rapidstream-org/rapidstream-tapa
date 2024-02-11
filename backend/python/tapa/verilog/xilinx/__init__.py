@@ -40,10 +40,10 @@ def is_data_port(port: str) -> bool:
 
 def generate_handshake_ports(
     instance: tapa.instance.Instance,
-    rst_q: Pipeline,
+    rst: ast.Node,
 ) -> Iterator[ast.PortArg]:
   yield ast.make_port_arg(port=HANDSHAKE_CLK, arg=CLK)
-  yield ast.make_port_arg(port=HANDSHAKE_RST_N, arg=rst_q[-1])
+  yield ast.make_port_arg(port=HANDSHAKE_RST_N, arg=rst)
   yield ast.make_port_arg(port=HANDSHAKE_START, arg=instance.start)
   for port in HANDSHAKE_OUTPUT_PORTS:
     yield ast.make_port_arg(

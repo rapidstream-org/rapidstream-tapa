@@ -540,6 +540,7 @@ class Program:
       # add FIFO instances
       task.module.add_fifo_instance(
           name=fifo_name,
+          rst=rtl.RST,
           width=self._get_fifo_width(task, fifo_name),
           depth=fifo['depth'],
           additional_fifo_pipelining=additional_fifo_pipelining,
@@ -672,10 +673,6 @@ class Program:
                     data_width=width_table[arg.name],
                 ))
 
-      # add reset registers
-      rst_q = rtl.Pipeline(instance.rst_n, level=self.register_level)
-      task.module.add_pipeline(rst_q, init=rtl.RST_N)
-
       # add start registers
       start_q = rtl.Pipeline(
           f'{instance.start.name}_global',
@@ -690,7 +687,7 @@ class Program:
                 sens_list=rtl.CLK_SENS_LIST,
                 statement=ast.make_block(
                     ast.make_if_with_block(
-                        cond=ast.Unot(rst_q[-1]),
+                        cond=rtl.RST,
                         true=ast.NonblockingSubstitution(
                             left=instance.start,
                             right=rtl.FALSE,
@@ -757,7 +754,7 @@ class Program:
                 sens_list=rtl.CLK_SENS_LIST,
                 statement=ast.make_block(
                     ast.make_if_with_block(
-                        cond=ast.Unot(rst_q[-1]),
+                        cond=rtl.RST,
                         true=if_branch,
                         false=else_branch,
                     )),
@@ -774,7 +771,7 @@ class Program:
       task.module.add_signals(instance.handshake_signals)
 
       # add task module instances
-      portargs = list(rtl.generate_handshake_ports(instance, rst_q))
+      portargs = list(rtl.generate_handshake_ports(instance, rtl.RST_N))
       for arg in instance.args:
         if arg.cat.is_scalar:
           portargs.append(
@@ -826,6 +823,7 @@ class Program:
             name=arg.mmap_name,
             offset_name=arg_table[arg.name][-1],
             tags=async_mmap_args[arg],
+            rst=rtl.RST,
             data_width=width_table[arg.name],
             addr_width=addr_width,
         )
