@@ -386,7 +386,7 @@ class Program:
 
   def generate_top_rtl(
       self,
-      constraint: TextIO,
+      constraint: Optional[TextIO],
       register_level: int,
       additional_fifo_pipelining: bool,
       part_num: str,
@@ -405,7 +405,7 @@ class Program:
     task_inst_to_slr = {}
 
     # extract the floorplan result
-    if constraint:
+    if constraint is not None:
       (
           fifo_pipeline_level,
           axi_pipeline_level,
@@ -436,7 +436,7 @@ class Program:
     if register_level:
       assert register_level > 0
       self.top_task.module.register_level = register_level
-    else:
+    elif constraint is not None:
       if is_part_num_supported(part_num):
         self.top_task.module.register_level = get_slr_count(part_num)
       else:
