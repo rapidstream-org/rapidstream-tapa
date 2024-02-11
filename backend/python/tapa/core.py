@@ -578,7 +578,6 @@ class Program:
       self,
       task: Task,
       width_table: Dict[str, int],
-      part_num: str,
       instance_name_to_slr: Dict[str, int],
   ) -> List[ast.Identifier]:
     _logger.debug('  instantiating children tasks in %s', task.name)
@@ -932,7 +931,6 @@ class Program:
     is_done_signals = self._instantiate_children_tasks(
         task,
         width_table,
-        part_num,
         {},
     )
     self._instantiate_global_fsm(task.module, is_done_signals)
@@ -962,7 +960,6 @@ class Program:
     is_done_signals = self._instantiate_children_tasks(
         task,
         width_table,
-        part_num,
         instance_name_to_slr,
     )
     self._instantiate_global_fsm(task.module, is_done_signals)
