@@ -1,5 +1,5 @@
 import enum
-from typing import TYPE_CHECKING, Iterator, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Iterator, Optional, Tuple, Type, Union
 
 from tapa import util
 from tapa.verilog import ast
@@ -267,19 +267,87 @@ class Instance:
     return getattr(self, signal)
 
   @property
-  def handshake_signals(self) -> Iterator[Union[ast.Wire, ast.Reg]]:
-    """All handshake signals used for this instance.
+  def _public_handshake_tuples(
+      self
+  ) -> Iterator[Tuple[
+      Optional[ast.Pragma],  # `None` means `ast.make_pragma('RS_FF', name)`
+      Union[Type[ast.Reg], Type[ast.Wire]],  # signal_type
+      Union[Type[ast.Input], Type[ast.Output]],  # port_type
+      str,  # name
+  ]]:
+    """Public handshake information tuples used for this instance."""
+    if self.is_autorun:
+      yield (
+          None,
+          ast.Reg,
+          ast.Output,
+          self.start.name,
+      )
+    else:
+      yield (
+          ast.make_pragma('RS_AP_CTRL', f'{self.name}.{rtl.HANDSHAKE_START}'),
+          ast.Wire,
+          ast.Output,
+          self.start.name,
+      )
+      yield (
+          ast.make_pragma('RS_AP_CTRL', f'{self.name}.{rtl.HANDSHAKE_READY}'),
+          ast.Wire,
+          ast.Input,
+          rtl.wire_name(self.name, rtl.HANDSHAKE_READY),
+      )
+      yield (
+          None,
+          ast.Wire,
+          ast.Input,
+          rtl.wire_name(self.name, rtl.HANDSHAKE_DONE),
+      )
+      yield (
+          None,
+          ast.Wire,
+          ast.Input,
+          rtl.wire_name(self.name, rtl.HANDSHAKE_IDLE),
+      )
+
+  @property
+  def public_handshake_ports(self) -> Iterator[ast.Decl]:
+    """Public handshake IO ports used for this instance.
+
+    These include all public IO ports like `ap_start` and `ap_done`.
+
+    Yields:
+      ast.Decl of IO ports.
+    """
+    for pragma, _, port_type, name in self._public_handshake_tuples:
+      if pragma is None:
+        pragma = ast.make_pragma('RS_FF', name)
+      yield ast.Decl((pragma, port_type(name)))
+
+  @property
+  def public_handshake_signals(self) -> Iterator[Union[ast.Wire, ast.Reg]]:
+    """Public handshake signals used for this instance.
+
+    These include all public signals like `ap_start` and `ap_done`.
 
     Yields:
       Union[ast.Wire, ast.Reg] of signals.
     """
-    if self.is_autorun:
-      yield ast.Reg(name=self.start.name, width=None)
-    else:
-      yield ast.Wire(name=self.start.name, width=None)
+    for _, signal_type, _, name in self._public_handshake_tuples:
+      yield signal_type(name)
+
+  @property
+  def all_handshake_signals(self) -> Iterator[Union[ast.Wire, ast.Reg]]:
+    """All handshake signals used for this instance.
+
+    These include both public signals like `ap_start` and `ap_done`, and any
+    private state signals.
+
+    Yields:
+      Union[ast.Wire, ast.Reg] of signals.
+    """
+    yield from self.public_handshake_signals
+    if not self.is_autorun:
       yield ast.Reg(name=self.state.name, width=ast.make_width(2))
-      yield from (ast.Wire(name=rtl.wire_name(self.name, suffix), width=None)
-                  for suffix in rtl.HANDSHAKE_OUTPUT_PORTS)
 
   def get_instance_arg(self, arg: str) -> str:
     if "'d" in arg:

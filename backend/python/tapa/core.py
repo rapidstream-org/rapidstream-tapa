@@ -605,6 +605,30 @@ class Program:
     else:
       scalar_register_level = self.register_level
 
+    fsm_portargs: List[ast.PortArg] = [
+        ast.make_port_arg(x, x)
+        for x in rtl.HANDSHAKE_INPUT_PORTS + rtl.HANDSHAKE_OUTPUT_PORTS
+    ]
+    task.fsm_module.add_ports([
+        ast.Decl((ast.make_pragma('RS_CLK'), ast.Input(rtl.HANDSHAKE_CLK))),
+        ast.Decl((
+            ast.make_pragma('RS_RST', 'ff'),
+            ast.Input(rtl.HANDSHAKE_RST_N),
+        )),
+        ast.Decl((
+            ast.make_pragma('RS_AP_CTRL', f'{task.name}.{rtl.HANDSHAKE_START}'),
+            ast.Input(rtl.HANDSHAKE_START),
+        )),
+        ast.Decl((
+            ast.make_pragma('RS_AP_CTRL', f'{task.name}.{rtl.HANDSHAKE_READY}'),
+            ast.Output(rtl.HANDSHAKE_READY),
+        )),
+        *(ast.Decl((
+            ast.make_pragma('RS_FF', rtl.wire_name(task.name, x)),
+            ast.Output(x),
+        )) for x in (rtl.HANDSHAKE_DONE, rtl.HANDSHAKE_IDLE)),
+    ])
+
     for instance in task.instances:
       # connect to the control_s_axi in the corresponding SLR
       if instance.name in instance_name_to_slr:
@@ -678,11 +702,11 @@ class Program:
           f'{instance.start.name}_global',
           level=self.register_level,
       )
-      task.module.add_pipeline(start_q, self.start_q[0])
+      task.fsm_module.add_pipeline(start_q, self.start_q[0])
 
       if instance.is_autorun:
         # autorun modules start when the global start signal is asserted
-        task.module.add_logics([
+        task.fsm_module.add_logics([
             ast.Always(
                 sens_list=rtl.CLK_SENS_LIST,
                 statement=ast.make_block(
@@ -712,8 +736,8 @@ class Program:
             f'{instance.done.name}_global',
             level=self.register_level,
         )
-        task.module.add_pipeline(is_done_q, instance.is_state(STATE10))
-        task.module.add_pipeline(done_q, self.done_q[0])
+        task.fsm_module.add_pipeline(is_done_q, instance.is_state(STATE10))
+        task.fsm_module.add_pipeline(done_q, self.done_q[0])
 
         if_branch = (instance.set_state(STATE00))
         else_branch = ((
@@ -749,7 +773,7 @@ class Program:
                 ),
             ),
         ))
-        task.module.add_logics([
+        task.fsm_module.add_logics([
             ast.Always(
                 sens_list=rtl.CLK_SENS_LIST,
                 statement=ast.make_block(
@@ -768,7 +792,13 @@ class Program:
         is_done_signals.append(is_done_q)
 
       # insert handshake signals
-      task.module.add_signals(instance.handshake_signals)
+      fsm_portargs.extend(
+          ast.make_port_arg(x.name, x.name)
+          for x in instance.public_handshake_signals)
+      task.module.add_signals(
+          ast.Wire(x.name, x.width) for x in instance.public_handshake_signals)
+      task.fsm_module.add_signals(instance.all_handshake_signals)
+      task.fsm_module.add_ports(instance.public_handshake_ports)
 
       # add task module instances
       portargs = list(rtl.generate_handshake_ports(instance, rtl.RST_N))
@@ -827,6 +857,12 @@ class Program:
             data_width=width_table[arg.name],
             addr_width=addr_width,
         )
+
+      task.module.add_instance(
+          module_name=task.fsm_module.name,
+          instance_name='__tapa_fsm_unit',
+          ports=fsm_portargs,
+      )
 
     return is_done_signals
 
@@ -971,7 +1007,10 @@ class Program:
         width_table,
         instance_name_to_slr,
     )
-    self._instantiate_global_fsm(task.module, is_done_signals)
+    self._instantiate_global_fsm(task.fsm_module, is_done_signals)
+
+    with open(self.get_rtl(task.fsm_module.name), 'w') as rtl_code:
+      rtl_code.write(task.fsm_module.code)
 
     if instance_name_to_slr:
       # if floorplan is enabled, pipeline the top-level task

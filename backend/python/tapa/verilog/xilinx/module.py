@@ -54,9 +54,25 @@ class Module:
   # module_def.items should contain the following attributes, in that order.
   _ATTRS = 'param', 'io_port', 'signal', 'logic', 'instance'
 
-  def __init__(self, files: Iterable[str], is_trimming_enabled: bool = False):
+  def __init__(
+      self,
+      files: Iterable[str] = (),
+      is_trimming_enabled: bool = False,
+      name: str = '',
+  ):
     """Construct a Module from files. """
     if not files:
+      if not name:
+        raise ValueError('`files` and `name` cannot both be empty')
+      self.ast = ast.Source(
+          name,
+          ast.Description([
+              ast.ModuleDef(name, ast.Paramlist(()), ast.Portlist(()), items=())
+          ]),
+      )
+      self.directives = ()
+      self._handshake_output_ports: Dict[str, ast.Assign] = {}
+      self._calculate_indices()
       return
     with tempfile.TemporaryDirectory(prefix='pyverilog-') as output_dir:
       if is_trimming_enabled:

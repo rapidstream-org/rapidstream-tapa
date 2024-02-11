@@ -31,6 +31,7 @@ class Task:
     fifos: A dict mapping child fifo names to json FIFO description objects.
     ports: A dict mapping port names to Port objects for the current task.
     module: rtl.Module, should be attached after RTL code is generated.
+    fsm_module: rtl.Module of the finite state machine (upper-level only).
 
   Properties:
     is_upper: bool, True if this task is an upper-level task.
@@ -69,7 +70,8 @@ class Task:
           sorted((item for item in kwargs.pop('fifos').items()),
                  key=lambda x: x[0]))
       self.ports = {i.name: i for i in map(Port, kwargs.pop('ports', ()))}
-    self.module = rtl.Module('')
+      self.fsm_module = rtl.Module(name=f'{self.name}_fsm')
+    self.module = rtl.Module(name=self.name)
     self._instances: Optional[Tuple[Instance, ...]] = None
     self._args: Optional[Dict[str, List[Instance.Arg]]] = None
     self._mmaps: Optional[Dict[str, MMapConnection]] = None
