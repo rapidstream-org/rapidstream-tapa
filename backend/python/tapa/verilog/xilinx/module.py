@@ -304,15 +304,16 @@ class Module:
         init (ast.Node): Value used to drive the first stage of the pipeline.
     """
     self.add_signals(q.signals)
-    self.add_logics((
-        ast.Always(
-            sens_list=CLK_SENS_LIST,
-            statement=ast.make_block(
-                ast.NonblockingSubstitution(left=q[i + 1], right=q[i])
-                for i in range(q.level)),
-        ),
-        ast.Assign(left=q[0], right=init),
-    ))
+    logics = [ast.Assign(left=q[0], right=init)]
+    if q.level > 0:
+      logics.append(
+          ast.Always(
+              sens_list=CLK_SENS_LIST,
+              statement=ast.make_block(
+                  ast.NonblockingSubstitution(left=q[i + 1], right=q[i])
+                  for i in range(q.level)),
+          ))
+    self.add_logics(logics)
 
   def del_signals(self, prefix: str = '', suffix: str = '') -> None:
 
