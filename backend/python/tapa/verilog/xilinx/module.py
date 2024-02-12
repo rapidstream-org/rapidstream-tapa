@@ -360,7 +360,7 @@ class Module:
       self,
       module_name: str,
       instance_name: str,
-      ports: Iterable[ast.ParamArg],
+      ports: Iterable[ast.PortArg],
       params: Iterable[ast.ParamArg] = ()
   ) -> 'Module':
     keep_hier_pragma = '(* keep_hierarchy = "yes" *) '
