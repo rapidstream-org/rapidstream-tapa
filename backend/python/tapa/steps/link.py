@@ -26,7 +26,18 @@ _logger = logging.getLogger().getChild(__name__)
     help='Use a specific register level of top-level scalar signals '
     'instead of inferring from the floorplanning directive.',
 )
-def link(ctx, floorplan_output: Optional[str], register_level: int):
+@click.option(
+    '--print-fifo-ops / --no-print-fifo-ops',
+    type=bool,
+    default=False,
+    help='Print all FIFO operations in cosim.',
+)
+def link(
+    ctx,
+    floorplan_output: Optional[str],
+    register_level: int,
+    print_fifo_ops: bool,
+):
 
   program = tapa.steps.common.load_tapa_program()
   settings = tapa.steps.common.load_persistent_context('settings')
@@ -59,6 +70,7 @@ def link(ctx, floorplan_output: Optional[str], register_level: int):
       register_level,
       settings['additional_fifo_pipelining'],
       settings['part_num'],
+      print_fifo_ops,
   )
 
   settings['linked'] = True

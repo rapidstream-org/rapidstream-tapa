@@ -390,6 +390,7 @@ class Program:
       register_level: int,
       additional_fifo_pipelining: bool,
       part_num: str,
+      print_fifo_ops: bool = False,
   ) -> 'Program':
     """Instrument HDL files generated from HLS.
 
@@ -450,8 +451,13 @@ class Program:
 
     # instrument the top-level RTL
     _logger.info('instrumenting top-level RTL')
-    self._instrument_top_task(self.top_task, part_num, task_inst_to_slr,
-                              additional_fifo_pipelining)
+    self._instrument_top_task(
+        self.top_task,
+        part_num,
+        task_inst_to_slr,
+        additional_fifo_pipelining,
+        print_fifo_ops,
+    )
 
     _logger.info('generating report')
     task_report = self.top_task.report
@@ -514,6 +520,7 @@ class Program:
       self,
       task: Task,
       additional_fifo_pipelining: bool,
+      print_fifo_ops: bool = False,
   ) -> None:
     _logger.debug('  instantiating FIFOs in %s', task.name)
 
@@ -537,6 +544,9 @@ class Program:
           depth=fifo['depth'],
           additional_fifo_pipelining=additional_fifo_pipelining,
       )
+
+      if not print_fifo_ops:
+        continue
 
       # print debugging info
       debugging_blocks = []
@@ -943,7 +953,8 @@ class Program:
       task: Task,
       part_num: str,
       instance_name_to_slr: Dict[str, int],
-      additional_fifo_pipelining: bool = False,
+      additional_fifo_pipelining: bool,
+      print_fifo_ops: bool,
   ) -> None:
     """ codegen for the top task """
     assert task.is_upper
@@ -954,7 +965,7 @@ class Program:
       num_slr = get_slr_count(part_num)
       duplicate_s_axi_ctrl(task, num_slr)
 
-    self._instantiate_fifos(task, additional_fifo_pipelining)
+    self._instantiate_fifos(task, additional_fifo_pipelining, print_fifo_ops)
     self._connect_fifos(task)
     width_table = {port.name: port.width for port in task.ports.values()}
     is_done_signals = self._instantiate_children_tasks(
