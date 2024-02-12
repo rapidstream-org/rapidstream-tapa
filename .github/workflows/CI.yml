@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout myself
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Restore timestamp for patched clang files
         run: |
           for file in backend/clang/*; do
@@ -36,17 +36,17 @@ jobs:
       - name: Configure myself
         run: cmake -S . -B build -D CMAKE_BUILD_TYPE=Release
       - name: Cache llvm-src
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/_deps/llvm-src
           key: ${{ matrix.os }}-llvm-src-202311
       - name: Cache llvm-build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/_deps/llvm-build
           key: ${{ matrix.os }}-llvm-build-202311
       - name: Cache llvm-subbuild
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/_deps/llvm-subbuild
           key: ${{ matrix.os }}-llvm-subbuild-202311
@@ -57,7 +57,7 @@ jobs:
       - name: Package myself
         run: cmake --build build --target package
       - name: Upload deb package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tapa-cpp-${{ matrix.os }}
           path: build/*.deb
@@ -75,14 +75,14 @@ jobs:
       - build-cpp
     steps:
       - name: Checkout myself
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: tapa-cpp-${{ matrix.os }}
           path: build
       - name: Cache APT database
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: apt-db-cache
           key: ${{ runner.os }}-apt-db-cache
@@ -99,17 +99,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Install build
         run: pip install --upgrade build
       - name: Checkout myself
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Build myself
         run: python -m build backend/python
       - name: Upload whl package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tapa-python
           path: backend/python/dist/*.whl
@@ -148,9 +148,9 @@ jobs:
 
     steps:
       - name: Checkout myself
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Install dependencies

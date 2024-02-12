@@ -18,6 +18,6 @@ jobs:
 
     steps:
       - name: Checkout myself
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Install from script
         run: ./install.sh
