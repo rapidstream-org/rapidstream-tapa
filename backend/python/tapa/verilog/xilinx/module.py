@@ -3,7 +3,16 @@ import itertools
 import logging
 import os.path
 import tempfile
-from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Tuple,
+    Union,
+    get_args,
+)
 
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import parser
@@ -285,15 +294,31 @@ class Module:
     self._module_def.items = tuple(filter(func, self._module_def.items))
     self._calculate_indices()
 
-  def add_ports(self, ports: Iterable[IOPort]) -> 'Module':
-    port_tuple = tuple(ports)
+  def add_ports(self, ports: Iterable[Union[IOPort, ast.Decl]]) -> 'Module':
+    """Add IO ports to this module.
+
+    Each port could be an `IOPort`, or an `ast.Decl` that has a single `IOPort`
+    prefixed with 0 or more `ast.Pragma`s.
+    """
+    decl_list = []
+    port_list = []
+    for port in ports:
+      if isinstance(port, ast.Decl):
+        decl_list.append(port)
+        port_list.extend(
+            x for x in port.list if isinstance(x, get_args(IOPort)))
+      elif isinstance(port, get_args(IOPort)):
+        decl_list.append(ast.Decl((port,)))
+        port_list.append(port)
+      else:
+        raise ValueError(f'unexpected port `{port}`')
     self._module_def.portlist.ports += tuple(
         ast.Port(name=port.name, width=None, dimensions=None, type=None)
-        for port in port_tuple)
+        for port in port_list)
     self._module_def.items = (self._module_def.items[:self._next_io_port_idx] +
-                              port_tuple +
+                              tuple(decl_list) +
                               self._module_def.items[self._next_io_port_idx:])
-    self._increment_idx(len(port_tuple), 'io_port')
+    self._increment_idx(len(decl_list), 'io_port')
     return self
 
   def add_signals(self, signals: Iterable[Signal]) -> 'Module':
