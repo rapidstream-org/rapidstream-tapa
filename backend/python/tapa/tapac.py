@@ -1,23 +1,24 @@
 #!/usr/bin/python3
 import argparse
 import io
-import json
 import logging
-import os
-import os.path
-import re
-import shutil
-import subprocess
+import shlex
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
+import click
 import haoda.backend.xilinx
 from absl import flags
 
 import tapa.core
+import tapa.steps.analyze
+import tapa.steps.dse
+import tapa.steps.link
+import tapa.steps.optimize
+import tapa.steps.pack
+import tapa.steps.synth
+import tapa.tapa
 import tapa.util
-from tapa.bitstream import get_vitis_script
-from tapa.floorplan_dse import run_floorplan_dse
 from tapa.hardware import is_part_num_supported
 
 _logger = logging.getLogger().getChild(__name__)
@@ -479,212 +480,68 @@ def main(argv: Optional[List[str]] = None):
 
   tapa.util.setup_logging(args.verbose, args.quiet, args.work_dir)
 
-  _logger.info('tapa version: %s', tapa.__version__)
-
-  # RTL parsing may require a deep stack
-  sys.setrecursionlimit(flags.FLAGS.recursionlimit)
-  _logger.info('Python recursion limit set to %d', flags.FLAGS.recursionlimit)
-
-  all_steps, last_step = parse_steps(args, parser)
-
-  cflag_list = ['-std=c++17'] + args.cflags
-
+  argv = []
   if args.run_floorplan_dse:
-    _logger.info('Floorplan DSE is enabled')
-    run_floorplan_dse(args)
-    return
-
-  if all_steps or args.run_tapacc is not None:
-    tapacc_cmd = []
-    # set tapacc executable
-    if args.tapacc is None:
-      tapacc = shutil.which('tapacc')
-    else:
-      tapacc = args.tapacc
-    if tapacc is None:
-      parser.error('cannot find tapacc')
-    tapacc_cmd += tapacc, args.input_file
-
-    # set top-level task name
-    if args.top is None:
-      parser.error('tapacc cannot run without --top')
-    tapa_include_dir = os.path.join(
-        os.path.dirname(tapa.__file__),
-        '..',
-        '..',
-        '..',
-        'src',
-    )
-    tapacc_cmd += '-top', args.top, '--', '-I', tapa_include_dir
-
-    # find clang include location
-    tapacc_version = subprocess.check_output(
-        [tapacc, '-version'],
-        universal_newlines=True,
-    )
-    match = re.compile(R'LLVM version (\d+)(\.\d+)*').search(tapacc_version)
-    if match is None:
-      parser.error(f'failed to parse tapacc output: {tapacc_version}')
-
-    tapacc_cmd.append('-stdlib=libc++')
-    tapacc_cmd += '-isystem', f"/usr/lib/llvm-{match[1]}/include/c++/v1/"
-    tapacc_cmd += '-isystem', f"/usr/include/clang/{match[1]}/include/"
-    tapacc_cmd += '-isystem', f"/usr/lib/clang/{match[1]}/include/"
-
-    # Append include paths that are automatically available in vendor tools.
-    vendor_include_paths = []
-    for vendor_path in tapa.util.get_vendor_include_paths():
-      vendor_include_paths += ['-isystem', vendor_path]
-      _logger.info('added vendor include path `%s`', vendor_path)
-    tapacc_cmd += vendor_include_paths
-
-    tapacc_cmd += cflag_list
-
-    proc = subprocess.run(tapacc_cmd,
-                          stdout=subprocess.PIPE,
-                          universal_newlines=True,
-                          check=False)
-    if proc.returncode != 0:
-      _logger.error(
-          'tapacc command %s failed with exit code %d',
-          tapacc_cmd,
-          proc.returncode,
-      )
-      parser.exit(status=proc.returncode)
-    tapa_program_json_dict = json.loads(proc.stdout)
-
-    # Use -MM to find all user headers
-    input_file_basename = os.path.basename(args.input_file)
-    input_file_dirname = os.path.dirname(args.input_file) or '.'
-    deps: str = subprocess.check_output([
-        os.environ.get('CXX', 'g++'),
-        '-MM',
-        input_file_basename,
-        '-I',
-        tapa_include_dir,
-        *vendor_include_paths,
-        *cflag_list,
-    ],
-                                        cwd=input_file_dirname,
-                                        universal_newlines=True)
-    # partition -MM output at '.o: '
-    deps = deps.rstrip('\n').partition('.o: ')[-1].replace('\\\n', ' ')
-    # split at non-escaped space and replace escaped spaces with spaces
-    dep_set = {x.replace('\\ ', ' ') for x in re.split(r'(?<!\\) ', deps)}
-    dep_set = set(
-        filter(
-            lambda x: not os.path.isabs(x) and x not in {
-                '',
-                input_file_basename,
-                os.path.join(tapa_include_dir, 'tapa.h'),
-            }, dep_set))
-    for dep in dep_set:
-      tapa_program_json_dict.setdefault('headers', {})
-      with open(os.path.join(input_file_dirname, dep), 'r') as dep_fp:
-        tapa_program_json_dict['headers'][dep] = dep_fp.read()
-    tapa_program_json_dict['cflags'] = cflag_list
-    tapa_program_json_str = json.dumps(tapa_program_json_dict, indent=2)
-
-    # save program.json if work_dir is set or run_tapacc is the last step
-    if args.work_dir is not None or last_step == 'run_tapacc':
-      if last_step == 'run_tapacc':
-        tapa_program_json_file = args.output_file
-      else:
-        tapa_program_json_file = os.path.join(args.work_dir, 'program.json')
-      os.makedirs(os.path.dirname(tapa_program_json_file) or '.', exist_ok=True)
-      with open(tapa_program_json_file, 'w') as output_fp:
-        output_fp.write(tapa_program_json_str)
-    tapa_program_json = lambda: tapa_program_json_dict
+    argv.append('dse-floorplan')
+    for param in tapa.steps.dse.dse_floorplan.params:
+      argv.extend(_to_argv(args, param))
   else:
-    if args.input_file.endswith('.json') or args.work_dir is None:
-      tapa_program_json = lambda: json.load(args.input_file)
-    else:
-      tapa_program_json = lambda: json.load(
-          open(os.path.join(args.work_dir, 'program.json'), 'r'))
+    for param in tapa.tapa.entry_point.params:
+      argv.extend(_to_argv(args, param))
 
-  tapa_program_json_obj = tapa_program_json()
-  program = tapa.core.Program(tapa_program_json_obj, work_dir=args.work_dir)
+    all_steps, _ = parse_steps(args, parser)
 
-  if args.frt_interface is not None and program.frt_interface is not None:
-    with open(args.frt_interface, 'w') as output_fp:
-      output_fp.write(program.frt_interface)
+    if all_steps or args.run_tapacc is not None:
+      argv.append('analyze')
+      for param in tapa.steps.analyze.analyze.params:
+        argv.extend(_to_argv(args, param))
 
-  if all_steps or args.run_hls is not None:
-    program.run_hls(**_get_device_info(parser, args),
-                    other_configs=args.other_hls_configs)
+    if (all_steps or args.run_hls is not None or
+        args.generate_task_rtl is not None):
+      argv.append('synth')
+      for param in tapa.steps.synth.synth.params:
+        argv.extend(_to_argv(args, param))
 
-  if all_steps or args.generate_task_rtl is not None:
-    program.generate_task_rtl(
-        args.additional_fifo_pipelining,
-        _get_device_info(parser, args)['part_num'],
-    )
+    if ((all_steps or args.run_floorplanning is not None) and
+        args.floorplan_output is not None):
+      argv.append('optimize-floorplan')
+      for param in tapa.steps.optimize.optimize_floorplan.params:
+        argv.extend(_to_argv(args, param))
 
-    if args.enable_synth_util:
-      program.generate_post_synth_task_area(
-          _get_device_info(parser, args)['part_num'],
-          args.max_parallel_synth_jobs,
-      )
+    if all_steps or args.generate_top_rtl is not None:
+      argv.append('link')
+      for param in tapa.steps.link.link.params:
+        argv.extend(_to_argv(args, param))
 
-  if all_steps or args.run_floorplanning is not None:
-    if args.floorplan_output is not None:
-      kwargs = {}
-      floorplan_params = (
-          'min_area_limit',
-          'max_area_limit',
-          'min_slr_width_limit',
-          'max_slr_width_limit',
-          'max_search_time',
-          'floorplan_strategy',
-          'floorplan_opt_priority',
-          'enable_hbm_binding_adjustment',
-      )
-      for param in floorplan_params:
-        if hasattr(args, param):
-          kwargs[param] = getattr(args, param)
+    if all_steps or args.pack_xo is not None:
+      argv.append('pack')
+      for param in tapa.steps.pack.pack.params:
+        argv.extend(_to_argv(args, param))
 
-      program.run_floorplanning(
-          _get_device_info(parser, args)['part_num'],
-          args.connectivity,
-          args.floorplan_pre_assignments,
-          read_only_args=args.read_only_args,
-          write_only_args=args.write_only_args,
-          **kwargs,
-      )
+  _logger.info('running translated command: `tapa %s`', shlex.join(argv))
+  tapa.tapa.entry_point(argv)  # pylint: disable=no-value-for-parameter
 
-  if all_steps or args.generate_top_rtl is not None:
-    program.generate_top_rtl(
-        args.floorplan_output,
-        args.register_level or 0,
-        args.additional_fifo_pipelining,
-        _get_device_info(parser, args)['part_num'],
-    )
 
-  if all_steps or args.pack_xo is not None:
-    try:
-      program.pack_rtl(args.output_file)
-    except:
-      _logger.error(
-          'Fail to create the v++ xo file at %s. Check if you have write'
-          'permission', args.output_file)
+def _to_argv(args: argparse.Namespace, param: click.Parameter) -> List[str]:
+  """Translate a click `param` to a list of arguments."""
+  if param.name in ('input', 'output'):
+    param_name = f'{param.name}_file'
+  else:
+    param_name = param.name
 
-    # trim the '.xo' from the end
-    if args.output_file.endswith('.xo'):
-      vitis_script = args.output_file[:-3]
-      script_name = f'{vitis_script}_generate_bitstream.sh'
-    else:
-      script_name = f'{args.output_file}_generate_bitstream.sh'
+  value = getattr(args, param_name, None)
+  if param_name == 'recursion_limit':
+    value = flags.FLAGS.recursionlimit
 
-    vpp_script = get_vitis_script(args)
-
-    try:
-      with open(script_name, 'w') as script:
-        script.write(vpp_script)
-        _logger.info('generate the v++ script at %s', script_name)
-
-    except:
-      _logger.error(
-          'Fail to create the v++ script at %s. Check if you have write'
-          'permission', script_name)
+  if value is None or value == param.default:
+    return []
+  if isinstance(value, list):
+    return [f'{param.opts[0]}={v}' for v in value]
+  if isinstance(value, bool):
+    return [param.opts[0] if value else param.secondary_opts[0]]
+  if isinstance(value, io.TextIOWrapper):
+    value = value.name
+  return [f'{param.opts[0]}={value}']
 
 
 def _get_device_info(
