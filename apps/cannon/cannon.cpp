@@ -7,7 +7,7 @@
 const int p = 2;
 
 // Handles kN x kN matrices maximum.
-const int kN = 64;  // Use fixed value for efficient hardware generation.
+const int kN = 32;  // Use fixed value for efficient hardware generation.
 
 // Scatter n*n matrix into p*p blocks, each block.
 void Scatter(tapa::mmap<const float> matrix_ptr, tapa::ostream<float>& block_00,
