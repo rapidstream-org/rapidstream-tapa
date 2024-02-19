@@ -9,6 +9,7 @@ sudo apt-get install -y \
   libgflags-dev \
   libgoogle-glog-dev \
   libunwind-dev \
+  ninja-build \
   python3-pip
 
 sudo apt-get autoremove -y
