@@ -22,34 +22,23 @@ jobs:
     steps:
       - name: Checkout myself
         uses: actions/checkout@v4
-      - name: Restore timestamp for patched clang files
-        run: |
-          for file in backend/clang/*; do
-            touch "${file}" \
-              --date="$(git log --max-count=1 --pretty=format:%cD -- "${file}")"
-          done
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ matrix.os }}
+          append-timestamp: false
       - name: Install dependencies
         run: |
           sudo apt-get purge -y libgcc-*-dev || true
           ./.github/scripts/install-build-deps.sh
           ./.github/scripts/setup-github-hosted.sh
       - name: Configure myself
-        run: cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release
-      - name: Cache llvm-src
-        uses: actions/cache@v4
-        with:
-          path: build/_deps/llvm-src
-          key: ${{ matrix.os }}-llvm-src-202311
-      - name: Cache llvm-build
-        uses: actions/cache@v4
-        with:
-          path: build/_deps/llvm-build
-          key: ${{ matrix.os }}-llvm-build-202311
-      - name: Cache llvm-subbuild
-        uses: actions/cache@v4
-        with:
-          path: build/_deps/llvm-subbuild
-          key: ${{ matrix.os }}-llvm-subbuild-202311
+        run: |
+          cmake \
+            -D CMAKE_BUILD_TYPE=Release \
+            -D CMAKE_C_COMPILER_LAUNCHER=ccache \
+            -D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -S . -B build -G Ninja
       - name: Build myself
         run: cmake --build build --target all
       - name: Test myself
