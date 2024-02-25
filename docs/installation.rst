@@ -25,6 +25,7 @@ you can easily install TAPA from pre-built packages:
 .. note::
 
   TAPA requires Vitis HLS with version >= 2020.2. Previous HLS versions are not supported.
+  Continuous integration currently covers 2023.2.
 
 .. tip::
 
@@ -52,7 +53,7 @@ Build Prerequisites
 
   * ``PATH="${HOME}/.local/bin:${PATH}"``
 
-* CMake 3.13+
+* CMake 3.14+
 
   * ``python3 -m pip install cmake``
 
@@ -82,7 +83,7 @@ Additional Build Prerequisites for Testing
 Runtime Dependency
 ++++++++++++++++++
 
-* Python 3.6+
+* Python 3.8+
 * Icarus Verilog
 
   * ``sudo apt install iverilog``
@@ -91,7 +92,7 @@ Runtime Dependency
 
   * ``sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" 17 all``
 
-* Vitis 2020.2, 2021.1, or 2021.2
+* Vitis 2020.2+
 * `Xilinx Runtime <https://github.com/Xilinx/XRT>`_
 
 Build and Installation
