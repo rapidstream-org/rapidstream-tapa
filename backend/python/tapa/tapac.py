@@ -519,7 +519,10 @@ def main(argv: Optional[List[str]] = None):
         argv.extend(_to_argv(args, param))
 
   _logger.info('running translated command: `tapa %s`', shlex.join(argv))
-  tapa.tapa.entry_point(argv)  # pylint: disable=no-value-for-parameter
+  tapa.tapa.entry_point(  # pylint: disable=no-value-for-parameter
+      argv,
+      standalone_mode=False,
+  )
 
 
 def _to_argv(args: argparse.Namespace, param: click.Parameter) -> List[str]:
