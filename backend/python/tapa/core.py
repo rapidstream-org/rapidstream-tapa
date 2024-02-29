@@ -166,6 +166,9 @@ class Program:
       self._hls_report_xmls[name] = tree = ET.parse(filename)
     return tree
 
+  def _get_part_num(self, name: str) -> str:
+    return self._get_hls_report_xml(name).find('./UserAssignments/Part').text
+
   def get_area(self, name: str) -> Dict[str, int]:
     node = self._get_hls_report_xml(name).find('./AreaEstimates/Resources')
     return {x.tag: int(x.text) for x in sorted(node, key=lambda x: x.tag)}
@@ -480,6 +483,7 @@ class Program:
       rtl.pack(top_name=self.top,
                ports=self.toplevel_ports,
                rtl_dir=self.rtl_dir,
+               part_num=self._get_part_num(self.top),
                output_file=packed_obj)
 
     _logger.info('packaging HLS report')

@@ -41,7 +41,7 @@ setup(
         'absl-py',
         'autobridge>=0.0.20220512.dev1',
         'coloredlogs>=9.3',
-        'haoda>=0.0.20220507.dev1',
+        'haoda>=0.0.20240228.dev1',
         'jinja2',
         'pyverilog>=1.2.0',
         'pyyaml>=5.1',

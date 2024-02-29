@@ -57,7 +57,7 @@ def fifo_partition_name(name: str, idx: int) -> str:
 
 
 def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
-         output_file: Union[str, BinaryIO]) -> None:
+         part_num: str, output_file: Union[str, BinaryIO]) -> None:
   """Create a .xo file that archives all generated RTL files
 
      Note that if an RTL file has syntax errors, Vivado will secretly leave
@@ -94,6 +94,7 @@ def pack(top_name: str, rtl_dir: str, ports: Iterable[tapa.instance.Port],
                 'SUPPORTS_NARROW_BURST': '0',
             } for port in port_list if port.cat.is_mmap
         },
+        part_num=part_num,
     ) as proc:
       stdout, stderr = proc.communicate()
     if proc.returncode == 0 and os.path.exists(xo_file):
