@@ -243,7 +243,13 @@ endmodule  // fifo
 
 /////////////////////////////////////////////////////////////////
 
-module fifo_srl_almost_full (
+module fifo_srl_almost_full #(
+  parameter MEM_STYLE    = "shiftreg",
+  parameter DATA_WIDTH   = 32,
+  parameter ADDR_WIDTH   = 4,
+  parameter DEPTH        = 16,
+  parameter GRACE_PERIOD = 2
+) (
   input wire clk,
   input wire reset,
 
@@ -259,15 +265,6 @@ module fifo_srl_almost_full (
   input  wire                  if_read,
   output wire [DATA_WIDTH-1:0] if_dout
 );
-
-parameter MEM_STYLE   = "shiftreg";
-parameter DATA_WIDTH  = 32'd32;
-parameter ADDR_WIDTH  = 32'd4;
-parameter DEPTH       = 5'd16;
-
-/*******************************************/
-parameter GRACE_PERIOD = 2;
-/*******************************************/
 
 parameter REAL_DEPTH = DEPTH < 4 ? 4 : DEPTH;
 parameter REAL_ADDR_WIDTH = $clog2(REAL_DEPTH)+1;

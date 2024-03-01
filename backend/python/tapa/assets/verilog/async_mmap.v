@@ -271,31 +271,6 @@ module async_mmap #(
     .if_dout   (write_req_dout)
   );
 
-  // this relay_station should be synchronized with the wr_data relay_station
-  relay_station #(
-    .DATA_WIDTH(1),
-    .ADDR_WIDTH(BufferSizeLog),
-    .DEPTH     (BufferSize),
-    .LEVEL     (1),
-    .CONNECT   (EnableWriteChannel)
-  ) burst_write_last (
-    .clk  (clk),
-    .reset(rst),
-
-    // from burst detector
-    .if_full_n  (burst_write_last_full_n),
-    .if_write_ce(1'b1),
-    .if_write   (burst_write_last_write),
-    .if_din     (burst_write_last_din),
-
-    // to axi
-    .if_empty_n(burst_write_last_empty_n),
-    .if_read_ce(1'b1),
-    // deal with when last-relay_station is non-empty while data-relay_station is empty
-    .if_read   (m_axi_WREADY && write_data_empty_n),
-    .if_dout   (burst_write_last_dout)
-  );
-
   // write data buffer
   wire [DataWidth-1:0] write_data_dout;
   wire                 write_data_empty_n;
@@ -321,6 +296,31 @@ module async_mmap #(
     // deal with when data-relay_station is non empty but last-relay_station is empty
     .if_read   (m_axi_WREADY && burst_write_last_empty_n),
     .if_dout   (write_data_dout)
+  );
+
+  // this relay_station should be synchronized with the wr_data relay_station
+  relay_station #(
+    .DATA_WIDTH(1),
+    .ADDR_WIDTH(BufferSizeLog),
+    .DEPTH     (BufferSize),
+    .LEVEL     (1),
+    .CONNECT   (EnableWriteChannel)
+  ) burst_write_last (
+    .clk  (clk),
+    .reset(rst),
+
+    // from burst detector
+    .if_full_n  (burst_write_last_full_n),
+    .if_write_ce(1'b1),
+    .if_write   (burst_write_last_write),
+    .if_din     (burst_write_last_din),
+
+    // to axi
+    .if_empty_n(burst_write_last_empty_n),
+    .if_read_ce(1'b1),
+    // deal with when last-relay_station is non-empty while data-relay_station is empty
+    .if_read   (m_axi_WREADY && write_data_empty_n),
+    .if_dout   (burst_write_last_dout)
   );
 
   // write resp buffer
