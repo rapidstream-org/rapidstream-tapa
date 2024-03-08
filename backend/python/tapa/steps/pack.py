@@ -36,6 +36,7 @@ def pack(ctx, output: str, bitstream_script: Optional[str]):
       pass
 
     args = Object()
+    args.work_dir = program.work_dir
     args.top = program.top
     args.output_file = output
     floorplan_output = settings.get('floorplan-output', None)

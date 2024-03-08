@@ -535,6 +535,12 @@ def _to_argv(args: argparse.Namespace, param: click.Parameter) -> List[str]:
   value = getattr(args, param_name, None)
   if param_name == 'recursion_limit':
     value = flags.FLAGS.recursionlimit
+  elif param_name == 'bitstream_script':
+    script_base = args.output_file
+    # TODO: replace with `removesuffix`` when we drop Python 3.8 support
+    if script_base.endswith('.xo'):
+      script_base = script_base[:-len('.xo')]
+    value = f'{script_base}_generate_bitstream.sh'
 
   if value is None or value == param.default:
     return []
