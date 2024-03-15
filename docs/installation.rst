@@ -163,6 +163,7 @@ This number should be adjusted according to your available cores and memory.
 .. code-block:: bash
 
   sudo ln -sf "${PWD}"/backend/tapacc /usr/local/bin/
+  sudo ln -sf "${PWD}"/backend/tapa-clang /usr/local/bin/
   sudo ln -sf "${PWD}"/../src/tapa{,.h} /usr/local/include/
   sudo ln -sf "${PWD}"/libtapa.{a,so} /usr/local/lib/
 
