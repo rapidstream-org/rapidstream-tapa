@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(bandwidth)
 target_sources(bandwidth PRIVATE bandwidth-host.cpp bandwidth.cpp)
-target_link_libraries(bandwidth PUBLIC ${TAPA} frt::frt gflags)
+target_link_libraries(bandwidth PRIVATE ${TAPA} gflags)
 add_test(NAME bandwidth COMMAND bandwidth)
 
 find_package(SDx)

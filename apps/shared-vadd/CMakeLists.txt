@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(shared-vadd)
 target_sources(shared-vadd PRIVATE vadd-host.cpp vadd.cpp)
-target_link_libraries(shared-vadd PRIVATE ${TAPA})
+target_link_libraries(shared-vadd PRIVATE ${TAPA} gflags)
 add_test(NAME shared-vadd COMMAND shared-vadd)
 
 find_package(SDx)

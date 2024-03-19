@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(cannon)
 target_sources(cannon PRIVATE cannon-host.cpp cannon.cpp)
-target_link_libraries(cannon PRIVATE ${TAPA})
+target_link_libraries(cannon PRIVATE ${TAPA} gflags)
 add_test(NAME cannon COMMAND cannon)
 
 find_package(SDx)

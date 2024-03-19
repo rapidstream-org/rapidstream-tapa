@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(network)
 target_sources(network PRIVATE network-host.cpp network.cpp)
-target_link_libraries(network PRIVATE ${TAPA} frt::frt gflags)
+target_link_libraries(network PRIVATE ${TAPA} gflags)
 add_test(NAME network COMMAND network)
 
 find_package(SDx)

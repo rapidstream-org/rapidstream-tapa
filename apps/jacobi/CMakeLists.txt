@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(jacobi)
 target_sources(jacobi PRIVATE jacobi-host.cpp jacobi.cpp)
-target_link_libraries(jacobi PRIVATE ${TAPA})
+target_link_libraries(jacobi PRIVATE ${TAPA} gflags)
 add_test(NAME jacobi COMMAND jacobi)
 
 find_package(SDx)

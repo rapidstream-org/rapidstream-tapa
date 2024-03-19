@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(nested-vadd)
 target_sources(nested-vadd PRIVATE vadd-host.cpp vadd.cpp)
-target_link_libraries(nested-vadd PRIVATE ${TAPA})
+target_link_libraries(nested-vadd PRIVATE ${TAPA} gflags)
 add_test(NAME nested-vadd COMMAND nested-vadd)
 
 find_package(SDx)

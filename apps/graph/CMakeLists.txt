@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/apps.cmake)
 
 add_executable(graph)
 target_sources(graph PRIVATE nxgraph.hpp graph-host.cpp graph.cpp)
-target_link_libraries(graph PUBLIC ${TAPA})
+target_link_libraries(graph PRIVATE ${TAPA} gflags)
 file(
   DOWNLOAD "https://snap.stanford.edu/data/facebook_combined.txt.gz"
   ${CMAKE_CURRENT_BINARY_DIR}/facebook.txt.gz
