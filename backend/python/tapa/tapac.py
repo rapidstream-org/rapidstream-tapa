@@ -110,13 +110,6 @@ def create_parser() -> argparse.ArgumentParser:
       help='Output file.',
   )
   parser.add_argument(
-      '--frt-interface',
-      type=str,
-      dest='frt_interface',
-      metavar='file',
-      help='Output FRT interface file (deprecated).',
-  )
-  parser.add_argument(
       type=str,
       dest='input_file',
       metavar='file',

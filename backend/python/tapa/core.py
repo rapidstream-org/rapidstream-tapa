@@ -62,7 +62,6 @@ class Program:
     is_temp: Whether to delete the working directory after done.
     toplevel_ports: Tuple of Port objects.
     _tasks: Dict mapping names of tasks to Task objects.
-    frt_interface: Optional string of FRT interface code.
     files: Dict mapping file names to contents that appear in the HDL directory.
   """
 
@@ -91,7 +90,6 @@ class Program:
       task = Task(name=name, **obj['tasks'][name])
       if not task.is_upper or task.tasks:
         self._tasks[name] = task
-    self.frt_interface = obj['tasks'][self.top].get('frt_interface')
     self.files: Dict[str, str] = {}
     self._hls_report_xmls: Dict[str, ET.ElementTree] = {}
 

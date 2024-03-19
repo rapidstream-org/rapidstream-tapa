@@ -155,9 +155,11 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
           if (auto task = GetTapaTask(func->getBody())) {
             // Run this before "extern C" is injected by
             // `ProcessUpperLevelTask`.
+#ifdef TAPA_ENABLE_LEGACY_FRT_INTERFACE
             if (IsTapaTopLevel(func)) {
               GetMetadata()["frt_interface"] = GetFrtInterface(func);
             }
+#endif  // TAPA_ENABLE_LEGACY_FRT_INTERFACE
             ProcessUpperLevelTask(task, func);
           } else {
             ProcessLowerLevelTask(func);
@@ -551,6 +553,7 @@ void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   current_target->RewriteLowerLevelFunc(func, GetRewriter());
 }
 
+#ifdef TAPA_ENABLE_LEGACY_FRT_INTERFACE
 string Visitor::GetFrtInterface(const FunctionDecl* func) {
   auto func_body_source_range = func->getBody()->getSourceRange();
   auto& source_manager = context_.getSourceManager();
@@ -666,6 +669,7 @@ string Visitor::GetFrtInterface(const FunctionDecl* func) {
   // Join everything together (without excessive copying).
   return llvm::join(content.begin(), content.end(), "");
 }
+#endif  // TAPA_ENABLE_LEGACY_FRT_INTERFACE
 
 SourceLocation Visitor::GetEndOfLoc(SourceLocation loc) {
   return loc.getLocWithOffset(Lexer::MeasureTokenLength(
