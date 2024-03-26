@@ -28,6 +28,7 @@ module generate_last #(
     count_next = count;
     burst_len_read = 1'b0;
     last_write = 1'b0;
+    last_din = 1'bx;
 
     if (last_full_n) begin
       if (busy == 1'b0) begin
