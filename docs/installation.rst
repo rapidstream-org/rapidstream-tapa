@@ -90,7 +90,7 @@ Runtime Dependency
 
 * Clang 17 and its headers
 
-  * ``sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" 17 all``
+  * ``sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" bash 17 all``
 
 * Vitis 2020.2+
 * `Xilinx Runtime <https://github.com/Xilinx/XRT>`_
