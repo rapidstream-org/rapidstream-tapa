@@ -31,6 +31,8 @@ module detect_burst #(
 );
   // parameter
   localparam NextAddrWidth = AddrWidth - DataWidthBytesLog;
+  // AXI burst must not cross a 4KB boundary
+  localparam FourKBBoundary = $clog2(4096);
 
   // state
   reg [AddrWidth-1:0]     base_addr;
@@ -101,6 +103,7 @@ module detect_burst #(
         burst_len_next = burst_len;
       end else begin
         if (next_addr == curr_addr[AddrWidth-1:DataWidthBytesLog] &&
+            (curr_addr[FourKBBoundary-1:0] != {FourKBBoundary{1'b0}}) &&
             burst_len < max_burst_len) begin
           burst_len_next = burst_len + 1;
 
