@@ -37,6 +37,13 @@ _logger = logging.getLogger().getChild(__name__)
                     'and is newer than the source C++ file. '
                     'This can lead to incorrect results; use at your own risk.')
              )
+@click.option(
+    '--other-hls-configs',
+    type=str,
+    default='',
+    help='Additional compile options for Vitis HLS, '
+    'e.g., --other-hls-configs "config_compile -unsafe_math_optimizations"',
+)
 def synth(
     ctx,
     part_num: Optional[str],
@@ -44,6 +51,7 @@ def synth(
     clock_period: Optional[float],
     additional_fifo_pipelining: bool,
     skip_hls_based_on_mtime: bool,
+    other_hls_configs: str,
 ):
 
   program = tapa.steps.common.load_tapa_program()
@@ -61,7 +69,12 @@ def synth(
   settings['additional_fifo_pipelining'] = additional_fifo_pipelining
 
   # Generate RTL code
-  program.run_hls(clock_period, part_num, skip_hls_based_on_mtime)
+  program.run_hls(
+      clock_period,
+      part_num,
+      skip_hls_based_on_mtime,
+      other_hls_configs,
+  )
   program.generate_task_rtl(additional_fifo_pipelining, part_num)
 
   settings['synthed'] = True
