@@ -344,9 +344,8 @@ class Instance:
       yield ast.Reg(name=self.state.name, width=ast.make_width(2))
 
   def get_instance_arg(self, arg: str) -> str:
-    if "'d" in arg:
-      width, value = arg.split("'d")
-      return f'{self.name}___const__{width}b{value}'
+    if "'d" in arg:  # Constant literals are passed as-is.
+      return arg
     return f'{self.name}___{arg}'
 
 

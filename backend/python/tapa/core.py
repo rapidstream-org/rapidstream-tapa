@@ -607,10 +607,12 @@ class Program:
     else:
       scalar_register_level = self.register_level
 
-    fsm_portargs: List[ast.PortArg] = [
+    # Wires connecting to the upstream (s_axi_control).
+    fsm_upstream_portargs: List[ast.PortArg] = [
         ast.make_port_arg(x, x)
         for x in rtl.HANDSHAKE_INPUT_PORTS + rtl.HANDSHAKE_OUTPUT_PORTS
     ]
+    fsm_upstream_module_ports = {}  # keyed by arg.name for deduplication
     task.fsm_module.add_ports([
         ast.Decl((ast.make_pragma('RS_CLK'), ast.Input(rtl.HANDSHAKE_CLK))),
         ast.Decl((
@@ -631,6 +633,10 @@ class Program:
         )) for x in (rtl.HANDSHAKE_DONE, rtl.HANDSHAKE_IDLE)),
     ])
 
+    # Wires connecting to the downstream (task instances).
+    fsm_downstream_portargs: List[ast.PortArg] = []
+    fsm_downstream_module_ports = []
+
     for instance in task.instances:
       # connect to the control_s_axi in the corresponding SLR
       if instance.name in instance_name_to_slr:
@@ -643,18 +649,15 @@ class Program:
       # add signal delcarations
       for arg in instance.args:
         if not arg.cat.is_stream:
+          # Find arg width.
           width = 64  # 64-bit address
           if arg.cat.is_scalar:
             width = width_table.get(arg.name, 0)
             if width == 0:
+              # Constant literals are not in the width table.
               width = int(arg.name.split("'d")[0])
-          q = rtl.Pipeline(
-              name=instance.get_instance_arg(arg.name),
-              level=scalar_register_level,
-              width=width,
-          )
-          arg_table[arg.name] = q
 
+          # Find identifier name of the arg. May be a constant with "'d" in it.
           # If `arg` is an hmap, `arg.name` refers to the mmap offset, which
           # needs to be set to 0. The actual address mapping will be handled
           # between the AXI interconnect and the upstream M-AXI interface.
@@ -665,8 +668,28 @@ class Program:
             id_name = arg.name + argname_suffix
           else:
             id_name = arg.name
-          task.module.add_pipeline(q, init=ast.Identifier(id_name))
-          _logger.debug("    pipelined signal: %s => %s", id_name, q.name)
+
+          # Instantiate a pipeline for the arg.
+          q = rtl.Pipeline(
+              name=instance.get_instance_arg(id_name),
+              level=scalar_register_level,
+              width=width,
+          )
+          arg_table[arg.name] = q
+
+          # Add signals only for non-consts. Constants are passed as literals.
+          if "'d" not in q.name:
+            task.module.add_signals(q.signals)
+            task.fsm_module.add_pipeline(q, init=ast.Identifier(id_name))
+            _logger.debug("    pipelined signal: %s => %s", id_name, q.name)
+            fsm_upstream_module_ports.setdefault(
+                arg.name,
+                ast.Input(arg.name, ast.make_width(width)),
+            )
+            fsm_downstream_module_ports.append(
+                ast.Output(q[-1].name, ast.make_width(width)))
+            fsm_downstream_portargs.append(
+                ast.make_port_arg(q[-1].name, q[-1].name))
 
         # arg.name is the upper-level name
         # arg.port is the lower-level name
@@ -794,13 +817,13 @@ class Program:
         is_done_signals.append(is_done_q)
 
       # insert handshake signals
-      fsm_portargs.extend(
+      fsm_downstream_portargs.extend(
           ast.make_port_arg(x.name, x.name)
           for x in instance.public_handshake_signals)
       task.module.add_signals(
           ast.Wire(x.name, x.width) for x in instance.public_handshake_signals)
       task.fsm_module.add_signals(instance.all_handshake_signals)
-      task.fsm_module.add_ports(instance.public_handshake_ports)
+      fsm_downstream_module_ports.extend(instance.public_handshake_ports)
 
       # add task module instances
       portargs = list(rtl.generate_handshake_ports(instance, rtl.RST_N))
@@ -844,6 +867,12 @@ class Program:
           ports=portargs,
       )
 
+    # Add scalar ports to the FSM module.
+    for x in fsm_upstream_module_ports.values():
+      fsm_upstream_portargs.append(ast.make_port_arg(x.name, x.name))
+    task.fsm_module.add_ports(fsm_upstream_module_ports.values())
+    task.fsm_module.add_ports(fsm_downstream_module_ports)
+
     # instantiate async_mmap modules at the upper levels
     # the base address may not be 0, so must use full 64 bit
     addr_width = 64
@@ -863,7 +892,7 @@ class Program:
       task.module.add_instance(
           module_name=task.fsm_module.name,
           instance_name='__tapa_fsm_unit',
-          ports=fsm_portargs,
+          ports=fsm_upstream_portargs + fsm_downstream_portargs,
       )
 
     return is_done_signals

@@ -18,7 +18,10 @@ class Pipeline:
     self.name = name
     self.level = level
     self._ids = tuple(
-        ast.Identifier(f'{name}__q%d' % i) for i in range(level + 1))
+        # If `name` is a constant literal (like `32'd0`), identifiers at all
+        # levels are just the constant literal.
+        ast.Identifier(name if "'d" in name else (f'{name}__q%d' % i))
+        for i in range(level + 1))
     self._width: Optional[ast.Width] = width and ast.make_width(width)
 
   def __getitem__(self, idx) -> ast.Identifier:
