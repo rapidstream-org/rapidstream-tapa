@@ -261,10 +261,7 @@ class Instance:
     return ast.Identifier(f'{self.name}__{rtl.HANDSHAKE_READY}')
 
   @property
-  def _public_handshake_tuples(
-      self
-  ) -> Iterator[Tuple[
-      Optional[ast.Pragma],  # `None` means `ast.make_pragma('RS_FF', name)`
+  def _public_handshake_tuples(self) -> Iterator[Tuple[  #
       Union[Type[ast.Reg], Type[ast.Wire]],  # signal_type
       Union[Type[ast.Input], Type[ast.Output]],  # port_type
       str,  # name
@@ -272,32 +269,27 @@ class Instance:
     """Public handshake information tuples used for this instance."""
     if self.is_autorun:
       yield (
-          None,
           ast.Reg,
           ast.Output,
           self.start.name,
       )
     else:
       yield (
-          ast.make_pragma('RS_AP_CTRL', f'{self.name}.{rtl.HANDSHAKE_START}'),
           ast.Wire,
           ast.Output,
           self.start.name,
       )
       yield (
-          ast.make_pragma('RS_AP_CTRL', f'{self.name}.{rtl.HANDSHAKE_READY}'),
           ast.Wire,
           ast.Input,
           rtl.wire_name(self.name, rtl.HANDSHAKE_READY),
       )
       yield (
-          None,
           ast.Wire,
           ast.Input,
           rtl.wire_name(self.name, rtl.HANDSHAKE_DONE),
       )
       yield (
-          None,
           ast.Wire,
           ast.Input,
           rtl.wire_name(self.name, rtl.HANDSHAKE_IDLE),
@@ -312,10 +304,8 @@ class Instance:
     Yields:
       ast.Decl of IO ports.
     """
-    for pragma, _, port_type, name in self._public_handshake_tuples:
-      if pragma is None:
-        pragma = ast.make_pragma('RS_FF', name)
-      yield ast.Decl((pragma, port_type(name)))
+    for _, port_type, name in self._public_handshake_tuples:
+      yield port_type(name)
 
   @property
   def public_handshake_signals(self) -> Iterator[Union[ast.Wire, ast.Reg]]:
@@ -326,7 +316,7 @@ class Instance:
     Yields:
       Union[ast.Wire, ast.Reg] of signals.
     """
-    for _, signal_type, _, name in self._public_handshake_tuples:
+    for signal_type, _, name in self._public_handshake_tuples:
       yield signal_type(name)
 
   @property

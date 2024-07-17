@@ -517,3 +517,35 @@ class Task:
           ports=portargs,
           params=paramargs,
       )
+
+  def add_rs_pragmas_to_fsm(self) -> None:
+    """Add RapidStream pragmas to the FSM module."""
+    port_map_str = ' '.join(
+        f'{x}={x}' for x in (rtl.HANDSHAKE_START, *rtl.HANDSHAKE_OUTPUT_PORTS))
+    scalar_regex_str = '|'.join(
+        x.name for x in self.ports.values() if not x.cat.is_stream)
+    if scalar_regex_str:
+      scalar_pragma = f' scalar=({scalar_regex_str})'
+    else:
+      scalar_pragma = ''
+    pragma_list = [
+        f'clk port={rtl.HANDSHAKE_CLK}',
+        f'rst port={rtl.HANDSHAKE_RST_N} active=low',
+        f'ap-ctrl {port_map_str}{scalar_pragma}',
+    ]
+    for instance in self.instances:
+      port_list = [rtl.HANDSHAKE_START]
+      if not instance.is_autorun:
+        port_list.extend(rtl.HANDSHAKE_OUTPUT_PORTS)
+      port_map_str = ' '.join(
+          f'{x}={rtl.wire_name(instance.name, x)}' for x in port_list)
+      if all(arg.cat.is_stream or "'d" in arg.name for arg in instance.args):
+        scalar_pragma = ''
+      else:
+        scalar_pragma = f' scalar={instance.get_instance_arg(".*")}'
+      pragma_list.append(f'ap-ctrl {port_map_str}{scalar_pragma}')
+    self.fsm_module.add_ports([
+        ast.Decl([
+            ast.Identifier(f'// pragma RS {pragma}\n') for pragma in pragma_list
+        ])
+    ])

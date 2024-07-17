@@ -614,23 +614,11 @@ class Program:
     ]
     fsm_upstream_module_ports = {}  # keyed by arg.name for deduplication
     task.fsm_module.add_ports([
-        ast.Decl((ast.make_pragma('RS_CLK'), ast.Input(rtl.HANDSHAKE_CLK))),
-        ast.Decl((
-            ast.make_pragma('RS_RST', 'ff'),
-            ast.Input(rtl.HANDSHAKE_RST_N),
-        )),
-        ast.Decl((
-            ast.make_pragma('RS_AP_CTRL', f'{task.name}.{rtl.HANDSHAKE_START}'),
-            ast.Input(rtl.HANDSHAKE_START),
-        )),
-        ast.Decl((
-            ast.make_pragma('RS_AP_CTRL', f'{task.name}.{rtl.HANDSHAKE_READY}'),
-            ast.Output(rtl.HANDSHAKE_READY),
-        )),
-        *(ast.Decl((
-            ast.make_pragma('RS_FF', rtl.wire_name(task.name, x)),
-            ast.Output(x),
-        )) for x in (rtl.HANDSHAKE_DONE, rtl.HANDSHAKE_IDLE)),
+        ast.Input(rtl.HANDSHAKE_CLK),
+        ast.Input(rtl.HANDSHAKE_RST_N),
+        ast.Input(rtl.HANDSHAKE_START),
+        ast.Output(rtl.HANDSHAKE_READY),
+        *(ast.Output(x) for x in (rtl.HANDSHAKE_DONE, rtl.HANDSHAKE_IDLE)),
     ])
 
     # Wires connecting to the downstream (task instances).
@@ -999,6 +987,7 @@ class Program:
     """ codegen for upper but non-top tasks """
     assert task.is_upper
     task.module.cleanup()
+    task.add_rs_pragmas_to_fsm()
 
     self._instantiate_fifos(task, additional_fifo_pipelining)
     self._connect_fifos(task)
@@ -1024,6 +1013,7 @@ class Program:
     """ codegen for the top task """
     assert task.is_upper
     task.module.cleanup()
+    task.add_rs_pragmas_to_fsm()
 
     # if floorplan is enabled, add a control_s_axi instance in each SLR
     if instance_name_to_slr:
