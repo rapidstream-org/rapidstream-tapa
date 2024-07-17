@@ -260,12 +260,6 @@ class Instance:
     """Whether this isntance is ready to take new input."""
     return ast.Identifier(f'{self.name}__{rtl.HANDSHAKE_READY}')
 
-  def get_signal(self, signal: str) -> ast.Identifier:
-    if signal not in {'done', 'idle', 'ready'}:
-      raise ValueError(
-          'signal should be one of (done, idle, ready), got {}'.format(signal))
-    return getattr(self, signal)
-
   @property
   def _public_handshake_tuples(
       self
