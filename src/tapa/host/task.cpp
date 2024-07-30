@@ -17,6 +17,7 @@
 #include <thread>
 #include <unordered_map>
 
+#include <sched.h>
 #include <sys/mman.h>
 
 #if TAPA_ENABLE_COROUTINE
@@ -51,7 +52,7 @@ namespace internal {
 
 namespace {
 
-thread_local pull_type* current_handle;
+thread_local pull_type* current_handle = nullptr;
 thread_local bool debug = false;
 mutex debug_mtx;  // Print stacktrace one-by-one.
 
@@ -81,7 +82,11 @@ void yield(const string& msg) {
     }
 #endif  // TAPA_ENABLE_STACKTRACE
   }
-  (*current_handle)();
+  if (current_handle == nullptr) {
+    std::this_thread::yield();
+  } else {
+    (*current_handle)();
+  }
 }
 
 namespace {
