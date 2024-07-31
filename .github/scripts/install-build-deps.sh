@@ -8,6 +8,7 @@ sudo apt-get install -y \
   libboost-stacktrace-dev \
   libgflags-dev \
   libgoogle-glog-dev \
+  libgtest-dev \
   libunwind-dev \
   ninja-build \
   python3-pip
