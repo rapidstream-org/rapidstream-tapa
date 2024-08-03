@@ -39,31 +39,34 @@ namespace internal {
 template <typename Param, typename Arg>
 struct accessor;
 
-template <typename T>
-class base_queue {
+class type_erased_queue {
  public:
+  virtual ~type_erased_queue() = default;
+
   // debug helpers
-  const std::string& get_name() const { return this->name; }
-  void set_name(const std::string& name) { this->name = name; }
+  const std::string& get_name() const;
+  void set_name(const std::string& name);
 
   virtual bool empty() const = 0;
   virtual bool full() const = 0;
+
+ protected:
+  std::string name;
+
+  type_erased_queue(const std::string& name);
+
+  void check_leftover() const;
+};
+
+template <typename T>
+class base_queue : public type_erased_queue {
+ public:
   virtual void push(const T& val) = 0;
   virtual T pop() = 0;
   virtual const T& front() const = 0;
 
  protected:
-  std::string name;
-
-  base_queue(const std::string& name) : name(name) {}
-
-  void check_leftover() {
-    if (!this->empty()) {
-      LOG(WARNING) << "channel '" << this->name
-                   << "' destructed with leftovers; hardware behavior may be "
-                      "unexpected in consecutive invocations";
-    }
-  }
+  using type_erased_queue::type_erased_queue;
 };
 
 template <typename T>
