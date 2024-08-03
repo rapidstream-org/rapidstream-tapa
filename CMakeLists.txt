@@ -161,6 +161,10 @@ if(GTest_FOUND)
   include(GoogleTest)
   enable_testing()
 
+  add_executable(compat_test src/tapa/host/compat_test.cpp)
+  target_link_libraries(compat_test tapa GTest::gtest_main)
+  gtest_discover_tests(compat_test)
+
   add_executable(task_test src/tapa/host/task_test.cpp)
   target_link_libraries(task_test tapa GTest::gtest_main)
   gtest_discover_tests(task_test)
