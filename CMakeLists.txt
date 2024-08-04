@@ -169,7 +169,7 @@ if(GTest_FOUND)
   gtest_discover_tests(compat_test)
 
   add_executable(stream_test src/tapa/host/stream_test.cpp)
-  target_link_libraries(stream_test tapa GTest::gtest_main)
+  target_link_libraries(stream_test tapa GTest::gtest_main stdc++fs)
   gtest_discover_tests(stream_test)
 
   add_executable(task_test src/tapa/host/task_test.cpp)
