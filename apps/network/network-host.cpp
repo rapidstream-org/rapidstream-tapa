@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   for (uint64_t i = 0; i < n; ++i) {
     input[i] = (dist(gen) & ~7) | i;
   }
-  std::random_shuffle(input.begin(), input.end());
+  std::shuffle(input.begin(), input.end(), gen);
 
   vector<pkt_t> output(n);
 
