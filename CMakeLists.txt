@@ -23,8 +23,8 @@ find_package(FRT REQUIRED)
 add_library(tapa_static STATIC)
 add_library(tapa ALIAS tapa_static)
 add_library(tapa_shared SHARED)
-set(LIBTAPA_SOURCES src/tapa/host/internal_util.cpp src/tapa/host/stream.cpp
-                    src/tapa/host/task.cpp)
+set(LIBTAPA_SOURCES src/tapa/host/compat.cpp src/tapa/host/internal_util.cpp
+                    src/tapa/host/stream.cpp src/tapa/host/task.cpp)
 target_sources(tapa_static PRIVATE ${LIBTAPA_SOURCES})
 target_sources(tapa_shared PRIVATE ${LIBTAPA_SOURCES})
 target_compile_features(tapa_static PUBLIC cxx_std_17)

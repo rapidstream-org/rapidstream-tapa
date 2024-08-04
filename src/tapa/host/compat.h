@@ -1,4 +1,5 @@
 #include "tapa/host/stream.h"
+#include "tapa/host/task.h"
 
 #ifdef __SYNTHESIS__
 #error hls_compat::stream is not synthesizable
@@ -10,6 +11,11 @@ namespace hls_compat {
 // An infinite-depth stream that has the same behavior as `hls::stream`.
 template <typename T>
 using stream = ::tapa::stream<T, ::tapa::internal::kInfiniteDepth>;
+
+// Same as `tapa::task()`, except that tasks are scheduled sequentially.
+struct task : public ::tapa::task {
+  explicit task();
+};
 
 }  // namespace hls_compat
 }  // namespace tapa

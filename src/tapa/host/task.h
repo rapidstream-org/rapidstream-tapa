@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <chrono>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -171,7 +172,8 @@ struct task {
         std::is_function_v<typename std::remove_reference_t<Func>>,
         "the first argument for tapa::task::invoke() must be a function");
     internal::invoker<Func>::template invoke<Args...>(
-        mode, std::forward<Func>(func), std::forward<Args>(args)...);
+        mode_override.value_or(mode), std::forward<Func>(func),
+        std::forward<Args>(args)...);
     return *this;
   }
 
@@ -196,6 +198,9 @@ struct task {
     }
     return *this;
   }
+
+ protected:
+  std::optional<int> mode_override;
 };
 
 }  // namespace tapa
