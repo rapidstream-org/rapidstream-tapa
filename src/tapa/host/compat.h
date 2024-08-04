@@ -12,6 +12,10 @@ namespace hls_compat {
 template <typename T>
 using stream = ::tapa::stream<T, ::tapa::internal::kInfiniteDepth>;
 
+// Interface that accepts both `tapa::stream` and  `tapa::hls_compat::stream`.
+template <typename T>
+using stream_interface = ::tapa::internal::unbound_stream<T>;
+
 // Same as `tapa::task()`, except that tasks are scheduled sequentially.
 struct task : public ::tapa::task {
   explicit task();

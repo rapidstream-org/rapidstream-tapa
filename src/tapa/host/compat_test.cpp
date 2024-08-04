@@ -40,8 +40,9 @@ TEST(CompatTest, CompatHlsStreamCanBeInvoked) {
   tapa::task().invoke(DataSource, data_q, kN).invoke(DataSink, data_q, kN);
 }
 
-void DataSourceNonBlocking(tapa::ostream<float>& data_out_q,
-                           tapa::hls_compat::stream<int>& count_out_q, int n) {
+void DataSourceNonBlocking(
+    tapa::hls_compat::stream_interface<float>& data_out_q,
+    tapa::hls_compat::stream_interface<int>& count_out_q, int n) {
   int write_count = 0;
   for (int i = 0; i < n; ++i) {
     if (data_out_q.try_write(i)) {
@@ -51,8 +52,9 @@ void DataSourceNonBlocking(tapa::ostream<float>& data_out_q,
   count_out_q.write(write_count);
 }
 
-void DataSinkNonBlocking(tapa::istream<float>& data_in_q,
-                         tapa::hls_compat::stream<int>& count_in_q, int n) {
+void DataSinkNonBlocking(tapa::hls_compat::stream_interface<float>& data_in_q,
+                         tapa::hls_compat::stream_interface<int>& count_in_q,
+                         int n) {
   int read_count = 0;
   for (int i = 0; i < n; ++i) {
     float value_unused;
