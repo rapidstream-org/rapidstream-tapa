@@ -10,6 +10,7 @@
 #include <chrono>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 #include <frt.h>
 
@@ -42,10 +43,15 @@ struct invoker;
 template <typename... Params>
 struct invoker<void (&)(Params...)> {
   template <typename... Args>
-  static void invoke(bool detach, void (&f)(Params...), Args&&... args) {
+  static void invoke(int mode, void (&f)(Params...), Args&&... args) {
     // std::bind creates a copy of args
-    internal::schedule(detach, std::bind(f, accessor<Params, Args>::access(
-                                                std::forward<Args>(args))...));
+    auto functor = std::bind(
+        f, accessor<Params, Args>::access(std::forward<Args>(args))...);
+    if (mode > 0) {  // Sequential scheduling.
+      std::move(functor)();
+    } else {
+      internal::schedule(/*detach=*/mode < 0, std::move(functor));
+    }
   }
 
   template <typename... Args>
@@ -165,8 +171,7 @@ struct task {
         std::is_function_v<typename std::remove_reference_t<Func>>,
         "the first argument for tapa::task::invoke() must be a function");
     internal::invoker<Func>::template invoke<Args...>(
-        /* detach= */ mode < 0, std::forward<Func>(func),
-        std::forward<Args>(args)...);
+        mode, std::forward<Func>(func), std::forward<Args>(args)...);
     return *this;
   }
 
