@@ -127,12 +127,12 @@ struct invoker<void (&)(Params...)> {
 /// Detached tasks are very useful when infinite loops can be used.
 struct task {
   /// Constructs a @c tapa::task.
-  task();
-  task(task&&) = delete;
-  task(const task&) = delete;
+  explicit task();
+
   ~task();
 
-  task& operator=(task&&) = delete;
+  // Not copyable or movable.
+  task(const task&) = delete;
   task& operator=(const task&) = delete;
 
   /// Invokes a task and instantiates a child task instance.
