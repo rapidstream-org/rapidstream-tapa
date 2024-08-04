@@ -8,17 +8,20 @@
 #include <array>
 #include <atomic>
 #include <deque>
+#include <fstream>
+#include <iomanip>
 #include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <glog/logging.h>
 
 #include "tapa/base/stream.h"
-
 #include "tapa/host/coroutine.h"
+#include "tapa/host/util.h"
 
 namespace tapa {
 
@@ -51,11 +54,26 @@ class type_erased_queue {
   virtual bool full() const = 0;
 
  protected:
+  struct LogContext {
+    static std::unique_ptr<LogContext> New(std::string_view name);
+    std::ofstream ofs;
+    std::mutex mtx;
+  };
+
   std::string name;
+  const std::unique_ptr<LogContext> log;
 
   type_erased_queue(const std::string& name);
 
   void check_leftover() const;
+
+  template <typename T>
+  void maybe_log(const T& elem) {
+    if (this->log != nullptr) {
+      std::unique_lock<std::mutex> lock(this->log->mtx);
+      this->log->ofs << elem << std::endl;
+    }
+  }
 };
 
 template <typename T>
@@ -101,6 +119,7 @@ class lock_free_queue : public base_queue<T> {
     return val;
   }
   void push(const T& val) override {
+    this->maybe_log(val);
     this->buffer[this->head % buffer.size()] = val;
     ++this->head;
   }
@@ -143,6 +162,7 @@ class locked_queue : public base_queue<T> {
   }
   void push(const T& val) override {
     std::unique_lock<std::mutex> lock(this->mtx);
+    this->maybe_log(val);
     this->buffer.push_back(val);
   }
 
@@ -221,6 +241,33 @@ class unbound_streams : public istreams<T, S>, public ostreams<T, S> {
  protected:
   unbound_streams() : basic_streams<T>(nullptr) {}
 };
+
+template <typename T, typename = void>
+struct has_ostream_overload : std::false_type {};
+
+template <typename T>
+struct has_ostream_overload<
+    T,
+    std::void_t<decltype(std::declval<std::ostream&>() << std::declval<T>())>>
+    : std::true_type {};
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const elem_t<T>& elem) {
+  if (elem.eot) {
+    // For EoT, create an empty line.
+  } else if constexpr (has_ostream_overload<T>::value) {
+    // For types that overload `operator<<`, use that.
+    os << elem.val;
+  } else {
+    // For types that do not overload `operator<<`, dump bytes in dex.
+    auto bytes = bit_cast<std::array<char, sizeof(elem.val)>>(elem.val);
+    os << "0x" << std::hex;
+    for (int byte : bytes) {
+      os << std::setfill('0') << std::setw(2) << byte;
+    }
+  }
+  return os;
+}
 
 constexpr uint64_t kInfiniteDepth = std::numeric_limits<uint64_t>::max();
 

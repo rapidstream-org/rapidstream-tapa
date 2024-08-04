@@ -23,7 +23,8 @@ find_package(FRT REQUIRED)
 add_library(tapa_static STATIC)
 add_library(tapa ALIAS tapa_static)
 add_library(tapa_shared SHARED)
-set(LIBTAPA_SOURCES src/tapa/host/stream.cpp src/tapa/host/task.cpp)
+set(LIBTAPA_SOURCES src/tapa/host/internal_util.cpp src/tapa/host/stream.cpp
+                    src/tapa/host/task.cpp)
 target_sources(tapa_static PRIVATE ${LIBTAPA_SOURCES})
 target_sources(tapa_shared PRIVATE ${LIBTAPA_SOURCES})
 target_compile_features(tapa_static PUBLIC cxx_std_17)
@@ -83,7 +84,8 @@ install(
   DIRECTORY "${CMAKE_SOURCE_DIR}/src/"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
-  PATTERN "*.h")
+  PATTERN "*.h"
+  PATTERN "internal_*.h" EXCLUDE)
 
 set_target_properties(tapa_static PROPERTIES EXPORT_NAME tapa)
 export(
@@ -165,6 +167,10 @@ if(GTest_FOUND)
   add_executable(compat_test src/tapa/host/compat_test.cpp)
   target_link_libraries(compat_test tapa GTest::gtest_main)
   gtest_discover_tests(compat_test)
+
+  add_executable(stream_test src/tapa/host/stream_test.cpp)
+  target_link_libraries(stream_test tapa GTest::gtest_main)
+  gtest_discover_tests(stream_test)
 
   add_executable(task_test src/tapa/host/task_test.cpp)
   target_link_libraries(task_test tapa GTest::gtest_main)
