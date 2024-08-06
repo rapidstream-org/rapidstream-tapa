@@ -9,7 +9,7 @@ on:
 
 jobs:
   splag-u280:
-    if: github.repository == 'UCLA-VAST/tapa' && (github.event.inputs.job == github.job || github.event.inputs.job == '')
+    if: github.repository == 'rapidstream-org/rapidstream-tapa' && (github.event.inputs.job == github.job || github.event.inputs.job == '')
 
     runs-on:
       - self-hosted

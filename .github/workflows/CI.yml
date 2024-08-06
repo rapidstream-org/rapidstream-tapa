@@ -113,7 +113,7 @@ jobs:
           packages_dir: backend/python/dist/
 
   cosim:
-    if: github.repository == 'UCLA-VAST/tapa'
+    if: github.repository == 'rapidstream-org/rapidstream-tapa'
 
     needs:
       - build-cpp
