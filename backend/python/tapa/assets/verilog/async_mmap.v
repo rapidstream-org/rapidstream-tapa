@@ -17,82 +17,95 @@ module async_mmap #(
   parameter MaxWaitTime       = 3,
   parameter MaxBurstLen       = 15
 ) (
-  (* RS_CLK *) input wire clk,
-  (* RS_RST *) input wire rst, // active high
+  // pragma RS clk port=clk
+  // pragma RS rst port=rst active=high
+  input wire clk,
+  input wire rst, // active high
 
   // base address for the memory region
-  (* RS_FF = "offset" *) input wire [63:0] offset,
+  // pragma RS ff data=offset
+  input wire [63:0] offset,
 
   // axi write addr channel
-  (* RS_HS = "aw.valid" *) output wire                        m_axi_AWVALID,
-  (* RS_HS = "aw.ready" *) input  wire                        m_axi_AWREADY,
-  (* RS_HS = "aw.data" *)  output wire [AxiSideAddrWidth-1:0] m_axi_AWADDR,
-  (* RS_HS = "aw.data" *)  output wire [0:0]                  m_axi_AWID,
-  (* RS_HS = "aw.data" *)  output wire [7:0]                  m_axi_AWLEN,
-  (* RS_HS = "aw.data" *)  output wire [2:0]                  m_axi_AWSIZE,
-  (* RS_HS = "aw.data" *)  output wire [1:0]                  m_axi_AWBURST,
-  (* RS_HS = "aw.data" *)  output wire [0:0]                  m_axi_AWLOCK,
-  (* RS_HS = "aw.data" *)  output wire [3:0]                  m_axi_AWCACHE,
-  (* RS_HS = "aw.data" *)  output wire [2:0]                  m_axi_AWPROT,
-  (* RS_HS = "aw.data" *)  output wire [3:0]                  m_axi_AWQOS,
+  // pragma RS handshake valid=m_axi_AWVALID ready=m_axi_AWREADY data=m_axi_AW.*
+  output wire                        m_axi_AWVALID,
+  input  wire                        m_axi_AWREADY,
+  output wire [AxiSideAddrWidth-1:0] m_axi_AWADDR,
+  output wire [0:0]                  m_axi_AWID,
+  output wire [7:0]                  m_axi_AWLEN,
+  output wire [2:0]                  m_axi_AWSIZE,
+  output wire [1:0]                  m_axi_AWBURST,
+  output wire [0:0]                  m_axi_AWLOCK,
+  output wire [3:0]                  m_axi_AWCACHE,
+  output wire [2:0]                  m_axi_AWPROT,
+  output wire [3:0]                  m_axi_AWQOS,
 
   // axi write data channel
-  (* RS_HS = "w.valid" *) output wire                   m_axi_WVALID,
-  (* RS_HS = "w.ready" *) input  wire                   m_axi_WREADY,
-  (* RS_HS = "w.data" *)  output wire [DataWidth-1:0]   m_axi_WDATA,
-  (* RS_HS = "w.data" *)  output wire [DataWidth/8-1:0] m_axi_WSTRB,
-  (* RS_HS = "w.data" *)  output wire                   m_axi_WLAST,
+  // pragma RS handshake valid=m_axi_WVALID ready=m_axi_WREADY data=m_axi_W.*
+  output wire                   m_axi_WVALID,
+  input  wire                   m_axi_WREADY,
+  output wire [DataWidth-1:0]   m_axi_WDATA,
+  output wire [DataWidth/8-1:0] m_axi_WSTRB,
+  output wire                   m_axi_WLAST,
 
   // axi write acknowledge channel
-  (* RS_HS = "b.valid" *) input  wire       m_axi_BVALID,
-  (* RS_HS = "b.ready" *) output wire       m_axi_BREADY,
-  (* RS_HS = "b.data" *)  input  wire [1:0] m_axi_BRESP,
-  (* RS_HS = "b.data" *)  input  wire [0:0] m_axi_BID,
+  // pragma RS handshake valid=m_axi_BVALID ready=m_axi_BREADY data=m_axi_B.*
+  input  wire       m_axi_BVALID,
+  output wire       m_axi_BREADY,
+  input  wire [1:0] m_axi_BRESP,
+  input  wire [0:0] m_axi_BID,
 
   // axi read addr channel
-  (* RS_HS = "ar.valid" *) output wire                        m_axi_ARVALID,
-  (* RS_HS = "ar.ready" *) input  wire                        m_axi_ARREADY,
-  (* RS_HS = "ar.data" *)  output wire [AxiSideAddrWidth-1:0] m_axi_ARADDR,
-  (* RS_HS = "ar.data" *)  output wire [0:0]                  m_axi_ARID,
-  (* RS_HS = "ar.data" *)  output wire [7:0]                  m_axi_ARLEN,
-  (* RS_HS = "ar.data" *)  output wire [2:0]                  m_axi_ARSIZE,
-  (* RS_HS = "ar.data" *)  output wire [1:0]                  m_axi_ARBURST,
-  (* RS_HS = "ar.data" *)  output wire [0:0]                  m_axi_ARLOCK,
-  (* RS_HS = "ar.data" *)  output wire [3:0]                  m_axi_ARCACHE,
-  (* RS_HS = "ar.data" *)  output wire [2:0]                  m_axi_ARPROT,
-  (* RS_HS = "ar.data" *)  output wire [3:0]                  m_axi_ARQOS,
+  // pragma RS handshake valid=m_axi_ARVALID ready=m_axi_ARREADY data=m_axi_AR.*
+  output wire                        m_axi_ARVALID,
+  input  wire                        m_axi_ARREADY,
+  output wire [AxiSideAddrWidth-1:0] m_axi_ARADDR,
+  output wire [0:0]                  m_axi_ARID,
+  output wire [7:0]                  m_axi_ARLEN,
+  output wire [2:0]                  m_axi_ARSIZE,
+  output wire [1:0]                  m_axi_ARBURST,
+  output wire [0:0]                  m_axi_ARLOCK,
+  output wire [3:0]                  m_axi_ARCACHE,
+  output wire [2:0]                  m_axi_ARPROT,
+  output wire [3:0]                  m_axi_ARQOS,
 
   // axi read response channel
-  (* RS_HS = "r.valid" *) input  wire                 m_axi_RVALID,
-  (* RS_HS = "r.ready" *) output wire                 m_axi_RREADY,
-  (* RS_HS = "r.data" *)  input  wire [DataWidth-1:0] m_axi_RDATA,
-  (* RS_HS = "r.data" *)  input  wire                 m_axi_RLAST,
-  (* RS_HS = "r.data" *)  input  wire [0:0]           m_axi_RID,
-  (* RS_HS = "r.data" *)  input  wire [1:0]           m_axi_RRESP,
+  // pragma RS handshake valid=m_axi_RVALID ready=m_axi_RREADY data=m_axi_R.*
+  input  wire                 m_axi_RVALID,
+  output wire                 m_axi_RREADY,
+  input  wire [DataWidth-1:0] m_axi_RDATA,
+  input  wire                 m_axi_RLAST,
+  input  wire [0:0]           m_axi_RID,
+  input  wire [1:0]           m_axi_RRESP,
 
 
   // push read addr here
-  (* RS_HS = "read_addr.data" *)  input  wire [AddrWidth-1:0] read_addr_din,
-  (* RS_HS = "read_addr.valid" *) input  wire                 read_addr_write,
-  (* RS_HS = "read_addr.ready" *) output wire                 read_addr_full_n,
+  // pragma RS handshake valid=read_addr_write ready=read_addr_full_n data=read_addr_din
+  input  wire [AddrWidth-1:0] read_addr_din,
+  input  wire                 read_addr_write,
+  output wire                 read_addr_full_n,
 
   // pop read resp here
-  (* RS_HS = "read_data.data" *)  output wire [DataWidth-1:0] read_data_dout,
-  (* RS_HS = "read_data.ready" *) input  wire                 read_data_read,
-  (* RS_HS = "read_data.valid" *) output wire                 read_data_empty_n,
+  // pragma RS handshake valid=read_data_empty_n ready=read_data_read data=read_data_dout
+  output wire [DataWidth-1:0] read_data_dout,
+  input  wire                 read_data_read,
+  output wire                 read_data_empty_n,
 
   // push write addr and data here
-  (* RS_HS = "write_addr.data" *)  input  wire [AddrWidth-1:0] write_addr_din,
-  (* RS_HS = "write_addr.valid" *) input  wire                 write_addr_write,
-  (* RS_HS = "write_addr.ready" *) output wire                 write_addr_full_n,
-  (* RS_HS = "write_data.data" *)  input  wire [DataWidth-1:0] write_data_din,
-  (* RS_HS = "write_data.valid" *) input  wire                 write_data_write,
-  (* RS_HS = "write_data.ready" *) output wire                 write_data_full_n,
+  // pragma RS handshake valid=write_addr_write ready=write_addr_full_n data=write_addr_din
+  // pragma RS handshake valid=write_data_write ready=write_data_full_n data=write_data_din
+  input  wire [AddrWidth-1:0] write_addr_din,
+  input  wire                 write_addr_write,
+  output wire                 write_addr_full_n,
+  input  wire [DataWidth-1:0] write_data_din,
+  input  wire                 write_data_write,
+  output wire                 write_data_full_n,
 
   // pop write resp here
-  (* RS_HS = "write_resp.data" *)  output wire [7:0] write_resp_dout,
-  (* RS_HS = "write_resp.ready" *) input  wire       write_resp_read,
-  (* RS_HS = "write_resp.valid" *) output wire       write_resp_empty_n
+  // pragma RS handshake valid=write_resp_empty_n ready=write_resp_read data=write_resp_dout
+  output wire [7:0] write_resp_dout,
+  input  wire       write_resp_read,
+  output wire       write_resp_empty_n
 );
 
   // write addr buffer, from user to burst detector
