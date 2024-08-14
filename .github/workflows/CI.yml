@@ -112,12 +112,31 @@ jobs:
           password: ${{ secrets.pypi_password }}
           packages_dir: backend/python/dist/
 
-  cosim:
+  find-apps:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.apps.outputs.apps }}
+    steps:
+      - name: Checkout myself
+        uses: actions/checkout@v4
+      - name: Find apps
+        id: apps
+        working-directory: apps
+        run: |
+          {
+            printf 'apps='
+            find * -mindepth 0 -maxdepth 0 -type d |
+              jq --raw-input . |
+              jq --compact-output --slurp .
+          } >>"${GITHUB_OUTPUT}"
+
+  cosim-apps:
     if: github.repository == 'rapidstream-org/rapidstream-tapa'
 
     needs:
       - build-cpp
       - build-python
+      - find-apps
 
     runs-on:
       - self-hosted
@@ -131,6 +150,7 @@ jobs:
           - xilinx_u250_gen3x16_xdma_4_1_202210_1
         xocl-version:
           - "2023.2"
+        app: ${{ fromJSON(needs.find-apps.outputs.apps) }}
 
     env:
       XILINX_HLS: /opt/tools/xilinx/Vitis_HLS/${{ matrix.xocl-version }}
@@ -155,20 +175,20 @@ jobs:
             TAPA_DEB="$(ls ./artifacts/tapa-cpp-ubuntu-"${VERSION_ID}"/*.deb)" \
             TAPA_WHL="$(ls artifacts/tapa-python/*.whl)" \
             ./install.sh
-      - name: Configure apps
+      - name: Configure app
         run: |
-          for app in apps/*; do
-            [[ ! -d "${app}" ]] && continue
-            cmake \
-              -S "${app}" \
-              -B "${app}"/build \
-              -D PLATFORM=${{ matrix.xocl-platform }}
-          done
-      - name: Test apps
+          cmake \
+            -S apps/${{ matrix.app }} \
+            -B apps/${{ matrix.app }}/build \
+            -D PLATFORM=${{ matrix.xocl-platform }}
+      - name: Test app
         run: |
-          source ${XILINX_VITIS}/settings64.sh
-          {
-            printf 'all:\n'
-            find apps -mindepth 1 -maxdepth 1 -type d \
-              -printf '\t+$(MAKE) -C apps/%f/build %f-cosim\n'
-          } | make -f -
+          source "${XILINX_VITIS}/settings64.sh"
+          make -C apps/${{ matrix.app }}/build ${{ matrix.app }}-cosim
+
+  cosim:
+    runs-on: ubuntu-latest
+    needs:
+      - cosim-apps
+    steps:
+      - run: echo PASS
