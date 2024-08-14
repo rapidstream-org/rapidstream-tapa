@@ -52,7 +52,7 @@ def async_mmap_width(
 
 
 def generate_async_mmap_ports(
-    tag: str, port: str, arg: str,
+    tag: str, port: str, arg: str, offset_name: str,
     instance: tapa.instance.Instance) -> Iterator[ast.PortArg]:
   # TODO: reuse functions that generate i/ostream ports
   prefix = port + '_' + tag
@@ -84,6 +84,14 @@ def generate_async_mmap_ports(
           arg_name = ''
 
         yield ast.make_port_arg(port=port_name, arg=arg_name)
+
+  # Generate the offset port, which carries the base address of this async_mmap.
+  if tag.endswith('_addr'):
+    port_name = instance.task.module.find_port(prefix, suffix='_offset')
+    assert port_name is not None, f'missing async_mmap port `{arg}.offset`'
+    _logger.debug('`%s.%s` is connected to async_mmap port `%s.offset`',
+                  instance.name, port_name, arg)
+    yield ast.make_port_arg(port=port_name, arg=offset_name)
 
 
 def generate_async_mmap_signals(tag: str, arg: str,

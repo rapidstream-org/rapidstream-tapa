@@ -22,10 +22,6 @@ module async_mmap #(
   input wire clk,
   input wire rst, // active high
 
-  // base address for the memory region
-  // pragma RS ff data=offset
-  input wire [63:0] offset,
-
   // axi write addr channel
   // pragma RS handshake valid=m_axi_AWVALID ready=m_axi_AWREADY data=m_axi_AW.*
   output wire                        m_axi_AWVALID,
@@ -127,7 +123,7 @@ module async_mmap #(
     .if_full_n  (write_addr_full_n),
     .if_write_ce(1'b1),
     .if_write   (write_addr_write),
-    .if_din     (offset + (write_addr_din << $clog2(DataWidth/8))),
+    .if_din     (write_addr_din),
 
     // to burst detector
     .if_empty_n(write_addr_empty_n),
@@ -405,7 +401,7 @@ module async_mmap #(
     .if_full_n  (read_addr_full_n),
     .if_write_ce(1'b1),
     .if_write   (read_addr_write),
-    .if_din     (offset + (read_addr_din << $clog2(DataWidth/8))),
+    .if_din     (read_addr_din),
 
     // to axi
     .if_empty_n(read_addr_empty_n),

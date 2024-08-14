@@ -689,6 +689,7 @@ class Program:
                 tag=tag,
                 port=arg.port,
                 arg=arg.name,
+                offset_name=arg_table[arg.name][-1],
                 instance=instance,
             )) & child_port_set:
               async_mmap_args.setdefault(arg, []).append(tag)
@@ -846,6 +847,7 @@ class Program:
                     tag=tag,
                     port=arg.port,
                     arg=arg.mmap_name,
+                    offset_name=arg_table[arg.name][-1],
                     instance=instance,
                 ))
 
@@ -870,7 +872,6 @@ class Program:
       for arg in async_mmap_args:
         task.module.add_async_mmap_instance(
             name=arg.mmap_name,
-            offset_name=arg_table[arg.name][-1],
             tags=async_mmap_args[arg],
             rst=rtl.RST,
             data_width=width_table[arg.name],

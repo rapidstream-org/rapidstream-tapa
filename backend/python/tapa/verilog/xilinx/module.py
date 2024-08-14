@@ -536,7 +536,6 @@ class Module:
       buffer_size: Optional[int] = None,
       max_wait_time: int = 3,
       max_burst_len: Optional[int] = None,
-      offset_name: str = '',
   ) -> 'Module':
     paramargs = [
         ast.ParamArg(paramname='DataWidth', argname=ast.Constant(data_width)),
@@ -563,9 +562,6 @@ class Module:
     paramargs.append(
         ast.ParamArg(paramname='MaxWaitTime',
                      argname=ast.Constant(max(1, max_wait_time))))
-
-    # the base address for this memory channel
-    portargs.append(ast.make_port_arg(port='offset', arg=offset_name or name))
 
     if max_burst_len is None:
       # 1KB burst length
