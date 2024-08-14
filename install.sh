@@ -49,7 +49,8 @@ EOF
   if [[ -z "${TAPA_DEB}" ]]; then
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y tapa
   else
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -f "${TAPA_DEB}"
+    echo "installing ${TAPA_DEB}" >&2
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -f "${TAPA_DEB}" --reinstall
   fi
 }
 
@@ -58,7 +59,8 @@ function install-tapa-python() {
   if [[ -z "${TAPA_WHL}" ]]; then
     python3 -m pip install --upgrade --user tapa
   else
-    python3 -m pip install --upgrade --user "${TAPA_WHL}"
+    echo "installing ${TAPA_WHL}" >&2
+    python3 -m pip install --upgrade --user "${TAPA_WHL}" --force-reinstall
   fi
 
   # check if PATH is correctly set

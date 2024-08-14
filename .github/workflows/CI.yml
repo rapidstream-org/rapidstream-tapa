@@ -171,10 +171,11 @@ jobs:
             cmake \
 
           eval "$(grep ^VERSION_ID /etc/os-release)"
-          env \
-            TAPA_DEB="$(ls ./artifacts/tapa-cpp-ubuntu-"${VERSION_ID}"/*.deb)" \
-            TAPA_WHL="$(ls artifacts/tapa-python/*.whl)" \
-            ./install.sh
+          export TAPA_DEB="$(ls ./artifacts/tapa-cpp-ubuntu-"${VERSION_ID}"/*.deb)"
+          export TAPA_WHL="$(ls artifacts/tapa-python/*.whl)"
+          [[ -n "${TAPA_DEB}" ]]
+          [[ -n "${TAPA_WHL}" ]]
+          ./install.sh
       - name: Configure app
         run: |
           cmake \
