@@ -86,12 +86,6 @@ def _next_power_of_2(x):
   return 1 if x == 0 else 2**(x - 1).bit_length()
 
 
-def get_ctrl_instance_region(part_num: str) -> str:
-  if part_num.startswith('xcu250-') or part_num.startswith('xcu280-'):
-    return 'COARSE_X1Y0'
-  raise NotImplementedError(f'unknown {part_num}')
-
-
 def get_port_region(part_num: str, port_cat: str, port_id: int) -> str:
   """
   return the physical location of a given port

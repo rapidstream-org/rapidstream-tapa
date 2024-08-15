@@ -11,11 +11,7 @@ from autobridge.main import annotate_floorplan
 from haoda.report.xilinx import rtl as report
 
 from tapa import util
-from tapa.hardware import (
-    get_ctrl_instance_region,
-    get_port_region,
-    get_slr_count,
-)
+from tapa.hardware import get_port_region, get_slr_count
 from tapa.task import Task
 from tapa.task_graph import get_edges, get_vertices
 
@@ -61,7 +57,7 @@ def generate_floorplan(
 def get_floorplan_result(
     autobridge_dir: str,
     constraint: TextIO,
-) -> Tuple[Dict[str, str], Dict[str, int], Dict[str, int], Dict[str, int]]:
+) -> Tuple[Dict[str, str], Dict[str, int], Dict[str, int]]:
   """ extract floorplan results from the checkpointed config file """
   try:
     config_with_floorplan = json.loads(
@@ -78,10 +74,9 @@ def get_floorplan_result(
 
   fifo_pipeline_level, axi_pipeline_level = extract_pipeline_level(
       config_with_floorplan)
-  task_inst_to_slr = extract_task_locations(config_with_floorplan)
   fifo_to_depth = extract_fifo_depth(config_with_floorplan)
 
-  return fifo_pipeline_level, axi_pipeline_level, task_inst_to_slr, fifo_to_depth
+  return fifo_pipeline_level, axi_pipeline_level, fifo_to_depth
 
 
 def extract_fifo_depth(config_with_floorplan) -> Dict[str, int]:
@@ -101,18 +96,6 @@ def extract_fifo_depth(config_with_floorplan) -> Dict[str, int]:
       fifo_to_depth[props['instance']] = props['adjusted_depth']
 
   return fifo_to_depth
-
-
-def extract_task_locations(config_with_floorplan) -> Dict[str, int]:
-  task_inst_to_slr = {}
-  if config_with_floorplan.get('floorplan_status') == 'FAILED':
-    return task_inst_to_slr
-
-  for v_name, props in config_with_floorplan['vertices'].items():
-    # pseudo vertices don't have instances
-    if 'instance' in props:
-      task_inst_to_slr[props['instance']] = props['SLR']
-  return task_inst_to_slr
 
 
 def extract_pipeline_level(

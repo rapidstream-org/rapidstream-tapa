@@ -22,7 +22,6 @@ from haoda.backend import xilinx as hls
 
 from tapa import util
 from tapa.codegen.axi_pipeline import get_axi_pipeline_wrapper
-from tapa.codegen.duplicate_s_axi_control import duplicate_s_axi_ctrl
 from tapa.floorplan import (
     checkpoint_floorplan,
     generate_floorplan,
@@ -404,19 +403,13 @@ class Program:
     Returns:
         Program: Return self.
     """
-    task_inst_to_slr = {}
-
     # extract the floorplan result
     if constraint is not None:
       (
           fifo_pipeline_level,
           axi_pipeline_level,
-          task_inst_to_slr,
           fifo_to_depth,
       ) = get_floorplan_result(self.autobridge_dir, constraint)
-
-      if not task_inst_to_slr:
-        _logger.warning('generate top rtl without floorplanning')
 
       self.top_task.module.fifo_partition_count = fifo_pipeline_level
       self.top_task.module.axi_pipeline_level = axi_pipeline_level
@@ -454,8 +447,6 @@ class Program:
     _logger.info('instrumenting top-level RTL')
     self._instrument_top_task(
         self.top_task,
-        part_num,
-        task_inst_to_slr,
         additional_fifo_pipelining,
         print_fifo_ops,
     )
@@ -591,7 +582,6 @@ class Program:
       self,
       task: Task,
       width_table: Dict[str, int],
-      instance_name_to_slr: Dict[str, int],
   ) -> List[ast.Identifier]:
     _logger.debug('  instantiating children tasks in %s', task.name)
     is_done_signals: List[rtl.Pipeline] = []
@@ -599,13 +589,6 @@ class Program:
     async_mmap_args: Dict[Instance.Arg, List[str]] = collections.OrderedDict()
 
     task.add_m_axi(width_table, self.files)
-
-    # now that each SLR has an control_s_axi, slightly reduce the
-    # pipeline level of the scalars
-    if instance_name_to_slr:
-      scalar_register_level = 2
-    else:
-      scalar_register_level = self.register_level
 
     # Wires connecting to the upstream (s_axi_control).
     fsm_upstream_portargs: List[ast.PortArg] = [
@@ -626,12 +609,6 @@ class Program:
     fsm_downstream_module_ports = []
 
     for instance in task.instances:
-      # connect to the control_s_axi in the corresponding SLR
-      if instance.name in instance_name_to_slr:
-        argname_suffix = f'_slr_{instance_name_to_slr[instance.name]}'
-      else:
-        argname_suffix = ''
-
       child_port_set = set(instance.task.module.ports)
 
       # add signal delcarations
@@ -652,22 +629,22 @@ class Program:
           if arg.chan_count is not None:
             id_name = "64'd0"
           # arg.name may be a constant
-          elif arg.name in width_table:
-            id_name = arg.name + argname_suffix
           else:
             id_name = arg.name
 
           # Instantiate a pipeline for the arg.
           q = rtl.Pipeline(
               name=instance.get_instance_arg(id_name),
-              level=scalar_register_level,
+              level=self.register_level,
               width=width,
           )
           arg_table[arg.name] = q
 
           # Add signals only for non-consts. Constants are passed as literals.
           if "'d" not in q.name:
-            task.module.add_signals(q.signals)
+            task.module.add_signals([
+                ast.Wire(name=q[-1].name, width=ast.make_width(width)),
+            ])
             task.fsm_module.add_pipeline(q, init=ast.Identifier(id_name))
             _logger.debug("    pipelined signal: %s => %s", id_name, q.name)
             fsm_upstream_module_ports.setdefault(
@@ -996,7 +973,6 @@ class Program:
     is_done_signals = self._instantiate_children_tasks(
         task,
         width_table,
-        {},
     )
     self._instantiate_global_fsm(task.module, is_done_signals)
 
@@ -1006,8 +982,6 @@ class Program:
   def _instrument_top_task(
       self,
       task: Task,
-      part_num: str,
-      instance_name_to_slr: Dict[str, int],
       additional_fifo_pipelining: bool,
       print_fifo_ops: bool,
   ) -> None:
@@ -1016,45 +990,20 @@ class Program:
     task.module.cleanup()
     task.add_rs_pragmas_to_fsm()
 
-    # if floorplan is enabled, add a control_s_axi instance in each SLR
-    if instance_name_to_slr:
-      num_slr = get_slr_count(part_num)
-      duplicate_s_axi_ctrl(task, num_slr)
-
     self._instantiate_fifos(task, additional_fifo_pipelining, print_fifo_ops)
     self._connect_fifos(task)
     width_table = {port.name: port.width for port in task.ports.values()}
     is_done_signals = self._instantiate_children_tasks(
         task,
         width_table,
-        instance_name_to_slr,
     )
     self._instantiate_global_fsm(task.fsm_module, is_done_signals)
 
     with open(self.get_rtl(task.fsm_module.name), 'w') as rtl_code:
       rtl_code.write(task.fsm_module.code)
 
-    if instance_name_to_slr:
-      # if floorplan is enabled, pipeline the top-level task
-      self._pipeline_top_task(task)
-    else:
-      # otherwise, generate the top-level task as-is
-      with open(self.get_rtl(task.name), 'w') as rtl_code:
-        rtl_code.write(task.module.code)
-
-  def _pipeline_top_task(self, task: Task) -> None:
-    """
-    add axi pipelines to the top task
-    """
-    # generate the original top module. Append a suffix to it
-    top_suffix = '_inner'
-    task.module.name += top_suffix
-    with open(self.get_rtl(task.name + top_suffix), 'w') as rtl_code:
-      rtl_code.write(task.module.code)
-
-    # generate the wrapper that becomes the final top module
     with open(self.get_rtl(task.name), 'w') as rtl_code:
-      rtl_code.write(get_axi_pipeline_wrapper(task.name, top_suffix, task))
+      rtl_code.write(task.module.code)
 
   def _get_fifo_width(self, task: Task, fifo: str) -> int:
     producer_task, _, fifo_port = task.get_connection_to(fifo, 'produced_by')
