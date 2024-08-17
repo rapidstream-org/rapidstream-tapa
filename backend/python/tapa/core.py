@@ -268,7 +268,6 @@ class Program:
   def generate_task_rtl(
       self,
       additional_fifo_pipelining: bool = False,
-      part_num: str = '',
   ) -> 'Program':
     """Extract HDL files from tarballs generated from HLS."""
     _logger.info('extracting RTL files')
@@ -324,7 +323,6 @@ class Program:
       if task.is_upper and task.name != self.top:
         self._instrument_non_top_upper_task(
             task,
-            part_num,
             additional_fifo_pipelining,
         )
 
@@ -959,7 +957,6 @@ class Program:
   def _instrument_non_top_upper_task(
       self,
       task: Task,
-      part_num: str,
       additional_fifo_pipelining: bool = False,
   ) -> None:
     """ codegen for upper but non-top tasks """

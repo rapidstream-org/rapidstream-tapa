@@ -75,7 +75,7 @@ def synth(
       skip_hls_based_on_mtime,
       other_hls_configs,
   )
-  program.generate_task_rtl(additional_fifo_pipelining, part_num)
+  program.generate_task_rtl(additional_fifo_pipelining)
 
   settings['synthed'] = True
   tapa.steps.common.store_persistent_context('settings')
