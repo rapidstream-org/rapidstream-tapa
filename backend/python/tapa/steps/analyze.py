@@ -40,14 +40,28 @@ _logger = logging.getLogger().getChild(__name__)
               type=str,
               default=(),
               help='Compiler flags for the kernel, may appear many times.')
+@click.option('--flatten-hierarchy / --keep-hierarchy',
+              type=bool,
+              default=False,
+              help=('`--keep-hierarchy` (default) will generate RTL with the '
+                    'same hierarchy as the TAPA C++ source code; '
+                    '`--flatten-hierarchy` will flatten the hierarchy with all '
+                    'leaf-level tasks instantiated in the top module'))
 @click.option('--tapacc',
               type=click.Path(dir_okay=False, readable=True, exists=True),
               help='Specify a `tapacc` instead of searching in `PATH`.')
 @click.option('--tapa-clang',
               type=click.Path(dir_okay=False, readable=True, exists=True),
               help='Specify a `tapa-clang` instead of searching in `PATH`.')
-def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],
-            tapacc: str, tapa_clang: str) -> None:
+def analyze(
+    ctx,
+    input: Tuple[str, ...],
+    top: str,
+    cflags: Tuple[str, ...],
+    flatten_hierarchy: bool,
+    tapacc: str,
+    tapa_clang: str,
+) -> None:
 
   tapacc = find_clang_binary('tapacc', tapacc)
   tapa_clang = find_clang_binary('tapa-clang', tapa_clang)
@@ -63,7 +77,10 @@ def analyze(ctx, input: Tuple[str, ...], top: str, cflags: Tuple[str, ...],
   graph_dict['cflags'] = tapacc_cflags
 
   # Flatten the graph
-  graph_dict = TapaGraph(None, graph_dict).get_flatten_graph().to_dict()
+  tapa_graph = TapaGraph(None, graph_dict)
+  if flatten_hierarchy:
+    tapa_graph = tapa_graph.get_flatten_graph()
+  graph_dict = tapa_graph.to_dict()
 
   tapa.steps.common.store_tapa_program(tapa.core.Program(graph_dict, work_dir))
 

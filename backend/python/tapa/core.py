@@ -971,7 +971,10 @@ class Program:
         task,
         width_table,
     )
-    self._instantiate_global_fsm(task.module, is_done_signals)
+    self._instantiate_global_fsm(task.fsm_module, is_done_signals)
+
+    with open(self.get_rtl(task.fsm_module.name), 'w') as rtl_code:
+      rtl_code.write(task.fsm_module.code)
 
     with open(self.get_rtl(task.name), 'w') as rtl_code:
       rtl_code.write(task.module.code)
