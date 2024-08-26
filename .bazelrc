@@ -1,7 +1,18 @@
-build:asan --strip=never
-build:asan --copt -fsanitize=address
 build:asan --copt -DADDRESS_SANITIZER
 build:asan --copt -O1
-build:asan --copt -g
 build:asan --copt -fno-omit-frame-pointer
+build:asan --copt -fsanitize=address
+build:asan --copt -g
 build:asan --linkopt -fsanitize=address
+build:asan --strip=never
+
+build:release --compilation_mode=opt
+build:release --copt=-DNDEBUG
+build:release --copt=-O3
+build:release --copt=-fPIC
+build:release --copt=-flto
+build:release --copt=-g0
+build:release --copt=-mtune=native
+build:release --linkopt=-O3
+build:release --linkopt=-flto
+build:release --strip=always
