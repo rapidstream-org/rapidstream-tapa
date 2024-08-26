@@ -328,7 +328,13 @@ def run_tapacc(
       Output description of the TAPA program.
 
     """
-    tapacc_args = ("-top", top, "--", *cflags)
+    tapacc_args = (
+        "-top",
+        top,
+        "--",
+        "-v",  # print include paths to aid debugging
+        *cflags,
+    )
     tapacc_cmd = (tapacc, *files, *tapacc_args)
     _logger.info("Running tapacc command: %s", " ".join(tapacc_cmd))
 
