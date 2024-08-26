@@ -193,7 +193,7 @@ def find_tapacc_cflags(
         _logger.info("added vendor include path `%s`", vendor_path)
 
     # Add system include files to tapacc cflags
-    system_includes = ["-stdlib=libc++"]
+    system_includes = ["-nostdinc", "-nostdinc++"]
     system_include_path = os.path.join(
         os.path.dirname(tapa.__file__),
         "..",
@@ -212,6 +212,9 @@ def find_tapacc_cflags(
         system_includes.extend(
             ["-isystem", f"{system_include_path}/{include_paths}"],
         )
+    system_includes.extend(
+        ["-isystem", "/usr/include/x86_64-linux-gnu", "-isystem", "/usr/include"],
+    )
 
     # FIXME: TAPA target should be user specified
     return (
