@@ -1,10 +1,19 @@
-# TAPA
+<!--
+Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+All rights reserved. The contributor(s) of this file has/have agreed to the
+RapidStream Contributor License Agreement.
+-->
 
-[![CI](https://github.com/UCLA-VAST/tapa/actions/workflows/CI.yml/badge.svg)](https://github.com/UCLA-VAST/tapa/actions/workflows/CI.yml)
-[![install](https://github.com/Blaok/tapa/actions/workflows/install.yml/badge.svg)](https://github.com/Blaok/tapa/actions/workflows/install.yml)
-[![Documentation Status](https://readthedocs.org/projects/tapa/badge/?version=latest)](https://tapa.readthedocs.io/en/latest/?badge=latest)
+<img src="https://imagedelivery.net/AU8IzMTGgpVmEBfwPILIgw/1b565657-df33-41f9-f29e-0d539743e700/128" width="64px" alt="RapidStream Logo" />
+
+# RapidStream TAPA
+
+[![CI](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/CI.yml/badge.svg)](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/CI.yml)
+[![Install](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/install.yml/badge.svg)](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/install.yml)
+[![Documentation](https://readthedocs.org/projects/tapa/badge/?version=latest)](https://tapa.readthedocs.io/en/latest/?badge=latest)
 
 TAPA is a dataflow HLS framework that features fast compilation, expressive programming model and generates high-frequency FPGA accelerators.
+Now it is maintained by RapidStream Design Automation, Inc.
 
 ![TAPA Framework](https://user-images.githubusercontent.com/32432619/157972074-12fe5f32-4cd0-492e-b47a-06c23ea9c283.png)
 
@@ -12,41 +21,28 @@ TAPA is a dataflow HLS framework that features fast compilation, expressive prog
 ## High-Frequency
 
 - TAPA explicitly decouples communication and computation for better QoR.
-
-- TAPA integrates the [AutoBridge](https://github.com/Licheng-Guo/AutoBridge) floorplanner to optimize the RTL generation process.
-
+- TAPA integrates the [RapidStream Composer](https://rapidstream-da.com/) to optimize the RTL generation process.
 - TAPA achieves **2×** higher the frequency on average compared to Vivado. [<sup>1</sup>](https://doi.org/10.1145/3431920.3439289)
-
 
 ## Speed
 
 - TAPA compiles **7×** faster than Vitis HLS. [<sup>2</sup>](https://doi.org/10.1109/fccm51124.2021.00032)
-
 - TAPA provides **3×** faster software simulation than Vitis HLS.[<sup>2</sup>](https://doi.org/10.1109/fccm51124.2021.00032)
-
 - TAPA provides **8×** faster RTL simulation than Vitis.
-
-- [in-progress] TAPA is integrating [RapidStream](https://github.com/Licheng-Guo/RapidStream) that is up to **10×** faster than Vivado.[<sup>3</sup>](https://vast.cs.ucla.edu/~chiyuze/pub/fpga22-rapidstream.pdf)
-
+- TAPA is integrating [RapidStream Composer](https://rapidstream-da.com/) that
+  is up to **10×** faster than Vivado.
 
 ## Expressiveness
 
 - TAPA extends the Vitis HLS syntax for richer expressiveness at the C++ level.
-
 - TAPA provides dedicated APIs for arbitrary external memory access patterns.
-
 - TAPA allows users to explicitly specify parallelism.
-
 - In addition to static burst analysis, TAPA supports runtime burst detectuion by transparently merging small memory transactions into large bursts.
-
-
 
 ## HBM-Specific Optimizations
 
 - TAPA significantly reduce the area overhead of HBM interface IPs compared to Vitis HLS.
-
 - TAPA includes an automated design space exploration tool to balance the resource pressure and the wire pressure for HBM FPGAs.
-
 - TAPA automatically select the physical channel for each top-level argument of your accelerator.
 
 ## Successful Cases
@@ -86,3 +82,34 @@ TAPA is a dataflow HLS framework that features fast compilation, expressive prog
   [[Code]](https://github.com/Licheng-Guo/AutoBridge)
   [[Slides]](https://about.blaok.me/pub/fpga21-autobridge.slides.pdf)
   [[Video]](https://about.blaok.me/pub/fpga21-autobridge.mp4)
+
+## Licensing
+
+RapidStream TAPA is an open source project managed by RapidStream Design
+Automation, Inc., who is authorized by the contributors to license the software
+under the MIT license.
+
+## Contributor License Agreement (CLA)
+
+By contributing to this open-source repository, you agree to the RapidStream
+Contributor License Agreement.
+
+Under this agreement, you grant to RapidStream Design Automation, Inc. and to
+recipients of software distributed by RapidStream a perpetual, worldwide,
+non-exclusive, no-charge, royalty-free, irrevocable copyright license to
+reproduce, prepare derivative works of, publicly display, publicly perform,
+sublicense, and distribute your contributions and such derivative works.
+You also grant to RapidStream Design Automation, Inc. and to recipients of
+software distributed by RapidStream a perpetual, worldwide, non-exclusive,
+no-charge, royalty-free, irrevocable patent license to make, have made, use,
+offer to sell, sell, import, and otherwise transfer the work,
+
+Please note that this is a summary of the licensing terms, and the full text of
+the [MIT](LICENSE) and the [RapidStream Contributor License Agreement](CLA.md)
+should be consulted for detailed legal information.
+
+---
+
+Copyright (c) 2024 RapidStream Design Automation, Inc.
+<br/> Copyright (c) 2020 Blaok.
+<br/> All rights reserved.

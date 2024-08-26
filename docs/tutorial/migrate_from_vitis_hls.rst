@@ -162,7 +162,10 @@ This tutorial covers more corner cases not mentioned in
 Dataflow in a Loop
 ------------------
 
-- Currently TAPA does not support the "dataflow-in-a-loop" coding style. One big idea in TAPA is that we want a strict decoupling of the communication structures from the computing units. The compiler will enforce that the top function should only include:
+- Currently TAPA does not support the "dataflow-in-a-loop" coding style. One
+  big idea in TAPA is that we want a strict decoupling of the communication
+  structures from the computing units. The compiler will enforce that the top
+  function should only include:
 
   - Stream definitions
   - Task invocations
@@ -170,9 +173,16 @@ Dataflow in a Loop
 - If your original Vitis HLS code uses the dataflow-in-a-loop style,
   you may push the loop into the tasks.
 
-- In the following Vitis HLS example, the dataflow region is defined within a loop to be executed for multiple iterations. However, this is not allowed in TAPA, because the loop will become additional logic that may mess up with the computing logic and thus hinder the timing closure. A common approach is to push the loop into the parallel tasks ---- write a copy of the loop in each task inside the dataflow region.
+- In the following Vitis HLS example, the dataflow region is defined within a
+  loop to be executed for multiple iterations. However, this is not allowed in
+  TAPA, because the loop will become additional logic that may mess up with the
+  computing logic and thus hinder the timing closure. A common approach is to
+  push the loop into the parallel tasks ---- write a copy of the loop in each
+  task inside the dataflow region.
 
-- While this restriction may seem bothering, it ensures a good timing quality of the generated hardware. Automated transformation is possible, but that remains a future enhancement.
+- While this restriction may seem bothering, it ensures a good timing quality
+  of the generated hardware. Automated transformation is possible, but that
+  remains a future enhancement.
 
 .. code-block:: cpp
 

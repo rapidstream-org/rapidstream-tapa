@@ -1,0 +1,109 @@
+"""FPGA runtime library for TAPA."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files", "strip_prefix")
+
+cc_library(
+    name = "frt",
+    srcs = glob(
+        [
+            "src/**/*.cpp",
+            "src/**/*.h",
+        ],
+        exclude = [
+            "src/frt/**/*_test.cpp",
+        ],
+    ),
+    hdrs = [
+        "src/frt.h",
+        "src/frt/arg_info.h",
+        "src/frt/buffer.h",
+        "src/frt/buffer_arg.h",
+        "src/frt/device.h",
+        "src/frt/stream.h",
+        "src/frt/stream_interface.h",
+        "src/frt/stream_wrapper.h",
+        "src/frt/tag.h",
+    ],
+    copts = [
+        "-DCL_HPP_CL_1_2_DEFAULT_BUILD",
+        "-DCL_HPP_TARGET_OPENCL_VERSION=120",
+        "-DCL_HPP_MINIMUM_OPENCL_VERSION=120",
+        "-DCL_TARGET_OPENCL_VERSION=120",
+    ],
+    includes = ["src"],
+    strip_include_prefix = "src",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@nlohmann_json//:json",
+        "@tinyxml2",
+        "@xilinx_xrt//:xrt",
+    ],
+)
+
+cc_test(
+    name = "frt-test",
+    size = "small",
+    srcs = glob(["frt/**/*_test.cpp"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":frt",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
+
+filegroup(
+    name = "include",
+    srcs = [
+        "src/frt.h",
+        "src/frt/arg_info.h",
+        "src/frt/buffer.h",
+        "src/frt/buffer_arg.h",
+        "src/frt/device.h",
+        "src/frt/stream.h",
+        "src/frt/stream_interface.h",
+        "src/frt/stream_wrapper.h",
+        "src/frt/tag.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+pkg_files(
+    name = "pkg-lib",
+    srcs = [":frt"],
+    prefix = "usr/lib",
+    strip_prefix = strip_prefix.files_only(),
+)
+
+pkg_files(
+    name = "pkg-include",
+    srcs = [":include"],
+    prefix = "usr/include",
+    strip_prefix = strip_prefix.from_pkg("src"),
+)
+
+pkg_filegroup(
+    name = "pkg",
+    srcs = [
+        ":pkg-include",
+        ":pkg-lib",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+pkg_files(
+    name = "pkg-extra-runtime-deps",
+    srcs = [
+        "@com_github_google_glog//:glog",
+        "@nlohmann_json//:json",
+        "@tinyxml2",
+    ],
+    prefix = "usr/lib",
+    strip_prefix = strip_prefix.files_only(),
+    visibility = ["//visibility:public"],
+)

@@ -1,3 +1,0 @@
-include tapa/assets/verilog/*.v
-include tapa/VERSION
-graft tapa/assets/clang

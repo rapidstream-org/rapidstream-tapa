@@ -1,0 +1,38 @@
+--- a/clang/include/clang/Basic/Attr.td	2023-11-28 00:52:28.000000000 -0800
++++ b/clang/include/clang/Basic/Attr.td	2024-06-18 12:50:08.990988047 -0700
+@@ -4199,3 +4199,35 @@
+   let Documentation = [Undocumented];
+ }
+ 
++// Begin TAPA
++
++def TapaPipeline : Attr {
++  let Spellings = [GNU<"tapa_pipeline">,
++                   CXX11<"tapa","pipeline">,
++                   C2x<"tapa", "pipeline">];
++  let Args = [IntArgument<"II", /* optional */1>];
++  let Documentation = [Undocumented];
++}
++
++def TapaUnroll : Attr {
++  let Spellings = [GNU<"tapa_unroll">,
++                   CXX11<"tapa","unroll">,
++                   C2x<"tapa", "unroll">];
++  let Args = [IntArgument<"Factor", /* optional */1>];
++  let Documentation = [Undocumented];
++}
++
++def TapaTarget : Attr {
++  let Spellings = [GNU<"tapa_target">,
++                   CXX11<"tapa","target">,
++                   C2x<"tapa", "target">];
++  let Args = [EnumArgument<"Target", "TargetType",
++                           ["hls", "aie"],
++                           ["HLS", "AIE"]>,
++              EnumArgument<"Vendor", "VendorType",
++                           ["xilinx"],
++                           ["Xilinx"], /* optional */1>];
++  let Documentation = [Undocumented];
++}
++
++// End TAPA

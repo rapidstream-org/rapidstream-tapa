@@ -1,0 +1,133 @@
+"""TAPA Python CLI build configuration."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files", "strip_prefix")
+load("@rules_python//python:packaging.bzl", "py_wheel")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("@tapa_deps//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//tapa:__subpackages__"])
+
+compile_pip_requirements(
+    name = "requirements",
+    src = "requirements.in",
+    requirements_txt = "requirements_lock.txt",
+)
+
+py_binary(
+    name = "tapa",
+    srcs = ["__main__.py"],
+    data = [
+        "//tapa-cpp",
+        "//tapa-lib:include",
+        "//tapa-lib:tapa",
+        "//tapa-system-include",
+    ],
+    main = "__main__.py",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":tapa-py-libs",
+        "//tapacc",
+        requirement("click"),
+    ],
+)
+
+py_wheel(
+    name = "tapa-wheel",
+    distribution = "tapa",
+    python_tag = "py3",
+    version = "0.dev",
+    deps = [
+        ":tapa-py-libs",
+    ],
+)
+
+py_library(
+    name = "tapa-py-libs",
+    srcs = [
+        "__init__.py",
+    ],
+    data = [
+        ":VERSION",
+    ],
+    deps = [
+        ":core",
+        ":instance",
+        ":safety_check",
+        ":task",
+        ":util",
+        "//tapa/assets",
+        "//tapa/common",
+        "//tapa/steps",
+        "//tapa/verilog",
+    ],
+)
+
+py_library(
+    name = "core",
+    srcs = ["core.py"],
+    deps = [
+        ":instance",
+        ":safety_check",
+        ":task",
+        ":util",
+        "//tapa/backend",
+        "//tapa/verilog",
+        requirement("pyverilog"),
+        requirement("pyyaml"),
+        requirement("toposort"),
+    ],
+)
+
+py_library(
+    name = "instance",
+    srcs = ["instance.py"],
+    deps = [
+        ":util",
+        "//tapa/verilog",
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "safety_check",
+    srcs = ["safety_check.py"],
+    deps = [
+        ":task",
+    ],
+)
+
+py_library(
+    name = "task",
+    srcs = ["task.py"],
+    deps = [
+        ":instance",
+        ":util",
+        "//tapa/backend",
+        "//tapa/verilog",
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "util",
+    srcs = ["util.py"],
+    deps = [
+        requirement("absl-py"),
+        requirement("coloredlogs"),
+    ],
+)
+
+pkg_files(
+    name = "pkg",
+    srcs = ["//tapa"],
+    attributes = pkg_attributes(mode = "0755"),
+    excludes = ["__main__.py"],
+    include_runfiles = True,
+    prefix = "usr/bin",
+    strip_prefix = strip_prefix.files_only(),
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,222 @@
+--- a/clang/lib/Lex/PPDirectives.cpp	2023-11-28 00:52:28.000000000 -0800
++++ b/clang/lib/Lex/PPDirectives.cpp	2024-06-18 12:50:08.990988047 -0700
+@@ -1105,7 +1105,7 @@
+ /// #pragma (to check for pragma hdrstop).
+ /// All other directives are completely discarded.
+ void Preprocessor::HandleSkippedDirectiveWhileUsingPCH(Token &Result,
+-                                                       SourceLocation HashLoc) {
++                                                       Token &HashTok) {
+   if (const IdentifierInfo *II = Result.getIdentifierInfo()) {
+     if (II->getPPKeywordID() == tok::pp_define) {
+       return HandleDefineDirective(Result,
+@@ -1113,7 +1113,7 @@
+     }
+     if (SkippingUntilPCHThroughHeader &&
+         II->getPPKeywordID() == tok::pp_include) {
+-      return HandleIncludeDirective(HashLoc, Result);
++      return HandleIncludeDirective(HashTok, Result);
+     }
+     if (SkippingUntilPragmaHdrStop && II->getPPKeywordID() == tok::pp_pragma) {
+       Lex(Result);
+@@ -1189,7 +1189,7 @@
+   ResetMacroExpansionHelper helper(this);
+ 
+   if (SkippingUntilPCHThroughHeader || SkippingUntilPragmaHdrStop)
+-    return HandleSkippedDirectiveWhileUsingPCH(Result, SavedHash.getLocation());
++    return HandleSkippedDirectiveWhileUsingPCH(Result, SavedHash);
+ 
+   switch (Result.getKind()) {
+   case tok::eod:
+@@ -1241,10 +1241,10 @@
+     // C99 6.10.2 - Source File Inclusion.
+     case tok::pp_include:
+       // Handle #include.
+-      return HandleIncludeDirective(SavedHash.getLocation(), Result);
++      return HandleIncludeDirective(SavedHash, Result);
+     case tok::pp___include_macros:
+       // Handle -imacros.
+-      return HandleIncludeMacrosDirective(SavedHash.getLocation(), Result);
++      return HandleIncludeMacrosDirective(SavedHash, Result);
+ 
+     // C99 6.10.3 - Macro Replacement.
+     case tok::pp_define:
+@@ -1266,9 +1266,9 @@
+ 
+     // GNU Extensions.
+     case tok::pp_import:
+-      return HandleImportDirective(SavedHash.getLocation(), Result);
++      return HandleImportDirective(SavedHash, Result);
+     case tok::pp_include_next:
+-      return HandleIncludeNextDirective(SavedHash.getLocation(), Result);
++      return HandleIncludeNextDirective(SavedHash, Result);
+ 
+     case tok::pp_warning:
+       if (LangOpts.CPlusPlus)
+@@ -1958,7 +1958,7 @@
+ /// routine with functionality shared between \#include, \#include_next and
+ /// \#import.  LookupFrom is set when this is a \#include_next directive, it
+ /// specifies the file to start searching from.
+-void Preprocessor::HandleIncludeDirective(SourceLocation HashLoc,
++void Preprocessor::HandleIncludeDirective(Token &HashTok,
+                                           Token &IncludeTok,
+                                           ConstSearchDirIterator LookupFrom,
+                                           const FileEntry *LookupFromFile) {
+@@ -1980,22 +1980,22 @@
+   SourceLocation EndLoc =
+       CheckEndOfDirective(IncludeTok.getIdentifierInfo()->getNameStart(), true);
+ 
+-  auto Action = HandleHeaderIncludeOrImport(HashLoc, IncludeTok, FilenameTok,
++  auto Action = HandleHeaderIncludeOrImport(HashTok, IncludeTok, FilenameTok,
+                                             EndLoc, LookupFrom, LookupFromFile);
+   switch (Action.Kind) {
+   case ImportAction::None:
+   case ImportAction::SkippedModuleImport:
+     break;
+   case ImportAction::ModuleBegin:
+-    EnterAnnotationToken(SourceRange(HashLoc, EndLoc),
++    EnterAnnotationToken(SourceRange(HashTok.getLocation(), EndLoc),
+                          tok::annot_module_begin, Action.ModuleForHeader);
+     break;
+   case ImportAction::HeaderUnitImport:
+-    EnterAnnotationToken(SourceRange(HashLoc, EndLoc), tok::annot_header_unit,
+-                         Action.ModuleForHeader);
++    EnterAnnotationToken(SourceRange(HashTok.getLocation(), EndLoc),
++                         tok::annot_header_unit, Action.ModuleForHeader);
+     break;
+   case ImportAction::ModuleImport:
+-    EnterAnnotationToken(SourceRange(HashLoc, EndLoc),
++    EnterAnnotationToken(SourceRange(HashTok.getLocation(), EndLoc),
+                          tok::annot_module_include, Action.ModuleForHeader);
+     break;
+   case ImportAction::Failure:
+@@ -2085,10 +2085,6 @@
+     }
+   }
+ 
+-  // If the file is still not found, just go with the vanilla diagnostic
+-  assert(!File && "expected missing file");
+-  Diag(FilenameTok, diag::err_pp_file_not_found)
+-      << OriginalFilename << FilenameRange;
+   if (IsFrameworkFound) {
+     size_t SlashPos = OriginalFilename.find('/');
+     assert(SlashPos != StringRef::npos &&
+@@ -2108,7 +2104,7 @@
+ /// Handle either a #include-like directive or an import declaration that names
+ /// a header file.
+ ///
+-/// \param HashLoc The location of the '#' token for an include, or
++/// \param HashTok The '#' token for an include, or
+ ///        SourceLocation() for an import declaration.
+ /// \param IncludeTok The include / include_next / import token.
+ /// \param FilenameTok The header-name token.
+@@ -2118,7 +2114,7 @@
+ /// \param LookupFromFile For #include_next, the starting file for the directory
+ ///        lookup.
+ Preprocessor::ImportAction Preprocessor::HandleHeaderIncludeOrImport(
+-    SourceLocation HashLoc, Token &IncludeTok, Token &FilenameTok,
++    Token &HashTok, Token &IncludeTok, Token &FilenameTok,
+     SourceLocation EndLoc, ConstSearchDirIterator LookupFrom,
+     const FileEntry *LookupFromFile) {
+   SmallString<128> FilenameBuffer;
+@@ -2136,8 +2132,8 @@
+   if (Filename.empty())
+     return {ImportAction::None};
+ 
+-  bool IsImportDecl = HashLoc.isInvalid();
+-  SourceLocation StartLoc = IsImportDecl ? IncludeTok.getLocation() : HashLoc;
++  bool IsImportDecl = HashTok.getLocation().isInvalid();
++  SourceLocation StartLoc = IsImportDecl ? IncludeTok.getLocation() : HashTok.getLocation();
+ 
+   // Complain about attempts to #include files in an audit pragma.
+   if (PragmaARCCFCodeAuditedInfo.second.isValid()) {
+@@ -2374,7 +2370,8 @@
+   if (Callbacks && !IsImportDecl) {
+     // Notify the callback object that we've seen an inclusion directive.
+     // FIXME: Use a different callback for a pp-import?
+-    Callbacks->InclusionDirective(HashLoc, IncludeTok, LookupFilename, isAngled,
++    Callbacks->InclusionDirective(HashTok.getLocation(), IncludeTok,
++                                  LookupFilename, isAngled,
+                                   FilenameRange, File, SearchPath, RelativePath,
+                                   Action == Import ? SuggestedModule.getModule()
+                                                    : nullptr,
+@@ -2383,8 +2380,27 @@
+       Callbacks->FileSkipped(*File, FilenameTok, FileCharacter);
+   }
+ 
+-  if (!File)
++  // If the file is still not found
++  // TAPA behavior: ignore this file and keep the original #include
++  if (!File) {
++    auto Toks = std::make_unique<Token[]>(5);
++
++    // Prepend and append newlines
++    Token NewLineTok1, NewLineTok2;
++    NewLineTok1.startToken();
++    CreateString("\n", NewLineTok1);
++    NewLineTok2.startToken();
++    CreateString("\n", NewLineTok2);
++
++    // Return the # and the tokens after it.
++    Toks[0] = NewLineTok1;
++    Toks[1] = HashTok;
++    Toks[2] = IncludeTok;
++    Toks[3] = FilenameTok;
++    Toks[4] = NewLineTok2;
++    EnterTokenStream(std::move(Toks), 5, true, /*IsReinject*/ false);
+     return {ImportAction::None};
++  }
+ 
+   // If this is a C++20 pp-import declaration, diagnose if we didn't find any
+   // module corresponding to the named header.
+@@ -2586,7 +2602,7 @@
+ 
+ /// HandleIncludeNextDirective - Implements \#include_next.
+ ///
+-void Preprocessor::HandleIncludeNextDirective(SourceLocation HashLoc,
++void Preprocessor::HandleIncludeNextDirective(Token &HashTok,
+                                               Token &IncludeNextTok) {
+   Diag(IncludeNextTok, diag::ext_pp_include_next_directive);
+ 
+@@ -2594,7 +2610,7 @@
+   const FileEntry *LookupFromFile;
+   std::tie(Lookup, LookupFromFile) = getIncludeNextStart(IncludeNextTok);
+ 
+-  return HandleIncludeDirective(HashLoc, IncludeNextTok, Lookup,
++  return HandleIncludeDirective(HashTok, IncludeNextTok, Lookup,
+                                 LookupFromFile);
+ }
+ 
+@@ -2614,21 +2630,21 @@
+ 
+ /// HandleImportDirective - Implements \#import.
+ ///
+-void Preprocessor::HandleImportDirective(SourceLocation HashLoc,
++void Preprocessor::HandleImportDirective(Token &HashTok,
+                                          Token &ImportTok) {
+   if (!LangOpts.ObjC) {  // #import is standard for ObjC.
+     if (LangOpts.MSVCCompat)
+       return HandleMicrosoftImportDirective(ImportTok);
+     Diag(ImportTok, diag::ext_pp_import_directive);
+   }
+-  return HandleIncludeDirective(HashLoc, ImportTok);
++  return HandleIncludeDirective(HashTok, ImportTok);
+ }
+ 
+ /// HandleIncludeMacrosDirective - The -imacros command line option turns into a
+ /// pseudo directive in the predefines buffer.  This handles it by sucking all
+ /// tokens through the preprocessor and discarding them (only keeping the side
+ /// effects on the preprocessor).
+-void Preprocessor::HandleIncludeMacrosDirective(SourceLocation HashLoc,
++void Preprocessor::HandleIncludeMacrosDirective(Token &HashTok,
+                                                 Token &IncludeMacrosTok) {
+   // This directive should only occur in the predefines buffer.  If not, emit an
+   // error and reject it.
+@@ -2642,7 +2658,7 @@
+ 
+   // Treat this as a normal #include for checking purposes.  If this is
+   // successful, it will push a new lexer onto the include stack.
+-  HandleIncludeDirective(HashLoc, IncludeMacrosTok);
++  HandleIncludeDirective(HashTok, IncludeMacrosTok);
+ 
+   Token TmpTok;
+   do {

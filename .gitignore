@@ -1,8 +1,15 @@
 /.cache/
 /.cmake-format
 /.vscode
+/bazel-*
 /build/
 /compile_commands.json
 work.out
 work.xo
 run/
+__pycache__
+*.pyc
+node_modules
+.venv*
+*.log
+artifacts.out/

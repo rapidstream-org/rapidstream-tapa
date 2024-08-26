@@ -1,0 +1,7 @@
+absl-py
+click
+coloredlogs
+jinja2
+pyverilog
+pyyaml
+toposort

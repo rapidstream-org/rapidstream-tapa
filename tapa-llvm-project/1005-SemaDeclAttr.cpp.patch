@@ -1,0 +1,78 @@
+--- a/clang/lib/Sema/SemaDeclAttr.cpp	2023-11-28 00:52:28.000000000 -0800
++++ b/clang/lib/Sema/SemaDeclAttr.cpp	2024-06-18 12:50:08.994988022 -0700
+@@ -406,6 +406,55 @@
+                            std::forward<DiagnosticArgs>(ExtraArgs)...);
+ }
+ 
++// Begin TAPA
++
++static void handleTapaPipelineAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
++  uint32_t ii = 0;
++  if (AL.getNumArgs()) {
++    if (!checkUInt32Argument(S, AL, AL.getArgAsExpr(0), ii)) return;
++  }
++
++  D->addAttr(::new (S.Context) TapaPipelineAttr(S.Context, AL, ii));
++}
++
++static void handleTapaUnrollAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
++  S.Diag(D->getBeginLoc(), diag::warn_attribute_type_not_supported)
++      << AL << "unsupported unroll target";
++}
++
++static void handleTapaTargetAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
++  StringRef TargetStr, VendorStr;
++  SourceLocation ArgLoc;
++
++  if (AL.getNumArgs() == 0)
++    TargetStr = "hls";
++  else if (!S.checkStringLiteralArgumentAttr(AL, 0, TargetStr, &ArgLoc))
++    return;
++
++  TapaTargetAttr::TargetType Target;
++  if (!TapaTargetAttr::ConvertStrToTargetType(TargetStr, Target)) {
++    S.Diag(AL.getLoc(), diag::warn_attribute_type_not_supported)
++        << AL << TargetStr << ArgLoc;
++    return;
++  }
++
++  if (AL.getNumArgs() == 1)
++    VendorStr = "xilinx";
++  else if (!S.checkStringLiteralArgumentAttr(AL, 1, VendorStr, &ArgLoc))
++    return;
++
++  TapaTargetAttr::VendorType Vendor;
++  if (!TapaTargetAttr::ConvertStrToVendorType(VendorStr, Vendor)) {
++    S.Diag(AL.getLoc(), diag::warn_attribute_type_not_supported)
++        << AL << VendorStr << ArgLoc;
++    return;
++  }
++
++  D->addAttr(::new (S.Context) TapaTargetAttr(S.Context, AL, Target, Vendor));
++}
++
++// End TAPA
++
+ /// Add an attribute @c AttrType to declaration @c D, provided that
+ /// @c PassesCheck is true.
+ /// Otherwise, emit diagnostic @c DiagID, passing in all parameters
+@@ -9493,6 +9542,19 @@
+   case ParsedAttr::AT_UsingIfExists:
+     handleSimpleAttribute<UsingIfExistsAttr>(S, D, AL);
+     break;
++
++  // Tapa attributes.
++  case ParsedAttr::AT_TapaPipeline:
++    handleTapaPipelineAttr(S, D, AL);
++    break;
++
++  case ParsedAttr::AT_TapaUnroll:
++    handleTapaUnrollAttr(S, D, AL);
++    break;
++
++  case ParsedAttr::AT_TapaTarget:
++    handleTapaTargetAttr(S, D, AL);
++    break;
+   }
+ }
+ 

@@ -1,0 +1,58 @@
+"""The jacobi test for TAPA."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+load("//bazel:v++_rules.bzl", "vpp_xclbin")
+
+sh_test(
+    name = "jacobi",
+    size = "small",
+    srcs = ["//bazel:v++_env.sh"],
+    args = ["$(location jacobi-host)"],
+    data = [":jacobi-host"],
+)
+
+sh_test(
+    name = "jacobi-cosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location jacobi-host)",
+        "--bitstream=$(location jacobi-hw-emu-xclbin)",
+    ],
+    data = [
+        ":jacobi-host",
+        ":jacobi-hw-emu-xclbin",
+    ],
+)
+
+cc_binary(
+    name = "jacobi-host",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]),
+    deps = [
+        "//tapa-lib:tapa",
+        "@com_github_gflags_gflags//:gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "jacobi-xo",
+    src = "jacobi.cpp",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Jacobi",
+)
+
+vpp_xclbin(
+    name = "jacobi-hw-emu-xclbin",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    target = "hw_emu",
+    top_name = "Jacobi",
+    xo = ":jacobi-xo",
+)

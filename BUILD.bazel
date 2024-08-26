@@ -1,0 +1,23 @@
+"""Build rules for the final package."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+
+pkg_tar(
+    name = "tapa_pkg",
+    srcs = [
+        "//fpga-runtime:pkg",
+        "//fpga-runtime:pkg-extra-runtime-deps",
+        "//tapa:pkg",
+        "//tapa-cpp:pkg",
+        "//tapa-lib:pkg",
+        "//tapa-lib:pkg-extra-runtime-deps",
+        "//tapa-system-include:pkg",
+        "//tapacc:pkg",
+    ],
+    allow_duplicates_from_deps = True,
+    allow_duplicates_with_different_content = False,
+)

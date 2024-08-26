@@ -1,0 +1,13 @@
+--- a/clang/lib/Lex/Preprocessor.cpp	2023-11-28 00:52:28.000000000 -0800
++++ b/clang/lib/Lex/Preprocessor.cpp	2024-06-18 12:50:08.990988047 -0700
+@@ -1217,8 +1217,9 @@
+     ImportTok.setIdentifierInfo(getIdentifierInfo("import"));
+     ImportTok.setLength(6);
+ 
++    Token EmptyToken;
+     auto Action = HandleHeaderIncludeOrImport(
+-        /*HashLoc*/ SourceLocation(), ImportTok, Suffix.front(), SemiLoc);
++        /*HashTok*/ EmptyToken, ImportTok, Suffix.front(), SemiLoc);
+     switch (Action.Kind) {
+     case ImportAction::None:
+       break;

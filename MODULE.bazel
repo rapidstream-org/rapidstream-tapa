@@ -1,0 +1,135 @@
+"""
+TAPA is a dataflow HLS framework that features fast compilation, expressive
+programming model and generates high-frequency FPGA accelerators.
+"""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+module(name = "rapidstream-tapa")
+
+# Bazel dependencies
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "rules_python", version = "0.34.0")
+bazel_dep(name = "toolchains_llvm", version = "1.0.0")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
+
+new_local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl", "new_local_repository")
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+
+# LLVM toolchain
+llvm.toolchain(llvm_version = "16.0.0")
+use_repo(llvm, "llvm_toolchain")
+use_repo(llvm, "llvm_toolchain_llvm")
+
+register_toolchains("@llvm_toolchain//:all")
+
+# Python toolchain
+python.toolchain(
+    configure_coverage_tool = True,
+    is_default = True,
+    python_version = "3.10.12",
+)
+use_repo(python, python_3_10 = "python_3_10_12")
+
+# Required by tapa Python libraries
+pip.parse(
+    hub_name = "tapa_deps",
+    python_version = "3.10.12",
+    requirements_lock = "//tapa:requirements_lock.txt",
+)
+use_repo(pip, "tapa_deps")
+
+# Required by tapacc
+bazel_dep(name = "nlohmann_json", version = "3.11.3")
+
+# Required by tapa-lib
+http_archive(
+    name = "com_github_gflags_gflags",
+    sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",
+    strip_prefix = "gflags-2.2.2",
+    urls = ["https://github.com/gflags/gflags/archive/v2.2.2.tar.gz"],
+)
+
+http_archive(
+    name = "com_github_google_glog",
+    sha256 = "21bc744fb7f2fa701ee8db339ded7dce4f975d0d55837a97be7d46e8382dea5a",
+    strip_prefix = "glog-0.5.0",
+    urls = ["https://github.com/google/glog/archive/v0.5.0.zip"],
+)
+
+bazel_dep(name = "googletest", version = "1.15.2")
+
+new_local_repository(
+    name = "vitis_hls",
+    build_file_content = """
+cc_library(
+    name = "include",
+    hdrs = glob(["include/**/*.h"]),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+    """,
+    path = "/opt/tools/xilinx/Vitis_HLS/2024.1",
+)
+
+# Required by FRT
+bazel_dep(name = "tinyxml2", version = "10.0.0")
+bazel_dep(name = "libuuid", version = "2.39.3.bcr.1")
+
+new_local_repository(
+    name = "xilinx_xrt",
+    build_file_content = """
+cc_library(
+    name = "xrt",
+    hdrs = glob(["include/**/*.h"]),
+    includes = ["include"],
+    linkopts = [ "-l:libOpenCL.so.1" ],
+    visibility = ["//visibility:public"],
+    deps = ["@libuuid"],
+)
+    """,
+    path = "/opt/xilinx/xrt",
+)
+
+# Build LLVM from source
+http_archive(
+    name = "tapa-llvm-project",
+    patch_args = ["-p1"],
+    patches = [
+        "//tapa-llvm-project:0000-Add-Bazel-files-to-.gitignore.patch",
+        "//tapa-llvm-project:0001-PATCH-Copy-files-from-bazel-overlay-to-root.patch",
+        "//tapa-llvm-project:0002-PATCH-Bazel-Fix-bazel-build-files.patch",
+        "//tapa-llvm-project:0003-PATCH-Fix-operator-overload-and-use-TEST_TMPDIR.patch",
+        "//tapa-llvm-project:0004-PATCH-Disable-zlib-mpfr-and-terminfo.patch",
+        "//tapa-llvm-project:1001-Attr.td.patch",
+        "//tapa-llvm-project:1002-Preprocessor.cpp.patch",
+        "//tapa-llvm-project:1003-Preprocessor.h.patch",
+        "//tapa-llvm-project:1004-PPDirectives.cpp.patch",
+        "//tapa-llvm-project:1005-SemaDeclAttr.cpp.patch",
+        "//tapa-llvm-project:1006-SemaStmtAttr.cpp.patch",
+    ],
+    sha256 = "9a56d906a2c81f16f06efc493a646d497c53c2f4f28f0cb1f3c8da7f74350254",
+    strip_prefix = "llvm-project-16.0.0.src",
+    urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz"],
+)
+
+# Test data
+http_file(
+    name = "facebook_combined",
+    downloaded_file_path = "facebook.txt.gz",
+    sha256 = "125e84db872eeba443d270c70315c256b0af43a502fcfe51f50621166ad035d7",
+    url = "https://snap.stanford.edu/data/facebook_combined.txt.gz",
+)

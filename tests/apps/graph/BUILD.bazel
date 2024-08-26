@@ -1,0 +1,93 @@
+"""The graph test for TAPA."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+load("//bazel:v++_rules.bzl", "vpp_xclbin")
+
+sh_test(
+    name = "graph",
+    size = "small",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location graph-host)",
+        "$(location graph.txt)",
+    ],
+    data = [
+        "graph.txt",
+        ":graph-host",
+    ],
+)
+
+sh_test(
+    name = "graph-facebook",
+    size = "small",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location graph-host)",
+        "$(location process_facebook_txt)",
+        "512",
+    ],
+    data = [
+        ":graph-host",
+        ":process_facebook_txt",
+    ],
+)
+
+sh_test(
+    name = "graph-cosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location graph-host)",
+        "--bitstream=$(location graph-hw-emu-xclbin)",
+        "$(location graph.txt)",
+    ],
+    data = [
+        "graph.txt",
+        ":graph-host",
+        ":graph-hw-emu-xclbin",
+    ],
+)
+
+cc_binary(
+    name = "graph-host",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+        "*.hpp",
+    ]),
+    deps = [
+        "//tapa-lib:tapa",
+        "@com_github_gflags_gflags//:gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "graph-xo",
+    src = "graph.cpp",
+    hdrs = glob(["*.hpp"]),
+    include = ["."],
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Graph",
+)
+
+vpp_xclbin(
+    name = "graph-hw-emu-xclbin",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    target = "hw_emu",
+    top_name = "Graph",
+    xo = ":graph-xo",
+)
+
+genrule(
+    name = "process_facebook_txt",
+    srcs = ["@facebook_combined//file:facebook.txt.gz"],
+    outs = ["facebook.txt"],
+    cmd = """
+        gzip -cd $(location @facebook_combined//file:facebook.txt.gz) | sed 's/^0 /4039 /' > $@
+    """,
+)

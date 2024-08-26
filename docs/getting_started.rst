@@ -130,7 +130,7 @@ The vector add example is one of the application examples shipped with TAPA.
 
 You should be able to see something like:
 
-.. code-block:: none
+.. code-block:: text
 
   elapsed time: 0.334634 s
   PASS!
@@ -144,7 +144,7 @@ This can be changed by supplying an argument to the command line:
 
 This time the elapsed time should be much shorter:
 
-.. code-block:: none
+.. code-block:: text
 
   elapsed time: 0.0126179 s
   PASS!
@@ -169,7 +169,8 @@ The first step would be to run high-level synthesize (HLS):
     --top VecAdd \
     --work-dir vadd.$platform.hw.xo.tapa
 
-If you do not intend to use the Vitis backend, you could use ``--part-num`` instead. In this case, you must provide the target clock period as well.
+If you do not intend to use the Vitis backend, you could use ``--part-num``
+instead. In this case, you must provide the target clock period as well.
 
 .. code-block:: bash
 
@@ -201,7 +202,9 @@ To generate bitstream for hardware simulation:
 
 This would take 5--10 minutes.
 
-TAPA will automatically generate a script called ``vadd.$platform.hw_generate_bitstream.sh`` that includes the command to invoke v++.
+TAPA will automatically generate a script called
+``vadd.$platform.hw_generate_bitstream.sh`` that includes the command to invoke
+v++.
 
 
 To run hardware simulation with the generated ``hw_emu`` bitstream:
@@ -212,7 +215,7 @@ To run hardware simulation with the generated ``hw_emu`` bitstream:
 
 It will take about half a minute until it says
 
-.. code-block:: none
+.. code-block:: text
 
   INFO: Loading vadd.xilinx_u250_xdma_201830_2.hw_emu.xclbin
   INFO: Found platform: Xilinx
@@ -250,7 +253,7 @@ It will take about half a minute until it says
   As a result, host-kernel communication requires an extra memory copy
   and XRT issues this warning:
 
-  .. code-block:: none
+  .. code-block:: text
 
     [XRT] WARNING: unaligned host pointer '0x55ca5dc41af0' detected, this leads to extra memcpy
 
@@ -263,7 +266,9 @@ It will take about half a minute until it says
 Run Hardware Simulation with TAPA Simulator
 :::::::::::::::::::::::::::::::::::::::::::::
 
-Simply replace the ``vadd.$platform.hw_emu.xclbin`` by the previously generated ``xo`` object. See this :ref:`tutorial <tutorial/fast_cosim:TAPA RTL Simulation>` for more details.
+Simply replace the ``vadd.$platform.hw_emu.xclbin`` by the previously generated
+``xo`` object. See this :ref:`tutorial <tutorial/fast_cosim:TAPA RTL
+Simulation>` for more details.
 
 .. code-block:: bash
 
@@ -273,13 +278,16 @@ Simply replace the ``vadd.$platform.hw_emu.xclbin`` by the previously generated 
 Generate Bitstream
 ::::::::::::::::::::::::::::::::::::
 
-When we synthesize the C++ program into RTL, TAPA will also generate a script named ``${top_name}_generate_bitstream.sh`` along with the ``.xo`` file. To generate bitstream, simply run this script. This would take several hours.
+When we synthesize the C++ program into RTL, TAPA will also generate a script
+named ``${top_name}_generate_bitstream.sh`` along with the ``.xo`` file. To
+generate bitstream, simply run this script. This would take several hours.
 
 .. code-block:: bash
 
   bash VecAdd_generate_bitstream.sh
 
-What the script does is to invoke the Vitis ``v++`` compiler that takes in the ``.xo`` object and generate the hardware bitstream.
+What the script does is to invoke the Vitis ``v++`` compiler that takes in the
+``.xo`` object and generate the hardware bitstream.
 
 Execute on an FPGA
 :::::::::::::::::::::::::
@@ -295,7 +303,7 @@ runs much faster (note that we are running the full :math:`2^{20}`-element
 vectors and the elapsed time includes the FPGA reconfiguration time,
 if necessary).
 
-.. code-block:: none
+.. code-block:: text
 
   INFO: Found platform: Xilinx
   INFO: Found device: xilinx_u280_xdma_201920_3

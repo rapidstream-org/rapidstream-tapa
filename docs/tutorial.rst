@@ -214,7 +214,7 @@ In such a case, the array elements are accessed sequentially
 first from left to right in the argument list then repeated many times
 if it is a batch invocation.
 ``Stage`` leverages this feature in the network example.
-The first apparence of ``in_q`` accesses the first ``kN / 2`` elements,
+The first appearance of ``in_q`` accesses the first ``kN / 2`` elements,
 and the second accesses the second half.
 
 .. code-block:: cpp

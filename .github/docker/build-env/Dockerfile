@@ -1,0 +1,30 @@
+# syntax = edrevo/dockerfile-plus
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+FROM ubuntu:bionic
+
+ARG DOCKER_USER_ID
+ARG DOCKER_GROUP_ID
+
+# Install system dependencies
+INCLUDE+ Dockerfile.Dependencies
+
+# Clean up
+RUN rm -rf /tmp/* /var/tmp/*
+
+# Use /tmp/home as the cache directory
+RUN mkdir -m 1777 \
+  -p /tmp/home/.cache /tmp/home/.cargo \
+     /tmp/home/.local/ /tmp/home/.nuitka_cache
+
+RUN addgroup --uid ${DOCKER_GROUP_ID} io && \
+    adduser --uid ${DOCKER_USER_ID} --ingroup io --home /tmp/home io
+
+ENV HOME="/tmp/home"
+ENV NUITKA_CACHE_DIR="/tmp/home/.nuitka_cache"
+ENV PATH="/tmp/home/.cargo/bin:/tmp/home/.local/bin:${PATH}"
+
+WORKDIR /tmp

@@ -1,0 +1,106 @@
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+# This file is to setup dependencies for the build environment.
+
+ARG UBUNTU_PRO_TOKEN
+
+# Set the default timezone to UTC
+RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
+
+# Update the system and install build dependencies
+# FIXME: The iverilog dependency should be removed when pyverilog is removed
+
+# Required by apt-add-repository:
+#   - apt-transport-https
+#   - ca-certificates
+#   - gnupg
+
+# Required by adding the Ubuntu Pro repository:
+#   - software-properties-common
+#   - ubuntu-advantage-tools
+
+# Required by installing out-of-repo packages:
+#   - curl
+
+# Required by Bazel:
+#   - python3
+
+# Required by pre-commit:
+#   - git
+
+# Required by PyVerilog:
+#   - iverilog
+
+# Required by Vivado:
+#   - libtinfo5
+#   - libx11-6
+#   - locales
+
+# Required by XRT:
+#   - ocl-icd-opencl-dev
+#   - opencl-headers
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+      apt-get upgrade -y && \
+      apt-get install --no-install-recommends -y \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        git \
+        gnupg \
+        iverilog \
+        libtinfo5 \
+        libx11-6 \
+        locales \
+        ocl-icd-opencl-dev \
+        opencl-headers \
+        python3 \
+        software-properties-common \
+        ubuntu-advantage-tools \
+      && \
+      pro attach ${UBUNTU_PRO_TOKEN} && \
+      add-apt-repository ppa:ubuntu-toolchain-r/test && \
+      curl -fsSL https://bazel.build/bazel-release.pub.gpg \
+        | gpg --dearmor > /usr/share/keyrings/bazel-archive-keyring.gpg && \
+      echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] \
+          https://storage.googleapis.com/bazel-apt stable jdk1.8"  \
+        > /etc/apt/sources.list.d/bazel.list && \
+      curl -fsSL https://www.xilinx.com/bin/public/openDownload?filename=xrt_202320.2.16.204_18.04-amd64-xrt.deb \
+        -o /tmp/xrt.deb && \
+      apt-get install -y /tmp/xrt.deb && \
+      rm -f /tmp/xrt.deb && \
+      apt-get update && \
+      apt-get upgrade -y && \
+      apt-get install --no-install-recommends -y bazel && \
+      apt-get purge --auto-remove -y \
+        gnupg \
+        software-properties-common \
+        ubuntu-advantage-tools \
+      && \
+      rm -rf /var/lib/apt/lists/* && \
+      true
+
+# Install retry
+RUN curl -sSL \
+        https://raw.githubusercontent.com/kadwanev/retry/master/retry \
+        -o /usr/local/bin/retry && \
+      chmod +x /usr/local/bin/retry
+
+# Install Pre-Commit
+RUN curl -sSL \
+        https://github.com/niess/python-appimage/releases/download/python3.12/python3.12.3-cp312-cp312-manylinux2014_x86_64.AppImage \
+        -o /opt/python3.12 && \
+    chmod +x /opt/python3.12 && \
+    cd /opt && \
+    /opt/python3.12 --appimage-extract && \
+    rm -f /opt/python3.12 && \
+    mv /opt/squashfs-root /opt/python3.12 && \
+    /opt/python3.12/usr/bin/python3.12 -m pip install pre-commit && \
+    ln -s /opt/python3.12/usr/bin/pre-commit /usr/local/bin/pre-commit && \
+    chmod -R go=u /opt/python3.12
+
+# Rebuild locale so that Vivado can run in the Docker
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
