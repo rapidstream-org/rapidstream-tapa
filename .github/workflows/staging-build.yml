@@ -43,3 +43,16 @@ jobs:
           path: ${{ github.workspace }}/artifacts.out/tapa.tar
           retention-days: 7
           compression-level: 9
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifacts: /workspace/artifacts.out/tapa.tar
+          body: |
+            This is a staging build for ${{ github.sha }}.
+          commit: ${{ github.sha }}
+          name: Staging Build ${{ github.sha }}
+          generateReleaseNotes: true
+          prerelease: true
+        if: "!github.event.act"
