@@ -4,10 +4,14 @@
 
 name: Staging Build
 
+concurrency:
+  group: release
+
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write
