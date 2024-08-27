@@ -26,13 +26,13 @@ def _header_extractor_impl(ctx):
     # Copy headers to output directory
     output_files = []
     for header in headers.to_list():
-        if "_virtual_includes" in header.path:
+        if "_virtual_includes/" in header.path:
             # Extract header name from virtual_includes
             header_name = "include/" + header.path.split("_virtual_includes/")[-1]
 
-        elif header.path.startswith("external/"):
-            # Remove "external/" prefix from data header
-            header_name = "/".join(header.path.split("/")[2:])
+        elif "include/" in header.path:
+            # Extract header name from include folder
+            header_name = "include/" + header.path.split("include/")[-1]
 
         else:
             # Use the header path as is

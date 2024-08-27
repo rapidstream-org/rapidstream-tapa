@@ -6,7 +6,6 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import glob
 import hashlib
 import json
 import logging
@@ -202,26 +201,12 @@ def find_tapacc_cflags(
         "tapa-system-include",
     )
 
-    # TODO: package the clang builtin headers as python assets
-    for include_path in glob.iglob(
-        os.path.join(
-            system_include_path,
-            "bazel-out",
-            "*",
-            "bin",
-            "external",
-            "_main~_repo_rules~tapa-llvm-project",
-            "clang",
-            "staging",
-            "include",
-        )
-    ):
-        system_includes.extend(["-isystem", include_path])
-
     for include_paths in (
+        "include",
         "include/frt",
         "include/gflags",
         "include/glog",
+        "include/uuid",
     ):
         system_includes.extend(
             ["-isystem", f"{system_include_path}/{include_paths}"],
