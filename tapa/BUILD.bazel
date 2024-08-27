@@ -8,6 +8,7 @@ load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files", "strip_prefi
 load("@rules_python//python:packaging.bzl", "py_wheel")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@tapa_deps//:requirements.bzl", "requirement")
+load("//bazel:nuitka_rules.bzl", "nuitka_binary")
 
 package(default_visibility = ["//tapa:__subpackages__"])
 
@@ -15,6 +16,20 @@ compile_pip_requirements(
     name = "requirements",
     src = "requirements.in",
     requirements_txt = "requirements_lock.txt",
+)
+
+nuitka_binary(
+    name = "nuitka",
+    src = ":__main__.py",
+    flags = [
+        "--no-deployment-flag=self-execution",
+        "--python-flag=no_site,no_warnings",
+    ],
+    output_name = "tapa",
+    deps = [
+        ":tapa-py-libs",
+        requirement("click"),
+    ],
 )
 
 py_binary(

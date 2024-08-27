@@ -2,6 +2,7 @@ absl-py
 click
 coloredlogs
 jinja2
+nuitka
 pyverilog
 pyyaml
 toposort
