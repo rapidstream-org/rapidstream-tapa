@@ -20,7 +20,7 @@ header_extractor(
     visibility = ["//visibility:public"],
     deps = [
         ":tapa-deps",
-        "@llvm_toolchain_llvm//:include",
+        "@tapa-llvm-project//clang:builtin_headers_gen",
     ],
 )
 

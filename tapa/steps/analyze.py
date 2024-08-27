@@ -6,6 +6,7 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import glob
 import hashlib
 import json
 import logging
@@ -193,7 +194,7 @@ def find_tapacc_cflags(
         _logger.info("added vendor include path `%s`", vendor_path)
 
     # Add system include files to tapacc cflags
-    system_includes = ["-nostdinc", "-nostdinc++"]
+    system_includes = []
     system_include_path = os.path.join(
         os.path.dirname(tapa.__file__),
         "..",
@@ -201,20 +202,30 @@ def find_tapacc_cflags(
         "tapa-system-include",
     )
 
+    # TODO: package the clang builtin headers as python assets
+    for include_path in glob.iglob(
+        os.path.join(
+            system_include_path,
+            "bazel-out",
+            "*",
+            "bin",
+            "external",
+            "_main~_repo_rules~tapa-llvm-project",
+            "clang",
+            "staging",
+            "include",
+        )
+    ):
+        system_includes.extend(["-isystem", include_path])
+
     for include_paths in (
-        "include/c++/v1",
         "include/frt",
         "include/gflags",
         "include/glog",
-        "include/x86_64-unknown-linux-gnu/c++/v1",
-        f"lib/clang/{match[1]}/include",
     ):
         system_includes.extend(
             ["-isystem", f"{system_include_path}/{include_paths}"],
         )
-    system_includes.extend(
-        ["-isystem", "/usr/include/x86_64-linux-gnu", "-isystem", "/usr/include"],
-    )
 
     # FIXME: TAPA target should be user specified
     return (
