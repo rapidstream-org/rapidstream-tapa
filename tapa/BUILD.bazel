@@ -22,15 +22,17 @@ nuitka_binary(
     name = "nuitka",
     src = ":__main__.py",
     flags = [
-        "--no-deployment-flag=self-execution",
-        "--python-flag=no_site,no_warnings",
+        "--deployment",
+        "--include-package-data=tapa",
+        "--lto=yes",
+        "--python-flag=no_warnings",
     ],
-    nuitka_environment = ":tapa-nuitka-env",
-    output_name = "tapa",
+    nuitka_environment = ":tapa-nuitka-env.py",
+    output_name = "tapa-bin",
 )
 
 py_binary(
-    name = "tapa-nuitka-env",
+    name = "tapa-nuitka-env.py",
     srcs = ["//bazel:nuitka_wrapper.py"],
     main = "nuitka_wrapper.py",
     deps = [
