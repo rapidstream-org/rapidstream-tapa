@@ -25,10 +25,17 @@ nuitka_binary(
         "--no-deployment-flag=self-execution",
         "--python-flag=no_site,no_warnings",
     ],
+    nuitka_environment = ":tapa-nuitka-env",
     output_name = "tapa",
+)
+
+py_binary(
+    name = "tapa-nuitka-env",
+    srcs = ["//bazel:nuitka_wrapper.py"],
+    main = "nuitka_wrapper.py",
     deps = [
+        requirement("nuitka"),
         ":tapa-py-libs",
-        requirement("click"),
     ],
 )
 
@@ -46,7 +53,6 @@ py_binary(
     deps = [
         ":tapa-py-libs",
         "//tapacc",
-        requirement("click"),
     ],
 )
 
@@ -78,6 +84,7 @@ py_library(
         "//tapa/common",
         "//tapa/steps",
         "//tapa/verilog",
+        requirement("click"),
     ],
 )
 

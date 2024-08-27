@@ -11,7 +11,6 @@ def _nuitka_binary_impl(ctx):
     # Retrieve the inputs and attributes from the rule invocation.
     src = ctx.file.src
     flags = ctx.attr.flags
-    deps = ctx.files.deps
     output_dir = ctx.actions.declare_directory(src.basename.split(".")[0] + ".dist")
 
     # Get the CC toolchain information.
@@ -22,7 +21,7 @@ def _nuitka_binary_impl(ctx):
     py_interpreter = py_toolchain.interpreter.path
 
     # Get the Nuitka executable.
-    nuitka = ctx.executable.nuitka_binary
+    nuitka = ctx.executable.nuitka_environment
 
     # Start building the command to run Nuitka.
     nuitka_cmd = [
@@ -30,9 +29,10 @@ def _nuitka_binary_impl(ctx):
         src.path,
         "--clang",  # Use clang as the compiler. In this case, Nuitka generates .c files.
         "--disable-ccache",  # Disable ccache as the Bazel hermerticity does not allow it.
-        "--standalone",
+        "--follow-imports",
         "--output-dir={}".format(output_dir.dirname),
         "--output-filename={}".format(ctx.attr.output_name or ctx.attr.name),
+        "--standalone",
     ]
 
     # Add optional flags, if specified.
@@ -55,7 +55,7 @@ def _nuitka_binary_impl(ctx):
     # Define a custom action to run the Nuitka command.
     ctx.actions.run(
         outputs = [output_dir],
-        inputs = [src] + deps + cc_toolchain.all_files.to_list(),
+        inputs = [src] + cc_toolchain.all_files.to_list(),
         tools = [nuitka, py_toolchain.interpreter],
         executable = py_interpreter,
         arguments = nuitka_cmd,
@@ -85,12 +85,8 @@ nuitka_binary = rule(
             doc = "Flags to pass to Nuitka.",
             default = [],
         ),
-        "deps": attr.label_list(
-            doc = "Dependencies for the rule.",
-            default = [],
-        ),
-        "nuitka_binary": attr.label(
-            doc = "The Nuitka executable.",
+        "nuitka_environment": attr.label(
+            doc = "The Nuitka executable environment.",
             default = Label("//bazel:nuitka"),
             executable = True,
             cfg = "exec",
