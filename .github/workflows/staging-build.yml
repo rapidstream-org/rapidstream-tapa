@@ -11,6 +11,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "*"
   workflow_dispatch:
 
 permissions:
@@ -37,7 +39,7 @@ jobs:
           MAC_ADDRESS: ${{ secrets.MAC_ADDRESS }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tapa
           path: ${{ github.workspace }}/artifacts.out/tapa.tar
@@ -55,4 +57,4 @@ jobs:
           name: Staging Build ${{ github.sha }}
           generateReleaseNotes: true
           prerelease: true
-        if: "!github.event.act"
+        if: "!github.event.act && startsWith(github.event.ref, 'refs/tags')"
