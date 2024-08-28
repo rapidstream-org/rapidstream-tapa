@@ -25,6 +25,7 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 #   - curl
 
 # Required by Bazel:
+#   - binutils
 #   - python3
 
 # Required by pre-commit:
@@ -47,6 +48,7 @@ RUN apt-get update && \
       apt-get upgrade -y && \
       apt-get install --no-install-recommends -y \
         apt-transport-https \
+        binutils \
         ca-certificates \
         curl \
         git \

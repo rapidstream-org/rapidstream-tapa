@@ -11,6 +11,7 @@ module(name = "rapidstream-tapa")
 
 # Bazel dependencies
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "patchelf", version = "0.18.0")
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "rules_cc", version = "0.0.9")
 bazel_dep(name = "rules_pkg", version = "1.0.1")

@@ -24,8 +24,7 @@ nuitka_binary(
     flags = [
         "--deployment",
         "--include-package-data=tapa",
-        "--lto=yes",
-        "--python-flag=no_warnings",
+        "--python-flag=isolated,no_docstrings,no_site,no_warnings",
     ],
     nuitka_environment = ":tapa-nuitka-env.py",
     output_name = "tapa-bin",

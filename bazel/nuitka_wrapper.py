@@ -12,9 +12,23 @@ import runpy
 if "BUILD_WORKING_DIRECTORY" in os.environ:
     os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
+# Absolutize paths in environment variables.
 for key in ("CC", "CXX", "LINK"):
     if key in os.environ:
         os.environ[key] = os.path.abspath(os.environ[key])
+
+for key in (
+    "PATH",
+    "LD_LIBRARY_PATH",
+    "LIBRARY_PATH",
+    "C_INCLUDE_PATH",
+    "CPLUS_INCLUDE_PATH",
+    "CPATH",
+):
+    if key in os.environ:
+        os.environ[key] = os.pathsep.join(
+            os.path.abspath(p) for p in os.environ[key].split(os.pathsep)
+        )
 
 os.environ["NUITKA_CACHE_DIR"] = "/tmp/.nuitka_cache"
 
