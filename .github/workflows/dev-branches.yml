@@ -12,6 +12,7 @@ on:
       - release/*
 
 permissions:
+  actions: write
   contents: write
 
 jobs:
@@ -85,8 +86,17 @@ jobs:
           fetch-depth: 0
 
       - name: Try to merge into main
+        id: merge
         run: >
           git checkout main &&
           git merge --ff-only ${{ github.ref_name }} &&
-          git push || true
+          git push &&
+          echo "is-successful=true" >>"${GITHUB_OUTPUT}" ||
+          echo "is-successful=false" >>"${GITHUB_OUTPUT}"
         shell: bash
+
+      - name: Trigger staging build
+        uses: benc-uk/workflow-dispatch@v1
+        if: ${{ steps.merge.outputs.is-successful }}
+        with:
+          workflow: Staging Build
