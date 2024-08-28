@@ -31,7 +31,7 @@ def _nuitka_binary_impl(ctx):
     posix_tools_dir = ctx.actions.declare_directory("external/posix_tools")
     ctx.actions.run_shell(
         outputs = [posix_tools_dir],
-        command = "ln -s /usr/bin/sh /usr/bin/ld /usr/bin/ldd /usr/bin/readelf " + posix_tools_dir.path,
+        command = "ln -s /bin/sh /usr/bin/ld /usr/bin/ldd /usr/bin/readelf " + posix_tools_dir.path,
     )
 
     # Start building the command to run Nuitka.

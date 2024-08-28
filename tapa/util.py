@@ -13,7 +13,6 @@ import os.path
 import shutil
 import subprocess
 import time
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import absl.logging
@@ -157,18 +156,3 @@ def setup_logging(
     logging.getLogger().addHandler(handler)
 
     _logger.info("logging level set to %s", logging.getLevelName(logging_level))
-
-
-def get_executable(name: str) -> Path:
-    """Return the path of the executable built into the distribution.
-
-    Args:
-    ----
-      name: The name of the executable.
-
-    Returns:
-    -------
-      The path of the executable.
-
-    """
-    return Path(__file__).parent.parent / name / name

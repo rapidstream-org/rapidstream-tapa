@@ -23,6 +23,7 @@ nuitka_binary(
     src = ":__main__.py",
     flags = [
         "--deployment",
+        "--include-package-data=pyverilog",
         "--include-package-data=tapa",
         "--python-flag=isolated,no_docstrings,no_site,no_warnings",
     ],

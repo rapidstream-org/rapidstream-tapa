@@ -18,8 +18,8 @@ from pathlib import Path
 
 import click
 
-import tapa
 from tapa.common.graph import Graph as TapaGraph
+from tapa.common.paths import find_resource
 from tapa.core import Program
 from tapa.steps.common import (
     get_work_dir,
@@ -27,7 +27,7 @@ from tapa.steps.common import (
     store_persistent_context,
     store_tapa_program,
 )
-from tapa.util import clang_format, get_executable, get_vendor_include_paths
+from tapa.util import clang_format, get_vendor_include_paths
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -129,10 +129,10 @@ def find_clang_binary(name: str) -> str:
 
     """
     # Lookup binary from the distribution
-    binary = get_executable(name)
+    binary = find_resource(name)
 
     # Lookup binary from PATH
-    if not binary.exists():
+    if not binary:
         path_str = shutil.which(name)
         if path_str is not None:
             binary = Path(path_str)
@@ -174,7 +174,7 @@ def find_tapacc_cflags(
 
     """
     # Add TAPA include files to tapacc cflags
-    tapa_include = os.path.join(os.path.dirname(tapa.__file__), "..", "tapa-lib")
+    tapa_include = str(find_resource("tapa-lib"))
 
     # Find clang include location
     tapacc_version = subprocess.check_output(
@@ -194,12 +194,10 @@ def find_tapacc_cflags(
 
     # Add system include files to tapacc cflags
     system_includes = []
-    system_include_path = os.path.join(
-        os.path.dirname(tapa.__file__),
-        "..",
-        "tapa-system-include",
-        "tapa-system-include",
-    )
+    system_include_path = find_resource("tapa-system-include")
+    if system_include_path is None:
+        err = "Unable to find the tapa system include folders."
+        raise click.UsageError(err)
 
     for include_paths in (
         "include",
