@@ -108,6 +108,9 @@ cc_library(
 http_archive(
     name = "tapa-llvm-project",
     patch_args = ["-p1"],
+    patch_cmds = [
+        """echo 'llvm_targets = ["X86"]' >llvm/targets.bzl""",
+    ],
     patches = [
         "//tapa-llvm-project:0000-Add-Bazel-files-to-.gitignore.patch",
         "//tapa-llvm-project:0001-PATCH-Copy-files-from-bazel-overlay-to-root.patch",
