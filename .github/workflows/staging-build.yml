@@ -52,7 +52,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          artifacts: /workspace/artifacts.out/tapa.tar
+          artifacts: ${{ github.workspace }}/artifacts.out/tapa.tar
           body: |
             This is a staging build for ${{ github.sha }}.
           commit: ${{ github.sha }}
