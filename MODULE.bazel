@@ -105,6 +105,15 @@ cc_library(
     path = "/opt/xilinx/xrt",
 )
 
+# Required by nuitka build
+http_archive(
+    name = "binutils",
+    build_file = "//:bazel/binutils.BUILD.bazel",
+    sha256 = "b3f1dc5b17e75328f19bd88250bee2ef9f91fc8cbb7bd48bdb31390338636052",
+    strip_prefix = "binutils-2.38",
+    urls = ["https://ftp.gnu.org/gnu/binutils/binutils-2.38.tar.gz"],
+)
+
 # Build LLVM from source
 http_archive(
     name = "tapa-llvm-project",

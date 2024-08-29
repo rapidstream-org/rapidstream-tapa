@@ -16,6 +16,7 @@ def _nuitka_binary_impl(ctx):
     # Get the CC toolchain information.
     cc_toolchain = find_cpp_toolchain(ctx)
     cc_bin_dir = "external/toolchains_llvm~~llvm~llvm_toolchain_llvm/bin"
+    binutils_dir = ctx.attr._binutils.files.to_list()[0].dirname
     patchelf_dir = ctx.executable._patchelf.dirname
 
     # Get the Python toolchain information.
@@ -31,7 +32,7 @@ def _nuitka_binary_impl(ctx):
     posix_tools_dir = ctx.actions.declare_directory("external/posix_tools")
     ctx.actions.run_shell(
         outputs = [posix_tools_dir],
-        command = "ln -s /bin/sh /usr/bin/ld /usr/bin/ldd /usr/bin/readelf " + posix_tools_dir.path,
+        command = "ln -s /bin/sh /usr/bin/ldd " + posix_tools_dir.path,
     )
 
     # Start building the command to run Nuitka.
@@ -55,6 +56,7 @@ def _nuitka_binary_impl(ctx):
         "PATH": ctx.configuration.host_path_separator.join([
             py_bin_dir,
             cc_bin_dir,
+            binutils_dir,
             patchelf_dir,
             posix_tools_dir.path,
         ]),
@@ -71,7 +73,13 @@ def _nuitka_binary_impl(ctx):
     ctx.actions.run(
         outputs = [output_dir],
         inputs = [src] + cc_toolchain.all_files.to_list() + py_toolchain.files.to_list(),
-        tools = [nuitka, py_toolchain.interpreter, ctx.executable._patchelf, posix_tools_dir],
+        tools = [
+            nuitka,
+            py_toolchain.interpreter,
+            ctx.attr._binutils.files,
+            ctx.executable._patchelf,
+            posix_tools_dir,
+        ],
         executable = py_interpreter,
         arguments = nuitka_cmd,
         env = env,
@@ -105,6 +113,10 @@ nuitka_binary = rule(
             default = Label("//bazel:nuitka"),
             executable = True,
             cfg = "exec",
+        ),
+        "_binutils": attr.label(
+            doc = "The production binutils package.",
+            default = Label("@binutils//:binutils"),
         ),
         "_patchelf": attr.label(
             doc = "The patchelf executable.",
