@@ -12,6 +12,8 @@ build:release --copt=-Os
 build:release --copt=-fPIC
 build:release --copt=-flto=thin
 build:release --copt=-g0
+build:release --cxxopt=-stdlib=libstdc++
 build:release --linkopt=-Os
 build:release --linkopt=-flto=thin
+build:release --linkopt=-lstdc++
 build:release --strip=always
