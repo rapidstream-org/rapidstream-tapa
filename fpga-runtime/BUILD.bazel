@@ -90,7 +90,11 @@ pkg_files(
 
 pkg_files(
     name = "pkg-extra-runtime-deps",
-    srcs = ["@com_github_google_glog//:glog"],
+    srcs = [
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@tinyxml2",
+    ],
     prefix = "usr/lib",
     strip_prefix = strip_prefix.files_only(),
     visibility = ["//visibility:public"],
