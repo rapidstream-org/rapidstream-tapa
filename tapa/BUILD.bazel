@@ -25,7 +25,10 @@ nuitka_binary(
         "--deployment",
         "--include-package-data=pyverilog",
         "--include-package-data=tapa",
-        "--python-flag=isolated,no_docstrings,no_site,no_warnings",
+        # -c is used by tapa but nuitka incorrectly marks it as self-execution
+        "--no-deployment-flag=self-execution",
+        # ply depends on docstrings so no_docstrings is not an option
+        "--python-flag=isolated,no_site,no_warnings",
     ],
     nuitka_environment = ":tapa-nuitka-env.py",
     output_name = "tapa-bin",
