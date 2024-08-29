@@ -115,18 +115,56 @@ http_archive(
 )
 
 # Build LLVM from source
+LLVM_VERSION_MAJOR = 17
+
+LLVM_VERSION_MINOR = 0
+
+LLVM_VERSION_PATCH = 6
+
+LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
+
+# Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/707c0f939d1a801370aeb3a795e1a253a880f4f7/modules/llvm-project/17.0.3/patches
 http_archive(
     name = "tapa-llvm-project",
     patch_args = ["-p1"],
     patch_cmds = [
+        # 0002-Add-LLVM-Bazel-overlay-files.patch
+        """
+        cp -r utils/bazel/llvm-project-overlay/* .
+        rm -rf utils/bazel
+        """,
+        # 0003-Add-MODULE.bazel.patch
+        """
+        cat >MODULE.bazel <<EOF
+module(
+    name = "llvm-project",
+    version = "{}",
+)
+
+# Skylark depedndencies
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+
+# Library dependencies
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "rules_cc", version = "0.0.9")
+EOF
+        """.format(LLVM_VERSION),
+        # 0004-Add-BUILD.bazel.patch
+        """echo >BUILD.bazel""",
+        # 0005-Add-Bazel-LLVM-targets.patch
         """echo 'llvm_targets = ["X86"]' >llvm/targets.bzl""",
+        # 0006-Add-LLVM-version-vars.patch
+        """
+        cat >vars.bzl <<EOF
+LLVM_VERSION = "{0}.{1}.{2}"
+LLVM_VERSION_MAJOR = {0}
+LLVM_VERSION_MINOR = {1}
+LLVM_VERSION_PATCH = {2}
+EOF
+        """.format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH),
     ],
     patches = [
-        "//tapa-llvm-project:0000-Add-Bazel-files-to-.gitignore.patch",
-        "//tapa-llvm-project:0001-PATCH-Copy-files-from-bazel-overlay-to-root.patch",
-        "//tapa-llvm-project:0002-PATCH-Bazel-Fix-bazel-build-files.patch",
-        "//tapa-llvm-project:0003-PATCH-Fix-operator-overload-and-use-TEST_TMPDIR.patch",
-        "//tapa-llvm-project:0004-PATCH-Disable-zlib-mpfr-and-terminfo.patch",
+        "//tapa-llvm-project:0013-Disable-zlib-zstd-mpfr-and-pfm.patch",
         "//tapa-llvm-project:1001-Attr.td.patch",
         "//tapa-llvm-project:1002-Preprocessor.cpp.patch",
         "//tapa-llvm-project:1003-Preprocessor.h.patch",
@@ -134,9 +172,9 @@ http_archive(
         "//tapa-llvm-project:1005-SemaDeclAttr.cpp.patch",
         "//tapa-llvm-project:1006-SemaStmtAttr.cpp.patch",
     ],
-    sha256 = "9a56d906a2c81f16f06efc493a646d497c53c2f4f28f0cb1f3c8da7f74350254",
-    strip_prefix = "llvm-project-16.0.0.src",
-    urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz"],
+    sha256 = "58a8818c60e6627064f312dbf46c02d9949956558340938b71cf731ad8bc0813",
+    strip_prefix = "llvm-project-{}.src".format(LLVM_VERSION),
+    urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/llvm-project-{0}.src.tar.xz".format(LLVM_VERSION)],
 )
 
 # Test data
