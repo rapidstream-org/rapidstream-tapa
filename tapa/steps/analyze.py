@@ -174,7 +174,14 @@ def find_tapacc_cflags(
 
     """
     # Add TAPA include files to tapacc cflags
-    tapa_include = str(find_resource("tapa-lib"))
+    tapa_include = find_resource("tapa-lib")
+    if tapa_include is None:
+        _logger.error("unable to find tapa include folder")
+        sys.exit(-1)
+    tapa_extra_runtime_include = find_resource("tapa-extra-runtime-include")
+    if tapa_extra_runtime_include is None:
+        _logger.error("unable to find tapa runtime include folder")
+        sys.exit(-1)
 
     # Find clang include location
     tapacc_version = subprocess.check_output(
@@ -200,7 +207,10 @@ def find_tapacc_cflags(
 
     # FIXME: TAPA target should be user specified
     return (
-        cflags[:] + ("-I", tapa_include) + vendor_include_paths,
+        cflags[:]
+        + ("-I", str(tapa_include))
+        + ("-I", str(tapa_extra_runtime_include))
+        + vendor_include_paths,
         tuple(system_includes),
     )
 

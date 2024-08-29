@@ -15,6 +15,12 @@ header_extractor(
     ],
 )
 
+header_extractor(
+    name = "tapa-extra-runtime-include",
+    visibility = ["//visibility:public"],
+    deps = ["//tapa-lib:tapa"],
+)
+
 pkg_files(
     name = "pkg",
     srcs = [":tapa-system-include"],

@@ -52,6 +52,7 @@ py_binary(
         "//tapa-lib:include",
         "//tapa-lib:tapa",
         "//tapa-system-include",
+        "//tapa-system-include:tapa-extra-runtime-include",
     ],
     main = "__main__.py",
     visibility = ["//visibility:public"],

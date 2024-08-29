@@ -15,10 +15,14 @@ from pathlib import Path
 # path to the parent directory, and checking if the file exists. The first
 # match will be used, and the nearest parent directory will be used to
 # resolve relative paths.
-POTENTIAL_PATHS = {
+POTENTIAL_PATHS: dict[str, tuple[str, ...]] = {
     "tapa-cpp": (
         "tapa-cpp/tapa-cpp",
         "usr/bin/tapa-cpp",
+    ),
+    "tapa-extra-runtime-include": (
+        "tapa-system-include/tapa-extra-runtime-include",
+        "usr/include",
     ),
     "tapa-lib": (
         "tapa-lib",
