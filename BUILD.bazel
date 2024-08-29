@@ -12,6 +12,7 @@ pkg_tar(
         "//fpga-runtime:pkg",
         "//fpga-runtime:pkg-extra-runtime-deps",
         "//tapa:pkg",
+        "//tapa:pkg-link",
         "//tapa-cpp:pkg",
         "//tapa-lib:pkg",
         "//tapa-lib:pkg-extra-runtime-deps",
