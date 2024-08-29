@@ -5,6 +5,7 @@
 # RapidStream Contributor License Agreement.
 
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files", "strip_prefix")
+load("//bazel:header_extractor.bzl", "header_extractor")
 
 cc_library(
     name = "tapa",
@@ -43,6 +44,12 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+header_extractor(
+    name = "extra-runtime-include",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_google_glog//:glog"],
+)
+
 pkg_files(
     name = "pkg-lib",
     srcs = [":tapa"],
@@ -57,6 +64,22 @@ pkg_files(
     strip_prefix = strip_prefix.from_pkg(),
 )
 
+pkg_files(
+    name = "pkg-extra-runtime-include",
+    srcs = [":extra-runtime-include"],
+    prefix = "usr/include",
+    strip_prefix = strip_prefix.from_pkg("extra-runtime-include"),
+    visibility = ["//visibility:public"],
+)
+
+pkg_files(
+    name = "pkg-extra-runtime-deps",
+    srcs = ["@com_github_google_glog//:glog"],
+    prefix = "usr/lib",
+    strip_prefix = strip_prefix.files_only(),
+    visibility = ["//visibility:public"],
+)
+
 pkg_filegroup(
     name = "pkg",
     srcs = [
@@ -66,12 +89,12 @@ pkg_filegroup(
     visibility = ["//visibility:public"],
 )
 
-pkg_files(
-    name = "pkg-extra-runtime-deps",
+pkg_filegroup(
+    name = "pkg-portable",
     srcs = [
-        "@com_github_google_glog//:glog",
+        ":pkg",
+        ":pkg-extra-runtime-deps",
+        ":pkg-extra-runtime-include",
     ],
-    prefix = "usr/lib",
-    strip_prefix = strip_prefix.files_only(),
     visibility = ["//visibility:public"],
 )

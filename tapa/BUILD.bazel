@@ -4,7 +4,7 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files", "pkg_mklink", "strip_prefix")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_filegroup", "pkg_files", "pkg_mklink", "strip_prefix")
 load("@rules_python//python:packaging.bzl", "py_wheel")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@tapa_deps//:requirements.bzl", "requirement")
@@ -149,7 +149,7 @@ py_library(
 )
 
 pkg_files(
-    name = "pkg",
+    name = "pkg-runtime",
     srcs = ["//tapa:nuitka"],
     attributes = pkg_attributes(mode = "0755"),
     prefix = "usr/share/tapa/runtime",
@@ -162,5 +162,14 @@ pkg_mklink(
     name = "pkg-link",
     link_name = "usr/bin/tapa",
     target = "../share/tapa/runtime/tapa-bin",
+    visibility = ["//visibility:public"],
+)
+
+pkg_filegroup(
+    name = "pkg",
+    srcs = [
+        ":pkg-link",
+        ":pkg-runtime",
+    ],
     visibility = ["//visibility:public"],
 )

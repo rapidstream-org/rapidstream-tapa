@@ -195,20 +195,8 @@ def find_tapacc_cflags(
     # Add system include files to tapacc cflags
     system_includes = []
     system_include_path = find_resource("tapa-system-include")
-    if system_include_path is None:
-        err = "Unable to find the tapa system include folders."
-        raise click.UsageError(err)
-
-    for include_paths in (
-        "include",
-        "include/frt",
-        "include/gflags",
-        "include/glog",
-        "include/uuid",
-    ):
-        system_includes.extend(
-            ["-isystem", f"{system_include_path}/{include_paths}"],
-        )
+    if system_include_path:
+        system_includes.extend(["-isystem", str(system_include_path)])
 
     # FIXME: TAPA target should be user specified
     return (

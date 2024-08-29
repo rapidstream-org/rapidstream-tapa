@@ -7,19 +7,10 @@
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "strip_prefix")
 load("//bazel:header_extractor.bzl", "header_extractor")
 
-cc_library(
-    name = "tapa-deps",
-    deps = [
-        "//fpga-runtime:frt",
-        "@com_github_google_glog//:glog",
-    ],
-)
-
 header_extractor(
     name = "tapa-system-include",
     visibility = ["//visibility:public"],
     deps = [
-        ":tapa-deps",
         "@tapa-llvm-project//clang:builtin_headers_gen",
     ],
 )

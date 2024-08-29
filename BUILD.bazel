@@ -9,13 +9,10 @@ load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 pkg_tar(
     name = "tapa-pkg-tar",
     srcs = [
-        "//fpga-runtime:pkg",
-        "//fpga-runtime:pkg-extra-runtime-deps",
+        "//fpga-runtime:pkg-portable",
         "//tapa:pkg",
-        "//tapa:pkg-link",
         "//tapa-cpp:pkg",
-        "//tapa-lib:pkg",
-        "//tapa-lib:pkg-extra-runtime-deps",
+        "//tapa-lib:pkg-portable",
         "//tapa-system-include:pkg",
         "//tapacc:pkg",
     ],
