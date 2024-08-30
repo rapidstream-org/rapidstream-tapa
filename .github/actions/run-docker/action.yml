@@ -46,7 +46,7 @@ runs:
           -e USER="$(id -u)" \
           -u $(id -u):$(id -g) \
           ${{ inputs.dockerOptions }} \
-          --entrypoint=/bin/sh \
+          --entrypoint=/bin/bash \
           ${{ inputs.image }} \
           -c " \
             set -xe

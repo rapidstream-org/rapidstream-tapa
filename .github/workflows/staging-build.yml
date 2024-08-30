@@ -46,17 +46,60 @@ jobs:
           name: tapa
           path: ${{ github.workspace }}/artifacts.out/tapa.tar
           retention-days: 7
-          compression-level: 9
+
+  test-staging:
+    name: Test Staging Build
+    runs-on: self-hosted
+    needs: build
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-18]
+        xilinx_version: ["2024.1"]
+
+    steps:
+      - name: Checkout myself
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: tapa
+
+      - name: Run tests with the downloaded artifact
+        uses: ./.github/actions/run-command
+        with:
+          run: |
+            mkdir -p ~/.rapidstream-tapa/
+            tar -xf /workspace/tapa.tar -C ~/.rapidstream-tapa/
+            export RAPIDSTREAM_TAPA_HOME=~/.rapidstream-tapa
+            source /opt/tools/xilinx/Vitis/${{ matrix.xilinx_version }}/settings64.sh
+            find tests -name '*.bats' -print0 | xargs -0 bats
+          imageTag: rapidstream/tapa-testenv:${{ matrix.os }}
+          dockerfile: ./.github/docker/test-env/Dockerfile.${{ matrix.os }}
+          context: ./.github/docker/test-env
+
+  create-staging-release:
+    name: Create Staging Release
+    runs-on: self-hosted
+    needs: test-staging
+    if: "!github.event.act && startsWith(github.event.ref, 'refs/tags')"
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: tapa
 
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          artifacts: ${{ github.workspace }}/artifacts.out/tapa.tar
+          artifacts: ${{ github.workspace }}/tapa.tar
           body: |
             This is a staging build for ${{ github.sha }}.
           commit: ${{ github.sha }}
           name: Staging Build ${{ github.sha }}
           generateReleaseNotes: true
           prerelease: true
-        if: "!github.event.act && startsWith(github.event.ref, 'refs/tags')"
