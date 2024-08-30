@@ -55,8 +55,17 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-18]
-        xilinx_version: ["2024.1"]
+        os:
+          - ubuntu-22
+          - ubuntu-20
+          - ubuntu-18
+        xilinx_version:
+          - "2024.1"
+          - "2023.2"
+          - "2023.1"
+          - "2022.2"
+          - "2022.1"
+          - "2021.2"
 
     steps:
       - name: Checkout myself
