@@ -75,6 +75,7 @@ jobs:
             tar -xf /workspace/tapa.tar -C ~/.rapidstream-tapa/
             export RAPIDSTREAM_TAPA_HOME=~/.rapidstream-tapa
             source /opt/tools/xilinx/Vitis/${{ matrix.xilinx_version }}/settings64.sh
+            bats tests/testsuite_self_test.bats
             find tests -name '*.bats' -print0 | xargs -0 bats
           imageTag: rapidstream/tapa-testenv:${{ matrix.os }}
           dockerfile: ./.github/docker/test-env/Dockerfile.${{ matrix.os }}
