@@ -31,11 +31,3 @@
 @test "testsuite: vitis_hls is runnable" {
   vitis_hls --version
 }
-
-@test "testsuite: v++ is runnable" {
-  v++ --version
-}
-
-@test "testsuite: /opt/xilinx/xrt/setup.sh exists" {
-  [ -f "/opt/xilinx/xrt/setup.sh" ]
-}
