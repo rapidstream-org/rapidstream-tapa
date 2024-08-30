@@ -6,7 +6,4 @@
 
 FROM ubuntu:bionic
 
-ARG XRT_VERSION=202320.2.16.204
-ARG UBUNTU_VERSION=18.04
-
 INCLUDE+ Dockerfile.ubuntu-common

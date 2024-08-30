@@ -32,27 +32,11 @@ compile_xo() {
   [ -f "${BATS_TMPDIR}/bandwidth.xo" ]
 }
 
-compile_xclbin() {
-  cd "${BATS_TMPDIR}"
-
-  v++ \
-    --link \
-    -t hw_emu \
-    --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
-    -o bandwidth.xclbin \
-    bandwidth.xo
-
-  [ -f "${BATS_TMPDIR}/bandwidth.xclbin" ]
-}
-
 @test "apps/bandwidth: tapa c simulation passes" {
   compile_host
   ${BATS_TMPDIR}/host
 }
 
-@test "apps/bandwidth: tapa generated xclbin emulation passes" {
+@test "apps/bandwidth: tapa generates an xo file" {
   compile_xo
-  compile_xclbin
-  source /opt/xilinx/xrt/setup.sh
-  ${BATS_TMPDIR}/host --bitstream ${BATS_TMPDIR}/bandwidth.xclbin 1000
 }
