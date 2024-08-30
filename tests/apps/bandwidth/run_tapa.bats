@@ -54,5 +54,5 @@ compile_xclbin() {
   compile_xo
   compile_xclbin
   source /opt/xilinx/xrt/setup.sh
-  ${BATS_TMPDIR}/host --bitstream ${BATS_TMPDIR}/bandwidth.xclbin
+  ${BATS_TMPDIR}/host --bitstream ${BATS_TMPDIR}/bandwidth.xclbin 1000
 }
