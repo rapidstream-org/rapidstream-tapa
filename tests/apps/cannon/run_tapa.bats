@@ -13,9 +13,9 @@ compile_host() {
     -Wl,-rpath,$(readlink -f ${RAPIDSTREAM_TAPA_HOME}/usr/lib/) \
     -L ${RAPIDSTREAM_TAPA_HOME}/usr/lib/ \
     -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs \
-    -o ${BATS_TMPDIR}/host
+    -o ${BATS_TMPDIR}/cannon-host
 
-  [ -x "${BATS_TMPDIR}/host" ]
+  [ -x "${BATS_TMPDIR}/cannon-host" ]
 }
 
 compile_xo() {
@@ -34,7 +34,7 @@ compile_xo() {
 
 @test "apps/cannon: tapa c simulation passes" {
   compile_host
-  ${BATS_TMPDIR}/host
+  ${BATS_TMPDIR}/cannon-host
 }
 
 @test "apps/cannon: tapa generates an xo file" {

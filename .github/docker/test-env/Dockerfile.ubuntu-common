@@ -7,6 +7,7 @@ ARG DOCKER_GROUP_ID
 
 # Testing framework:
 #   - bats
+#   - parallel
 
 # Required by Vivado:
 #   - libtinfo5
@@ -22,13 +23,22 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
       apt-get upgrade -y && \
       apt-get install --no-install-recommends -y \
-        bats \
+        ca-certificates \
         g++ \
+        git \
         iverilog \
         libtinfo5 \
         libx11-6 \
         locales \
         ocl-icd-libopencl1 \
+        parallel \
+      && \
+      git clone https://github.com/bats-core/bats-core.git /tmp/bats-core && \
+      cd /tmp/bats-core && \
+      ./install.sh /usr/local && \
+      apt-get purge -y --auto-remove \
+        ca-certificates \
+        git \
       && \
       rm -rf /var/lib/apt/lists/* && \
       rm -rf /var/cache/apt/* && \

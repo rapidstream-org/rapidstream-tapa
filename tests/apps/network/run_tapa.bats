@@ -13,9 +13,9 @@ compile_host() {
     -Wl,-rpath,$(readlink -f ${RAPIDSTREAM_TAPA_HOME}/usr/lib/) \
     -L ${RAPIDSTREAM_TAPA_HOME}/usr/lib/ \
     -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs \
-    -o ${BATS_TMPDIR}/host
+    -o ${BATS_TMPDIR}/network-host
 
-  [ -x "${BATS_TMPDIR}/host" ]
+  [ -x "${BATS_TMPDIR}/network-host" ]
 }
 
 compile_xo() {
@@ -34,7 +34,7 @@ compile_xo() {
 
 @test "apps/network: tapa c simulation passes" {
   compile_host
-  ${BATS_TMPDIR}/host
+  ${BATS_TMPDIR}/network-host
 }
 
 @test "apps/network: tapa generates an xo file" {
