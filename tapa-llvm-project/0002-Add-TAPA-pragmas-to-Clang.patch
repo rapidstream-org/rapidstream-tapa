@@ -1,0 +1,249 @@
+From 7aa4be76e84fc5857bfc51307d1624803e2baae7 Mon Sep 17 00:00:00 2001
+From: Jason Lau <lau@rapidstream-da.com>
+Date: Tue, 3 Sep 2024 14:01:19 -0700
+Subject: [PATCH] Add TAPA pragmas to Clang
+
+---
+ clang/include/clang/Basic/Attr.td | 33 ++++++++++++
+ clang/lib/Sema/SemaDeclAttr.cpp   | 62 +++++++++++++++++++++
+ clang/lib/Sema/SemaStmtAttr.cpp   | 89 +++++++++++++++++++++++++++++++
+ 3 files changed, 184 insertions(+)
+
+diff --git a/clang/include/clang/Basic/Attr.td b/clang/include/clang/Basic/Attr.td
+index dbf2dd2120fb..abc0f89eaa3d 100644
+--- a/clang/include/clang/Basic/Attr.td
++++ b/clang/include/clang/Basic/Attr.td
+@@ -4460,3 +4460,36 @@ def CountedBy : InheritableAttr {
+       void setCountedByFieldLoc(SourceRange Loc) { CountedByFieldLoc = Loc; }
+   }];
+ }
++
++// Begin TAPA
++
++def TapaPipeline : Attr {
++  let Spellings = [GNU<"tapa_pipeline">,
++                   CXX11<"tapa","pipeline">,
++                   C23<"tapa", "pipeline">];
++  let Args = [IntArgument<"II", /* optional */1>];
++  let Documentation = [Undocumented];
++}
++
++def TapaUnroll : Attr {
++  let Spellings = [GNU<"tapa_unroll">,
++                   CXX11<"tapa","unroll">,
++                   C23<"tapa", "unroll">];
++  let Args = [IntArgument<"Factor", /* optional */1>];
++  let Documentation = [Undocumented];
++}
++
++def TapaTarget : Attr {
++  let Spellings = [GNU<"tapa_target">,
++                   CXX11<"tapa","target">,
++                   C23<"tapa", "target">];
++  let Args = [EnumArgument<"Target", "TargetType",
++                           ["hls", "aie"],
++                           ["HLS", "AIE"]>,
++              EnumArgument<"Vendor", "VendorType",
++                           ["xilinx"],
++                           ["Xilinx"], /* optional */1>];
++  let Documentation = [Undocumented];
++}
++
++// End TAPA
+diff --git a/clang/lib/Sema/SemaDeclAttr.cpp b/clang/lib/Sema/SemaDeclAttr.cpp
+index 6f462de4be78..790690111c82 100644
+--- a/clang/lib/Sema/SemaDeclAttr.cpp
++++ b/clang/lib/Sema/SemaDeclAttr.cpp
+@@ -417,6 +417,55 @@ appendDiagnostics(const Sema::SemaDiagnosticBuilder &Bldr, T &&ExtraArg,
+                            std::forward<DiagnosticArgs>(ExtraArgs)...);
+ }
+ 
++// Begin TAPA
++
++static void handleTapaPipelineAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
++  uint32_t ii = 0;
++  if (AL.getNumArgs()) {
++    if (!checkUInt32Argument(S, AL, AL.getArgAsExpr(0), ii)) return;
++  }
++
++  D->addAttr(::new (S.Context) TapaPipelineAttr(S.Context, AL, ii));
++}
++
++static void handleTapaUnrollAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
++  S.Diag(D->getBeginLoc(), diag::warn_attribute_type_not_supported)
++      << AL << "unsupported unroll target";
++}
++
++static void handleTapaTargetAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
++  StringRef TargetStr, VendorStr;
++  SourceLocation ArgLoc;
++
++  if (AL.getNumArgs() == 0)
++    TargetStr = "hls";
++  else if (!S.checkStringLiteralArgumentAttr(AL, 0, TargetStr, &ArgLoc))
++    return;
++
++  TapaTargetAttr::TargetType Target;
++  if (!TapaTargetAttr::ConvertStrToTargetType(TargetStr, Target)) {
++    S.Diag(AL.getLoc(), diag::warn_attribute_type_not_supported)
++        << AL << TargetStr << ArgLoc;
++    return;
++  }
++
++  if (AL.getNumArgs() == 1)
++    VendorStr = "xilinx";
++  else if (!S.checkStringLiteralArgumentAttr(AL, 1, VendorStr, &ArgLoc))
++    return;
++
++  TapaTargetAttr::VendorType Vendor;
++  if (!TapaTargetAttr::ConvertStrToVendorType(VendorStr, Vendor)) {
++    S.Diag(AL.getLoc(), diag::warn_attribute_type_not_supported)
++        << AL << VendorStr << ArgLoc;
++    return;
++  }
++
++  D->addAttr(::new (S.Context) TapaTargetAttr(S.Context, AL, Target, Vendor));
++}
++
++// End TAPA
++
+ /// Add an attribute @c AttrType to declaration @c D, provided that
+ /// @c PassesCheck is true.
+ /// Otherwise, emit diagnostic @c DiagID, passing in all parameters
+@@ -9851,6 +9900,19 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
+   case ParsedAttr::AT_UsingIfExists:
+     handleSimpleAttribute<UsingIfExistsAttr>(S, D, AL);
+     break;
++
++  // Tapa attributes.
++  case ParsedAttr::AT_TapaPipeline:
++    handleTapaPipelineAttr(S, D, AL);
++    break;
++
++  case ParsedAttr::AT_TapaUnroll:
++    handleTapaUnrollAttr(S, D, AL);
++    break;
++
++  case ParsedAttr::AT_TapaTarget:
++    handleTapaTargetAttr(S, D, AL);
++    break;
+   }
+ }
+ 
+diff --git a/clang/lib/Sema/SemaStmtAttr.cpp b/clang/lib/Sema/SemaStmtAttr.cpp
+index e6a4d3e63e4a..cf852f5d57b6 100644
+--- a/clang/lib/Sema/SemaStmtAttr.cpp
++++ b/clang/lib/Sema/SemaStmtAttr.cpp
+@@ -24,6 +24,47 @@
+ using namespace clang;
+ using namespace sema;
+ 
++/// If Expr is a valid integer constant, get the value of the integer
++/// expression and return success or failure. May output an error.
++///
++/// Negative argument is implicitly converted to unsigned, unless
++/// \p StrictlyUnsigned is true.
++template <typename AttrInfo>
++static bool checkUInt32Argument(Sema &S, const AttrInfo &AI, const Expr *Expr,
++                                uint32_t &Val, unsigned Idx = UINT_MAX,
++                                bool StrictlyUnsigned = false) {
++  if (Expr->isTypeDependent() || Expr->isValueDependent() ||
++      !Expr->isIntegerConstantExpr(S.Context)) {
++    if (Idx != UINT_MAX)
++      S.Diag(AI.getLoc(), diag::err_attribute_argument_type)
++          << AI << AANT_ArgumentIntegerConstant << Expr->getSourceRange();
++    else
++      S.Diag(AI.getLoc(), diag::err_attribute_argument_type)
++          << AI << AANT_ArgumentIntegerConstant << Expr->getSourceRange();
++    return false;
++  }
++
++  auto I = Expr->getIntegerConstantExpr(S.Context);
++  if (!I.has_value())
++    return false;
++  auto &IVal = I.value();
++
++  if (!IVal.isIntN(32)) {
++    S.Diag(AI.getLoc(), diag::err_attribute_argument_type)
++        << AI << AANT_ArgumentIntegerConstant << Expr->getSourceRange();
++    return false;
++  }
++
++  if (StrictlyUnsigned && IVal.isSigned() && IVal.isNegative()) {
++    S.Diag(AI.getLoc(), diag::err_attribute_requires_positive_integer)
++        << AI << /*non-negative*/ 1;
++    return false;
++  }
++
++  Val = (uint32_t)IVal.getZExtValue();
++  return true;
++}
++
+ static Attr *handleFallThroughAttr(Sema &S, Stmt *St, const ParsedAttr &A,
+                                    SourceRange Range) {
+   FallThroughAttr Attr(S.Context, A);
+@@ -179,6 +220,50 @@ static Attr *handleLoopHintAttr(Sema &S, Stmt *St, const ParsedAttr &A,
+   return LoopHintAttr::CreateImplicit(S.Context, Option, State, ValueExpr, A);
+ }
+ 
++// Begin TAPA
++
++static Attr *handleTapaPipelineAttr(Sema &S, Stmt *St, const ParsedAttr &A,
++                                    SourceRange) {
++  uint32_t ii = 0;
++  if (A.getNumArgs()) {
++    if (!checkUInt32Argument(S, A, A.getArgAsExpr(0), ii))
++      return nullptr;
++  }
++
++  if (St->getStmtClass() != Stmt::DoStmtClass &&
++      St->getStmtClass() != Stmt::ForStmtClass &&
++      St->getStmtClass() != Stmt::CXXForRangeStmtClass &&
++      St->getStmtClass() != Stmt::WhileStmtClass) {
++    S.Diag(St->getBeginLoc(), diag::warn_attribute_type_not_supported)
++        << A << "unsupported pipeline target";
++    return nullptr;
++  }
++
++  return ::new (S.Context) TapaPipelineAttr(S.Context, A, ii);
++}
++
++static Attr *handleTapaUnrollAttr(Sema &S, Stmt *St, const ParsedAttr &A,
++                                  SourceRange) {
++  uint32_t factor = 0;
++  if (A.getNumArgs()) {
++    if (!checkUInt32Argument(S, A, A.getArgAsExpr(0), factor))
++      return nullptr;
++  }
++
++  if (St->getStmtClass() != Stmt::DoStmtClass &&
++      St->getStmtClass() != Stmt::ForStmtClass &&
++      St->getStmtClass() != Stmt::CXXForRangeStmtClass &&
++      St->getStmtClass() != Stmt::WhileStmtClass) {
++    S.Diag(St->getBeginLoc(), diag::warn_attribute_type_not_supported)
++        << A << "unsupported unroll target";
++    return nullptr;
++  }
++
++  return ::new (S.Context) TapaUnrollAttr(S.Context, A, factor);
++}
++
++// End TAPA
++
+ namespace {
+ class CallExprFinder : public ConstEvaluatedExprVisitor<CallExprFinder> {
+   bool FoundAsmStmt = false;
+@@ -616,6 +701,10 @@ static Attr *ProcessStmtAttribute(Sema &S, Stmt *St, const ParsedAttr &A,
+     return handleCodeAlignAttr(S, St, A);
+   case ParsedAttr::AT_MSConstexpr:
+     return handleMSConstexprAttr(S, St, A, Range);
++  case ParsedAttr::AT_TapaPipeline:
++    return handleTapaPipelineAttr(S, St, A, Range);
++  case ParsedAttr::AT_TapaUnroll:
++    return handleTapaUnrollAttr(S, St, A, Range);
+   default:
+     // N.B., ClangAttrEmitter.cpp emits a diagnostic helper that ensures a
+     // declaration attribute is not written on a statement, but this code is
+-- 
+2.34.1
+

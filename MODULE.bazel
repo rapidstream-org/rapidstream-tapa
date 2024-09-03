@@ -115,11 +115,11 @@ http_archive(
 )
 
 # Build LLVM from source
-LLVM_VERSION_MAJOR = 17
+LLVM_VERSION_MAJOR = 18
 
-LLVM_VERSION_MINOR = 0
+LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 6
+LLVM_VERSION_PATCH = 8
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
@@ -164,15 +164,10 @@ EOF
         """.format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH),
     ],
     patches = [
-        "//tapa-llvm-project:0013-Disable-zlib-zstd-mpfr-and-pfm.patch",
-        "//tapa-llvm-project:1001-Attr.td.patch",
-        "//tapa-llvm-project:1002-Preprocessor.cpp.patch",
-        "//tapa-llvm-project:1003-Preprocessor.h.patch",
-        "//tapa-llvm-project:1004-PPDirectives.cpp.patch",
-        "//tapa-llvm-project:1005-SemaDeclAttr.cpp.patch",
-        "//tapa-llvm-project:1006-SemaStmtAttr.cpp.patch",
+        "//tapa-llvm-project:0001-Disable-zlib-zstd-mpfr-and-pfm.patch",
+        "//tapa-llvm-project:0002-Add-TAPA-pragmas-to-Clang.patch",
     ],
-    sha256 = "58a8818c60e6627064f312dbf46c02d9949956558340938b71cf731ad8bc0813",
+    sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a",
     strip_prefix = "llvm-project-{}.src".format(LLVM_VERSION),
     urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/llvm-project-{0}.src.tar.xz".format(LLVM_VERSION)],
 )
