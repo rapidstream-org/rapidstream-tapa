@@ -34,6 +34,7 @@ jobs:
             mkdir -p /workspace/artifacts.out/
             bazel build --config=release //:tapa-pkg-tar
             cp -L bazel-bin/tapa-pkg-tar.tar /workspace/artifacts.out/tapa.tar
+            gzip /workspace/artifacts.out/tapa.tar
         env:
           UBUNTU_PRO_TOKEN: ${{ secrets.UBUNTU_PRO_TOKEN }}
           MAC_ADDRESS: ${{ secrets.MAC_ADDRESS }}
@@ -44,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: tapa
-          path: ${{ github.workspace }}/artifacts.out/tapa.tar
+          path: ${{ github.workspace }}/artifacts.out/tapa.tar.gz
           retention-days: 7
 
   test-staging:
@@ -80,7 +81,7 @@ jobs:
         with:
           run: |
             mkdir -p ~/.rapidstream-tapa/
-            tar -xf /workspace/tapa.tar -C ~/.rapidstream-tapa/
+            tar -xzf /workspace/tapa.tar.gz -C ~/.rapidstream-tapa/
             export RAPIDSTREAM_TAPA_HOME=~/.rapidstream-tapa
             source /opt/tools/xilinx/Vitis/${{ matrix.xilinx_version }}/settings64.sh
             bats tests/testsuite_self_test.bats
@@ -105,7 +106,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          artifacts: ${{ github.workspace }}/tapa.tar
+          artifacts: ${{ github.workspace }}/tapa.tar.gz
           body: |
             This is a staging build for ${{ github.sha }}.
           commit: ${{ github.sha }}
