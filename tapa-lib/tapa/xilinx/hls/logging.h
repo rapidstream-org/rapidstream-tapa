@@ -5,18 +5,7 @@
 #ifndef TAPA_XILINX_HLS_LOGGING_H_
 #define TAPA_XILINX_HLS_LOGGING_H_
 
-namespace tapa {
-namespace internal {
-
-struct dummy {
-  template <typename T>
-  dummy& operator<<(const T&) {
-    return *this;
-  }
-};
-
-}  // namespace internal
-}  // namespace tapa
+#include "tapa/base/logging.h"
 
 #define LOG(level) ::tapa::internal::dummy()
 #define LOG_IF(level, cond) ::tapa::internal::dummy()

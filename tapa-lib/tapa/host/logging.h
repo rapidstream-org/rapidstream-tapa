@@ -6,5 +6,6 @@
 #define TAPA_HOST_LOGGING_H_
 
 #include <glog/logging.h>
+#include "tapa/base/logging.h"
 
 #endif  // TAPA_HOST_LOGGING_H_
