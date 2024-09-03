@@ -306,7 +306,6 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                         f"-isystem {x}/../tps/lnx64/gcc-6.2.0/include/c++/6.2.0"
                         for x in get_vendor_include_paths()
                     ),
-                    "-DTAPA_TARGET_=XILINX_HLS",
                 ),
             )
             with (

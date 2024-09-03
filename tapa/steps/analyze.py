@@ -83,9 +83,10 @@ def analyze(
     work_dir = get_work_dir()
     cflags += ("-std=c++17",)
 
-    flatten_files = run_flatten(tapa_cpp, input_files, cflags, work_dir)
-
     tapacc_cflags, system_cflags = find_tapacc_cflags(tapacc, cflags)
+    flatten_files = run_flatten(
+        tapa_cpp, input_files, tapacc_cflags + system_cflags, work_dir
+    )
     graph_dict = run_tapacc(
         tapacc,
         flatten_files,
@@ -205,11 +206,17 @@ def find_tapacc_cflags(
     if system_include_path:
         system_includes.extend(["-isystem", str(system_include_path)])
 
-    # FIXME: TAPA target should be user specified
+    # FIXME: Without target specification, macros will be expanded by clang
+    #        cpp and the generated code will not be synthesizable.
+    # FIXME: After TAPA cpp expands the macros, platform-specific functions
+    #        will be used in the generated code. In this case, tapacc should
+    #        continue to have the same target definition. Otherwise, the
+    #        generated code will have missing functions.
     return (
         cflags[:]
-        + ("-I", str(tapa_include))
-        + ("-I", str(tapa_extra_runtime_include))
+        + ("-DTAPA_TARGET_=XILINX_HLS",)
+        + ("-isystem", str(tapa_include))
+        + ("-isystem", str(tapa_extra_runtime_include))
         + vendor_include_paths,
         tuple(system_includes),
     )
@@ -283,16 +290,16 @@ def run_flatten(
 
         # Output flatten code to the file
         with open(flatten_path, "w", encoding="utf-8") as output_fp:
-            # FIXME: workaround by -D__SYNTHESIS__.  However, this should not be
-            #        hardcoded for all targets.  TAPA should provide a
-            #        target-specific directive for the users.
             tapa_cpp_cmd = (
                 tapa_cpp,
                 "-E",
-                "-nostdinc",
-                "-nostdinc++",
                 "-CC",
                 "-P",
+                "-fkeep-system-includes",
+                # FIXME: If we don't define __SYNTHESIS__, the generated code
+                #        may not be synthesizable if the user depends on this
+                #        synthesis-specific macros, as the macros will be
+                #        expanded by clang cpp.
                 "-D__SYNTHESIS__",
                 *cflags,
                 file,
