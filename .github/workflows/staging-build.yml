@@ -65,7 +65,6 @@ jobs:
           - "2023.1"
           - "2022.2"
           - "2022.1"
-          - "2021.2"
 
     steps:
       - name: Checkout myself
