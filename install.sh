@@ -251,7 +251,7 @@ create_symlinks() {
     fi
 
     # Create symbolic links for each executable in the installation directory.
-    for bin in "$RAPIDSTREAM_INSTALL_DIR"/*; do
+    for bin in "$RAPIDSTREAM_INSTALL_DIR"/usr/bin/*; do
       # Skip the directories.
       if [ ! -f "$bin" ]; then
         continue
