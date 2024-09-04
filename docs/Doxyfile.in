@@ -2,11 +2,9 @@ PROJECT_NAME           = "TAPA"
 
 OUTPUT_DIRECTORY       = "@DOXYGEN_OUTPUT_DIR@"
 
-INPUT                  = "@DOXYGEN_INPUT_DIR@/src" "@DOXYGEN_INPUT_DIR@/backend"
+INPUT                  = "@DOXYGEN_INPUT_DIR@/tapa-lib" "@DOXYGEN_INPUT_DIR@/tapacc"
 
 RECURSIVE              = YES
-
-EXCLUDE_PATTERNS       = */python/*
 
 GENERATE_HTML          = NO
 

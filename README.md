@@ -9,11 +9,7 @@ RapidStream Contributor License Agreement.
 # RapidStream TAPA
 
 [![Development Branches](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/dev-branches.yml/badge.svg)](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/dev-branches.yml)
-<!--
-[![Install](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/install.yml/badge.svg)](https://
-github.com/rapidstream-org/rapidstream-tapa/actions/workflows/install.yml)
 [![Documentation](https://readthedocs.org/projects/tapa/badge/?version=latest)](https://tapa.readthedocs.io/en/latest/?badge=latest)
--->
 
 TAPA is a dataflow HLS framework that features fast compilation, expressive programming model and generates high-frequency FPGA accelerators.
 Now it is maintained by RapidStream Design Automation, Inc.
@@ -108,7 +104,8 @@ no-charge, royalty-free, irrevocable patent license to make, have made, use,
 offer to sell, sell, import, and otherwise transfer the work,
 
 Please note that this is a summary of the licensing terms, and the full text of
-the [MIT](LICENSE) and the [RapidStream Contributor License Agreement](CLA.md)
+the [MIT license](https://github.com/rapidstream-org/rapidstream-tapa/blob/main/LICENSE)
+and the [RapidStream Contributor License Agreement](https://github.com/rapidstream-org/rapidstream-tapa/blob/main/CLA.md)
 should be consulted for detailed legal information.
 
 ---

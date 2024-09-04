@@ -81,7 +81,6 @@ widthof
 The TAPA Compiler (tapac)
 -------------------------
 
-.. argparse::
-  :module: tapa.tapac
-  :func: create_parser
-  :prog: tapac
+.. click:: tapa.__main__:entry_point
+  :prog: tapa
+  :nested: full

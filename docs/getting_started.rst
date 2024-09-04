@@ -12,7 +12,7 @@ Hello World: Vector Add
 
 Let's start with the following TAPA C++ source code:
 
-.. literalinclude:: ../apps/vadd/vadd.cpp
+.. literalinclude:: ../tests/apps/vadd/vadd.cpp
    :language: cpp
 
 

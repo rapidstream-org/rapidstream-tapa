@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 project = "TAPA"
-author = "Yuze Chi, Licheng Guo"
+author = "RapidStream Design Automation, Inc. and contributors"
 copyright = "2024, " + author  # noqa: A001
 
 html_theme = "sphinx_rtd_theme"
@@ -18,10 +18,10 @@ html_theme = "sphinx_rtd_theme"
 extensions = [
     "breathe",  # Handles Doxygen output.
     "myst_parser",  # Handles MarkDown
+    "sphinx_click",  # Handles click-based applications.
     "sphinx.ext.autodoc",  # Handles Python docstring.
     "sphinx.ext.autosectionlabel",  # Creates labels automatically.
     "sphinx.ext.napoleon",  # Handles Google-stype docstring.
-    "sphinxarg.ext",  # Handles Python entry points.
 ]
 
 breathe_default_project = "TAPA"
@@ -46,7 +46,7 @@ if os.environ.get("READTHEDOCS") == "True":
     breathe_projects = {breathe_default_project: f"{doxygen_dir}/xml"}
 
 # Make sure to use the tapa package shipped with the documentation.
-sys.path.insert(0, os.path.dirname(__file__) + "/../backend/python")
+sys.path.insert(0, os.path.dirname(__file__) + "/..")
 
 # Make sure the target is unique.
 autosectionlabel_prefix_document = True

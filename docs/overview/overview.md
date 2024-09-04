@@ -8,5 +8,6 @@ RapidStream Contributor License Agreement.
 
 ```{include} ../../README.md
 :relative-docs: docs/
-:start-line: 1
+:start-after: "# RapidStream TAPA"
+:end-before: "---"
 ```
