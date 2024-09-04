@@ -36,7 +36,7 @@ You can install the dependencies by running the following command:
 sudo apt-get install g++ iverilog ocl-icd-libopencl1
 ```
 
-Then, you can install TAPA by running the following command:
+Then, you can install TAPA as a regular user by running the following command:
 
 ```bash
 sh -c "$(curl -fsSL tapa.rapidstream.sh)"
