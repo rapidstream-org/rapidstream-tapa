@@ -20,6 +20,10 @@ inputs:
     description: "Bucket name for the Cloudflare R2"
     required: false
     default: "rapidstream-releases"
+  cloudflarePagesProjectName:
+    description: "Project name of the Cloudflare Pages"
+    required: false
+    default: "rapidstream-tapa"
 
 runs:
   using: "composite"
@@ -31,10 +35,23 @@ runs:
         dockerfile: ./.github/docker/Dockerfile.cloudflare
         context: ./.github/docker
 
+    - name: Publish the installer to Cloudflare Pages
+      uses: ./.github/actions/run-docker
+      with:
+        image: rapidstream/cloudflare:local
+        run: >
+          cp install.sh .github/actions/publish-dist/installer/tapa.rapidstream.sh
+          retry -- wrangler pages deploy \
+            --project-name ${{ inputs.cloudflarePagesProjectName }} \
+            .github/actions/publish-dist/installer
+        dockerOptions: >-
+          -e CLOUDFLARE_API_TOKEN=${{ inputs.cloudflareToken }}
+          -e CLOUDFLARE_ACCOUNT_ID=${{ inputs.cloudflareAccountID }}
+
     - name: Upload the distribution files to Cloudflare R2
       uses: ./.github/actions/run-docker
       with:
-        image: "rapidstream/cloudflare:latest"
+        image: rapidstream/cloudflare:local
         run: |
           bucket="${{ inputs.cloudflareR2BucketName }}"
           channel="${{ inputs.channel }}"
