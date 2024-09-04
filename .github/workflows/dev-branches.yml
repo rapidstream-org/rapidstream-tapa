@@ -48,6 +48,36 @@ jobs:
           UBUNTU_PRO_TOKEN: ${{ secrets.UBUNTU_PRO_TOKEN }}
           MAC_ADDRESS: ${{ secrets.MAC_ADDRESS }}
 
+  # TODO: integrate into bazel
+  docs:
+    name: Bulid Documentations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout myself
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y doxygen
+          python3 -m pip install --user -r tapa/requirements_lock.txt
+          python3 -m pip install --user -r docs/requirements.txt
+
+      - name: Build docs
+        run: |
+          set -e
+          python3 -m sphinx \
+            --fail-on-warning \
+            --keep-going \
+            --show-traceback \
+            --define language=en \
+            . ../build/docs/html
+        working-directory: docs
+        env:
+          READTHEDOCS: "True"
+
   all-required-branch-checks:
     name: All Required Branch Checks
     runs-on: ubuntu-latest
