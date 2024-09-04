@@ -9,6 +9,7 @@ RapidStream Contributor License Agreement.
 # RapidStream TAPA
 
 [![Development Branches](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/dev-branches.yml/badge.svg)](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/dev-branches.yml)
+[![Staging Build](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/staging-build.yml/badge.svg)](https://github.com/rapidstream-org/rapidstream-tapa/actions/workflows/staging-build.yml)
 [![Documentation](https://readthedocs.org/projects/tapa/badge/?version=latest)](https://tapa.readthedocs.io/en/latest/?badge=latest)
 
 TAPA is a dataflow HLS framework that features fast compilation, expressive programming model and generates high-frequency FPGA accelerators.
