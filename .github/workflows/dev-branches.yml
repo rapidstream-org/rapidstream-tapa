@@ -100,3 +100,4 @@ jobs:
         if: ${{ steps.merge.outputs.is-successful }}
         with:
           workflow: Staging Build
+          ref: refs/heads/main
