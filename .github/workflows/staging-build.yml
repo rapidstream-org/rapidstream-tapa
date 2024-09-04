@@ -27,14 +27,8 @@ jobs:
       - name: Checkout myself
         uses: actions/checkout@v4
 
-      - name: Run bazel
-        uses: ./.github/actions/run-command
-        with:
-          run: |
-            mkdir -p /workspace/artifacts.out/
-            bazel build --config=release //:tapa-pkg-tar
-            cp -L bazel-bin/tapa-pkg-tar.tar /workspace/artifacts.out/tapa.tar
-            gzip /workspace/artifacts.out/tapa.tar
+      - name: Run Bazel to build
+        uses: ./.github/actions/build-release
         env:
           UBUNTU_PRO_TOKEN: ${{ secrets.UBUNTU_PRO_TOKEN }}
           MAC_ADDRESS: ${{ secrets.MAC_ADDRESS }}
