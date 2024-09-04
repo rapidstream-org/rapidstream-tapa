@@ -39,7 +39,7 @@ runs:
       uses: ./.github/actions/run-docker
       with:
         image: rapidstream/cloudflare:local
-        run: >
+        run: |
           cp install.sh .github/actions/publish-dist/installer/tapa.rapidstream.sh
           retry -- wrangler pages deploy \
             --project-name ${{ inputs.cloudflarePagesProjectName }} \
