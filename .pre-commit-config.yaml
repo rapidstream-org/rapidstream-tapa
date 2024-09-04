@@ -35,6 +35,8 @@ repos:
       - id: file-contents-sorter
         files:
           .gitignore
+          docs/requirements.txt
+          tapa/requirements.in
       - id: fix-byte-order-marker
       - id: forbid-new-submodules
       - id: forbid-submodules
