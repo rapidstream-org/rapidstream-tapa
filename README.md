@@ -18,6 +18,69 @@ Now it is maintained by RapidStream Design Automation, Inc.
 ![TAPA Framework](https://user-images.githubusercontent.com/32432619/157972074-12fe5f32-4cd0-492e-b47a-06c23ea9c283.png)
 
 
+## Installation
+
+We are planning something big for the next release! For now, the documentation may be out-dated.
+You may install our latest preview version by following the instructions below.
+
+To install TAPA, you need to have the following dependencies:
+
+- Ubuntu 18.04 or later
+- g++
+- iverilog
+- ocl-icd-libopencl1 (if you plan to run simulations and on-board tests)
+
+You can install the dependencies by running the following command:
+
+```bash
+sudo apt-get install g++ iverilog ocl-icd-libopencl1
+```
+
+Then, you can install TAPA by running the following command:
+
+```bash
+sh -c "$(curl -fsSL tapa.rapidstream.sh)"
+```
+
+To compile the host code for simulation and on-board tests, you may compile your host code linking with the TAPA library:
+
+```bash
+g++ -std=c++17 \
+    [your code here] \
+    -I ~/.rapidstream-tapa/usr/include \
+    -I[path to Vitis HLS header files] \
+    -Wl,-rpath,$(readlink -f ~/.rapidstream-tapa/usr/lib) \
+    -L ~/.rapidstream-tapa/usr/lib \
+    -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs
+```
+
+For example:
+
+```bash
+g++ -std=c++17 \
+    tests/apps/vadd/vadd-host.cpp tests/apps/vadd/vadd.cpp \
+    -I ~/.rapidstream-tapa/usr/include \
+    -I /opt/tools/xilinx/Vitis_HLS/2024.1/include \
+    -Wl,-rpath,$(readlink -f ~/.rapidstream-tapa/usr/lib) \
+    -L ~/.rapidstream-tapa/usr/lib \
+    -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs
+```
+
+For generating the RTL code, you can use the `tapa` command. For example:
+
+```bash
+# source the Vitis HLS settings
+source /opt/tools/xilinx/Vitis_HLS/2024.1/settings64.sh
+tapa compile \
+    -f tests/apps/bandwidth/bandwidth.cpp \
+    --cflags -Itests/apps/bandwidth/ \
+    -t Bandwidth \
+    --clock-period 3 \
+    --part-num xcu250-figd2104-2L-e
+```
+
+We are working on the documentation and the stable release. Stay tuned!
+
 ## High-Frequency
 
 - TAPA explicitly decouples communication and computation for better QoR.
