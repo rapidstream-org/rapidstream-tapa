@@ -94,6 +94,8 @@ jobs:
             xilinx_version: "2024.1"
           - os: fedora-34
             xilinx_version: "2024.1"
+          - os: amazonlinux-2023
+            xilinx_version: "2024.1"
 
     steps:
       - name: Checkout myself

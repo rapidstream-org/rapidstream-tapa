@@ -9,6 +9,7 @@ ARG DOCKER_GROUP_ID
 #   - bats (from source)
 #   - parallel (from source)
 #   - perl
+#   - util-linux
 
 # Required by Vivado:
 #   - libX11
@@ -17,6 +18,7 @@ ARG DOCKER_GROUP_ID
 #   - gcc-c++
 #   - iverilog (from source)
 #   - ocl-icd
+#   - tar (for installation)
 
 RUN yum update -y && \
     yum install -y \
@@ -32,6 +34,9 @@ RUN yum update -y && \
         libxcrypt-compat \
         ocl-icd \
         perl \
+        shadow-utils \
+        tar \
+        util-linux \
     && \
     cd /tmp && \
       git clone https://github.com/bats-core/bats-core.git bats-core && \
@@ -62,6 +67,10 @@ RUN yum update -y && \
 
 # Link libtinfo.so.6 to libtinfo.so.5 if it doesn't exist
 RUN if [ ! -f /lib64/libtinfo.so.5 ]; then ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5; fi
+
+# Remove the user and group with the same ID created by the base image if exists
+RUN userdel -f $(getent passwd ${DOCKER_USER_ID} | cut -d: -f1) || true && \
+    groupdel -f $(getent group ${DOCKER_GROUP_ID} | cut -d: -f1) || true
 
 # Create a user for the test environment
 RUN groupadd -g ${DOCKER_GROUP_ID} io && \

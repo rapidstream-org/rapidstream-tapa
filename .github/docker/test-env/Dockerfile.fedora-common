@@ -7,9 +7,9 @@ ARG DOCKER_GROUP_ID
 
 # Testing framework:
 #   - bats (from source)
-#   - inn
 #   - parallel
 #   - perl
+#   - util-linux
 
 # Required by Vivado:
 #   - libX11
@@ -25,13 +25,13 @@ RUN yum update -y && \
         git \
         glibc-langpack-en \
         hostname \
-        inn \
         iverilog \
         libX11 \
         libxcrypt-compat \
         ocl-icd \
         parallel \
         perl \
+        util-linux \
     && \
     cd /tmp && \
       git clone https://github.com/bats-core/bats-core.git bats-core && \

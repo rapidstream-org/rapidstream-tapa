@@ -29,7 +29,7 @@ To install TAPA, you need to have the following dependencies:
     - g++
     - iverilog
     - ocl-icd-libopencl1 (if you plan to run simulations and on-board tests)
-- Red Hat Enterprise Linux 9 or later, or AlmaLinux/Rocky Linux 9 or later:
+- Red Hat Enterprise Linux 9 or later, AlmaLinux/Rocky Linux 9 or later, or Amazon Linux 2023:
     - gcc-c++
     - iverilog built from source
     - libxcrypt-compat
@@ -45,7 +45,8 @@ You can install the dependencies by running the following commands:
 
 ```bash
 sudo apt-get install g++ iverilog ocl-icd-libopencl1  # for Ubuntu and Debian
-sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd  # for Fedora and Red Hat
+sudo amazon-linux-extras install epel -y # for Amazon Linux
+sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd  # for Fedora, RHEL, and Amazon Linux
 ```
 
 Then, you can install TAPA as a regular user by running the following command:
