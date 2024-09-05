@@ -307,25 +307,6 @@ file that includes the manual floorplanning.
     ]
   }
 
-Scalability
-::::::::::::
-
-AutoBridge has been tested on designs from <20 tasks to designs with >1000
-tasks. Here are some tips if you have more than hundreds of tasks:
-
-- Install the Gurobi solver. Gurobi is free for academia, and the registration
-  process takes less than 5 minutes. See instructions :ref:`here
-  <installation:install gurobi (recommended)>`.
-
-- By default, AutoBridge searches for optimal solutions globally. However, if
-  the process could not finish within a reasonable time, try adding the
-  ``--floorplan-strategy`` option with ``QUICK_FLOORPLANNING``. Empirically,
-  designs with hundreds of tasks may need to run in this strategy, but the
-  situation varies a lot based on how the tasks are connected.
-
-- By default, each solving process is allowed for 600 seconds. You could adjust
-  the threshold by the ``--max-search-time`` option.
-
 
 Tips to Improve Frequency
 :::::::::::::::::::::::::::::::

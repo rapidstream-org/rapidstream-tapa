@@ -1,16 +1,18 @@
 TAPA Documentation
 ==================
 
-.. toctree::
-  :caption: Overview
-
-  overview/overview
-  overview/tapa_basics
 
 .. toctree::
   :caption: Installation
 
   installation
+
+
+.. toctree::
+  :caption: Overview
+
+  overview/overview
+  overview/tapa_basics
 
 .. toctree::
   :caption: Getting Started
