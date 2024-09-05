@@ -6,4 +6,4 @@
 
 FROM ubuntu:focal
 
-INCLUDE+ Dockerfile.ubuntu-common
+INCLUDE+ Dockerfile.debian-common

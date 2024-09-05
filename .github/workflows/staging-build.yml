@@ -50,16 +50,28 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os:
-          - ubuntu-22
-          - ubuntu-20
-          - ubuntu-18
-        xilinx_version:
-          - "2024.1"
-          - "2023.2"
-          - "2023.1"
-          - "2022.2"
-          - "2022.1"
+        include:
+          # Test all Vitis versions on the latest supported Ubuntu LTS.
+          # Ubuntu 24.04 is not supported by Xilinx yet.
+          - os: ubuntu-22
+            xilinx_version: "2024.1"
+          - os: ubuntu-22
+            xilinx_version: "2023.2"
+          - os: ubuntu-22
+            xilinx_version: "2023.1"
+          - os: ubuntu-22
+            xilinx_version: "2022.2"
+          - os: ubuntu-22
+            xilinx_version: "2022.1"
+          # Test all OS versions with the latest Vitis version.
+          - os: ubuntu-20
+            xilinx_version: "2024.1"
+          - os: ubuntu-18
+            xilinx_version: "2024.1"
+          - os: debian-10
+            xilinx_version: "2024.1"
+          - os: debian-11
+            xilinx_version: "2024.1"
 
     steps:
       - name: Checkout myself
@@ -74,8 +86,7 @@ jobs:
         uses: ./.github/actions/run-command
         with:
           run: |
-            mkdir -p ~/.rapidstream-tapa/
-            tar -xzf /workspace/tapa.tar.gz -C ~/.rapidstream-tapa/
+            RAPIDSTREAM_LOCAL_PACKAGE=/workspace/tapa.tar.gz ./install.sh
             export RAPIDSTREAM_TAPA_HOME=~/.rapidstream-tapa
             source /opt/tools/xilinx/Vitis/${{ matrix.xilinx_version }}/settings64.sh
             bats -j $(nproc) tests/testsuite_self_test.bats

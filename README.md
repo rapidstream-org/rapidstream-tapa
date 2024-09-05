@@ -25,7 +25,7 @@ You may install our latest preview version by following the instructions below.
 
 To install TAPA, you need to have the following dependencies:
 
-- Ubuntu 18.04 or later
+- Ubuntu 18.04 or later, or Debian 10 or later
 - g++
 - iverilog
 - ocl-icd-libopencl1 (if you plan to run simulations and on-board tests)
