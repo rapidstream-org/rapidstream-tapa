@@ -76,6 +76,24 @@ jobs:
             xilinx_version: "2024.1"
           - os: rockylinux-9
             xilinx_version: "2024.1"
+          # FIXME: TAPA fails in newer versions of fedora:
+          # "undefined __builtin_FILE", seems to be caused by libc changes.
+          # - os: fedora-41
+          #   xilinx_version: "2024.1"
+          # - os: fedora-40
+          #   xilinx_version: "2024.1"
+          # - os: fedora-39
+          #   xilinx_version: "2024.1"
+          - os: fedora-38
+            xilinx_version: "2024.1"
+          - os: fedora-37
+            xilinx_version: "2024.1"
+          - os: fedora-36
+            xilinx_version: "2024.1"
+          - os: fedora-35
+            xilinx_version: "2024.1"
+          - os: fedora-34
+            xilinx_version: "2024.1"
 
     steps:
       - name: Checkout myself

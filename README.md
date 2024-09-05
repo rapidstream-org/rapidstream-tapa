@@ -34,12 +34,18 @@ To install TAPA, you need to have the following dependencies:
     - iverilog built from source
     - libxcrypt-compat
     - ocl-icd (if you plan to run simulations and on-board tests)
+- Fedora 34 or later, up to Fedora 38:
+    - gcc-c++
+    - iverilog
+    - libxcrypt-compat
+    - ocl-icd (if you plan to run simulations and on-board tests)
 - Vitis HLS 2022.1 or later
 
-You can install the dependencies by running the following command:
+You can install the dependencies by running the following commands:
 
 ```bash
-sudo apt-get install g++ iverilog ocl-icd-libopencl1
+sudo apt-get install g++ iverilog ocl-icd-libopencl1  # for Ubuntu and Debian
+sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd  # for Fedora and Red Hat
 ```
 
 Then, you can install TAPA as a regular user by running the following command:
