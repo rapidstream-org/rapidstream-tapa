@@ -72,6 +72,10 @@ jobs:
             xilinx_version: "2024.1"
           - os: debian-11
             xilinx_version: "2024.1"
+          - os: almalinux-9
+            xilinx_version: "2024.1"
+          - os: rockylinux-9
+            xilinx_version: "2024.1"
 
     steps:
       - name: Checkout myself
