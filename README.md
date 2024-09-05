@@ -45,7 +45,6 @@ You can install the dependencies by running the following commands:
 
 ```bash
 sudo apt-get install g++ iverilog ocl-icd-libopencl1  # for Ubuntu and Debian
-sudo amazon-linux-extras install epel -y # for Amazon Linux
 sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd  # for Fedora, RHEL, and Amazon Linux
 ```
 
