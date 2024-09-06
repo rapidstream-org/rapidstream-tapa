@@ -9,7 +9,7 @@ There are two key components in the RapidStream TAPA framework:
 The TAPA frontend can be used standalone as an HLS tool, while the RapidStream backend can be optionally used to
 maximize the achievable frequency of TAPA designs.
 
-.. image:: https://private-user-images.githubusercontent.com/32432619/365317628-9f9639a8-5517-48db-804d-cf2c4366b6d7.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjU2NjE2NDcsIm5iZiI6MTcyNTY2MTM0NywicGF0aCI6Ii8zMjQzMjYxOS8zNjUzMTc2MjgtOWY5NjM5YTgtNTUxNy00OGRiLTgwNGQtY2YyYzQzNjZiNmQ3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA5MDYlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwOTA2VDIyMjIyN1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTdhMzczZjZlMWZjMWM4OTk1MDlkNWE0MjZkZTRjNzJhOTMyOTFjYWFjNDM3NTBmNjg4MDBhNDY4ZGIxZjUzNmImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.B26doY7-qnPgmazTVEX8kVvAY39XpwHKxjaBcBDlumI
+.. image:: https://github.com/rapidstream-org/doc-figures/blob/main/1.png?raw=true
   :width: 100 %
 
 TAPA
@@ -36,7 +36,7 @@ RapidStream performs the partition-and-pipeline optimization on the RTL generate
 RapidStream automatically floorplan the design across the FPGA to achieve balanced resource utilization
 and insert pipeline registers between tasks to maximize the frequency.
 
-.. image:: https://private-user-images.githubusercontent.com/32432619/365318540-27bac85a-11fe-4685-9792-4974706749fc.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjU2NjE5OTgsIm5iZiI6MTcyNTY2MTY5OCwicGF0aCI6Ii8zMjQzMjYxOS8zNjUzMTg1NDAtMjdiYWM4NWEtMTFmZS00Njg1LTk3OTItNDk3NDcwNjc0OWZjLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA5MDYlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwOTA2VDIyMjgxOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWQwZGYyNzBlOTJkNzhkOGJmZWRmODYyYzk5ZTM3ZjY0YTY4ZGE5OWM3YTg1ZjQ2YjE5MzI4ZDY2Y2YxOTg3MjMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.GNnBA027Ep85kg9MqJMDrVl3tgEcldnXF5yxQq1Bq_s
+.. image:: https://github.com/rapidstream-org/doc-figures/blob/main/2.png?raw=true
   :width: 100 %
 
 The partition-and-pipeline methodology works because it **reduces local congestion** and **fixes global critical paths** at the same time.
@@ -47,7 +47,7 @@ When we spread the logic out, we will inevitably create wires that span long dis
 
 First, for the systolic array design we mentioned earlier, we show the implementation comparison with or without RapidStream. With the optimization from RapidStream, the design is well spread out to the full FPGA and local congestion is significantly reduced. The otherwise failed design now achieves 333 MHz (target clock period of 3 ns).
 
-.. image:: https://private-user-images.githubusercontent.com/32432619/365318684-6306ace8-5cb2-4c0e-af6b-9284014826de.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjU2NjIwNjQsIm5iZiI6MTcyNTY2MTc2NCwicGF0aCI6Ii8zMjQzMjYxOS8zNjUzMTg2ODQtNjMwNmFjZTgtNWNiMi00YzBlLWFmNmItOTI4NDAxNDgyNmRlLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA5MDYlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwOTA2VDIyMjkyNFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTQzYThmMGM1N2Y2YmQ1MWIzYjA4M2IzMjIzODcwNTdjZjVlNmRkMzk0ZWFjMzg3NjIzNmEyOTMyNmNiZTNmZDgmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.MXNb6KlN2BcH3AT2PoTjrNEg7JvLiwe3jz_vv30USi8
+.. image:: https://github.com/rapidstream-org/doc-figures/blob/main/3.png?raw=true
   :width: 50 %
 
 For the stencil design on U280, we visualize the interconnect congestion level comparison.
@@ -55,5 +55,5 @@ The redder the color in the picture, the more severe the routing congestion.
 By intelligently force some logic away from the bottom SLR and adding adequate pipeline to the interconnects,
 we improve again from routing failure to 250 MHz.
 
-.. image:: https://private-user-images.githubusercontent.com/32432619/365318708-fa36be3f-19ec-4c48-9b2f-75c830d9cbf4.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjU2NjIwNzQsIm5iZiI6MTcyNTY2MTc3NCwicGF0aCI6Ii8zMjQzMjYxOS8zNjUzMTg3MDgtZmEzNmJlM2YtMTllYy00YzQ4LTliMmYtNzVjODMwZDljYmY0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA5MDYlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwOTA2VDIyMjkzNFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJkNDQ1ZGNmMTI2YzE3ZGY4MzQ1MDUzOWE3YWNkMzAwOGZlNWExM2I1NjM2NWU2MjU3NjY1MzBkZGQ3M2E1MWQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.Nqe_MOkAUvYvw5e1DcsC8naquGniWTBRoOCGpICmZS8
+.. image:: https://github.com/rapidstream-org/doc-figures/blob/main/4.png?raw=true
   :width: 50 %
