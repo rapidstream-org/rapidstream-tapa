@@ -1,20 +1,25 @@
-Install TAPA
-============
+Quick Installation
+===================
 
-The TAPA DSL and compilation tools can be installed with a single command. After the installation completes successfully, restart your terminal session, or run ``source ~/.profile``.
+The RapidStream-TAPA toolchain can be installed with a single command. After the installation completes successfully, restart your terminal session, or run ``source ~/.profile``.
 You can upgrade your installation at any time by repeating the installation command.
 
 
 .. code-block:: bash
 
+  # Install TAPA
   sh -c "$(curl -fsSL tapa.rapidstream.sh)"
 
+  # Install RapidStream
+  sh -c "$(curl -fsSL rapidstream.sh)"
 
-Check if ``tapa`` is available after installation:
+
+Check if ``tapa`` and ``rapidstream`` is available after installation:
 
 .. code-block:: bash
 
   tapa --help
+  rapidstream --help
 
 Please restart your shell to finish the installation. Alternatively, you can run the following command to apply the changes:
 
@@ -23,29 +28,15 @@ Please restart your shell to finish the installation. Alternatively, you can run
   export PATH="$PATH:${HOME}/.rapidstream-tapa/usr/bin"
 
 
-Install RapidStream
-===================
 
+Other Installation Options
+============================
 
-RapidStream can be installed with a single command. After the installation completes successfully, restart your terminal session, or run ``source ~/.profile``.
-You can upgrade your installation at any time by repeating the installation command.
-
-
-.. code-block:: bash
-
-  sh -c "$(curl -fsSL rapidstream.sh)"
-
-
-Alternatively, we provide Docker Image for easy evaluation.
+We provide Docker Image for easy evaluation.
 
 .. code-block:: bash
 
   docker pull rapidstream/rapidstream:stable-latest
-
-
-
-Install Through Package Managers
---------------------------------
 
 Several installation options are available for different Linux distributions. You can choose the one that fits your Linux distribution as follows:
 
@@ -97,12 +88,14 @@ Gurobi is free for academia.
 
 
 
-Get A Free License
-===================
+Get A Free License for RapidStream
+===================================
 
-The TAPA frontend is fully open-sourced. For the RapidStream backend, we provide binary and free licenses. 
+There are two main components in the toolchain:
 
-Simply submit a request at https://rapidstream-da.com/contact-us to get a free license. 
+- The TAPA frontend is fully open-sourced. 
+- The RapidStream backend is released as binary with free licenses. Simply submit a request
+  at https://rapidstream-da.com/contact-us to get a free license for the rapidstream backend.
 
 To configure the license for RapidStream tools, the license file can be placed in any of 
 the following predetermined locations or other locations specified by the `RAPIDSTREAM_LICENSE_FILE` environment variable.

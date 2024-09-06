@@ -1,5 +1,5 @@
-TAPA Documentation
-==================
+RapidStream TAPA
+==================================
 
 
 .. toctree::
@@ -12,12 +12,17 @@ TAPA Documentation
   :caption: Overview
 
   overview/overview
-  overview/tapa_basics
 
 .. toctree::
-  :caption: Getting Started
+  :caption: Getting Started with TAPA
 
+  overview/tapa_basics
   getting_started
+
+.. toctree::
+  :caption: Getting Started with RapidStream
+
+  rapidstream
 
 .. toctree::
   :caption: FCCM 2022 Tutorial

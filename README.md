@@ -27,8 +27,8 @@ The framework originated from the [VAST Lab](https://vast.cs.ucla.edu/) at UCLA.
 
 ## Installation
 
-We are planning something big for the next release! For now, the documentation may be out-dated.
-You may install our latest preview version by following the instructions below.
+The RapidStream-TAPA toolchain can be installed with a single command. After the installation completes successfully, restart your terminal session, or run ``source ~/.profile``.
+You can upgrade your installation at any time by repeating the installation command.
 
 To install TAPA, you need to have the following dependencies:
 
@@ -51,54 +51,21 @@ To install TAPA, you need to have the following dependencies:
 You can install the dependencies by running the following commands:
 
 ```bash
-sudo apt-get install g++ iverilog ocl-icd-libopencl1  # for Ubuntu and Debian
-sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd  # for Fedora, RHEL, and Amazon Linux
-```
+# for Ubuntu and Debian
+sudo apt-get install g++ iverilog ocl-icd-libopencl1  
 
-Then, you can install TAPA as a regular user by running the following command:
+# or for Fedora, RHEL, and Amazon Linux
+# sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd  
 
-```bash
+# Install TAPA
 sh -c "$(curl -fsSL tapa.rapidstream.sh)"
+
+# Install RapidStream
+sh -c "$(curl -fsSL rapidstream.sh)"
 ```
 
-To compile the host code for simulation and on-board tests, you may compile your host code linking with the TAPA library:
+For more details, please refer to the [documentation](https://tapa.readthedocs.io/en/main/).
 
-```bash
-g++ -std=c++17 \
-    [your code here] \
-    -I ~/.rapidstream-tapa/usr/include \
-    -I[path to Vitis HLS header files] \
-    -Wl,-rpath,$(readlink -f ~/.rapidstream-tapa/usr/lib) \
-    -L ~/.rapidstream-tapa/usr/lib \
-    -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs
-```
-
-For example:
-
-```bash
-g++ -std=c++17 \
-    tests/apps/vadd/vadd-host.cpp tests/apps/vadd/vadd.cpp \
-    -I ~/.rapidstream-tapa/usr/include \
-    -I /opt/tools/xilinx/Vitis_HLS/2024.1/include \
-    -Wl,-rpath,$(readlink -f ~/.rapidstream-tapa/usr/lib) \
-    -L ~/.rapidstream-tapa/usr/lib \
-    -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs
-```
-
-For generating the RTL code, you can use the `tapa` command. For example:
-
-```bash
-# source the Vitis HLS settings
-source /opt/tools/xilinx/Vitis_HLS/2024.1/settings64.sh
-tapa compile \
-    -f tests/apps/bandwidth/bandwidth.cpp \
-    --cflags -Itests/apps/bandwidth/ \
-    -t Bandwidth \
-    --clock-period 3 \
-    --part-num xcu250-figd2104-2L-e
-```
-
-We are working on the documentation and the stable release. Stay tuned!
 
 ## High-Frequency
 

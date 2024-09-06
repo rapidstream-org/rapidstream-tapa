@@ -5,7 +5,7 @@ If you are migrating from Vitis HLS,
 presents two nice examples.
 
 Before you start, make sure you have
-:ref:`installed TAPA <installation:install tapa>` properly.
+:ref:`installed TAPA <installation:Quick Installation>` properly.
 
 Hello World: Vector Add
 :::::::::::::::::::::::
@@ -335,78 +335,3 @@ if necessary).
 
   We are using the same host executable for software simulation,
   hardware simulation, and on-board execution.
-
-Using CMake
-:::::::::::
-
-This section covers the steps to use CMake to simplify the synthesis and
-implementation process.
-
-The commands to run HLS and FPGA implementation are too long to type manually,
-aren't they?
-You could write your own shell scripts to reuse the commands.
-Better, you can leverage CMake to achieve incremental compilation.
-
-.. note::
-
-  GNU or BSD Make can do incremental compilation as well, but it gets really
-  messy to define generic build rules and reuse ``Makefile`` itself.
-
-TAPA provides some convenient CMake functions and uses them in the
-``CMakeLists.txt`` files for the application examples.
-Let's redo the vector add example with CMake.
-
-The first step to use CMake is to install it:
-
-.. code-block:: shell
-
-  python3 -m pip install cmake --upgrade
-
-CMake separates generated files from the source code.
-We should create a ``build`` directory for the generated files
-and run ``cmake`` in it:
-
-.. code-block:: shell
-
-  mkdir build
-  cd build
-  cmake \
-    /path/to/tapa/apps/vadd \             # can be relative or absolute path
-    -DPLATFORM=xilinx_u250_xdma_201830_2  # replace with your target platform
-
-To generate the host executable and run software simulation:
-
-.. code-block:: shell
-
-  make vadd -j8   # replace with your core count
-  ./vadd
-
-To generate the XO file via HLS:
-
-.. code-block:: shell
-
-  make vadd-hw-xo
-
-To generate the hardware emulation bitstream and run hardware emulation:
-
-.. code-block:: shell
-
-  make vadd-cosim
-
-To generate the on-board bitstream and run on-board execution:
-
-.. code-block:: shell
-
-  make vadd-hw
-
-.. note::
-
-  If CMake returns an error, please check ``cmake --version``.
-  CMake 3.13 or higher is required,
-  which can be easily installed via ``pip install cmake``.
-  If you have installed an appropriate version of CMake but still encounter
-  problems, please check ``which cmake`` to see the full path of CMake in use.
-  If your ``PATH`` is polluted by environmental setup scripts,
-  please make sure you *prepend* the path containing ``cmake``
-  (e.g., ``${HOME}/.local/bin``) to ``PATH``
-  *after* all such scripts are sourced.
