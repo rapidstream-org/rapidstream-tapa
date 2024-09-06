@@ -7,12 +7,17 @@ You can upgrade your installation at any time by repeating the installation comm
 
 .. code-block:: bash
 
+  # for Ubuntu and Debian
+  sudo apt-get install g++ iverilog ocl-icd-libopencl1
+
+  # or for Fedora, RHEL, and Amazon Linux
+  # sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd
+
   # Install TAPA
   sh -c "$(curl -fsSL tapa.rapidstream.sh)"
 
   # Install RapidStream
   sh -c "$(curl -fsSL rapidstream.sh)"
-
 
 Check if ``tapa`` and ``rapidstream`` is available after installation:
 
@@ -93,11 +98,11 @@ Get A Free License for RapidStream
 
 There are two main components in the toolchain:
 
-- The TAPA frontend is fully open-sourced. 
+- The TAPA frontend is fully open-sourced.
 - The RapidStream backend is released as binary with free licenses. Simply submit a request
   at https://rapidstream-da.com/contact-us to get a free license for the rapidstream backend.
 
-To configure the license for RapidStream tools, the license file can be placed in any of 
+To configure the license for RapidStream tools, the license file can be placed in any of
 the following predetermined locations or other locations specified by the `RAPIDSTREAM_LICENSE_FILE` environment variable.
 
 - ~/.rapidstream.lic
@@ -105,4 +110,3 @@ the following predetermined locations or other locations specified by the `RAPID
 - ~/.rapidstream/rapidstream.lic
 
 - /opt/licenses/rapidstream.lic
-

@@ -52,10 +52,10 @@ You can install the dependencies by running the following commands:
 
 ```bash
 # for Ubuntu and Debian
-sudo apt-get install g++ iverilog ocl-icd-libopencl1  
+sudo apt-get install g++ iverilog ocl-icd-libopencl1
 
 # or for Fedora, RHEL, and Amazon Linux
-# sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd  
+# sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd
 
 # Install TAPA
 sh -c "$(curl -fsSL tapa.rapidstream.sh)"
