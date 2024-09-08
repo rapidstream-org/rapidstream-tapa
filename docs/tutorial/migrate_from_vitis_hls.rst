@@ -270,3 +270,100 @@ Final Look of Example 2
 
 .. literalinclude:: migrate_from_vitis_hls/code/example_2_after.cpp
   :language: cpp
+
+HLS-Compat Helpers
+==================
+
+Migrating from existing HLS code can take a long time with a lot of effort.
+To make such migration easier and more tractable, TAPA provides a HLS-compat
+library so that programmers can verify the correctness of their code using
+software simulation during migration, with TAPA coding style but HLS-compatible
+behavior.
+
+HLS-Compat Header
+-----------------
+
+To use the HLS-compat helpers, in addition to ``tapa.h``, also include
+``tapa/host/compat.h``.
+
+.. code-block:: diff
+
+   #include <hls_vector.h>
+  -#include <hls_stream.h>
+  +#include <tapa.h>
+  +#include <tapa/host/compat.h>
+   #include "assert.h"
+
+Infinite-Depth Stream
+---------------------
+
+``hls::stream`` has infinite depth in software simulation; ``tapa::stream``,
+however, honors the same depth used for synthesis.
+``tapa::hls_compat::stream`` is the HLS-compat equivalent of ``tapa::stream``
+that has infinite depth in software simulation.
+
+.. code-block:: diff
+
+  -  hls::stream<hls::vector<uint32_t, NUM_WORDS>> in1_stream("input_stream_1");
+  -  hls::stream<hls::vector<uint32_t, NUM_WORDS>> in2_stream("input_stream_2");
+  -  hls::stream<hls::vector<uint32_t, NUM_WORDS>> out_stream("output_stream");
+  +  tapa::hls_compat::stream<hls::vector<uint32_t, NUM_WORDS>> in1_stream("input_stream_1");
+  +  tapa::hls_compat::stream<hls::vector<uint32_t, NUM_WORDS>> in2_stream("input_stream_2");
+  +  tapa::hls_compat::stream<hls::vector<uint32_t, NUM_WORDS>> out_stream("output_stream");
+
+I/O Direction-Agnostic Stream Interface
+---------------------------------------
+
+HLS uses ``hls::stream&`` for both stream input and output; TAPA, however,
+requires ``tapa::istream&`` for input streams and ``tapa::ostream&`` for output
+streams.
+``tapa::hls_compat::stream_interface&`` is the HLS-compat equivalent of
+``tapa::istream&`` and ``tapa::ostream&`` that exposes APIs from both in
+software simulation.
+
+.. code-block:: diff
+
+  void compute_add(
+  -    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& in1_stream,
+  -    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& in2_stream,
+  -    hls::stream<hls::vector<uint32_t, NUM_WORDS>>& out_stream,
+  +    tapa::hls_compat::stream_interface<hls::vector<uint32_t, NUM_WORDS>>& in1_stream,
+  +    tapa::hls_compat::stream_interface<hls::vector<uint32_t, NUM_WORDS>>& in2_stream,
+  +    tapa::hls_compat::stream_interface<hls::vector<uint32_t, NUM_WORDS>>& out_stream,
+       int size
+   ) {
+
+Sequentially Scheduled Task
+---------------------------
+
+HLS schedules dataflow tasks sequentially for software simulation.
+TAPA's ``tapa::task()``, however, schedules them in parallel by default.
+``tapa::hls_compat::task()`` is the HLS-compat equivalent of ``tapa::task()``
+that schedules tasks sequentially in the order of invocations.
+
+.. code-block:: diff
+
+  -  load_input(in1, in1_stream, size);
+  -  load_input(in2, in2_stream, size);
+  -  compute_add(in1_stream, in2_stream, out_stream, size);
+  -  store_result(out, out_stream, size);
+  +  tapa::hls_compat::task()
+  +  .invoke(load_input, in1, in1_stream, size)
+  +  .invoke(load_input, in2, in2_stream, size)
+  +  .invoke(compute_add, in1_stream, in2_stream, out_stream, size)
+  +  .invoke(store_result, out, out_stream, size)
+  +  ;
+
+HLS-Compat Version of Example 1
+-------------------------------
+
+.. literalinclude:: migrate_from_vitis_hls/code/example_1_hls_compat.cpp
+  :language: cpp
+
+.. warning::
+
+  ``tapa::hls_compat`` APIs are software simulation only and are NOT
+  synthesizable.
+  One must finish the migration before synthesis, including to remove
+  ``#include <tapa/host/compat.h>`` and replace any ``tapa::hls_compat`` API
+  with their synthesizable equivalent.
