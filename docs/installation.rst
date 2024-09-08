@@ -43,6 +43,27 @@ We provide Docker Image for easy evaluation.
 
   docker pull rapidstream/rapidstream:stable-latest
 
+Installing Gurobi is optional but could potentially make RapidStream runs faster.
+Gurobi is free for academia.
+
+* Register and download the Gurobi Optimizer at
+  https://www.gurobi.com/downloads/gurobi-optimizer-eula/
+
+* Unzip the package to your desired directory
+
+* Obtain an academic license at
+  https://www.gurobi.com/downloads/end-user-license-agreement-academic/
+
+* Set environment variables ``GUROBI_HOME`` and ``GRB_LICENSE_FILE``
+
+  .. code-block:: bash
+
+    export GUROBI_HOME=[WHERE-YOU-INSTALL]
+    export GRB_LICENSE_FILE=[ADDRESS-OF-YOUR-LICENSE-FILE]
+    export PATH="${PATH}:${GUROBI_HOME}/bin"
+    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"
+
+
 Several installation options are available for different Linux distributions. You can choose the one that fits your Linux distribution as follows:
 
 - Debian Package (.deb) for Ubuntu, Debian, and other Debian-based operating systems.
@@ -67,29 +88,6 @@ Several installation options are available for different Linux distributions. Yo
   chmod +x ./rapidstream
   ./rapidstream
 
-
-Install Gurobi (Optional)
--------------------------
-
-Installing Gurobi is optional but could potentially make RapidStream runs faster.
-Gurobi is free for academia.
-
-* Register and download the Gurobi Optimizer at
-  https://www.gurobi.com/downloads/gurobi-optimizer-eula/
-
-* Unzip the package to your desired directory
-
-* Obtain an academic license at
-  https://www.gurobi.com/downloads/end-user-license-agreement-academic/
-
-* Set environment variables ``GUROBI_HOME`` and ``GRB_LICENSE_FILE``
-
-  .. code-block:: bash
-
-    export GUROBI_HOME=[WHERE-YOU-INSTALL]
-    export GRB_LICENSE_FILE=[ADDRESS-OF-YOUR-LICENSE-FILE]
-    export PATH="${PATH}:${GUROBI_HOME}/bin"
-    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"
 
 
 
