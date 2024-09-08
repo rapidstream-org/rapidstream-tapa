@@ -16,6 +16,23 @@ sh_test(
 )
 
 sh_test(
+    name = "shared-vadd-xosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location shared-vadd-host)",
+        "--bitstream=$(location shared-vadd-xo)",
+        "--xosim_executable=$(location //tapa_fast_cosim)",
+        "1000",
+    ],
+    data = [
+        ":shared-vadd-host",
+        ":shared-vadd-xo",
+        "//tapa_fast_cosim",
+    ],
+)
+
+sh_test(
     name = "shared-vadd-cosim",
     size = "medium",
     srcs = ["//bazel:v++_env.sh"],

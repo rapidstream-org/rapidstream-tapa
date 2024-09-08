@@ -43,6 +43,9 @@ DEFINE_bool(xosim_save_waveform, false, "save waveform in the work directory");
 DEFINE_string(xosim_work_dir, "",
               "if not empty, use the specified work directory instead of a "
               "temporary one");
+DEFINE_string(xosim_executable, "",
+              "if not empty, use the specified executable instead of "
+              "`python3 -m tapa_fast_cosim.main`");
 
 namespace fpga {
 namespace internal {
@@ -224,14 +227,17 @@ void TapaFastCosimDevice::Exec() {
   }
   std::ofstream(GetConfigPath(work_dir)) << json.dump(2);
 
-  std::vector<std::string> argv = {
-      "python3",
-      "-m",
-      "tapa_fast_cosim.main",
-      "--config_path=" + GetConfigPath(work_dir),
-      "--tb_output_dir=" + work_dir + "/output",
-      "--launch_simulation",
-  };
+  std::vector<std::string> argv;
+  if (FLAGS_xosim_executable.empty()) {
+    argv = {"python3", "-m", "tapa_fast_cosim.main"};
+  } else {
+    argv = {FLAGS_xosim_executable};
+  }
+  argv.insert(argv.end(), {
+                              "--config_path=" + GetConfigPath(work_dir),
+                              "--tb_output_dir=" + work_dir + "/output",
+                              "--launch_simulation",
+                          });
   if (FLAGS_xosim_start_gui) {
     argv.push_back("--start_gui");
   }

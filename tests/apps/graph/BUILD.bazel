@@ -37,6 +37,24 @@ sh_test(
 )
 
 sh_test(
+    name = "graph-xosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location graph-host)",
+        "--bitstream=$(location graph-xo)",
+        "--xosim_executable=$(location //tapa_fast_cosim)",
+        "$(location graph.txt)",
+    ],
+    data = [
+        "graph.txt",
+        ":graph-host",
+        ":graph-xo",
+        "//tapa_fast_cosim",
+    ],
+)
+
+sh_test(
     name = "graph-cosim",
     size = "medium",
     srcs = ["//bazel:v++_env.sh"],

@@ -16,6 +16,22 @@ sh_test(
 )
 
 sh_test(
+    name = "cannon-xosim",
+    size = "large",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location cannon-host)",
+        "--bitstream=$(location cannon-xo)",
+        "--xosim_executable=$(location //tapa_fast_cosim)",
+    ],
+    data = [
+        ":cannon-host",
+        ":cannon-xo",
+        "//tapa_fast_cosim",
+    ],
+)
+
+sh_test(
     name = "cannon-cosim",
     size = "large",
     srcs = ["//bazel:v++_env.sh"],

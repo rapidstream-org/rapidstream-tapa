@@ -1,0 +1,44 @@
+"""TAPA fast cosim"""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+py_library(
+    name = "common",
+    srcs = ["common.py"],
+)
+
+py_library(
+    name = "config_preprocess",
+    srcs = ["config_preprocess.py"],
+)
+
+py_library(
+    name = "templates",
+    srcs = ["templates.py"],
+    deps = [
+        ":common",
+    ],
+)
+
+py_library(
+    name = "vivado",
+    srcs = ["vivado.py"],
+)
+
+py_binary(
+    name = "tapa_fast_cosim",
+    srcs = ["main.py"],
+    data = [
+        ":VERSION",
+    ],
+    main = "main.py",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":common",
+        ":config_preprocess",
+        ":templates",
+        ":vivado",
+    ],
+)
