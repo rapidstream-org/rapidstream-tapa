@@ -12,15 +12,70 @@
 namespace tapa {
 namespace hls_compat {
 
-// An infinite-depth stream that has the same behavior as `hls::stream`.
+/// An infinite-depth stream that has the same behavior as @c hls::stream.
+///
+/// Intended for defining streams without knowing their depth for synthesis:
+/// @code{.cpp}
+///  ...
+///  #include <tapa.h>
+///  #include <tapa/host/compat.h>
+///  ...
+///  void Top() {
+///    tapa::hls_compat::stream<int> data_q("data");
+///    ...
+///    tapa::task()
+///      .invoke(...)
+///      .invoke(...)
+///      ...
+///      ;
+///  }
+/// @endcode
+///
+/// Software simulation only; NOT synthesizable.
+/// Replace with @c tapa::stream for synthesis.
 template <typename T>
 using stream = ::tapa::stream<T, ::tapa::internal::kInfiniteDepth>;
 
-// Interface that accepts both `tapa::stream` and  `tapa::hls_compat::stream`.
+/// I/O direction agnostic interface that accepts both @c tapa::stream and
+/// @c tapa::hls_compat::stream.
+///
+/// Intended for declaring parameters without knowing the I/O direction:
+/// @code{.cpp}
+///  ...
+///  #include <tapa.h>
+///  #include <tapa/host/compat.h>
+///  ...
+///  void Compute(tapa::hls_compat::stream_interface<int>& data_in_q) {
+///    int data = data_in_q.read();
+///    ...
+///  }
+/// @endcode
+///
+/// Software simulation only; NOT synthesizable.
+/// Replace with @c tapa::istream / @c tapa::ostream for synthesis.
 template <typename T>
 using stream_interface = ::tapa::internal::unbound_stream<T>;
 
-// Same as `tapa::task()`, except that tasks are scheduled sequentially.
+/// Same as @c tapa::task, except that tasks are scheduled sequentially.
+///
+/// Intended for debugging code migrated from HLS:
+/// @code{.cpp}
+///  ...
+///  #include <tapa.h>
+///  #include <tapa/host/compat.h>
+///  ...
+///  void Top() {
+///    ...
+///    tapa::hls_compat::task()
+///      .invoke(...)
+///      .invoke(...)
+///      ...
+///      ;
+///  }
+/// @endcode
+///
+/// Software simulation only; NOT synthesizable.
+/// Replace with @c tapa::task for synthesis.
 struct task : public ::tapa::task {
   explicit task();
 };
