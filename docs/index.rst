@@ -24,6 +24,13 @@ RapidStream TAPA
 
   rapidstream
 
+
+.. toctree::
+  :caption: Integration with Vitis
+
+  vitis
+
+
 .. toctree::
   :caption: FCCM 2022 Tutorial
 
