@@ -16,7 +16,6 @@ RapidStream TAPA
 .. toctree::
   :caption: Getting Started with TAPA
 
-  overview/tapa_basics
   getting_started
 
 .. toctree::
