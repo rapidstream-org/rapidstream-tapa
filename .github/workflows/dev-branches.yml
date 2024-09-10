@@ -86,6 +86,7 @@ jobs:
     needs:
       - pre-commit
       - test
+      - docs
 
     steps:
       - name: Checkout myself
