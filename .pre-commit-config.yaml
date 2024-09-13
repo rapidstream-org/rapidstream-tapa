@@ -33,10 +33,7 @@ repos:
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: file-contents-sorter
-        files:
-          .gitignore
-          docs/requirements.txt
-          tapa/requirements.in
+        files: (.gitignore|requirements.(txt|in))$
       - id: fix-byte-order-marker
       - id: forbid-new-submodules
       - id: forbid-submodules
