@@ -179,3 +179,12 @@ http_file(
     sha256 = "125e84db872eeba443d270c70315c256b0af43a502fcfe51f50621166ad035d7",
     url = "https://snap.stanford.edu/data/facebook_combined.txt.gz",
 )
+
+# Required to generate `compile_commands.json`
+# Usage: `bazel run :refresh_compile_commands`
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    commit = "1e08f8e0507b6b6b1f4416a9a22cf5c28beaba93",
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+)

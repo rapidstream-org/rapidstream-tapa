@@ -4,6 +4,7 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
 pkg_tar(
@@ -19,4 +20,10 @@ pkg_tar(
     ],
     allow_duplicates_from_deps = True,
     allow_duplicates_with_different_content = False,
+)
+
+# Usage: `bazel run :refresh_compile_commands`
+refresh_compile_commands(
+    name = "refresh_compile_commands",
+    exclude_external_sources = True,  # To exclude llvm-project
 )
