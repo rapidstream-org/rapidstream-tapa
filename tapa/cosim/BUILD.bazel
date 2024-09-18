@@ -23,13 +23,11 @@ nuitka_binary(
 py_binary(
     name = "tapa-fast-cosim",
     srcs = ["__main__.py"],
-    data = [
-        ":VERSION",
-    ],
     main = "__main__.py",
     visibility = ["//visibility:public"],
     deps = [
         ":tapa-cosim-py-libs",
+        "//tapa:tapa-py-libs",
     ],
 )
 
