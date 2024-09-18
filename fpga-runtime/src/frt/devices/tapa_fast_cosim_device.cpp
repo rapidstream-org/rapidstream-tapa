@@ -45,7 +45,7 @@ DEFINE_string(xosim_work_dir, "",
               "temporary one");
 DEFINE_string(xosim_executable, "",
               "if not empty, use the specified executable instead of "
-              "`python3 -m tapa_fast_cosim.main`");
+              "`tapa-fast-cosim`");
 
 namespace fpga {
 namespace internal {
@@ -229,7 +229,7 @@ void TapaFastCosimDevice::Exec() {
 
   std::vector<std::string> argv;
   if (FLAGS_xosim_executable.empty()) {
-    argv = {"python3", "-m", "tapa_fast_cosim.main"};
+    argv = {"tapa-fast-cosim"};
   } else {
     argv = {FLAGS_xosim_executable};
   }

@@ -43,14 +43,14 @@ sh_test(
     args = [
         "$(location graph-host)",
         "--bitstream=$(location graph-xo)",
-        "--xosim_executable=$(location //tapa_fast_cosim)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
         "$(location graph.txt)",
     ],
     data = [
         "graph.txt",
         ":graph-host",
         ":graph-xo",
-        "//tapa_fast_cosim",
+        "//tapa/cosim:tapa-fast-cosim",
     ],
 )
 

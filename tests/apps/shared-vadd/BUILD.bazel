@@ -22,13 +22,13 @@ sh_test(
     args = [
         "$(location shared-vadd-host)",
         "--bitstream=$(location shared-vadd-xo)",
-        "--xosim_executable=$(location //tapa_fast_cosim)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
         "1000",
     ],
     data = [
         ":shared-vadd-host",
         ":shared-vadd-xo",
-        "//tapa_fast_cosim",
+        "//tapa/cosim:tapa-fast-cosim",
     ],
 )
 

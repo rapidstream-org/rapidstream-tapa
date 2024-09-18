@@ -22,12 +22,12 @@ sh_test(
     args = [
         "$(location cannon-host)",
         "--bitstream=$(location cannon-xo)",
-        "--xosim_executable=$(location //tapa_fast_cosim)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
     ],
     data = [
         ":cannon-host",
         ":cannon-xo",
-        "//tapa_fast_cosim",
+        "//tapa/cosim:tapa-fast-cosim",
     ],
 )
 

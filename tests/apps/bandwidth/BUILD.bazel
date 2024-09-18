@@ -22,13 +22,13 @@ sh_test(
     args = [
         "$(location bandwidth-host)",
         "--bitstream=$(location bandwidth-xo)",
-        "--xosim_executable=$(location //tapa_fast_cosim)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
         "1000",
     ],
     data = [
         ":bandwidth-host",
         ":bandwidth-xo",
-        "//tapa_fast_cosim",
+        "//tapa/cosim:tapa-fast-cosim",
     ],
 )
 

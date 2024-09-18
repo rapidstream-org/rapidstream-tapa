@@ -22,12 +22,12 @@ sh_test(
     args = [
         "$(location gemv-host)",
         "--bitstream=$(location gemv-xo)",
-        "--xosim_executable=$(location //tapa_fast_cosim)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
     ],
     data = [
         ":gemv-host",
         ":gemv-xo",
-        "//tapa_fast_cosim",
+        "//tapa/cosim:tapa-fast-cosim",
     ],
 )
 

@@ -11,9 +11,9 @@ import os.path
 import re
 from collections import defaultdict
 
-from tapa_fast_cosim.common import AXI
-from tapa_fast_cosim.config_preprocess import preprocess_config
-from tapa_fast_cosim.templates import (
+from tapa.cosim.common import AXI
+from tapa.cosim.config_preprocess import preprocess_config
+from tapa.cosim.templates import (
     get_axi_ram_inst,
     get_axi_ram_module,
     get_begin,
@@ -23,7 +23,7 @@ from tapa_fast_cosim.templates import (
     get_srl_fifo_template,
     get_test_signals,
 )
-from tapa_fast_cosim.vivado import get_vivado_tcl
+from tapa.cosim.vivado import get_vivado_tcl
 
 [logging.root.removeHandler(handler) for handler in logging.root.handlers]
 logging.basicConfig(
