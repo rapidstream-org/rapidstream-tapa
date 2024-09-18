@@ -20,8 +20,12 @@
   [ -d "${RAPIDSTREAM_TAPA_HOME}/usr/lib" ]
 }
 
-@test "testsuite: RAPIDSTREAM_TAPA_HOME/usr/bin/tapa is runnable" {
-  ${RAPIDSTREAM_TAPA_HOME}/usr/bin/tapa --help
+@test "testsuite: tapa is runnable" {
+  tapa --help
+}
+
+@test "testsuite: tapa-fast-cosim is runnable" {
+  tapa-fast-cosim --help
 }
 
 @test "testsuite: XILINX_HLS is set" {

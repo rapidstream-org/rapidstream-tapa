@@ -37,6 +37,7 @@ compile_xo() {
   ${BATS_TMPDIR}/gemv-host
 }
 
-@test "apps/gemv: tapa generates an xo file" {
+@test "apps/gemv: tapa generates an xo file and its simulation passes" {
   compile_xo
+  ${BATS_TMPDIR}/gemv-host --bitstream ${BATS_TMPDIR}/gemv.xo
 }

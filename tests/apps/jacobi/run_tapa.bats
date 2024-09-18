@@ -37,6 +37,7 @@ compile_xo() {
   ${BATS_TMPDIR}/jacobi-host
 }
 
-@test "apps/jacobi: tapa generates an xo file" {
+@test "apps/jacobi: tapa generates an xo file and its simulation passes" {
   compile_xo
+  ${BATS_TMPDIR}/jacobi-host --bitstream ${BATS_TMPDIR}/jacobi.xo
 }

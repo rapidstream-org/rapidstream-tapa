@@ -37,6 +37,7 @@ compile_xo() {
   ${BATS_TMPDIR}/graph-host graph.txt
 }
 
-@test "apps/graph: tapa generates an xo file" {
+@test "apps/graph: tapa generates an xo file and its simulation passes" {
   compile_xo
+  ${BATS_TMPDIR}/graph-host --bitstream ${BATS_TMPDIR}/graph.xo graph.txt
 }

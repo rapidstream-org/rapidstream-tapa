@@ -37,6 +37,7 @@ compile_xo() {
   ${BATS_TMPDIR}/bandwidth-host
 }
 
-@test "apps/bandwidth: tapa generates an xo file" {
+@test "apps/bandwidth: tapa generates an xo file and its simulation passes" {
   compile_xo
+  ${BATS_TMPDIR}/bandwidth-host --bitstream ${BATS_TMPDIR}/bandwidth.xo 1000
 }

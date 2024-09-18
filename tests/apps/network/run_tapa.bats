@@ -37,6 +37,7 @@ compile_xo() {
   ${BATS_TMPDIR}/network-host
 }
 
-@test "apps/network: tapa generates an xo file" {
+@test "apps/network: tapa generates an xo file and its simulation passes" {
   compile_xo
+  ${BATS_TMPDIR}/network-host --bitstream ${BATS_TMPDIR}/network.xo
 }

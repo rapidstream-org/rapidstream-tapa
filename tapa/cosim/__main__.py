@@ -11,6 +11,7 @@ import os.path
 import re
 from collections import defaultdict
 
+from tapa import __version__
 from tapa.cosim.common import AXI
 from tapa.cosim.config_preprocess import preprocess_config
 from tapa.cosim.templates import (
@@ -141,10 +142,6 @@ if __name__ == "__main__":
     parser.add_argument("--start_gui", action="store_true")
     args = parser.parse_args()
 
-    with open(
-        os.path.join(os.path.dirname(__file__), "VERSION"), encoding="utf-8"
-    ) as _fp:
-        __version__ = _fp.read().strip()
     _logger.info("TAPA fast cosim version: %s", __version__)
 
     config = preprocess_config(args.config_path, args.tb_output_dir)

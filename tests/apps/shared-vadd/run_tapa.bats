@@ -37,6 +37,7 @@ compile_xo() {
   ${BATS_TMPDIR}/shared-vadd-host
 }
 
-@test "apps/shared-vadd: tapa generates an xo file" {
+@test "apps/shared-vadd: tapa generates an xo file and its simulation passes" {
   compile_xo
+  ${BATS_TMPDIR}/shared-vadd-host --bitstream ${BATS_TMPDIR}/shared-vadd.xo
 }

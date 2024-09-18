@@ -37,6 +37,7 @@ compile_xo() {
   ${BATS_TMPDIR}/cannon-host
 }
 
-@test "apps/cannon: tapa generates an xo file" {
+@test "apps/cannon: tapa generates an xo file and its simulation passes" {
   compile_xo
+  ${BATS_TMPDIR}/cannon-host --bitstream ${BATS_TMPDIR}/cannon.xo
 }
