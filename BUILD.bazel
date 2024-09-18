@@ -14,6 +14,7 @@ pkg_tar(
         "//tapa-cpp:pkg",
         "//tapa-lib:pkg-portable",
         "//tapa-system-include:pkg",
+        "//tapa/cosim:pkg",
         "//tapacc:pkg",
     ],
     allow_duplicates_from_deps = True,

@@ -4,6 +4,8 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_filegroup", "pkg_files", "pkg_mklink", "strip_prefix")
+load("@tapa_deps//:requirements.bzl", "requirement")
 load("//bazel:nuitka_rules.bzl", "nuitka_binary")
 
 nuitka_binary(
@@ -11,10 +13,10 @@ nuitka_binary(
     src = ":__main__.py",
     flags = [
         "--deployment",
-        "--include-package-data=tapa.cosim",
+        "--include-package-data=tapa",
         "--python-flag=isolated,no_docstrings,no_site,no_warnings",
     ],
-    nuitka_environment = "//tapa:tapa-nuitka-env.py",
+    nuitka_environment = ":tapa-nuitka-env.py",
     output_name = "tapa-fast-cosim",
 )
 
@@ -27,6 +29,24 @@ py_binary(
     main = "__main__.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":tapa-cosim-py-libs",
+    ],
+)
+
+py_binary(
+    name = "tapa-nuitka-env.py",
+    srcs = ["//bazel:nuitka_wrapper.py"],
+    main = "nuitka_wrapper.py",
+    deps = [
+        ":tapa-cosim-py-libs",
+        "//tapa:tapa-py-libs",
+        requirement("nuitka"),
+    ],
+)
+
+py_library(
+    name = "tapa-cosim-py-libs",
+    srcs = [
         ":common",
         ":config_preprocess",
         ":templates",
@@ -53,4 +73,30 @@ py_library(
 py_library(
     name = "vivado",
     srcs = ["vivado.py"],
+)
+
+pkg_files(
+    name = "pkg-runtime",
+    srcs = [":nuitka"],
+    attributes = pkg_attributes(mode = "0755"),
+    prefix = "usr/share/tapa/cosim-runtime",
+    strip_prefix = strip_prefix.from_pkg("__main__.dist"),
+    visibility = ["//visibility:public"],
+)
+
+# link usr/share/tapa/cosim-runtime/tapa-fast-cosim to /usr/bin/tapa-fast-cosim
+pkg_mklink(
+    name = "pkg-link",
+    link_name = "usr/bin/tapa-fast-cosim",
+    target = "../share/tapa/cosim-runtime/tapa-fast-cosim",
+    visibility = ["//visibility:public"],
+)
+
+pkg_filegroup(
+    name = "pkg",
+    srcs = [
+        ":pkg-link",
+        ":pkg-runtime",
+    ],
+    visibility = ["//visibility:public"],
 )
