@@ -206,6 +206,8 @@ def find_tapacc_cflags(
     if system_include_path:
         system_includes.extend(["-isystem", str(system_include_path)])
 
+    # WORKAROUND: -DNDEBUG is added to disable assertions in the generated
+    #             code, which are not be supported by the HLS tool.
     # FIXME: Without target specification, macros will be expanded by clang
     #        cpp and the generated code will not be synthesizable.
     # FIXME: After TAPA cpp expands the macros, platform-specific functions
@@ -214,6 +216,7 @@ def find_tapacc_cflags(
     #        generated code will have missing functions.
     return (
         cflags[:]
+        + ("-DNDEBUG",)
         + ("-DTAPA_TARGET_=XILINX_HLS",)
         + ("-isystem", str(tapa_include))
         + ("-isystem", str(tapa_extra_runtime_include))
