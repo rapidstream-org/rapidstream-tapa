@@ -45,6 +45,7 @@ To install TAPA, you need to have the following dependencies:
     - iverilog
     - libxcrypt-compat
     - ocl-icd (if you plan to run simulations and on-board tests)
+    - Newer versions of Fedora are not supported by Vitis HLS, but for some designs, TAPA might still work.
 - Vitis HLS 2022.1 or later
 
 You can install the dependencies by running the following commands:
