@@ -9,7 +9,9 @@ import logging
 import os
 import os.path
 import re
+import subprocess
 from collections import defaultdict
+from pathlib import Path
 
 from tapa import __version__
 from tapa.cosim.common import AXI
@@ -49,6 +51,8 @@ def parse_register_addr(ctrl_unit_path: str) -> dict[str, list[str]]:
     for line in comments:
         if " 0x" in line and "Data signal" in line:
             match = re.search(r"(0x\w+) : Data signal of (\w+)", line)
+            if match is None:
+                continue
             signal = match.group(2)
             addr = match.group(1)
             arg_to_reg_addrs[signal].append(addr.replace("0x", "'h"))
@@ -158,8 +162,9 @@ if __name__ == "__main__":
     tb = get_cosim_tb(top_name, ctrl_path, axi_list, config["scalar_to_val"])
 
     # generate test bench RTL files
-    os.system(f"mkdir -p {args.tb_output_dir}")
-    os.system(f"rm -f {args.tb_output_dir}/*.bin")
+    Path(args.tb_output_dir).mkdir(parents=True, exist_ok=True)
+    for bin_file in Path(args.tb_output_dir).glob("*.bin"):
+        bin_file.unlink()
     with open(f"{args.tb_output_dir}/tb.v", "w", encoding="utf-8") as fp:
         fp.write(tb)
     with open(f"{args.tb_output_dir}/fifo_srl_tb.v", "w", encoding="utf-8") as fp:
@@ -175,7 +180,7 @@ if __name__ == "__main__":
             fp.write(ram_module)
 
     # generate vivado script
-    os.system(f"mkdir -p {args.tb_output_dir}/run")
+    Path(f"{args.tb_output_dir}/run").mkdir(parents=True, exist_ok=True)
     if args.save_waveform:
         _logger.warning(
             "Waveform will be saved at %s"
@@ -197,11 +202,10 @@ if __name__ == "__main__":
     # launch simulation
     disable_debug = "" if args.print_debug_info else " | grep -v DEBUG"
     mode = "gui" if args.start_gui else "batch"
-    command = (
-        f"cd {args.tb_output_dir}/run/; "
-        f"vivado -mode {mode} -source run_cosim.tcl {disable_debug}"
-    )
+    command = ["vivado", "-mode", mode, "-source", "run_cosim.tcl", disable_debug]
     if args.launch_simulation:
         _logger.info("Vivado command: %s", command)
         _logger.info("Starting Vivado...")
-        os.system(command)
+        subprocess.run(
+            command, cwd=Path(f"{args.tb_output_dir}/run").resolve(), check=True
+        )

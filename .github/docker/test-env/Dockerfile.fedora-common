@@ -31,7 +31,6 @@ RUN yum update -y && \
         ocl-icd \
         parallel \
         perl \
-        unzip \
         util-linux \
     && \
     cd /tmp && \

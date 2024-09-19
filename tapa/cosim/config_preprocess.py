@@ -9,7 +9,10 @@ import json
 import logging
 import os
 import re
+import shutil
 import sys
+import zipfile
+from pathlib import Path
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -34,10 +37,11 @@ def _parse_xo_update_config(config: dict, tb_output_dir: str) -> None:
     xo_path = config["xo_path"]
 
     tmp_path = f"{tb_output_dir}/tapa_fast_cosim_{os.getuid()}/"
-    os.system(f"rm -rf {tmp_path}/")
-    os.system(f"mkdir -p {tmp_path}/")
-    os.system(f"cp {xo_path} {tmp_path}/target.xo")
-    os.system(f"unzip -q {tmp_path}/target.xo -d {tmp_path}/")
+    shutil.rmtree(tmp_path, ignore_errors=True)
+    Path(tmp_path).mkdir(parents=True, exist_ok=True)
+    shutil.copy(xo_path, f"{tmp_path}/target.xo")
+    zip_ref = zipfile.ZipFile(f"{tmp_path}/target.xo", "r")
+    zip_ref.extractall(tmp_path)
 
     # only supports tapa xo
     try:
@@ -54,7 +58,11 @@ def _parse_xo_update_config(config: dict, tb_output_dir: str) -> None:
     with open(kernel_file_path, encoding="utf-8") as fp:
         kernel_file = fp.read()
 
-    config["top_name"] = re.search(r'kernel name="(\w+)"', kernel_file).group(1)
+    match = re.search(r'kernel name="(\w+)"', kernel_file)
+    if not match:
+        _logger.error("Fail to extract kernel name")
+        sys.exit(1)
+    config["top_name"] = match.group(1)
 
     # convert argument index in the config file to actual names
     arg_name_id_pair_list = re.findall(
