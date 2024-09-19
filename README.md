@@ -27,8 +27,7 @@ The framework originated from the [VAST Lab](https://vast.cs.ucla.edu/) at UCLA.
 
 ## Installation
 
-The RapidStream-TAPA toolchain can be installed with a single command. After the installation completes successfully, restart your terminal session, or run ``source ~/.profile``.
-You can upgrade your installation at any time by repeating the installation command.
+The RapidStream-TAPA toolchain can be installed with a single command. After the installation completes successfully, restart your terminal session or follow the instructions to add the toolchain to your `PATH`. You can upgrade your installation at any time by repeating the installation command.
 
 To install TAPA, you need to have the following dependencies:
 
@@ -55,7 +54,7 @@ You can install the dependencies by running the following commands:
 sudo apt-get install g++ iverilog ocl-icd-libopencl1
 
 # or for Fedora, RHEL, and Amazon Linux
-# sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd
+sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd
 
 # Install TAPA
 sh -c "$(curl -fsSL tapa.rapidstream.sh)"

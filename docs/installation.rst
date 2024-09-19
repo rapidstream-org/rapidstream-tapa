@@ -1,8 +1,7 @@
 Quick Installation
 ===================
 
-The RapidStream-TAPA toolchain can be installed with a single command. After the installation completes successfully, restart your terminal session, or run ``source ~/.profile``.
-You can upgrade your installation at any time by repeating the installation command.
+The RapidStream-TAPA toolchain can be installed with a single command. After the installation completes successfully, restart your terminal session, or follow the instructions to apply the changes. You can upgrade your installation at any time by repeating the installation command.
 
 
 .. code-block:: bash
@@ -11,7 +10,7 @@ You can upgrade your installation at any time by repeating the installation comm
   sudo apt-get install g++ iverilog ocl-icd-libopencl1
 
   # or for Fedora, RHEL, and Amazon Linux
-  # sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd
+  sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd
 
   # Install TAPA
   sh -c "$(curl -fsSL tapa.rapidstream.sh)"
@@ -25,13 +24,6 @@ Check if ``tapa`` and ``rapidstream`` is available after installation:
 
   tapa --help
   rapidstream --help
-
-Please restart your shell to finish the installation. Alternatively, you can run the following command to apply the changes:
-
-.. code-block:: bash
-
-  export PATH="$PATH:${HOME}/.rapidstream-tapa/usr/bin"
-
 
 
 Other Installation Options
