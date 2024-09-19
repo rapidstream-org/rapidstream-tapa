@@ -1,5 +1,3 @@
-Integration with Vitis
----------------------------
 
 
 Run Hardware Simulation with Vitis
@@ -38,7 +36,7 @@ It will take about half a minute until it says
   INFO: Found device: xilinx_u250_xdma_201830_2
   INFO: Using xilinx_u250_xdma_201830_2
   INFO: [HW-EMU 01] Hardware emulation runs simulation underneath. Using a large data set will result in long simulation times. It is recommended that a small dataset is used for faster execution. The flow uses approximate models for DDR memory and interconnect and hence the performance data generated is approximate.
-  DEBUG: Function ‘void fpga::Instance::AllocBuf(int, fpga::WriteOnlyBuffer<T>) [with T = const float]’ called with index = 0
+  DEBUG: Function 'void fpga::Instance::AllocBuf(int, fpga::WriteOnlyBuffer<T>) [with T = const float]' called with index = 0
   XRT build version: 2.8.743
   Build hash: 77d5484b5c4daa691a7f78235053fb036829b1e9
   Build date: 2020-11-16 00:19:11
@@ -49,14 +47,14 @@ It will take about half a minute until it says
   HOST: foo
   EXE: /path/to/tapa/apps/vadd/vadd
   [XRT] WARNING: unaligned host pointer '0x55ca5dc41af0' detected, this leads to extra memcpy
-  DEBUG: Function ‘void fpga::Instance::SetArg(int, fpga::WriteOnlyBuffer<T>) [with T = const float]’ called with index = 0
-  DEBUG: Function ‘void fpga::Instance::AllocBuf(int, fpga::WriteOnlyBuffer<T>) [with T = const float]’ called with index = 1
+  DEBUG: Function 'void fpga::Instance::SetArg(int, fpga::WriteOnlyBuffer<T>) [with T = const float]' called with index = 0
+  DEBUG: Function 'void fpga::Instance::AllocBuf(int, fpga::WriteOnlyBuffer<T>) [with T = const float]' called with index = 1
   [XRT] WARNING: unaligned host pointer '0x55ca5dc42aa0' detected, this leads to extra memcpy
-  DEBUG: Function ‘void fpga::Instance::SetArg(int, fpga::WriteOnlyBuffer<T>) [with T = const float]’ called with index = 1
-  DEBUG: Function ‘void fpga::Instance::AllocBuf(int, fpga::ReadOnlyBuffer<T>) [with T = float]’ called with index = 2
+  DEBUG: Function 'void fpga::Instance::SetArg(int, fpga::WriteOnlyBuffer<T>) [with T = const float]' called with index = 1
+  DEBUG: Function 'void fpga::Instance::AllocBuf(int, fpga::ReadOnlyBuffer<T>) [with T = float]' called with index = 2
   [XRT] WARNING: unaligned host pointer '0x55ca5dc43a50' detected, this leads to extra memcpy
-  DEBUG: Function ‘void fpga::Instance::SetArg(int, fpga::ReadOnlyBuffer<T>) [with T = float]’ called with index = 2
-  DEBUG: Function ‘void fpga::Instance::SetArg(int, T&&) [with T = long unsigned int]’ called with index = 3
+  DEBUG: Function 'void fpga::Instance::SetArg(int, fpga::ReadOnlyBuffer<T>) [with T = float]' called with index = 2
+  DEBUG: Function 'void fpga::Instance::SetArg(int, T&&) [with T = long unsigned int]' called with index = 3
   INFO: [HW-EMU 06-0] Waiting for the simulator process to exit
   INFO: [HW-EMU 06-1] All the simulator processes exited successfully
   elapsed time: 31.0901 s
@@ -114,7 +112,7 @@ if necessary).
   INFO: Found device: xilinx_u280_xdma_201920_3
   INFO: Found device: xilinx_u250_xdma_201830_2
   INFO: Using xilinx_u250_xdma_201830_2
-  DEBUG: Function ‘void fpga::Instance::AllocBuf(int, fpga::WriteOnlyBuffer<T>) [with T = const float]’ called with index = 0
+  DEBUG: Function 'void fpga::Instance::AllocBuf(int, fpga::WriteOnlyBuffer<T>) [with T = const float]' called with index = 0
   XRT build version: 2.9.317
   Build hash: b0230e59e22351fb957dc46a6e68d7560e5f630c
   Build date: 2021-03-13 05:10:45
@@ -125,14 +123,14 @@ if necessary).
   HOST: foo
   EXE: /path/to/tapa/apps/vadd/vadd
   [XRT] WARNING: unaligned host pointer '0x7f258dd0b010' detected, this leads to extra memcpy
-  DEBUG: Function ‘void fpga::Instance::SetArg(int, fpga::WriteOnlyBuffer<T>) [with T = const float]’ called with index = 0
-  DEBUG: Function ‘void fpga::Instance::AllocBuf(int, fpga::WriteOnlyBuffer<T>) [with T = const float]’ called with index = 1
+  DEBUG: Function 'void fpga::Instance::SetArg(int, fpga::WriteOnlyBuffer<T>) [with T = const float]' called with index = 0
+  DEBUG: Function 'void fpga::Instance::AllocBuf(int, fpga::WriteOnlyBuffer<T>) [with T = const float]' called with index = 1
   [XRT] WARNING: unaligned host pointer '0x7f258d90a010' detected, this leads to extra memcpy
-  DEBUG: Function ‘void fpga::Instance::SetArg(int, fpga::WriteOnlyBuffer<T>) [with T = const float]’ called with index = 1
-  DEBUG: Function ‘void fpga::Instance::AllocBuf(int, fpga::ReadOnlyBuffer<T>) [with T = float]’ called with index = 2
+  DEBUG: Function 'void fpga::Instance::SetArg(int, fpga::WriteOnlyBuffer<T>) [with T = const float]' called with index = 1
+  DEBUG: Function 'void fpga::Instance::AllocBuf(int, fpga::ReadOnlyBuffer<T>) [with T = float]' called with index = 2
   [XRT] WARNING: unaligned host pointer '0x7f258d509010' detected, this leads to extra memcpy
-  DEBUG: Function ‘void fpga::Instance::SetArg(int, fpga::ReadOnlyBuffer<T>) [with T = float]’ called with index = 2
-  DEBUG: Function ‘void fpga::Instance::SetArg(int, T&&) [with T = long unsigned int]’ called with index = 3
+  DEBUG: Function 'void fpga::Instance::SetArg(int, fpga::ReadOnlyBuffer<T>) [with T = float]' called with index = 2
+  DEBUG: Function 'void fpga::Instance::SetArg(int, T&&) [with T = long unsigned int]' called with index = 3
   elapsed time: 7.48926 s
   PASS!
 
