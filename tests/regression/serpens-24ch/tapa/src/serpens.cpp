@@ -131,7 +131,8 @@ l_rp:
 #pragma HLS loop_tripcount min = 1 max = 16
 
     float local_X[4][WINDOW_SIZE];
-#pragma HLS bind_storage variable = local_X latency = 2
+#pragma HLS bind_storage variable = local_X latency = 2 type = RAM_2P impl = \
+    BRAM
 #pragma HLS array_partition variable = local_X complete dim = 1
 #pragma HLS array_partition variable = local_X cyclic factor = \
     X_PARTITION_FACTOR dim = 2
