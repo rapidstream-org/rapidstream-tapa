@@ -260,10 +260,14 @@ l_rp:
     ap_uint<32> local_B_pe4_pe5[WINDOW_SIZE];
     ap_uint<32> local_B_pe6_pe7[WINDOW_SIZE];
 
-#pragma HLS bind_storage variable = local_B_pe0_pe1 latency = 2
-#pragma HLS bind_storage variable = local_B_pe2_pe3 latency = 2
-#pragma HLS bind_storage variable = local_B_pe4_pe5 latency = 2
-#pragma HLS bind_storage variable = local_B_pe6_pe7 latency = 2
+#pragma HLS bind_storage variable = local_B_pe0_pe1 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe2_pe3 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe4_pe5 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe6_pe7 latency = 2 type = \
+    RAM_2P impl = BRAM
 
 #pragma HLS array_partition variable = local_B_pe0_pe1 cyclic factor = \
     B_PARTITION_FACTOR
@@ -544,10 +548,14 @@ l_rp:
     ap_uint<32> local_B_pe4_pe5[WINDOW_SIZE];
     ap_uint<32> local_B_pe6_pe7[WINDOW_SIZE];
 
-#pragma HLS bind_storage variable = local_B_pe0_pe1 latency = 2
-#pragma HLS bind_storage variable = local_B_pe2_pe3 latency = 2
-#pragma HLS bind_storage variable = local_B_pe4_pe5 latency = 2
-#pragma HLS bind_storage variable = local_B_pe6_pe7 latency = 2
+#pragma HLS bind_storage variable = local_B_pe0_pe1 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe2_pe3 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe4_pe5 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe6_pe7 latency = 2 type = \
+    RAM_2P impl = BRAM
 
 #pragma HLS array_partition variable = local_B_pe0_pe1 cyclic factor = \
     B_PARTITION_FACTOR
@@ -818,10 +826,14 @@ l_rp:
     ap_uint<32> local_B_pe4_pe5[WINDOW_SIZE];
     ap_uint<32> local_B_pe6_pe7[WINDOW_SIZE];
 
-#pragma HLS bind_storage variable = local_B_pe0_pe1 latency = 2
-#pragma HLS bind_storage variable = local_B_pe2_pe3 latency = 2
-#pragma HLS bind_storage variable = local_B_pe4_pe5 latency = 2
-#pragma HLS bind_storage variable = local_B_pe6_pe7 latency = 2
+#pragma HLS bind_storage variable = local_B_pe0_pe1 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe2_pe3 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe4_pe5 latency = 2 type = \
+    RAM_2P impl = BRAM
+#pragma HLS bind_storage variable = local_B_pe6_pe7 latency = 2 type = \
+    RAM_2P impl = BRAM
 
 #pragma HLS array_partition variable = local_B_pe0_pe1 cyclic factor = \
     B_PARTITION_FACTOR
