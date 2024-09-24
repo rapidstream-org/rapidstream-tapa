@@ -32,23 +32,20 @@ The RapidStream-TAPA toolchain can be installed with a single command. After the
 To install TAPA, you need to have the following dependencies:
 
 - Ubuntu 18.04 or later, or Debian 10 or later:
-    - g++
-    - iverilog
-    - ocl-icd-libopencl1 (if you plan to run simulations and on-board tests)
+    - `iverilog`
+    - `g++` and `ocl-icd-libopencl1` if you plan to run simulations and on-board tests
 - Red Hat Enterprise Linux 9 or later, AlmaLinux/Rocky Linux 9 or later, or Amazon Linux 2023:
-    - gcc-c++
-    - iverilog built from source
-    - libxcrypt-compat
-    - ocl-icd (if you plan to run simulations and on-board tests)
+    - `iverilog` built from source
+    - `libxcrypt-compat`
+    - `gcc-c++` and `ocl-icd` (if you plan to run simulations and on-board tests)
 - Fedora 34 or later, up to Fedora 38:
-    - gcc-c++
-    - iverilog
-    - libxcrypt-compat
-    - ocl-icd (if you plan to run simulations and on-board tests)
+    - `iverilog`
+    - `libxcrypt-compat`
+    - `gcc-c++` and `ocl-icd` (if you plan to run simulations and on-board tests)
     - Newer versions of Fedora are not supported by Vitis HLS, but for some designs, TAPA might still work.
 - Vitis HLS 2022.1 or later
 
-You can install the dependencies by running the following commands:
+You can install the dependencies and TAPA by running the following commands:
 
 ```bash
 # for Ubuntu and Debian
