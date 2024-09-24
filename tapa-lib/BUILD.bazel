@@ -20,7 +20,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//fpga-runtime:frt",
-        "@com_github_google_glog//:glog",
+        "@glog",
     ],
 )
 
@@ -47,7 +47,7 @@ filegroup(
 header_extractor(
     name = "extra-runtime-include",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_google_glog//:glog"],
+    deps = ["@glog"],
 )
 
 pkg_files(
@@ -74,7 +74,7 @@ pkg_files(
 
 pkg_files(
     name = "pkg-extra-runtime-deps",
-    srcs = ["@com_github_google_glog//:glog"],
+    srcs = ["@glog"],
     prefix = "usr/lib",
     strip_prefix = strip_prefix.files_only(),
     visibility = ["//visibility:public"],
