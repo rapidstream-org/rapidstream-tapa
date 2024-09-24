@@ -2,7 +2,7 @@ PROJECT_NAME           = "RapidStream TAPA"
 
 OUTPUT_DIRECTORY       = "@DOXYGEN_OUTPUT_DIR@"
 
-INPUT                  = "@DOXYGEN_INPUT_DIR@/tapa-lib" "@DOXYGEN_INPUT_DIR@/tapacc"
+INPUT                  = "@DOXYGEN_INPUT_DIR@/tapa-lib/tapa/base" "@DOXYGEN_INPUT_DIR@/tapa-lib/tapa/host" "@DOXYGEN_INPUT_DIR@/tapacc"
 
 RECURSIVE              = YES
 
