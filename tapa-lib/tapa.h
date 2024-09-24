@@ -2,19 +2,20 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#ifndef TAPA_TAPA_H_
-#define TAPA_TAPA_H_
+#pragma once
 
-#if !defined(TAPA_TARGET_)
+#if !defined(TAPA_TARGET_DEVICE_)
 
 #include "tapa/host/tapa.h"  // IWYU pragma: export
 
-#elif TAPA_TARGET_ == XILINX_HLS
+#elif defined(TAPA_TARGET_XILINX_HLS_)
 
 #include "tapa/xilinx/hls/tapa.h"  // IWYU pragma: export
+
+#elif defined(TAPA_TARGET_STUB_)
+
+#include "tapa/stub/tapa.h"  // IWYU pragma: export
 
 #endif
 
 #include "tapa/traits.h"  // IWYU pragma: export
-
-#endif  // TAPA_TAPA_H_

@@ -302,6 +302,8 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             hls_cflags = " ".join(
                 (
                     self.cflags,
+                    "-DTAPA_TARGET_DEVICE_",
+                    "-DTAPA_TARGET_XILINX_HLS_",
                     *(
                         f"-isystem {x}/../tps/lnx64/gcc-6.2.0/include/c++/6.2.0"
                         for x in get_vendor_include_paths()

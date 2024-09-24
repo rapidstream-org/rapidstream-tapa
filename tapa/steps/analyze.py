@@ -208,16 +208,11 @@ def find_tapacc_cflags(
 
     # WORKAROUND: -DNDEBUG is added to disable assertions in the generated
     #             code, which are not be supported by the HLS tool.
-    # FIXME: Without target specification, macros will be expanded by clang
-    #        cpp and the generated code will not be synthesizable.
-    # FIXME: After TAPA cpp expands the macros, platform-specific functions
-    #        will be used in the generated code. In this case, tapacc should
-    #        continue to have the same target definition. Otherwise, the
-    #        generated code will have missing functions.
     return (
         cflags[:]
         + ("-DNDEBUG",)
-        + ("-DTAPA_TARGET_=XILINX_HLS",)
+        # Use the stdc++ library from the HLS toolchain.
+        + ("-nostdinc++",)
         + ("-isystem", str(tapa_include))
         + ("-isystem", str(tapa_extra_runtime_include))
         + vendor_include_paths,
@@ -295,6 +290,8 @@ def run_flatten(
         with open(flatten_path, "w", encoding="utf-8") as output_fp:
             tapa_cpp_cmd = (
                 tapa_cpp,
+                "-x",
+                "c++",
                 "-E",
                 "-CC",
                 "-P",
@@ -304,6 +301,8 @@ def run_flatten(
                 #        synthesis-specific macros, as the macros will be
                 #        expanded by clang cpp.
                 "-D__SYNTHESIS__",
+                "-DTAPA_TARGET_DEVICE_",
+                "-DTAPA_TARGET_STUB_",
                 *cflags,
                 file,
             )
@@ -337,8 +336,9 @@ def run_tapacc(
         "-top",
         top,
         "--",
-        "-v",  # print include paths to aid debugging
         *cflags,
+        "-DTAPA_TARGET_DEVICE_",
+        "-DTAPA_TARGET_STUB_",
     )
     tapacc_cmd = (tapacc, *files, *tapacc_args)
     _logger.info("Running tapacc command: %s", " ".join(tapacc_cmd))

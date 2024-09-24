@@ -2,34 +2,22 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#ifndef TAPA_XILINX_HLS_UTIL_H_
-#define TAPA_XILINX_HLS_UTIL_H_
+#pragma once
 
 #include "tapa/base/util.h"
-
-#include <cstring>
 
 namespace tapa {
 
 template <typename To, typename From>
 inline typename std::enable_if<sizeof(To) == sizeof(From), To>::type  //
-bit_cast(From from) noexcept {
-#pragma HLS inline
-  To to;
-  std::memcpy(&to, &from, sizeof(To));
-  return to;
-}
+bit_cast(From from) noexcept;
 
 template <typename T>
-T reg(T x) {
-#pragma HLS inline off
-#pragma HLS pipeline II = 1
-#pragma HLS latency min = 1 max = 1
-  return x;
-}
+T reg(T x);
 
 }  // namespace tapa
 
+// FIXME: TAPA stubs should be target-agnotic
 #undef TAPA_WHILE_NOT_EOT
 #define TAPA_WHILE_NOT_EOT(fifo)                                \
   for (bool tapa_##fifo##_valid;                                \
@@ -53,5 +41,3 @@ T reg(T x) {
   _Pragma("HLS pipeline II = 1") if (tapa_##fifo1##_valid &&                  \
                                      tapa_##fifo2##_valid &&                  \
                                      tapa_##fifo3##_valid)
-
-#endif  // TAPA_XILINX_HLS_UTIL_H_

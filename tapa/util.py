@@ -91,9 +91,13 @@ def get_vendor_include_paths() -> Iterable[str]:
     except FileNotFoundError:
         xilinx_hls = os.environ.get("XILINX_HLS")
         if xilinx_hls is None:
-            _logger.warning("not adding vendor include paths; please set XILINX_HLS")
+            _logger.critical("Not adding vendor include paths; please set XILINX_HLS.")
+            _logger.critical("You may run `source /path/to/Vitis/settings64.sh`.")
         else:
+            cpp_include = "tps/lnx64/gcc-6.2.0/include/c++/6.2.0"
             yield os.path.join(xilinx_hls, "include")
+            yield os.path.join(xilinx_hls, cpp_include)
+            yield os.path.join(xilinx_hls, cpp_include, "x86_64-pc-linux-gnu")
 
 
 def nproc() -> int:

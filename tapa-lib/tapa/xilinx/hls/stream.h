@@ -7,8 +7,6 @@
 
 #include "tapa/base/stream.h"
 
-#ifdef __SYNTHESIS__
-
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -193,11 +191,5 @@ template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth>
 class streams;
 
 }  // namespace tapa
-
-#else  // __SYNTHESIS__
-
-#include "tapa/host/stream.h"
-
-#endif  // __SYNTHESIS__
 
 #endif  // TAPA_XILINX_HLS_STREAM_H_

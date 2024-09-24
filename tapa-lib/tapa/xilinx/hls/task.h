@@ -7,8 +7,6 @@
 
 #include "tapa/base/task.h"
 
-#ifdef __SYNTHESIS__
-
 namespace tapa {
 
 struct task {
@@ -32,7 +30,7 @@ struct task {
 
   template <int mode, typename Func, typename... Args, size_t name_size>
   task& invoke(Func&& func, const char (&name)[name_size], Args&&... args) {
-    f(std::forward<Args>(args)...);
+    func(std::forward<Args>(args)...);
     return *this;
   }
 
@@ -52,11 +50,4 @@ struct task {
 };
 
 }  // namespace tapa
-
-#else  // __SYNTHESIS__
-
-#include "tapa/host/task.h"
-
-#endif  // __SYNTHESIS__
-
 #endif  // TAPA_XILINX_HLS_TASK_H
