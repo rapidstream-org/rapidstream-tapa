@@ -39,5 +39,5 @@ compile_xo() {
 
 @test "apps/nested-vadd: tapa generates an xo file and its simulation passes" {
   compile_xo
-  ${BATS_TMPDIR}/nested-vadd-host --bitstream ${BATS_TMPDIR}/nested-vadd.xo
+  ${BATS_TMPDIR}/nested-vadd-host --bitstream ${BATS_TMPDIR}/nested-vadd.xo 1000
 }
