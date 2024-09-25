@@ -77,6 +77,7 @@ def get_module_name(module: str) -> str:
 
 def get_vendor_include_paths() -> Iterable[str]:
     """Yields include paths that are automatically available in vendor tools."""
+    xilinx_hls = None
     try:
         for line in subprocess.check_output(
             ["frt_get_xlnx_env"],
@@ -86,18 +87,18 @@ def get_vendor_include_paths() -> Iterable[str]:
                 continue
             key, value = line.split("=", maxsplit=1)
             if key == "XILINX_HLS":
-                yield os.path.join(value, "include")
-
+                xilinx_hls = value
     except FileNotFoundError:
         xilinx_hls = os.environ.get("XILINX_HLS")
-        if xilinx_hls is None:
-            _logger.critical("not adding vendor include paths; please set XILINX_HLS")
-            _logger.critical("you may run `source /path/to/Vitis/settings64.sh`")
-        else:
-            cpp_include = "tps/lnx64/gcc-6.2.0/include/c++/6.2.0"
-            yield os.path.join(xilinx_hls, "include")
-            yield os.path.join(xilinx_hls, cpp_include)
-            yield os.path.join(xilinx_hls, cpp_include, "x86_64-pc-linux-gnu")
+
+    if xilinx_hls is None:
+        _logger.critical("not adding vendor include paths; please set XILINX_HLS")
+        _logger.critical("you may run `source /path/to/Vitis/settings64.sh`")
+    else:
+        cpp_include = "tps/lnx64/gcc-6.2.0/include/c++/6.2.0"
+        yield os.path.join(xilinx_hls, "include")
+        yield os.path.join(xilinx_hls, cpp_include)
+        yield os.path.join(xilinx_hls, cpp_include, "x86_64-pc-linux-gnu")
 
 
 def nproc() -> int:
