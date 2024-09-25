@@ -57,13 +57,7 @@ use_repo(pip, "tapa_deps")
 bazel_dep(name = "nlohmann_json", version = "3.11.3")
 
 # Required by tapa-lib
-http_archive(
-    name = "com_github_gflags_gflags",
-    sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",
-    strip_prefix = "gflags-2.2.2",
-    urls = ["https://github.com/gflags/gflags/archive/v2.2.2.tar.gz"],
-)
-
+bazel_dep(name = "gflags", version = "2.2.2")
 bazel_dep(name = "glog", version = "0.5.0")
 bazel_dep(name = "googletest", version = "1.15.2")
 

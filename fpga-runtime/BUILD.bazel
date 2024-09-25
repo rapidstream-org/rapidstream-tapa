@@ -91,7 +91,7 @@ pkg_files(
 pkg_files(
     name = "pkg-extra-runtime-deps",
     srcs = [
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
         "@glog",
         "@tinyxml2",
     ],
