@@ -12,7 +12,7 @@ compile_host() {
     -I${XILINX_HLS}/include/ \
     -Wl,-rpath,$(readlink -f ${RAPIDSTREAM_TAPA_HOME}/usr/lib/) \
     -L ${RAPIDSTREAM_TAPA_HOME}/usr/lib/ \
-    -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs \
+    -ltapa -lcontext -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs \
     -o ${BATS_TMPDIR}/vadd-host
 
   [ -x "${BATS_TMPDIR}/vadd-host" ]

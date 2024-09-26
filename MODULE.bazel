@@ -57,6 +57,16 @@ use_repo(pip, "tapa_deps")
 bazel_dep(name = "nlohmann_json", version = "3.11.3")
 
 # Required by tapa-lib
+bazel_dep(name = "rules_boost", repo_name = "com_github_nelhage_rules_boost")
+git_override(
+    module_name = "rules_boost",
+    commit = "40ce3bdc3d2f947aa3421b38ae4d3e8bd3ace7fc",
+    remote = "https://github.com/nelhage/rules_boost.git",
+)
+
+non_module_boost_repositories = use_extension("@com_github_nelhage_rules_boost//:boost/repositories.bzl", "non_module_dependencies")
+use_repo(non_module_boost_repositories, "boost")
+
 bazel_dep(name = "gflags", version = "2.2.2")
 bazel_dep(name = "glog", version = "0.5.0")
 bazel_dep(name = "googletest", version = "1.15.2")

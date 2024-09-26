@@ -17,9 +17,13 @@ cc_library(
         "tapa/**/*.h",
     ]) + ["tapa.h"],
     includes = ["."],
+    local_defines = [
+        "TAPA_ENABLE_COROUTINE",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//fpga-runtime:frt",
+        "@boost//:coroutine2",
         "@glog",
     ],
 )
@@ -74,7 +78,10 @@ pkg_files(
 
 pkg_files(
     name = "pkg-extra-runtime-deps",
-    srcs = ["@glog"],
+    srcs = [
+        "@boost//:context",  # for boost.coroutine2
+        "@glog",
+    ],
     prefix = "usr/lib",
     strip_prefix = strip_prefix.files_only(),
     visibility = ["//visibility:public"],
