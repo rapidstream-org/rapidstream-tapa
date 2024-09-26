@@ -136,7 +136,7 @@ example as follows:
     -I/opt/tools/xilinx/Vitis_HLS/2024.1/include/ \
     -Wl,-rpath,$(readlink -f ~/.rapidstream-tapa/usr/lib) \
     -L ${HOME}/.rapidstream-tapa/usr/lib/ \
-    -ltapa -lcontext -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs
+    -ltapa -lcontext -lthread -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs
 
   ./vadd
 

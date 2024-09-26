@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <condition_variable>
 #include <deque>
 #include <functional>
 #include <list>
@@ -28,6 +27,7 @@
 
 #include <boost/coroutine2/coroutine.hpp>
 #include <boost/coroutine2/fixedsize_stack.hpp>
+#include <boost/thread/condition_variable.hpp>
 
 #if TAPA_ENABLE_STACKTRACE
 #include <boost/algorithm/string/predicate.hpp>
@@ -37,19 +37,18 @@
 #include <sys/resource.h>
 #include <time.h>
 
-using std::condition_variable;
 using std::function;
-using std::mutex;
 using std::runtime_error;
 using std::string;
 using std::unordered_map;
 
-using unique_lock = std::unique_lock<mutex>;
+using boost::condition_variable;
+using boost::mutex;
+using boost::coroutines2::fixedsize_stack;
 
 using pull_type = boost::coroutines2::coroutine<void>::pull_type;
 using push_type = boost::coroutines2::coroutine<void>::push_type;
-
-using boost::coroutines2::fixedsize_stack;
+using unique_lock = boost::unique_lock<mutex>;
 
 namespace tapa {
 

@@ -36,6 +36,7 @@ cc_library(
     deps = [
         "//fpga-runtime:frt",
         "@boost//:coroutine2",
+        "@boost//:thread",
         "@glog",
     ],
 )
@@ -92,6 +93,7 @@ pkg_files(
     name = "pkg-extra-runtime-deps",
     srcs = [
         "@boost//:context",  # for boost.coroutine2
+        "@boost//:thread",
         "@glog",
     ],
     prefix = "usr/lib",
