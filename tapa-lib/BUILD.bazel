@@ -10,7 +10,7 @@ load("//bazel:header_extractor.bzl", "header_extractor")
 
 bool_flag(
     name = "enable_coroutine",
-    build_setting_default = False,  # Enable with `--//tapa-lib:tapa_enable_coroutine`
+    build_setting_default = True,  # Enable with `--//tapa-lib:tapa_enable_coroutine`
 )
 
 config_setting(
