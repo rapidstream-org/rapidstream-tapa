@@ -13,6 +13,7 @@ import os.path
 import shutil
 import subprocess
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import absl.logging
@@ -75,8 +76,8 @@ def get_module_name(module: str) -> str:
     return f"{module}"
 
 
-def get_vendor_include_paths() -> Iterable[str]:
-    """Yields include paths that are automatically available in vendor tools."""
+def get_xilinx_hls_path() -> str | None:
+    "Returns the XILINX_HLS path."
     xilinx_hls = None
     try:
         for line in subprocess.check_output(
@@ -90,7 +91,12 @@ def get_vendor_include_paths() -> Iterable[str]:
                 xilinx_hls = value
     except FileNotFoundError:
         xilinx_hls = os.environ.get("XILINX_HLS")
+    return xilinx_hls
 
+
+def get_vendor_include_paths() -> Iterable[str]:
+    """Yields include paths that are automatically available in vendor tools."""
+    xilinx_hls = get_xilinx_hls_path()
     if xilinx_hls is None:
         _logger.critical("not adding vendor include paths; please set XILINX_HLS")
         _logger.critical("you may run `source /path/to/Vitis/settings64.sh`")
@@ -99,6 +105,15 @@ def get_vendor_include_paths() -> Iterable[str]:
         yield os.path.join(xilinx_hls, "include")
         yield os.path.join(xilinx_hls, cpp_include)
         yield os.path.join(xilinx_hls, cpp_include, "x86_64-pc-linux-gnu")
+
+
+def get_installation_path() -> Path:
+    """Returns the directory where TAPA pre-built binary is installed."""
+    home = os.environ.get("RAPIDSTREAM_TAPA_HOME")
+    if home is not None:
+        return Path(home)
+    # `__file__` is like `/path/to/usr/share/tapa/runtime/tapa/util.py`
+    return Path(__file__).parent.parent.parent.parent.parent.parent
 
 
 def nproc() -> int:

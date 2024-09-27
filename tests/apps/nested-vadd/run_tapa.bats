@@ -5,14 +5,8 @@
 compile_host() {
   cd "${BATS_TEST_DIRNAME}"
 
-  g++ \
-    -std=c++17 \
+  tapa g++ \
     vadd-host.cpp vadd.cpp \
-    -I${RAPIDSTREAM_TAPA_HOME}/usr/include/ \
-    -I${XILINX_HLS}/include/ \
-    -Wl,-rpath,$(readlink -f ${RAPIDSTREAM_TAPA_HOME}/usr/lib/) \
-    -L ${RAPIDSTREAM_TAPA_HOME}/usr/lib/ \
-    -ltapa -lcontext -lthread -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs \
     -o ${BATS_TMPDIR}/nested-vadd-host
 
   [ -x "${BATS_TMPDIR}/nested-vadd-host" ]

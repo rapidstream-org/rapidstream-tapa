@@ -128,15 +128,9 @@ example as follows:
   git clone https://github.com/rapidstream-org/rapidstream-tapa
   cd tests/apps/vadd
 
-  g++ \
-    -std=c++17 \
+  tapa g++ \
     *.cpp \
     -o vadd \
-    -I${HOME}/.rapidstream-tapa/usr/include/ \
-    -I/opt/tools/xilinx/Vitis_HLS/2024.1/include/ \
-    -Wl,-rpath,$(readlink -f ~/.rapidstream-tapa/usr/lib) \
-    -L ${HOME}/.rapidstream-tapa/usr/lib/ \
-    -ltapa -lcontext -lthread -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs
 
   ./vadd
 
