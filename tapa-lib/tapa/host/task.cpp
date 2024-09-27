@@ -152,7 +152,7 @@ class worker {
 
             auto& l = this->coroutines[detach];  // list of coroutines
             auto coroutine = new push_type*;
-            auto call_back = [this, &l, f, coroutine](pull_type& handle) {
+            auto call_back = [this, f, coroutine](pull_type& handle) {
               this->handle_table[*coroutine] = current_handle = &handle;
               delete coroutine;
               f();
