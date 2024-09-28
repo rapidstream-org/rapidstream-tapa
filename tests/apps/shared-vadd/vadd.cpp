@@ -13,7 +13,9 @@ using tapa::stream;
 using tapa::task;
 
 void Add(istream<float>& a, istream<float>& b, ostream<float>& c) {
-  TAPA_WHILE_NEITHER_EOT(a, b) { c.write(a.read(nullptr) + b.read(nullptr)); }
+  [[tapa::pipeline(1)]] TAPA_WHILE_NEITHER_EOT(a, b) {
+    c.write(a.read(nullptr) + b.read(nullptr));
+  }
   c.close();
 }
 

@@ -248,7 +248,7 @@ void UpdateHandler(Pid num_partitions,
 
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
-  TAPA_WHILE_NOT_EOT(update_config_q) {
+  [[tapa::pipeline(1)]] TAPA_WHILE_NOT_EOT(update_config_q) {
     auto config = update_config_q.read(nullptr);
     VLOG(5) << "recv@UpdateHandler: UpdateConfig: " << config;
     switch (config.item) {
@@ -272,7 +272,7 @@ void UpdateHandler(Pid num_partitions,
     const auto update_req = update_req_q.read();
     VLOG(5) << "recv@UpdateHandler: UpdateReq: " << update_req;
     if (update_req.phase == TaskReq::kScatter) {
-      TAPA_WHILE_NOT_EOT(update_in_q) {
+      [[tapa::pipeline(1)]] TAPA_WHILE_NOT_EOT(update_in_q) {
         Update update = update_in_q.read(nullptr);
         VLOG(5) << "recv@UpdateHandler: Update: " << update;
         Pid pid = (update.dst - base_vid) / partition_size;
@@ -337,7 +337,7 @@ void ProcElem(tapa::istream<TaskReq>& req_q, tapa::ostream<TaskResp>& resp_q,
       }
       update_out_q.close();
     } else {
-      TAPA_WHILE_NOT_EOT(update_in_q) {
+      [[tapa::pipeline(1)]] TAPA_WHILE_NOT_EOT(update_in_q) {
 #pragma HLS dependence false variable = vertices_local
         auto update = update_in_q.read(nullptr);
         VLOG(5) << "recv@ProcElem: Update: " << update;
