@@ -44,6 +44,7 @@ def gcc(executable: str, argv: Iterable[str]) -> None:
         "-std=c++17",
         f"-isystem{installation_dir}/usr/include",
         *(f"-isystem{p}" for p in vendor_include_paths),
+        *argv,
         f"-Wl,-rpath,{installation_dir}/usr/lib",
         f"-L{installation_dir}/usr/lib",
         "-ltapa",
@@ -55,7 +56,6 @@ def gcc(executable: str, argv: Iterable[str]) -> None:
         "-l:libOpenCL.so.1",
         "-ltinyxml2",
         "-lstdc++fs",
-        *argv,
     ]
     _logger.info("running g++ command: %s", shlex.join(args))
     subprocess.run(args, check=False)
