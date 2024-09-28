@@ -94,8 +94,14 @@ def _check_scalar_val_format(config: dict) -> None:
 
 
 def preprocess_config(config_path: str, tb_output_dir: str) -> dict:
+    """Preprocess the config file"""
     with open(config_path, encoding="utf-8") as fp:
         config = json.load(fp)
+
+    # handle designs with no scalar
+    if "scalar_to_val" not in config:
+        config["scalar_to_val"] = {}
+
     _update_relative_path(config, config_path)
     _parse_xo_update_config(config, tb_output_dir)
     _check_scalar_val_format(config)
