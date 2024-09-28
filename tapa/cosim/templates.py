@@ -390,10 +390,11 @@ endmodule
 
 
 def get_axi_ram_module(axi: AXI, input_data_path: str, c_array_size: int) -> str:
+    """Generate the AXI RAM module for cosimulation."""
     if axi.data_width / 8 * c_array_size > 2**MAX_AXI_BRAM_ADDR_WIDTH:
         _logger.error(
-            "The current cosim data size is larger than the recommended "
-            "threshold (16 MB per DDR/HBM). Please reduce cosim data size."
+            "The current cosim data size is larger than the template "
+            "threshold (32-bit address). Please reduce cosim data size."
         )
         sys.exit(1)
 
