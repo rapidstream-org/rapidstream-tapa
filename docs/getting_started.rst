@@ -159,6 +159,68 @@ The above runs software simulation of the program,
 which helps you quickly verify the correctness.
 
 
+Save Stream Contents into Files
+:::::::::::::::::::::::::::::::::
+
+TAPA provides a handy utility to save the contents of a stream into a file by setting
+the environment variable ``TAPA_STREAM_LOG_DIR``.
+
+.. code-block:: bash
+
+  export TAPA_STREAM_LOG_DIR=/path/to/log/dir
+
+Whenever a data is written into a ``tapa::stream``, TAPA will save the data into a file
+under the specified directory in the following rule:
+
+- Primitive types are logged in text format, for example:
+
+.. code-block:: cpp
+
+  TEST_F(StreamLogTest, LoggingCustomTypeInTextFormatSucceeds) {
+    tapa::stream<int> data_q("data");
+    data_q.write(2333);
+    data_q.read();
+  }
+
+  // expect to see "2333\n" in the log file
+
+- If a non-primitive type does not overload `operator<<`, values are logged in hex format,
+  for example:
+
+.. code-block:: cpp
+
+  struct Foo {
+    int foo;
+  };
+
+  TEST_F(StreamLogTest, LoggingCustomTypeInTextFormatSucceeds) {
+    tapa::stream<Foo> data_q("data");
+    data_q.write(Foo{0x2333});
+    data_q.read();
+  }
+
+  // expect to see "0x33230000\n" in log, which is Little-endian
+
+- If the value type overloads `operator<<`, values are logged in text format, for example:
+
+.. code-block:: cpp
+
+  struct Bar {
+    int bar;
+  };
+
+  std::ostream& operator<<(std::ostream& os, const Bar& bar) {
+    return os << bar.bar;
+  }
+
+  TEST_F(StreamLogTest, LoggingCustomTypeInTextFormatSucceeds) {
+    tapa::stream<Bar> data_q("data");
+    data_q.write(Bar{2333});
+    data_q.read();
+  }
+
+  // expect to see "2333\n" in the log file
+
 
 Synthesize into RTL
 :::::::::::::::::::::::
