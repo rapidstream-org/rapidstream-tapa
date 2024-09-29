@@ -10,6 +10,7 @@ on:
       - main
       - release
       - release/*
+  workflow_dispatch:
 
 permissions:
   actions: write

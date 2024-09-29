@@ -25,13 +25,28 @@ jobs:
           fetch-depth: 0 # Fetch all history for all branches and tags.
 
       - name: Bump version
+        id: bump-version
         run: |
           # https://github.com/actions/checkout/tree/d632683dd7b4114ad314bca15554477dd762a938?tab=readme-ov-file#push-a-commit-using-the-built-in-token
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           .github/scripts/bump-version.sh
-          git push
+          git push --force origin HEAD:ci/next
+          if git diff --quiet "${GITHUB_SHA}"; then
+            echo "is-updated=false" >>"${GITHUB_OUTPUT}"
+          else
+            echo "is-updated=true" >>"${GITHUB_OUTPUT}"
+          fi
         env:
           # Using UTC-10 to generate date so the new version includes all
           # commits from that date for most US timezones.
           TZ: Pacific/Honolulu
+
+      # Push by a GitHub action won't trigger another action, so manually
+      # trigger CI here.
+      - name: Trigger CI
+        uses: benc-uk/workflow-dispatch@v1
+        if: ${{ steps.bump-version.outputs.is-updated }}
+        with:
+          workflow: Development Branches
+          ref: refs/heads/ci/next
