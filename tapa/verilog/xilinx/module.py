@@ -489,9 +489,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         ports: Iterable[PortArg],
         params: Iterable[ParamArg] = (),
     ) -> "Module":
-        keep_hier_pragma = '(* keep_hierarchy = "yes" *) '
         item = InstanceList(
-            module=keep_hier_pragma + module_name,
+            module=module_name,
             parameterlist=params,
             instances=(
                 Instance(

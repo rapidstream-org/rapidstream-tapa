@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <condition_variable>
 #include <deque>
 #include <functional>
 #include <list>
@@ -26,29 +25,30 @@
 
 #if TAPA_ENABLE_COROUTINE
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/coroutine2/coroutine.hpp>
 #include <boost/coroutine2/fixedsize_stack.hpp>
+#include <boost/thread/condition_variable.hpp>
+
+#if TAPA_ENABLE_STACKTRACE
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/stacktrace.hpp>
+#endif  // TAPA_ENABLE_STACKTRACE
 
 #include <sys/resource.h>
 #include <time.h>
 
-using std::condition_variable;
 using std::function;
-using std::mutex;
 using std::runtime_error;
 using std::string;
 using std::unordered_map;
 
-using unique_lock = std::unique_lock<mutex>;
+using boost::condition_variable;
+using boost::mutex;
+using boost::coroutines2::fixedsize_stack;
 
 using pull_type = boost::coroutines2::coroutine<void>::pull_type;
 using push_type = boost::coroutines2::coroutine<void>::push_type;
-
-using boost::algorithm::ends_with;
-using boost::algorithm::starts_with;
-using boost::coroutines2::fixedsize_stack;
+using unique_lock = boost::unique_lock<mutex>;
 
 namespace tapa {
 
@@ -67,6 +67,8 @@ void yield(const string& msg) {
     unique_lock l(debug_mtx);
     LOG(INFO) << msg;
 #if TAPA_ENABLE_STACKTRACE
+    using boost::algorithm::ends_with;
+    using boost::algorithm::starts_with;
     for (auto& frame : boost::stacktrace::stacktrace()) {
       const auto line = frame.source_line();
       const auto file = frame.source_file();
@@ -150,7 +152,7 @@ class worker {
 
             auto& l = this->coroutines[detach];  // list of coroutines
             auto coroutine = new push_type*;
-            auto call_back = [this, &l, f, coroutine](pull_type& handle) {
+            auto call_back = [this, f, coroutine](pull_type& handle) {
               this->handle_table[*coroutine] = current_handle = &handle;
               delete coroutine;
               f();

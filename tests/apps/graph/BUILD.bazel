@@ -79,7 +79,7 @@ cc_binary(
     ]),
     deps = [
         "//tapa-lib:tapa",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
         "@vitis_hls//:include",
     ],
 )

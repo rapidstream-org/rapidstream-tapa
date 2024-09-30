@@ -14,10 +14,12 @@ import click
 from tapa import __version__
 from tapa.steps.analyze import analyze
 from tapa.steps.common import switch_work_dir
+from tapa.steps.gcc import gcc
 from tapa.steps.link import link
 from tapa.steps.meta import compile_entry
 from tapa.steps.pack import pack
 from tapa.steps.synth import synth
+from tapa.steps.version import version
 from tapa.util import setup_logging
 
 _logger = logging.getLogger().getChild(__name__)
@@ -80,6 +82,8 @@ entry_point.add_command(synth)
 entry_point.add_command(link)
 entry_point.add_command(pack)
 entry_point.add_command(compile_entry)
+entry_point.add_command(version)
+entry_point.add_command(gcc)
 
 if __name__ == "__main__":
     entry_point()

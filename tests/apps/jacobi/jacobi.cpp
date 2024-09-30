@@ -33,7 +33,7 @@ void Module0Func(tapa::ostream<float>& fifo_st_0,
                  tapa::ostream<float>& fifo_st_1,
                  tapa::istream<tapa::vec_t<float, 2>>& dram_t1_bank_0_fifo) {
 module_0_epoch:
-  TAPA_WHILE_NOT_EOT(dram_t1_bank_0_fifo) {
+  [[tapa::pipeline(1)]] TAPA_WHILE_NOT_EOT(dram_t1_bank_0_fifo) {
     auto dram_t1_bank_0_buf = dram_t1_bank_0_fifo.read(nullptr);
     fifo_st_0.write(dram_t1_bank_0_buf[1]);
     fifo_st_1.write(dram_t1_bank_0_buf[0]);
@@ -46,7 +46,7 @@ void Module1Func(tapa::ostream<float>& fifo_st_0,
                  tapa::ostream<float>& fifo_st_1,
                  tapa::istream<float>& fifo_ld_0) {
 module_1_epoch:
-  TAPA_WHILE_NOT_EOT(fifo_ld_0) {
+  [[tapa::pipeline(1)]] TAPA_WHILE_NOT_EOT(fifo_ld_0) {
     auto fifo_ref_0 = fifo_ld_0.read(nullptr);
     fifo_st_0.write(fifo_ref_0);
     fifo_st_1.write(fifo_ref_0);
@@ -61,7 +61,7 @@ void Module3Func1(tapa::ostream<float>& fifo_st_0,
   const int delay_0 = 50;
   int count = 0;
 module_3_1_epoch:
-  TAPA_WHILE_NEITHER_EOT(fifo_ld_0, fifo_ld_1) {
+  [[tapa::pipeline(1)]] TAPA_WHILE_NEITHER_EOT(fifo_ld_0, fifo_ld_1) {
     float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
@@ -82,7 +82,7 @@ void Module3Func2(tapa::ostream<float>& fifo_st_0,
   const int delay_0 = 51;
   int count = 0;
 module_3_2_epoch:
-  TAPA_WHILE_NEITHER_EOT(fifo_ld_0, fifo_ld_1) {
+  [[tapa::pipeline(1)]] TAPA_WHILE_NEITHER_EOT(fifo_ld_0, fifo_ld_1) {
     float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
@@ -105,7 +105,7 @@ void Module6Func1(tapa::ostream<float>& fifo_st_0,
   const int delay_2 = 50;
   int count = 0;
 module_6_1_epoch:
-  TAPA_WHILE_NONE_EOT(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
+  [[tapa::pipeline(1)]] TAPA_WHILE_NONE_EOT(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
     float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
@@ -132,7 +132,7 @@ void Module6Func2(tapa::ostream<float>& fifo_st_0,
   const int delay_2 = 50;
   int count = 0;
 module_6_2_epoch:
-  TAPA_WHILE_NONE_EOT(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
+  [[tapa::pipeline(1)]] TAPA_WHILE_NONE_EOT(fifo_ld_0, fifo_ld_1, fifo_ld_2) {
     float fifo_ref_0 = 0.f;
     bool do_ld_0 = count >= delay_0;
     if (do_ld_0) {
@@ -156,7 +156,7 @@ void Module8Func(tapa::ostream<tapa::vec_t<float, 2>>& dram_t0_bank_0_fifo,
                  tapa::istream<float>& fifo_ld_0,
                  tapa::istream<float>& fifo_ld_1) {
 module_8_epoch:
-  TAPA_WHILE_NEITHER_EOT(fifo_ld_0, fifo_ld_1) {
+  [[tapa::pipeline(1)]] TAPA_WHILE_NEITHER_EOT(fifo_ld_0, fifo_ld_1) {
     tapa::vec_t<float, 2> tmp;
     tmp.set(0, fifo_ld_0.read(nullptr));
     tmp.set(1, fifo_ld_1.read(nullptr));

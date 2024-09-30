@@ -5,12 +5,9 @@
 #ifndef TAPA_XILINX_HLS_MMAP_H_
 #define TAPA_XILINX_HLS_MMAP_H_
 
-#include "tapa/base/mmap.h"
-
-#ifdef __SYNTHESIS__
-
 #include <cstddef>
 
+#include "tapa/base/mmap.h"
 #include "tapa/xilinx/hls/stream.h"
 
 namespace tapa {
@@ -72,11 +69,5 @@ template <typename T, int chan_count, int64_t chan_size>
 class hmap;
 
 }  // namespace tapa
-
-#else  // __SYNTHESIS__
-
-#include "tapa/host/mmap.h"
-
-#endif  // __SYNTHESIS__
 
 #endif  // TAPA_XILINX_HLS_MMAP_H_

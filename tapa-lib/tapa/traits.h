@@ -5,8 +5,6 @@
 #ifndef TAPA_TRAITS_H_
 #define TAPA_TRAITS_H_
 
-#include "tapa/stream.h"
-
 namespace tapa {
 
 template <typename T>

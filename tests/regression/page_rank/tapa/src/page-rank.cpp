@@ -593,8 +593,7 @@ num_updates_init:
   // Initialization; needed only once per execution.
   int update_offset_idx = 0;
 update_offset_init:
-  TAPA_WHILE_NOT_EOT(update_config_q) {
-#pragma HLS pipeline II = 1
+  [[tapa::pipeline(1)]] TAPA_WHILE_NOT_EOT(update_config_q) {
     update_offsets[update_offset_idx] = update_config_q.read(nullptr);
     ++update_offset_idx;
   }
@@ -813,8 +812,7 @@ task_requests:
 
         update_req_q.write({req.phase, req.pid, req.num_edges});
       update_reads:
-        TAPA_WHILE_NOT_EOT(update_in_q) {
-#pragma HLS pipeline II = 1
+        [[tapa::pipeline(1)]] TAPA_WHILE_NOT_EOT(update_in_q) {
 #pragma HLS dependence variable = vertices_local inter true distance = \
     kVertexUpdateDepDist
           auto update_v = update_in_q.read(nullptr);

@@ -11,6 +11,15 @@
 #include <ostream>
 #include <type_traits>
 
+// FIXME: TAPA should provide its equivalence
+#ifndef ap_wait
+void ap_wait(void);
+#endif
+
+#ifndef ap_wait_n
+void ap_wait_n(int);
+#endif
+
 namespace tapa {
 
 namespace internal {

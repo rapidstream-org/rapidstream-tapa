@@ -13,6 +13,7 @@ import os.path
 import shutil
 import subprocess
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import absl.logging
@@ -75,25 +76,32 @@ def get_module_name(module: str) -> str:
     return f"{module}"
 
 
+def get_xilinx_hls_path() -> str | None:
+    "Returns the XILINX_HLS path."
+    xilinx_hls = os.environ.get("XILINX_HLS")
+    if xilinx_hls is None:
+        _logger.critical("not adding vendor include paths; please set XILINX_HLS")
+        _logger.critical("you may run `source /path/to/Vitis/settings64.sh`")
+    return xilinx_hls
+
+
 def get_vendor_include_paths() -> Iterable[str]:
     """Yields include paths that are automatically available in vendor tools."""
-    try:
-        for line in subprocess.check_output(
-            ["frt_get_xlnx_env"],
-            universal_newlines=True,
-        ).split("\0"):
-            if not line:
-                continue
-            key, value = line.split("=", maxsplit=1)
-            if key == "XILINX_HLS":
-                yield os.path.join(value, "include")
+    xilinx_hls = get_xilinx_hls_path()
+    if xilinx_hls is not None:
+        cpp_include = "tps/lnx64/gcc-6.2.0/include/c++/6.2.0"
+        yield os.path.join(xilinx_hls, "include")
+        yield os.path.join(xilinx_hls, cpp_include)
+        yield os.path.join(xilinx_hls, cpp_include, "x86_64-pc-linux-gnu")
 
-    except FileNotFoundError:
-        xilinx_hls = os.environ.get("XILINX_HLS")
-        if xilinx_hls is None:
-            _logger.warning("not adding vendor include paths; please set XILINX_HLS")
-        else:
-            yield os.path.join(xilinx_hls, "include")
+
+def get_installation_path() -> Path:
+    """Returns the directory where TAPA pre-built binary is installed."""
+    home = os.environ.get("RAPIDSTREAM_TAPA_HOME")
+    if home is not None:
+        return Path(home)
+    # `__file__` is like `/path/to/usr/share/tapa/runtime/tapa/util.py`
+    return Path(__file__).parent.parent.parent.parent.parent.parent
 
 
 def nproc() -> int:

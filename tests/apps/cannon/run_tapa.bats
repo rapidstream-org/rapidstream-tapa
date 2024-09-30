@@ -5,14 +5,8 @@
 compile_host() {
   cd "${BATS_TEST_DIRNAME}"
 
-  g++ \
-    -std=c++17 \
+  tapa g++ \
     cannon-host.cpp cannon.cpp \
-    -I${RAPIDSTREAM_TAPA_HOME}/usr/include/ \
-    -I${XILINX_HLS}/include/ \
-    -Wl,-rpath,$(readlink -f ${RAPIDSTREAM_TAPA_HOME}/usr/lib/) \
-    -L ${RAPIDSTREAM_TAPA_HOME}/usr/lib/ \
-    -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs \
     -o ${BATS_TMPDIR}/cannon-host
 
   [ -x "${BATS_TMPDIR}/cannon-host" ]

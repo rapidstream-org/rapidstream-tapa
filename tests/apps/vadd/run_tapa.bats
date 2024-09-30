@@ -5,14 +5,8 @@
 compile_host() {
   cd "${BATS_TEST_DIRNAME}"
 
-  g++ \
-    -std=c++17 \
+  tapa g++ \
     vadd-host.cpp vadd.cpp \
-    -I${RAPIDSTREAM_TAPA_HOME}/usr/include/ \
-    -I${XILINX_HLS}/include/ \
-    -Wl,-rpath,$(readlink -f ${RAPIDSTREAM_TAPA_HOME}/usr/lib/) \
-    -L ${RAPIDSTREAM_TAPA_HOME}/usr/lib/ \
-    -ltapa -lfrt -lglog -lgflags -l:libOpenCL.so.1 -ltinyxml2 -lstdc++fs \
     -o ${BATS_TMPDIR}/vadd-host
 
   [ -x "${BATS_TMPDIR}/vadd-host" ]
@@ -39,5 +33,5 @@ compile_xo() {
 
 @test "apps/vadd: tapa generates an xo file and its simulation passes" {
   compile_xo
-  ${BATS_TMPDIR}/vadd-host --bitstream ${BATS_TMPDIR}/vadd.xo
+  ${BATS_TMPDIR}/vadd-host --bitstream ${BATS_TMPDIR}/vadd.xo 1000
 }

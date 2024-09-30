@@ -83,7 +83,7 @@ def analyze(
     work_dir = get_work_dir()
     cflags += ("-std=c++17",)
 
-    tapacc_cflags, system_cflags = find_tapacc_cflags(tapacc, cflags)
+    tapacc_cflags, system_cflags = find_tapacc_cflags(cflags)
     flatten_files = run_flatten(
         tapa_cpp, input_files, tapacc_cflags + system_cflags, work_dir
     )
@@ -153,7 +153,6 @@ def find_clang_binary(name: str) -> str:
 
 
 def find_tapacc_cflags(
-    tapacc: str,
     cflags: tuple[str, ...],
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Append tapa, system and vendor libraries to tapacc cflags.
@@ -184,16 +183,6 @@ def find_tapacc_cflags(
         _logger.error("unable to find tapa runtime include folder")
         sys.exit(-1)
 
-    # Find clang include location
-    tapacc_version = subprocess.check_output(
-        [tapacc, "-version"],
-        universal_newlines=True,
-    )
-    match = re.compile(R"LLVM version (\d+)(\.\d+)*").search(tapacc_version)
-    if match is None:
-        _logger.error("failed to parse tapacc output: %s", tapacc_version)
-        sys.exit(-1)
-
     # Add vendor include files to tapacc cflags
     vendor_include_paths = ()
     for vendor_path in get_vendor_include_paths():
@@ -208,16 +197,11 @@ def find_tapacc_cflags(
 
     # WORKAROUND: -DNDEBUG is added to disable assertions in the generated
     #             code, which are not be supported by the HLS tool.
-    # FIXME: Without target specification, macros will be expanded by clang
-    #        cpp and the generated code will not be synthesizable.
-    # FIXME: After TAPA cpp expands the macros, platform-specific functions
-    #        will be used in the generated code. In this case, tapacc should
-    #        continue to have the same target definition. Otherwise, the
-    #        generated code will have missing functions.
     return (
         cflags[:]
         + ("-DNDEBUG",)
-        + ("-DTAPA_TARGET_=XILINX_HLS",)
+        # Use the stdc++ library from the HLS toolchain.
+        + ("-nostdinc++",)
         + ("-isystem", str(tapa_include))
         + ("-isystem", str(tapa_extra_runtime_include))
         + vendor_include_paths,
@@ -295,6 +279,8 @@ def run_flatten(
         with open(flatten_path, "w", encoding="utf-8") as output_fp:
             tapa_cpp_cmd = (
                 tapa_cpp,
+                "-x",
+                "c++",
                 "-E",
                 "-CC",
                 "-P",
@@ -304,6 +290,8 @@ def run_flatten(
                 #        synthesis-specific macros, as the macros will be
                 #        expanded by clang cpp.
                 "-D__SYNTHESIS__",
+                "-DTAPA_TARGET_DEVICE_",
+                "-DTAPA_TARGET_STUB_",
                 *cflags,
                 file,
             )
@@ -337,8 +325,9 @@ def run_tapacc(
         "-top",
         top,
         "--",
-        "-v",  # print include paths to aid debugging
         *cflags,
+        "-DTAPA_TARGET_DEVICE_",
+        "-DTAPA_TARGET_STUB_",
     )
     tapacc_cmd = (tapacc, *files, *tapacc_args)
     _logger.info("Running tapacc command: %s", " ".join(tapacc_cmd))
