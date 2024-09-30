@@ -9,10 +9,6 @@ on:
     - cron: "8 9 * * *" # 09:08 UTC / 23:08 UTC-10 / 02:08 PDT / 01:08 PST
   workflow_dispatch:
 
-permissions:
-  actions: write
-  contents: write
-
 jobs:
   bump-version:
     name: Bump Version
@@ -23,6 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags.
+          token: ${{ secrets.GH_PUSH_PAT }} # Push with PAT to trigger CI.
 
       - name: Bump version
         id: bump-version
@@ -41,12 +38,3 @@ jobs:
           # Using UTC-10 to generate date so the new version includes all
           # commits from that date for most US timezones.
           TZ: Pacific/Honolulu
-
-      # Push by a GitHub action won't trigger another action, so manually
-      # trigger CI here.
-      - name: Trigger CI
-        uses: benc-uk/workflow-dispatch@v1
-        if: ${{ steps.bump-version.outputs.is-updated }}
-        with:
-          workflow: Development Branches
-          ref: refs/heads/ci/next
