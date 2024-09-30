@@ -4,13 +4,14 @@
 
 rapidstream-tapaopt \
     --work-dir run \
-    --tapa-xo-path ./Sextans1613.xo \
+    --tapa-xo-path ./sextans1613-u55c-333MHz.xo \
     --device-config ./u55c_device.json \
     --floorplan-config ./floorplan_config.json \
     --connectivity-ini ./link_config.ini \
     --implementation-config ./impl_config.json \
     --run-impl \
     --extract-metrics \
+    --pp-scheme single_h_double_v \
     # --skip-preprocess \
     # --skip-partition \
     # --skip-add-pipeline \
