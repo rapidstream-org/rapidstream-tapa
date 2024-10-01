@@ -21,11 +21,7 @@ to or extending the TAPA framework itself.
   :maxdepth: 2
 
   user/intro
-
-.. toctree::
-  :caption: Installation
-
-  installation
+  user/installation
 
 .. toctree::
   :caption: Getting Started with TAPA
