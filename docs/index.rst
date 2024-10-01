@@ -1,17 +1,15 @@
 RapidStream TAPA
 ==================================
 
+.. toctree::
+  :caption: Overview
+
+  overview/overview
 
 .. toctree::
   :caption: Installation
 
   installation
-
-
-.. toctree::
-  :caption: Overview
-
-  overview/overview
 
 .. toctree::
   :caption: Getting Started with TAPA
@@ -23,22 +21,10 @@ RapidStream TAPA
 
   rapidstream
 
-
 .. toctree::
   :caption: Integration with Vitis
 
   vitis
-
-
-.. toctree::
-  :caption: FCCM 2022 Tutorial
-
-  fccm_2022
-
-.. toctree::
-  :caption: Tutorial: High Frequency
-
-  tutorial/autobridge
 
 .. toctree::
   :caption: Tutorial: Speed
