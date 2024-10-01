@@ -68,10 +68,10 @@ def parse_m_axi_interfaces(top_rtl_path: str) -> list[AXI]:
         top_rtl = fp.read()
 
     match_addr = re.findall(
-        r"output\s+\[(.*):\s*0\s*\]\s+m_axi_(\w+)_ARADDR\s*[;,]", top_rtl
+        r"output\s+(?:wire\s+)?\[(.*):\s*0\s*\]\s+m_axi_(\w+)_ARADDR\s*[;,]", top_rtl
     )
     match_data = re.findall(
-        r"output\s+\[(.*):\s*0\s*\]\s+m_axi_(\w+)_WDATA\s*[;,]", top_rtl
+        r"output\s+(?:wire\s+)?\[(.*):\s*0\s*\]\s+m_axi_(\w+)_WDATA\s*[;,]", top_rtl
     )
 
     # the width may contain parameters
@@ -79,6 +79,7 @@ def parse_m_axi_interfaces(top_rtl_path: str) -> list[AXI]:
     param_to_value = dict(params)
 
     axi_list = []
+    _logger.info(match_addr)
     name_to_addr_width = {m_axi: addr_width for addr_width, m_axi in match_addr}
     for data_width, m_axi in match_data:
         addr_width = name_to_addr_width[m_axi]
