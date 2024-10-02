@@ -1,0 +1,211 @@
+{
+  "slots": [
+    {
+      "area": {
+        "lut": 216960,
+        "ff": 433920,
+        "bram_18k": 768,
+        "dsp": 1536,
+        "uram": 128
+      },
+      "x": 0,
+      "y": 0,
+      "centroid_x_coor": 0,
+      "centroid_y_coor": 0,
+      "pblock_ranges": [
+        "-add { CLOCKREGION_X0Y0:CLOCKREGION_X3Y3 }"
+      ],
+      "north_wire_capacity": 11520,
+      "south_wire_capacity": 100000000,
+      "east_wire_capacity": 100000000,
+      "west_wire_capacity": 100000000,
+      "north_anchor_region": [],
+      "south_anchor_region": [],
+      "east_anchor_region": [],
+      "west_anchor_region": [],
+      "tags": []
+    },
+    {
+      "area": {
+        "lut": 216960,
+        "ff": 433920,
+        "bram_18k": 768,
+        "dsp": 1536,
+        "uram": 128
+      },
+      "x": 0,
+      "y": 1,
+      "centroid_x_coor": 0,
+      "centroid_y_coor": 150,
+      "pblock_ranges": [
+        "-add { CLOCKREGION_X0Y4:CLOCKREGION_X3Y7 }"
+      ],
+      "north_wire_capacity": 11520,
+      "south_wire_capacity": 11520,
+      "east_wire_capacity": 100000000,
+      "west_wire_capacity": 100000000,
+      "north_anchor_region": [],
+      "south_anchor_region": [],
+      "east_anchor_region": [],
+      "west_anchor_region": [],
+      "tags": []
+    },
+    {
+      "area": {
+        "lut": 216960,
+        "ff": 433920,
+        "bram_18k": 768,
+        "dsp": 1536,
+        "uram": 128
+      },
+      "x": 0,
+      "y": 2,
+      "centroid_x_coor": 0,
+      "centroid_y_coor": 300,
+      "pblock_ranges": [
+        "-add { CLOCKREGION_X0Y8:CLOCKREGION_X3Y11 }"
+      ],
+      "north_wire_capacity": 11520,
+      "south_wire_capacity": 11520,
+      "east_wire_capacity": 100000000,
+      "west_wire_capacity": 100000000,
+      "north_anchor_region": [],
+      "south_anchor_region": [],
+      "east_anchor_region": [],
+      "west_anchor_region": [],
+      "tags": []
+    },
+    {
+      "area": {
+        "lut": 216960,
+        "ff": 433920,
+        "bram_18k": 768,
+        "dsp": 1536,
+        "uram": 128
+      },
+      "x": 0,
+      "y": 3,
+      "centroid_x_coor": 0,
+      "centroid_y_coor": 450,
+      "pblock_ranges": [
+        "-add { CLOCKREGION_X0Y12:CLOCKREGION_X3Y15 }"
+      ],
+      "north_wire_capacity": 100000000,
+      "south_wire_capacity": 11520,
+      "east_wire_capacity": 100000000,
+      "west_wire_capacity": 100000000,
+      "north_anchor_region": [],
+      "south_anchor_region": [],
+      "east_anchor_region": [],
+      "west_anchor_region": [],
+      "tags": []
+    },
+    {
+      "area": {
+        "lut": 215040,
+        "ff": 430080,
+        "bram_18k": 576,
+        "dsp": 1536,
+        "uram": 192
+      },
+      "x": 1,
+      "y": 0,
+      "centroid_x_coor": 100,
+      "centroid_y_coor": 0,
+      "pblock_ranges": [
+        "-add { CLOCKREGION_X4Y0:CLOCKREGION_X7Y3 }"
+      ],
+      "north_wire_capacity": 11520,
+      "south_wire_capacity": 100000000,
+      "east_wire_capacity": 100000000,
+      "west_wire_capacity": 100000000,
+      "north_anchor_region": [],
+      "south_anchor_region": [],
+      "east_anchor_region": [],
+      "west_anchor_region": [],
+      "tags": []
+    },
+    {
+      "area": {
+        "lut": 215040,
+        "ff": 430080,
+        "bram_18k": 576,
+        "dsp": 1536,
+        "uram": 192
+      },
+      "x": 1,
+      "y": 1,
+      "centroid_x_coor": 100,
+      "centroid_y_coor": 150,
+      "pblock_ranges": [
+        "-add { CLOCKREGION_X4Y4:CLOCKREGION_X7Y7 }"
+      ],
+      "north_wire_capacity": 11520,
+      "south_wire_capacity": 11520,
+      "east_wire_capacity": 100000000,
+      "west_wire_capacity": 100000000,
+      "north_anchor_region": [],
+      "south_anchor_region": [],
+      "east_anchor_region": [],
+      "west_anchor_region": [],
+      "tags": []
+    },
+    {
+      "area": {
+        "lut": 215040,
+        "ff": 430080,
+        "bram_18k": 576,
+        "dsp": 1536,
+        "uram": 192
+      },
+      "x": 1,
+      "y": 2,
+      "centroid_x_coor": 100,
+      "centroid_y_coor": 300,
+      "pblock_ranges": [
+        "-add { CLOCKREGION_X4Y8:CLOCKREGION_X7Y11 }"
+      ],
+      "north_wire_capacity": 11520,
+      "south_wire_capacity": 11520,
+      "east_wire_capacity": 100000000,
+      "west_wire_capacity": 100000000,
+      "north_anchor_region": [],
+      "south_anchor_region": [],
+      "east_anchor_region": [],
+      "west_anchor_region": [],
+      "tags": []
+    },
+    {
+      "area": {
+        "lut": 215040,
+        "ff": 430080,
+        "bram_18k": 576,
+        "dsp": 1536,
+        "uram": 192
+      },
+      "x": 1,
+      "y": 3,
+      "centroid_x_coor": 100,
+      "centroid_y_coor": 450,
+      "pblock_ranges": [
+        "-add { CLOCKREGION_X4Y12:CLOCKREGION_X7Y15 }"
+      ],
+      "north_wire_capacity": 100000000,
+      "south_wire_capacity": 11520,
+      "east_wire_capacity": 100000000,
+      "west_wire_capacity": 100000000,
+      "north_anchor_region": [],
+      "south_anchor_region": [],
+      "east_anchor_region": [],
+      "west_anchor_region": [],
+      "tags": []
+    }
+  ],
+  "rows": 4,
+  "cols": 2,
+  "pp_dist": 100,
+  "part_num": "xcu250-figd2104-2L-e",
+  "board_name": null,
+  "platform_name": null,
+  "user_pblock_name": null
+}

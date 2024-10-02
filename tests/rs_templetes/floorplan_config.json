@@ -1,0 +1,11 @@
+{
+  "max_seconds": 600,
+  "dse_range_min": 0.7,
+  "dse_range_max": 0.7,
+  "partition_strategy": "flat",
+  "cell_pre_assignments": {},
+  "port_pre_assignments": {
+    ".*": "SLOT_X0Y0:SLOT_X0Y0"
+  },
+  "partition_schedule": []
+}
