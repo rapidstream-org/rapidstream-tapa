@@ -309,7 +309,7 @@ into a file under the specified directory in the following rule:
   data_q.write(42);
   data_q.read();
 
-  // expect to see "2333\n" in the log file
+  // expect to see "42\n" in the log file
 
 - If a non-primitive type does not overload `operator<<`, values are logged
   in hex format, for example:
