@@ -21,6 +21,10 @@ changes.
   # Optional: Install RapidStream
   sh -c "$(curl -fsSL rapidstream.sh)"
 
+.. note::
+
+   You may rerun the installation script to update TAPA and RapidStream.
+
 Verify the installation by running:
 
 .. code-block:: bash

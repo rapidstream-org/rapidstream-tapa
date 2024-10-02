@@ -43,6 +43,7 @@ performance and productivity.
 sudo apt-get install g++ iverilog ocl-icd-libopencl1
 
 # Install RapidStream TAPA
+# You may rerun this command to update to the latest version.
 sh -c "$(curl -fsSL tapa.rapidstream.sh)"
 
 # Optional: Install RapidStream
