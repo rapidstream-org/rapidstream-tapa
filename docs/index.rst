@@ -23,6 +23,10 @@ to or extending the TAPA framework itself.
   user/intro
   user/installation
   user/getting_started
+
+.. toctree::
+  :maxdepth: 1
+
   user/cheatsheet
 
 .. toctree::
