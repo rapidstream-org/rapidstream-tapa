@@ -38,8 +38,6 @@ performance and productivity.
 
 ### Installation
 
-You can install the dependencies and TAPA by running the following commands:
-
 ```bash
 # Install dependencies (Ubuntu/Debian example)
 sudo apt-get install g++ iverilog ocl-icd-libopencl1
@@ -51,15 +49,36 @@ sh -c "$(curl -fsSL tapa.rapidstream.sh)"
 sh -c "$(curl -fsSL rapidstream.sh)"
 ```
 
-For detailed instructions, see our
-[Installation Guide](https://tapa.readthedocs.io/en/main/installation.html).
+### Compilation
+
+```bash
+git clone https://github.com/rapidstream-org/rapidstream-tapa
+cd rapidstream-tapa/tests/apps/vadd
+
+# Software simulation
+tapa g++ vadd.cpp vadd-host.cpp -o vadd
+./vadd
+
+# Hardware compilation and emulation
+tapa compile \
+   --top VecAdd \
+   --part-num xcu250-figd2104-2L-e \
+   --clock-period 3.33 \
+   -f vadd.cpp \
+   -o vecadd.xo
+./vadd --bitstream=vecadd.xo 1000
+```
+
+For detailed instructions, see our [User Guide](https://tapa.readthedocs.io/en/main/).
 
 
 ## Documentation
 
-- [Getting Started](https://tapa.readthedocs.io/en/main/getting_started.html)
-- [User Guide](https://tapa.readthedocs.io/en/main/)
-- [API Reference](https://tapa.readthedocs.io/en/main/api.html)
+- [Quick Reference](https://tapa.readthedocs.io/en/main/user/cheatsheet.html).
+- [User Guide](https://tapa.readthedocs.io/en/main/).
+- [Installation Guide](https://tapa.readthedocs.io/en/main/user/installation.html).
+- [Getting Started](https://tapa.readthedocs.io/en/main/user/getting_started.html).
+- [API Reference](https://tapa.readthedocs.io/en/main/api.html).
 
 
 ## Success Stories
