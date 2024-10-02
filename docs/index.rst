@@ -23,6 +23,7 @@ to or extending the TAPA framework itself.
   user/intro
   user/installation
   user/getting_started
+  user/cheatsheet
 
 .. toctree::
   :caption: Getting Started with RapidStream
