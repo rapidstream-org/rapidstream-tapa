@@ -5,7 +5,7 @@ Quick Reference
 
    This guide provides a quick reference for using RapidStream TAPA. If you
    are a beginner, start with the
-   :ref:`Getting Started <user/getting_started:Getting Started>` guide.
+   :ref:`Getting Started <user/getting_started:Getting Started with TAPA>` guide.
 
 Installation
 ------------
@@ -18,8 +18,8 @@ Installation
   # Optional: Install RapidStream
   sh -c "$(curl -fsSL rapidstream.sh)"
 
-Compilation
------------
+Compilation with TAPA
+---------------------
 
 .. code-block:: bash
 
@@ -33,8 +33,8 @@ Compilation
     -f kernel.cpp \
     -o kernel.xo
 
-Execution
----------
+Executing TAPA Programs
+-----------------------
 
 .. code-block:: bash
 
@@ -47,8 +47,8 @@ Execution
   # On-board execution
   ./program --bitstream=kernel.hw.xclbin
 
-Debugging
----------
+Debugging TAPA Programs
+-----------------------
 
 .. code-block:: bash
 
@@ -59,8 +59,22 @@ Debugging
   # View HLS reports
   ls work.out/report/
 
-TAPA Task Structure
+Optimization with RapidStream
+-----------------------------
+
+.. code-block:: bash
+
+  rapidstream-tapaopt \
+    --work-dir ./build \
+    --tapa-xo-path kernel.xo \
+    --device-config u55c_device.json \
+    --autobridge-config floorplan_config.json
+
+TAPA Code Structure
 -------------------
+
+Task Definition
+~~~~~~~~~~~~~~~
 
 .. code-block:: cpp
 
@@ -71,21 +85,8 @@ TAPA Task Structure
     // Task logic
   }
 
-Stream Operations
------------------
-
-.. code-block:: cpp
-
-  // Read
-  T data = stream.read();
-  stream >> data;  // Equivalent
-
-  // Write
-  stream.write(data);
-  stream << data;  // Equivalent
-
 Upper-Level Task
-----------------
+~~~~~~~~~~~~~~~~
 
 .. code-block:: cpp
 
@@ -98,7 +99,7 @@ Upper-Level Task
   }
 
 Host Invocation
----------------
+~~~~~~~~~~~~~~~
 
 .. code-block:: cpp
 
@@ -107,3 +108,70 @@ Host Invocation
                tapa::read_only_mmap<const T>(vec),
                tapa::write_only_mmap<T>(out),
                scalar);
+
+Stream Operations
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: cpp
+
+  // Read
+  T data = stream.read();
+  stream >> data;  // Equivalent
+
+  // Write
+  stream.write(data);
+  stream << data;  // Equivalent
+
+RapidStream Configuration
+-------------------------
+
+Generate Virtual Device
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+  from rapidstream import get_u55c_vitis_device_factory
+  factory = get_u55c_vitis_device_factory("xilinx_u55c_gen3x16_xdma_3_202210_1")
+  factory.generate_virtual_device("u55c_device.json")
+
+Generate Floorplan Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+  from rapidstream import FloorplanConfig
+  config = FloorplanConfig(
+    port_pre_assignments={".*": "SLOT_X0Y0:SLOT_X0Y0"},
+  )
+  config.save_to_file("floorplan_config.json")
+
+Custom Device
+~~~~~~~~~~~~~
+
+.. code-block:: python
+
+  df = DeviceFactory(row=3, col=2, part_num="xcu55c-fsvh2892-2L-e")
+
+  # Set pblocks
+  for x in range(2):
+      for y in range(3):
+          pblock = f"-add CLOCKREGION_X{x*4}Y{y*4}:CLOCKREGION_X{x*4+3}Y{y*4+3}"
+          df.set_slot_pblock(x, y, [pblock])
+
+  # Extract resources
+  df.extract_slot_resources()
+
+  # Set capacities
+  df.set_slot_capacity(x, y, north=11520)
+
+  # Generate
+  df.factory.generate_virtual_device("custom_device.json")
+
+.. note::
+
+   Parameters to be considered for custom device generation are:
+
+   - Grid size: Affects runtime, fragmentation, effectiveness.
+   - Slot usage limit: Controls design spread vs concentration.
+   - Pre-existing usage: Reserve with ``set_slot_area``/``reduce_slot_area``.
+   - Inter-slot routing: Adjust with ``set_slot_capacity``.

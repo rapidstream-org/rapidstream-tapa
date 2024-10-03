@@ -7,7 +7,7 @@ Optimization with RapidStream
    TAPA FPGA dataflow accelerators. It assumes you have :ref:`installed TAPA
    and RapidStream <user/installation:One-Step Installation>` and have
    generated a TAPA design into an XO file. If you haven't, please refer to
-   the :ref:`Getting Started <user/getting_started:Getting Started>` guide.
+   the :ref:`Getting Started <user/getting_started:Getting Started with TAPA>` guide.
 
 We'll cover the steps of generating a virtual device, configuring the
 floorplan process, and running the partition-and-pipeline optimization to
