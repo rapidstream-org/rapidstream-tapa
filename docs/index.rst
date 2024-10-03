@@ -23,16 +23,12 @@ to or extending the TAPA framework itself.
   user/intro
   user/installation
   user/getting_started
+  user/rapidstream
 
 .. toctree::
   :maxdepth: 1
 
   user/cheatsheet
-
-.. toctree::
-  :caption: Getting Started with RapidStream
-
-  rapidstream
 
 .. toctree::
   :caption: Integration with Vitis
