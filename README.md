@@ -70,6 +70,16 @@ tapa compile \
 ./vadd --bitstream=vecadd.xo 1000
 ```
 
+### Optimize with RapidStream
+
+```bash
+rapidstream-tapaopt \
+  --work-dir ./build \
+  --tapa-xo-path vecadd.xo \
+  --device-config u55c_device.json \
+  --autobridge-config floorplan_config.json
+```
+
 For detailed instructions, see our [User Guide](https://tapa.readthedocs.io/en/main/).
 
 
