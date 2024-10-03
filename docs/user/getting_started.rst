@@ -384,6 +384,4 @@ example host program, use ``--bitstream=vecadd.xo`` to change the argument:
 
   ./vadd --bitstream=vecadd.xo 1000
 
-See the
-:ref:`TAPA RTL Simulation tutorial <tutorial/fast_cosim:TAPA RTL Simulation>`
-for more details.
+See :ref:`RTL Simulation <user/cosim:RTL Simulation>` for more details.
