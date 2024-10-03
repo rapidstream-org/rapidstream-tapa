@@ -44,6 +44,9 @@ Executing TAPA Programs
   # Hardware simulation
   ./program --bitstream=kernel.xo
 
+  # Vitis emulation
+  ./program --bitstream=kernel.hw_emu.xclbin
+
   # On-board execution
   ./program --bitstream=kernel.hw.xclbin
 
