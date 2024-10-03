@@ -1,5 +1,5 @@
-Getting Started
-===============
+Getting Started with TAPA
+=========================
 
 .. note::
 
