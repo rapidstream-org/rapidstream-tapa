@@ -36,6 +36,7 @@ to or extending the TAPA framework itself.
 .. toctree::
   :caption: Tutorials
 
+  tutorial
   tutorial/async_mmap
   tutorial/migrate_from_vitis_hls
   tutorial/debug_tips
