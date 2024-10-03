@@ -23,9 +23,10 @@ to or extending the TAPA framework itself.
   user/intro
   user/installation
   user/getting_started
-  user/rapidstream
   user/cosim
   user/vitis
+  user/data
+  user/rapidstream
 
 .. toctree::
   :maxdepth: 1
@@ -33,14 +34,9 @@ to or extending the TAPA framework itself.
   user/cheatsheet
 
 .. toctree::
-  :caption: Tutorial: Expressiveness
+  :caption: Tutorials
 
-  tutorial
   tutorial/async_mmap
-
-.. toctree::
-  :caption: Tutorial: Design Tips
-
   tutorial/migrate_from_vitis_hls
   tutorial/debug_tips
 
