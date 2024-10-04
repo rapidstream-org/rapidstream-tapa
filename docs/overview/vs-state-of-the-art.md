@@ -16,7 +16,6 @@ RapidStream Contributor License Agreement.
 ## Beyond Programmability
 
 + [Asynchronous/concurrent memory accesses](#memory-system)
-+ [Flexible detached (autorun/free-running) tasks](#detached-tasks)
 + [Resource-efficient FIFO templates](#hardware-fifo)
 + [Improved timing closure](#timing-closure) (via [AutoBridge][autobridge])
 
@@ -123,21 +122,6 @@ This is implemented by instantiating AXI interconnect where an AXI interface is 
 Note that *with great power comes great responsibility*.
 The AXI interconnect do not provide built-in locking mechanisms.
 Programmers must take care of correctness with concurrent reads and writes.
-
-# Detached Tasks
-
-Controlling tasks as OpenCL kernels can be expensive, yet often times each task instance is small and do not need runtime management.
-Intel FPGA SDK for OpenCL supports “autorun” kernels, which are started as soon as the accelerator starts and is restarted when it stops.
-However, [they cannot have any arguments other than the global communication channels](https://www.intel.com/content/www/us/en/programmable/documentation/mwh1391807965224.html#ewa1456413600674).
-Similarly, Xilinx Vitis supports [“free-running” OpenCL kernels](https://www.xilinx.com/html_docs/xilinx2020_2/vitis_doc/streamingconnections.html#ariaid-title5).
-While the state of these kernels do not have to be maintained at runtime and thus resources are saved, the degree of freedom is also greatly limited.
-`#pragma HLS dataflow` do not support “autorun” or “free-running” instances, therefore all task instances must be properly terminated.
-This can lead to unnecessary complexity to propagate termination signals.
-
-TAPA makes it possible to “detach” a task instance once instantiated.
-By default, a TAPA task is not considered finished until all its children instances finish.
-Detach task instances resembles the concept of `std::thread::detach()`, and the parent task will not wait for it to finish.
-This makes it possible to do necessary initialization before entering an infinite loop in detached tasks, thus having both resource efficiency and programming flexibility.
 
 # Hardware FIFO
 

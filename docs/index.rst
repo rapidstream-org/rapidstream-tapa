@@ -25,6 +25,7 @@ to or extending the TAPA framework itself.
   user/getting_started
   user/cosim
   user/vitis
+  user/tasks
   user/data
   user/rapidstream
 
@@ -36,7 +37,6 @@ to or extending the TAPA framework itself.
 .. toctree::
   :caption: Tutorials
 
-  tutorial
   tutorial/async_mmap
   tutorial/migrate_from_vitis_hls
   tutorial/debug_tips
