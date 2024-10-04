@@ -19,7 +19,7 @@ function main() {
   fi
 
   readonly old_commit="$(git log --format=%H -1 -- VERSION)"
-  if git diff --quiet "${old_commit}"; then
+  if git diff --quiet "${old_commit}" -- . :^docs/ :^tests/ :^README.md; then
     echo >&2 "No change since commit ${old_commit}"
     return 0
   fi
