@@ -1,4 +1,3 @@
-.. _introduction-to-async-mmap:
 Async Memory-Mapped I/O
 =======================
 

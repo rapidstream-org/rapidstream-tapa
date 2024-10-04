@@ -10,9 +10,9 @@ performance and productivity.
 .. _RapidStream: https://rapidstream-da.com
 
 This documentation is divided into two main sections:
-:ref:`User Documentation` for those using TAPA to develop FPGA
-accelerators, and :ref:`Developer Documentation` for those contributing
-to or extending the TAPA framework itself.
+:ref:`User Documentation` for those using TAPA to develop FPGA accelerators,
+:ref:`Tutorials` for hands-on examples, and :ref:`Developer Documentation` for
+those contributing to or extending the TAPA framework itself.
 
 .. _User Documentation:
 
@@ -34,17 +34,15 @@ to or extending the TAPA framework itself.
 
   user/cheatsheet
 
+.. _Tutorials:
+
 .. toctree::
   :caption: Tutorials
 
   tutorial/async_mmap
   tutorial/migrate_from_vitis_hls
   tutorial/debug_tips
-
-.. toctree::
-  :caption: Example Designs
-
-  example
+  tutorial/example
 
 .. toctree::
   :caption: More about TAPA
