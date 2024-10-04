@@ -394,7 +394,6 @@ class Task:  # noqa: PLR0904
             rst=RST,
             width=data_width + 1,
             depth=2,
-            additional_fifo_pipelining=False,
         )
 
         # add FIFO's wires
