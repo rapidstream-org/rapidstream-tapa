@@ -9,6 +9,7 @@ RapidStream Contributor License Agreement.
 import logging
 import shlex
 import subprocess
+import sys
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -58,4 +59,4 @@ def gcc(executable: str, argv: Iterable[str]) -> None:
         "-lstdc++fs",
     ]
     _logger.info("running g++ command: %s", shlex.join(args))
-    subprocess.run(args, check=False)
+    sys.exit(subprocess.run(args, check=False).returncode)
