@@ -83,11 +83,6 @@ class Instance {
     SetArg(0, std::forward<Args>(args)...);
   }
 
-  // Allocates buffer for an argument. This function is now deprecated and its
-  // original functionality is now part of `SetArg`.
-  template <typename T>
-  [[deprecated("'SetArg' is sufficient")]] void AllocBuf(int index, T arg) {}
-
   // Suspends a buffer from being transferred between host and device and
   // returns the number of transfer operations suspended.
   size_t SuspendBuf(int index);
