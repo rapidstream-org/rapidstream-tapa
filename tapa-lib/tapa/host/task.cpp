@@ -326,6 +326,15 @@ task::~task() {
 
 }  // namespace tapa
 
+// To build library that works with and without asan, we provide definitions for
+// symbols reference by boost's ucontext implementation here.
+extern "C" {
+__attribute__((weak)) void __sanitizer_start_switch_fiber(void**, const void*,
+                                                          size_t) {}
+__attribute__((weak)) void __sanitizer_finish_switch_fiber(void*, const void**,
+                                                           size_t*) {}
+}
+
 #else  // TAPA_ENABLE_COROUTINE
 
 namespace tapa {

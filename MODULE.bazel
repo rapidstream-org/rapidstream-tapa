@@ -61,6 +61,10 @@ bazel_dep(name = "rules_boost", repo_name = "com_github_nelhage_rules_boost")
 git_override(
     module_name = "rules_boost",
     commit = "40ce3bdc3d2f947aa3421b38ae4d3e8bd3ace7fc",
+    patch_cmds = [
+        # Do not exclude fiber.cpp since we enable BOOST_USE_UCONTEXT
+        "sed /fiber.cpp/d -i boost.BUILD",
+    ],
     remote = "https://github.com/nelhage/rules_boost.git",
 )
 

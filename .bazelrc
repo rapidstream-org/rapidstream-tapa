@@ -1,3 +1,6 @@
+build --copt=-DBOOST_USE_ASAN
+build --copt=-DBOOST_USE_UCONTEXT
+
 build:asan --copt -DADDRESS_SANITIZER
 build:asan --copt -O1
 build:asan --copt -fno-omit-frame-pointer
