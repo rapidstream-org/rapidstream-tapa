@@ -28,10 +28,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           .github/scripts/bump-version.sh
-          git push --force origin HEAD:ci/next
           if git diff --quiet "${GITHUB_SHA}"; then
             echo "is-updated=false" >>"${GITHUB_OUTPUT}"
           else
+            git push --force origin HEAD:ci/next
             echo "is-updated=true" >>"${GITHUB_OUTPUT}"
           fi
         env:
