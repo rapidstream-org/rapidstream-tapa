@@ -327,7 +327,8 @@ example host program, use ``--bitstream=vecadd.xo`` to change the argument:
 
   ./vadd --bitstream=vecadd.xo 1000
 
-See :ref:`RTL Simulation <user/cosim:RTL Simulation>` for more details.
+See :ref:`Simulation and RTL Cosimulation
+<user/cosim:Simulation and RTL Cosimulation>` for more details.
 
 On-Board Execution
 ------------------
