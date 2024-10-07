@@ -54,6 +54,21 @@ for deployment with the same TAPA runtime.
 .. image:: https://user-images.githubusercontent.com/32432619/167315788-4f4c7241-d7bb-454d-80d2-94a3eae505a5.png
   :width: 100 %
 
+TAPA offers several advantages over other FPGA accelerations solutions like
+Intel FPGA SDK for OpenCL and Xilinx Vitis.
+
+Unlike Intel's approach, which limits kernel instances and communication
+channels to global variables, TAPA allows for hierarchical designs and
+easier code sharing among kernels. TAPA also provides clearer visibility
+of accessed channels for each kernel and enables efficient synthesis of
+functionally identical kernels.
+
+TAPA overcomes Xilinx Vitis's limitations by supporting both fine-grained
+and coarse-grained task parallelism within a unified framework, eliminating
+the need for separate OpenCL kernels and complex linking processes. TAPA's
+stream interfaces are more consistent and generalizable across different
+granularities of parallelism.
+
 With the TAPA programming model, developers can:
 
 - **Express** complex dataflow designs in C++ with a high-level API.
@@ -62,6 +77,12 @@ With the TAPA programming model, developers can:
 - **Accelerate** development with the TAPA compiler's fast compilation time.
 - **Optimize** the design for high frequency and resource utilization using
   RapidStream.
+
+.. note::
+
+   These features collectively contribute to TAPA providing a more flexible,
+   productive, and higher-quality development experience for FPGA programming
+   compared to other solutions.
 
 RapidStream Optimization
 ------------------------

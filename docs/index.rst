@@ -45,11 +45,6 @@ those contributing to or extending the TAPA framework itself.
   tutorial/example
 
 .. toctree::
-  :caption: More about TAPA
-
-  overview/vs-state-of-the-art
-
-.. toctree::
   :caption: Reference
 
   api

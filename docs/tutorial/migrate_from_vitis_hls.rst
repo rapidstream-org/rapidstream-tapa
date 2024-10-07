@@ -79,6 +79,15 @@ early.
   For setting a different depth, use ``tapa::stream<DATA_TYPE, FIFO_DEPTH>``.
   For stream arrays, use ``tapa::streams<DATA_TYPE, ARRAY_SIZE, FIFO_DEPTH>``.
 
+.. note::
+
+  TAPA optimizes communication channel implementation compared to Vitis HLS.
+  While Vitis HLS can use shift-registers (SLR) or block RAMs (BRAM), it often
+  defaults to BRAM even when unnecessary, such as for wide but shallow FIFOs.
+  TAPA uses a higher threshold for BRAM usage, reducing overall BRAM
+  consumption, and for wide (≥36 bits) and deep (≥4096 entries) FIFOs, TAPA
+  automatically opts for URAMs instead of BRAMs, enhancing resource efficiency.
+
 Step 4: Update Task Invocations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

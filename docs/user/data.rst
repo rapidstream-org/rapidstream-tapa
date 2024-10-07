@@ -22,10 +22,14 @@ parameters to tasks to transfer data between them.
 
    tapa::stream<int> channel_1;
 
-In order to specify the direction of data flow, TAPA provides two types of
-streams: ``istream`` and ``ostream``. An ``istream`` is used to read data from
+TAPA employs distinct ``tapa::istream<T>&`` and ``tapa::ostream<T>&`` classes
+for input and output communications. An ``istream`` is used to read data from
 a stream, while an ``ostream`` is used to write data to a stream. A task
 should specify the direction of data flow for each stream parameter.
+
+This approach visually clarifies interface
+directions in the source code, and enhances IDE code completion accuracy,
+suggesting only relevant functions (e.g., ``read`` for input streams only):
 
 .. code-block:: cpp
 

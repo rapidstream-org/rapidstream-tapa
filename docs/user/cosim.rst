@@ -25,6 +25,21 @@ the :ref:`Getting Started <user/getting_started:Host Compilation>` guide:
 
    ./vadd
 
+More Accurate Behavior
+^^^^^^^^^^^^^^^^^^^^^^
+
+TAPA's coroutine-based approach offers a superior solution for simulating
+task-parallel FPGA designs compared to traditional methods. While
+``#pragma HLS dataflow`` regions in Vitis HLS simulate tasks sequentially,
+limiting accuracy for cyclic communication patterns, and thread-based
+approaches face scalability issues due to OS-managed preemptive multitasking,
+TAPA leverages coroutines to achieve both correctness and efficiency.
+
+TAPA tasks are executed in parallel in simulation, with each task running
+in a separate coroutine. This approach allows for accurate modeling of
+the hardware behavior, allowing cyclic communication patterns to be
+correctly simulated while maintaining scalability for large designs.
+
 Debugging Software Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -4,7 +4,37 @@ Hardware Implementation
 .. note::
 
    TAPA compiles tasks into ``v++`` compatible XO files, which can be used to
-   generate hardware bitstreams for Xilinx FPGAs.
+   generate hardware bitstreams for Xilinx FPGAs. The same host executable can
+   be used for software simulation, hardware simulation, and on-board
+   execution.
+
+Host-Kernel Interface
+---------------------
+
+TAPA significantly streamlines FPGA programming compared to Xilinx Vitis. While
+Vitis offer high-level OpenCL-based host-kernel interfaces, they still require
+extensive host API calls. For instance, Vitis Accel Examples'
+`"Hello World" <https://github.com/Xilinx/Vitis_Accel_Examples/blob/21bb0cf788ace593c6075accff7f7783588ae8b4/hello_world/src/host.cpp#L58-L115>`_
+program uses 57 lines of code just to invoke the accelerator. Additionally,
+different simulation and execution environments demand separate setups.
+
+In contrast, TAPA simplifies this process to a single ``tapa::invoke`` function
+call, automatically handling environmental configurations. Developers only need
+to modify the bitstream argument for different targets, greatly reducing
+complexity and enhancing productivity in FPGA development:
+
+.. code-block:: cpp
+
+   tapa::invoke(
+     vadd,                                     // Top-level kernel function.
+     bitstream,                                // Path to bitstream. If empty, run software simulation.
+     tapa::read_only_mmap<unsigned int>(in1),  // Kernel argument 0, read-only array.
+     tapa::read_only_mmap<unsigned int>(in2),  // Kernel argument 1, read-only array.
+     tapa::write_only_mmap<int>(out_r),        // Kernel argument 2, write-only array.
+     size);                                    // Kernel argument 3, scalar.
+
+This code is used for hardware execution when the second argument is the path
+to the ``.xclbin`` bitstream file compiled with ``v++``.
 
 Generate Bitstream
 ------------------
