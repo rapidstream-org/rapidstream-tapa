@@ -7,6 +7,77 @@ Tasks and Hierarchical Design
    tasks and hierarchical design. This section provides an overview of
    TAPA tasks and their advanced features.
 
+TAPA Tasks
+----------
+
+TAPA tasks are the fundamental building blocks of a TAPA design. A task is a
+C++ function that can be invoked by the TAPA runtime to perform computation
+on an FPGA. Tasks communicate with each other through streams, and the
+external memory interface is abstracted as a memory map (``mmap``).
+
+Here's an example of a TAPA task:
+
+.. code-block:: cpp
+
+  void Task(int a,
+            tapa::istream<int> &in, tapa::ostream<int> &out,
+            tapa::mmap<int> mem) {
+    // ... task logic ...
+  }
+
+.. note::
+
+   TAPA does not support template functions as tasks. To use a template
+   as a task, you must wrap it in a non-template function.
+
+TAPA tasks usually has scalar arguments, input streams, output streams, and
+memory maps.
+
+To invoke a task, use the ``task().invoke`` method:
+
+.. code-block:: cpp
+
+   tapa::task().invoke(Task, 42, in, out, mem);
+
+In this example, we invoke the ``Task`` function with the scalar argument
+``42``, input stream ``in``, output stream ``out``, and memory map ``mem``.
+
+.. note::
+
+   TAPA tasks are C++ functions that can be invoked by the TAPA runtime to
+   perform computation on an FPGA. Tasks communicate with each other through
+   streams, and the external memory interface is abstracted as a memory map.
+
+Top-Level Task
+--------------
+
+The top-level task in a TAPA design is the entry point for the FPGA
+accelerator. It orchestrates the execution of other tasks and manages the
+dataflow between them. The top-level task is responsible for instantiating
+streams, passing them to child tasks, and invoking them.
+
+For example, the top-level task ``TopLevel`` invokes the task ``Task``:
+
+.. code-block:: cpp
+
+   void TopLevel(tapa::mmap<int> mem) {
+     tapa::stream<int> in("in");
+     tapa::stream<int> out("out");
+     tapa::task().invoke(Task, 42, in, out, mem);
+   }
+
+The top-level task ``TopLevel`` should be invoked from the host program to
+start the FPGA accelerator:
+
+.. code-block:: cpp
+
+   tapa::invoke(TopLevel, bitstream_path, mem);
+
+.. note::
+
+   The top-level task in a TAPA design is the entry point for the FPGA
+   accelerator, which should be invoked from the host program.
+
 Detached Tasks
 --------------
 
