@@ -290,6 +290,12 @@ In summary, the API for EoT tokens in TAPA is as follows:
     // Process data
   }
 
+.. tip::
+
+   The downstream could reopen the stream by calling ``stream.open()`` after
+   the EoT token is detected. In this way, the stream can be reused for
+   multiple transactions.
+
 .. note::
 
    TAPA supports the ``close()`` and ``try_eot()`` APIs to close a stream and
