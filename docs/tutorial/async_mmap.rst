@@ -1,18 +1,51 @@
-Async Memory-Mapped I/O
-=======================
+Efficient Memory Accesses
+=========================
+
+.. note::
+
+   In this tutorial, we explore how to implement efficient memory accesses
+   leveraging TAPA's asynchronous memory-mapped interface.
 
 Example 1: Multi-Outstanding Random Memory Accesses
 ---------------------------------------------------
 
-This example shows how to implement efficient random memory accesses using TAPA.
-The key point is to allow multiple outstanding memory operations.
-Even though random memory access cannot be merged into bursts,
-it is still more effective to allow multiple outstanding transactions.
-In the following example,
-the ``issue_read_addr`` task will keep issuing read requests as long as the AXI
-interface is ready to accept,
-while the ``receive_read_resp`` task is only responsible for receiving and
-process the responses.
+In this example, the key to optimizing performance is allowing multiple
+outstanding memory operations. Our goal is to perform random memory read
+operations more efficiently by issuing multiple read requests without waiting
+for each response.
+
+The Problem with Traditional Approaches
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In traditional HLS designs, like those using Vitis HLS, random memory
+accesses often look like this:
+
+.. code-block:: cpp
+
+  // Inferior Vitis HLS code
+  for (int i = 0; i < n; i++) {
+    #pragma HLS pipeline II=1
+    data_t d = mem[random_addr[i]];
+    // ... process d
+  }
+
+This approach has a significant drawback: it issues one read request, then
+waits for its response before issuing another. This results in only one
+outstanding transaction at a time, severely limiting performance.
+
+TAPA Parallel Requests
+^^^^^^^^^^^^^^^^^^^^^^
+
+TAPA allows us to separate the process of issuing read requests and receiving
+responses, enabling multiple outstanding transactions. Here's how we implement
+this:
+
+Issue Read Addresses
+~~~~~~~~~~~~~~~~~~~~
+
+We create a task to continuously issue read requests. The ``issue_read_addr``
+function continually issues read requests as long as the AXI interface is
+ready to accept them.
 
 .. code-block:: cpp
 
@@ -29,6 +62,15 @@ process the responses.
     }
   }
 
+Receive Read Responses
+~~~~~~~~~~~~~~~~~~~~~~
+
+We create another task to handle incoming read responses. The
+``receive_read_resp`` function processes incoming read responses
+independently.
+
+.. code-block:: cpp
+
   void receive_read_resp(
     tapa::async_mmap<data_t>& mem,
     int n) {
@@ -42,6 +84,15 @@ process the responses.
     }
   }
 
+Top-Level Function
+~~~~~~~~~~~~~~~~~~
+
+Finally, we use TAPA's task system to invoke both functions concurrently.
+By separating these operations, we allow multiple outstanding read
+requests, significantly improving performance for random memory accesses.
+
+.. code-block:: cpp
+
   void top(tapa::mmap<data_t> mem, int n) {
 
     tapa::task()
@@ -52,51 +103,27 @@ process the responses.
       ;
   }
 
+.. note::
 
-This simple design is actually very hard or infeasible to implement in Vitis
-HLS.
-Consider the following Vitis HLS counterpart.
-The generated hardware will issue one read request,
-then **wait for its response** before issuing another read request,
-so there will be only 1 outstanding transactions.
+   This TAPA-based approach enables efficient random memory accesses by
+   allowing multiple outstanding transactions. It overcomes the limitations
+   of traditional HLS designs, providing a more flexible and performant
+   solution for handling random memory operations.
 
-.. code-block:: cpp
+Example 2: Efficient Sequential Reading
+---------------------------------------
 
-  // Inferior Vitis HLS code
-  for (int i = 0; i < n; i++) {
-    #pragma HLS pipeline II=1
-    data_t d = mem[ random_addr[i] ];
-    // ... process d
-  }
+In this example, we demonstrate how to efficiently read data sequentially
+from an ``async_mmap`` into an array using TAPA. This approach allows for
+overlapping read requests and responses, maximizing memory bandwidth
+utilization.
 
+Implementation
+^^^^^^^^^^^^^^
 
-Example 2: Sequential Read from ``async_mmap`` into an Array
-------------------------------------------------------------
-
-- Since the outbound ``read_addr`` channel and the inbound ``read_data``
-  channel are separate, we use two iterator variables ``i_req`` and ``i_resp``
-  to track the progress of each channel.
-
-- When the number of responses ``i_resp`` match the target ``count``,
-  the loop will terminate.
-
-- In each loop iteration, we send a new read request if:
-
-  - The number of read requests ``i_req`` is less than the total request
-    ``count``.
-
-  - The ``read_addr`` channel of the async_mmap ``mem`` is not full.
-
-  - We increment ``i_req`` if we successfully issue a read request.
-
-- In each loop iteration, we check if the ``read_data`` channel has data.
-
-  - If so, we get the data from the ``read_data`` channel and stores into an array.
-
-  - We increment ``i_resp`` when we receive a new read response.
-
-- Note that issuing read addresses and receiving read responses must all be
-  non-blocking so that they could function in parallel.
+We implement a function that reads data from an ``async_mmap`` into an
+array, managing both read requests and responses concurrently. Here's
+the implementation:
 
 .. code-block:: cpp
 
@@ -121,17 +148,73 @@ Example 2: Sequential Read from ``async_mmap`` into an Array
     }
   }
 
+1. **Dual Iterators**:
 
-Example 3: Sequential Write into ``async_mmap`` from a FIFO
------------------------------------------------------------
+  - ``i_req``: Tracks the number of read requests issued.
+  - ``i_resp``: Tracks the number of responses received.
 
-Compared to Example 2, this example is slightly more complicated because we are
-reading from a stream. Therefore, we need to additionally check if the
-stream/FIFO is empty before executing an operation.
+2. **Loop Condition**:
 
-Note that in this example, we don't actually need the data from the
-``write_resp`` channel. Still, we need to dump the data from ``write_resp``,
-otherwise the FIFO will become full and block further write operations.
+  - The loop continues until all responses are received (``i_resp < count``).
+
+3. **Issuing Read Requests**:
+
+  - Checks if more requests need to be sent (``i_req < count``).
+  - Ensures the read_addr channel isn't full.
+  - Calculates the address based on base_addr, current request number, and stride.
+  - Increments ``i_req`` upon successful request issuance.
+
+4. **Receiving Read Responses**:
+
+  - Checks if the read_data channel has data.
+  - Reads the data into the array at the correct position.
+  - Increments ``i_resp`` for each response received.
+
+Key Points
+^^^^^^^^^^
+
+- **Non-Blocking Operations**: Both issuing requests and receiving responses
+  are non-blocking, allowing them to operate in parallel.
+- **Pipelining**: The ``#pragma HLS pipeline II=1`` directive ensures that the
+  loop is fully pipelined, attempting to initiate a new iteration every clock
+  cycle.
+- **Flexible Addressing**: The ``stride`` parameter allows for various access
+  patterns (e.g., accessing every other element).
+
+Usage Example
+^^^^^^^^^^^^^
+
+Here's how you can use the ``async_mmap_read_to_array`` function in a TAPA
+task ``read_data``:
+
+.. code-block:: cpp
+
+  void read_data(tapa::mmap<int> mem) {
+    int array[N];
+    async_mmap_read_to_array(mem, array, 0x1000, 1000, 1);
+  }
+
+This would read 1000 integers from memory starting at address 0x1000, with
+a stride of 1 (consecutive elements).
+
+.. tip::
+
+   Despite that TAPA does not support template functions as tasks, you can
+   call a template function from a non-template task function.
+
+.. note::
+
+   This TAPA-based approach for sequential reading from ``async_mmap`` into an
+   array provides an efficient method to overlap memory requests and responses.
+   By managing read requests and responses separately, we can achieve higher
+   throughput compared to traditional sequential reading methods.
+
+Example 3: Efficient Sequential Writing
+---------------------------------------
+
+This example builds on the concepts from Example 2, focusing on writing data
+from a FIFO into an ``async_mmap``. Our goal is to efficiently write data from
+a FIFO stream into memory, managing write requests and responses concurrently:
 
 .. code-block:: cpp
 
@@ -164,17 +247,44 @@ otherwise the FIFO will become full and block further write operations.
     }
   }
 
+The function manages both write requests and responses concurrently. It
+ensures the FIFO is not empty and the write channels are not full before
+issuing a write. Write responses are read and processed, even though the
+data isn't used, to prevent blocking.
 
-Example 4: Simultaneous Read and Write to ``async_mmap``
---------------------------------------------------------
+.. note::
 
-This example reads from the external memory, increment the data by 1,
-then write to the same device in a fully pipelined fashion.
-This is also a pattern that can hardly be described when abstracting the memory
-as an array.
-A naive implementation like ``mem[i] = foo(mem[i])`` in Vitis HLS will result in
-a low-performance implementation where there will only be one outstanding
-transaction (similar to the situation in Example 1).
+   This example demonstrates how to efficiently write data from a FIFO to
+   memory using TAPA's ``async_mmap``, building on the concepts from the
+   previous example while addressing the specific requirements of write
+   operations and FIFO input.
+
+Example 4: Pipelined Read-Modify-Write Operations
+-------------------------------------------------
+
+In this example, we explore how to perform simultaneous read and write
+operations on an ``async_mmap`` using TAPA. This example showcases a common
+pattern of reading data, modifying it, and writing it back in a fully
+pipelined fashion.
+
+Our goal is to read data from external memory, increment it by 1, and write
+it back to the same device, all while maintaining a high-performance,
+pipelined implementation.
+
+The Challenge with Traditional HLS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In traditional HLS approaches, a simple implementation like
+``mem[i] = foo(mem[i])`` often results in poor performance due to the
+sequential nature of read-modify-write operations. This leads to only one
+outstanding transaction at a time, and the write operation is blocked until
+the read operation and computation are complete.
+
+TAPA Pipelined Operations
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Here's the implementation that allows for simultaneous read and write
+operations:
 
 .. code-block:: cpp
 
@@ -197,7 +307,7 @@ transaction (similar to the situation in Example 1).
       if (can_read && can_write) {
         mem.read_data.try_read(elem);
         mem.write_addr.write(write_addr);
-        mem.write_data.write(elem + 1);
+        mem.write_data.write(elem + 1);  // compute
 
         ++i_rd_resp;
         ++i_wr_req;
@@ -208,3 +318,32 @@ transaction (similar to the situation in Example 1).
       }
     }
   }
+
+1. **Request Trackers**:
+
+   - ``i_rd_req``: Tracks read requests issued.
+   - ``i_rd_resp``: Tracks read responses received.
+   - ``i_wr_req``: Tracks write requests issued.
+   - ``i_wr_resp``: Tracks write responses received.
+
+2. **Pipelined Loop**:
+
+   - Continues until all read responses and write responses are processed.
+   - The ``#pragma HLS pipeline II=1`` directive ensures full pipelining.
+
+Key Points of the Pipeline
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **Decoupled Operations**: Read requests and write operations are decoupled,
+  allowing for overlapping execution.
+- **Non-Blocking Checks**: All channel operations use non-blocking checks
+  to prevent stalls.
+
+.. note::
+
+   This TAPA-based approach for simultaneous read and write operations
+   demonstrates how to achieve high-performance, pipelined execution for
+   read-modify-write patterns. By decoupling the different stages of the
+   process and using ``async_mmap``'s non-blocking interfaces, we can
+   significantly improve throughput compared to traditional sequential
+   implementations.
