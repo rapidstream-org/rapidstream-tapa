@@ -234,12 +234,6 @@ Example:
 (``tapa::read_only_mmap``), and ``c`` as ``tapa::write_only_mmap``. Scalar
 values like ``n`` are passed directly.
 
-.. warning::
-
-  ``tapa::read_only_mmap`` and ``tapa::write_only_mmap`` only specify
-  host-kernel communication behavior, not kernel access patterns. Use
-  ``tapa::read_write_mmap`` for bidirectional access.
-
 .. note::
 
   Scalar values are always read-only to the kernel.

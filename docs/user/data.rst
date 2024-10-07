@@ -255,7 +255,7 @@ program termination by checking for the EoT token by checking on the
 .. code-block:: cpp
 
   void Stream2Mmap(tapa::istream<tapa::vec_t<float, 2>>& stream,
-                  tapa::mmap<float> mmap) {
+                   tapa::mmap<float> mmap) {
     [[tapa::pipeline(2)]] for (uint64_t i = 0;;) {
       bool eot;
       if (stream.try_eot(eot)) {
@@ -287,6 +287,115 @@ In summary, the API for EoT tokens in TAPA is as follows:
    TAPA supports the ``close()`` and ``try_eot()`` APIs to close a stream and
    check for the EoT token, respectively.
 
+Memory-Mapped (MMAP)
+--------------------
+
+Memory-mapped interfaces are used to access external memory in TAPA. They
+provide a simple and efficient way to read and write data to and from memory
+in a dataflow design. TAPA provides the ``mmap`` class template to represent
+memory-mapped interfaces.
+
+.. code-block:: cpp
+
+  void Task(tapa::mmap<const int> mem) {
+    int data = mem[0];
+  }
+
+In this example, the ``Task`` function reads an integer from the memory-mapped
+interface ``mem``. ``tapa::mmap`` can only be supplied as a parameter to tasks
+and cannot be used as a local variable, as it represents an external memory
+interface.
+
+.. warning::
+
+   The memory-mapped interface formal parameters of a task must be passed by
+   value, i.e., ``mmap<T>``. Passing by reference is not allowed.
+
+.. note::
+
+   TAPA provides the ``mmap`` class template to represent memory-mapped
+   memory interfaces, passed by value as formal parameters to tasks.
+
+Instantiation
+^^^^^^^^^^^^^
+
+Memory spaces could be allocated on the stack or heap on the host side and
+passed to the FPGA kernel as arguments. For example, to create a memory-mapped
+space of integers, you can use the following code:
+
+.. code-block:: cpp
+
+  std::vector<int> vec(16);
+
+However, if the allocated memory space is not aligned to page boundaries, an
+extra memory copy is required for host-kernel communication. To resolve this
+issue and eliminate the extra copy, you can use a specialized vector with
+aligned memory allocation:
+
+.. code-block:: cpp
+
+  std::vector<int, tapa::aligned_allocator<int>> vec(16);
+
+.. note::
+
+   TAPA maps host memory to FPGA memory using memory-mapped interfaces by
+   passing the memory space as arguments to the FPGA kernel.
+
+Argument Passing
+^^^^^^^^^^^^^^^^
+
+The top-level task can be invoked with memory-mapped interfaces as arguments.
+The direction of data flow should be specified in the task invocation:
+
+.. code:: cpp
+
+  tapa::invoke(Task, path_to_bitstream,
+               tapa::read_only_mmap<int>(vec));
+
+Similarly, write-only memory-mapped interfaces can be passed to the task as
+``tapa::write_only_mmap``, and read-write memory-mapped interfaces can be
+passed as ``tapa::read_write_mmap``.
+
+.. warning::
+
+  ``tapa::read_only_mmap`` and ``tapa::write_only_mmap`` only specify
+  host-kernel communication behavior, not kernel access patterns.
+
+For passing memory-mapped interfaces to nested tasks, use the ``invoke``
+method of the ``task`` object and pass the memory-mapped interface as
+values:
+
+.. code-block:: cpp
+
+  void NestedTask(tapa::mmap<const int> mem) {
+    // Task logic
+  }
+
+  void Task(tapa::mmap<const int> mem) {
+    tapa::task().invoke(NestedTask, mem);
+  }
+
+.. note::
+
+   TAPA requires the direction of data flow to be specified in the top-level
+   task invocation. Memory-mapped interfaces can be passed to nested tasks
+   as values.
+
+Memory Access
+^^^^^^^^^^^^^
+
+Memory-mapped interfaces can be accessed using the array subscript operator
+``[]`` as if they were arrays:
+
+.. code-block:: cpp
+
+  void Task(tapa::mmap<const int> mem) {
+    int data = mem[0];
+  }
+
+.. note::
+
+   Memory-mapped interfaces can be accessed as if they were arrays.
 
 Stream and MMAP Arrays
 ----------------------
