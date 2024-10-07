@@ -13,6 +13,7 @@ sh_test(
     srcs = ["//bazel:v++_env.sh"],
     args = ["$(location jacobi-host)"],
     data = [":jacobi-host"],
+    env = {"TAPA_CONCURRENCY": "1"},
 )
 
 sh_test(
@@ -29,6 +30,9 @@ sh_test(
         ":jacobi-xo",
         "//tapa/cosim:tapa-fast-cosim",
     ],
+    tags = [
+        "cpu:2",
+    ],
 )
 
 sh_test(
@@ -42,6 +46,9 @@ sh_test(
     data = [
         ":jacobi-host",
         ":jacobi-hw-emu-xclbin",
+    ],
+    tags = [
+        "cpu:2",
     ],
 )
 

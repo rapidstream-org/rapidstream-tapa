@@ -13,6 +13,7 @@ sh_test(
     srcs = ["//bazel:v++_env.sh"],
     args = ["$(location bandwidth-host)"],
     data = [":bandwidth-host"],
+    env = {"TAPA_CONCURRENCY": "1"},
 )
 
 sh_test(
@@ -30,6 +31,9 @@ sh_test(
         ":bandwidth-xo",
         "//tapa/cosim:tapa-fast-cosim",
     ],
+    tags = [
+        "cpu:2",
+    ],
 )
 
 sh_test(
@@ -44,6 +48,9 @@ sh_test(
     data = [
         ":bandwidth-host",
         ":bandwidth-hw-emu-xclbin",
+    ],
+    tags = [
+        "cpu:2",
     ],
 )
 

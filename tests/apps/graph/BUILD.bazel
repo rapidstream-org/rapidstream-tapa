@@ -19,6 +19,7 @@ sh_test(
         "graph.txt",
         ":graph-host",
     ],
+    env = {"TAPA_CONCURRENCY": "1"},
 )
 
 sh_test(
@@ -34,6 +35,7 @@ sh_test(
         ":graph-host",
         ":process_facebook_txt",
     ],
+    env = {"TAPA_CONCURRENCY": "1"},
 )
 
 sh_test(
@@ -52,6 +54,9 @@ sh_test(
         ":graph-xo",
         "//tapa/cosim:tapa-fast-cosim",
     ],
+    tags = [
+        "cpu:2",
+    ],
 )
 
 sh_test(
@@ -67,6 +72,9 @@ sh_test(
         "graph.txt",
         ":graph-host",
         ":graph-hw-emu-xclbin",
+    ],
+    tags = [
+        "cpu:2",
     ],
 )
 

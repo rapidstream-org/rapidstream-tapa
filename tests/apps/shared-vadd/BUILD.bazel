@@ -13,6 +13,7 @@ sh_test(
     srcs = ["//bazel:v++_env.sh"],
     args = ["$(location shared-vadd-host)"],
     data = [":shared-vadd-host"],
+    env = {"TAPA_CONCURRENCY": "1"},
 )
 
 sh_test(
@@ -30,6 +31,9 @@ sh_test(
         ":shared-vadd-xo",
         "//tapa/cosim:tapa-fast-cosim",
     ],
+    tags = [
+        "cpu:2",
+    ],
 )
 
 sh_test(
@@ -44,6 +48,9 @@ sh_test(
     data = [
         ":shared-vadd-host",
         ":shared-vadd-hw-emu-xclbin",
+    ],
+    tags = [
+        "cpu:2",
     ],
 )
 
