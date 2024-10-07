@@ -200,6 +200,12 @@ TAPA repository.
    compiled into an FPGA bitstream or simulation target, while the host code
    is compiled into a host executable.
 
+.. tip::
+
+   Only one kernel code file can be compiled with TAPA. To split the kernel
+   into multiple files, use C++ headers and include them in the main kernel
+   file.
+
 Task Invocation
 ~~~~~~~~~~~~~~~
 
@@ -385,3 +391,28 @@ example host program, use ``--bitstream=vecadd.xo`` to change the argument:
   ./vadd --bitstream=vecadd.xo 1000
 
 See :ref:`RTL Simulation <user/cosim:RTL Simulation>` for more details.
+
+On-Board Execution
+------------------
+
+To generate the Xilinx hardware binary (xclbin) for on-board execution:
+
+.. code-block:: bash
+
+  v++ -o vadd.xilinx_u250_gen3x16_xdma_4_1_202210_1.hw.xclbin \
+    --link \
+    --target hw \
+    --kernel VecAdd \
+    --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
+    vecadd.xo
+
+Hardware binary generation may take several hours. The binary is generated for
+the specified platform as ``vadd.xilinx_u250_gen3x16_xdma_4_1_202210_1.hw.xclbin``.
+
+To execute the hardware accelerator on an FPGA:
+
+.. code-block:: bash
+
+  ./vadd --bitstream=vadd.xilinx_u250_gen3x16_xdma_4_1_202210_1.hw.xclbin
+
+See :ref:`Hardware Implementation <user/vitis:Hardware Implementation>` for more details.
