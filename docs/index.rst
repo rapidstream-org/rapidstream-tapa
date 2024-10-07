@@ -38,6 +38,7 @@ those contributing to or extending the TAPA framework itself.
 
 .. toctree::
   :caption: Tutorials
+  :maxdepth: 2
 
   tutorial/async_mmap
   tutorial/migrate_from_vitis_hls
@@ -46,6 +47,7 @@ those contributing to or extending the TAPA framework itself.
 
 .. toctree::
   :caption: Reference
+  :maxdepth: 4
 
   api
   overview/output_file_organization.rst
