@@ -1,19 +1,115 @@
-RTL Simulation
-==============
+Simulation and RTL Cosimulation
+===============================
 
 .. note::
 
-  TAPA offers two approaches for RTL simulation: a fast lightweight simulation
-  and the full Vitis cosimulation. This section covers both methods and
-  provides guidance on when to use each.
+  **Software simulation** allows for quick iterations and debugging of basic
+  functionality. **Hardware cosimulation** provides more accurate simulations
+  that closely model real hardware behavior. TAPA uses the same host program
+  for both simulation methods, and further offers two approaches for RTL
+  cosimulation: a fast lightweight simulation and the full Vitis cosimulation.
 
-Fast Lightweight Simulation
----------------------------
+Software Simulation
+-------------------
 
-TAPA-generated xo can be used for cosim with Vitis, but this process is slow
-due to complex simulation models for external IPs. Even for a basic vector-add
-application, setup takes over 10 minutes, while actual simulation only takes
-seconds.
+When compiling a TAPA application using ``tapa g++``, the generated executable
+contains a software simulation of the accelerator. This simulation is useful
+for debugging and verifying the correctness of the accelerator's logic, as
+it can be run on a standard CPU and even debugged with a debugger like GDB.
+
+To run the software simulation, simply execute the generated executable with
+an empty bitstream argument. For instance, to run the vector-add example in
+the :ref:`Getting Started <user/getting_started:Host Compilation>` guide:
+
+.. code-block:: bash
+
+   ./vadd
+
+Debugging Software Simulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To debug the software simulation with GDB, run the following command:
+
+.. code-block:: bash
+
+   gdb ./vadd
+
+And set breakpoints on TAPA task functions as needed:
+
+.. code-block:: gdb
+
+   (gdb) b VecAdd
+
+Dump Stream Contents
+^^^^^^^^^^^^^^^^^^^^
+
+Using TAPA software simulation, you may save stream contents to a file by
+setting the ``TAPA_STREAM_LOG_DIR`` environment variable:
+
+.. code-block:: bash
+
+  export TAPA_STREAM_LOG_DIR=/path/to/log/dir
+
+Whenever a data is written into a ``tapa::stream``, TAPA will save the data
+into a file under the specified directory in the following rule:
+
+- Primitive types are logged in text format, for example:
+
+.. code-block:: cpp
+
+  tapa::stream<int> data_q("data");
+  data_q.write(42);
+  data_q.read();
+
+  // expect to see "42\n" in the log file
+
+- If a non-primitive type does not overload `operator<<`, values are logged
+  in hex format, for example:
+
+.. code-block:: cpp
+
+  struct Foo {
+    int foo;
+  };
+
+  tapa::stream<Foo> data_q("data");
+  data_q.write(Foo{0x4222});
+  data_q.read();
+
+  // expect to see "0x22420000\n" in log, which is little-endian
+
+- If the value type overloads `operator<<`, values are logged in text format,
+  for example:
+
+.. code-block:: cpp
+
+  struct Bar {
+    int bar;
+  };
+
+  std::ostream& operator<<(std::ostream& os, const Bar& bar) {
+    return os << bar.bar;
+  }
+
+  tapa::stream<Bar> data_q("data");
+  data_q.write(Bar{42});
+  data_q.read();
+
+  // expect to see "42\n" in the log file
+
+.. note::
+
+   TAPA software simulation can be executed when the bitstream argument is
+   unspecified. It allows standard debugging tools like GDB and dumping stream
+   contents for analysis.
+
+Fast Hardware Simulation
+------------------------
+
+TAPA-generated xo can be used for cosimimulation with Vitis, but this process
+is slow due to complex simulation models for external IPs. Even for a basic
+vector-add application, setup takes over ten minutes, while actual simulation
+only takes seconds.
 
 TAPA's lightweight simulation methodology addresses the long setup time of
 Vitis cosimulation by using simplified simulation models. This approach allows
@@ -175,12 +271,20 @@ The output will be similar to the following:
         // ...
         tapa::invoke(/*...*/, FLAGS_bitstream, /*...*/);
 
+.. note::
+
+   You should refer to the Vitis documentation for more information on the
+   ``v++`` command and how to use the generated xclbin file.
+
 Choosing the Right Approach
 ---------------------------
 
-- Use TAPA's fast simulation for quick iterations and basic functional
-  debugging.
-- Use Vitis cosimulation for more realistic simulations, especially when
+- Use TAPA's **software simulation** for debugging and verifying basic
+  functionality on a standard CPU. It allows standard debugging tools like GDB
+  and dumping stream contents for analysis.
+- Use TAPA's **fast hardware simulation** for quick iterations and basic
+  hardware functional debugging using simplified simulation models.
+- Use **Vitis cosimulation** for more realistic simulations, especially when
   accurate timing or bandwidth information is needed.
-- Both approaches use the same host program, allowing easy switching between
-  simulation methods and on-board execution.
+- All simulation approaches use the same host program, allowing easy switching
+  between simulation methods and on-board execution.
