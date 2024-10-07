@@ -9,7 +9,7 @@ performance and productivity.
 
 .. _RapidStream: https://rapidstream-da.com
 
-This documentation is divided into two main sections:
+This documentation is divided into three main sections:
 :ref:`User Documentation` for those using TAPA to develop FPGA accelerators,
 :ref:`Tutorials` for hands-on examples, and :ref:`Developer Documentation` for
 those contributing to or extending the TAPA framework itself.
@@ -54,7 +54,6 @@ those contributing to or extending the TAPA framework itself.
 
   api
   overview/output_file_organization.rst
-  overview/known-issues
 
 .. _Developer Documentation:
 

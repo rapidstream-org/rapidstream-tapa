@@ -103,8 +103,8 @@ hls_compat::task
 ^^^^^^^^^^^^^^^^
 .. doxygenstruct:: tapa::hls_compat::task
 
-The TAPA Compiler (tapac)
--------------------------
+The TAPA Compiler (tapa)
+------------------------
 
 .. click:: tapa.__main__:entry_point
   :prog: tapa
