@@ -1,19 +1,25 @@
 Migrate from Vitis HLS
-::::::::::::::::::::::
+======================
 
-Example 1
-=========
+.. note::
 
-This tutorial shows how to convert the `vector-add`_ example from Vitis HLS to
-TAPA.
+  This tutorial assumes that you are familiar with Vitis HLS and have some
+  experience with TAPA. We introduce the TAPA coding style and show how to
+  migrate from Vitis HLS to TAPA.
 
-.. _vector-add: https://github.com/Xilinx/Vitis_Accel_Examples/blob/6e994917db398446a11d0403b9088bcc251dd2da/hello_world/src/vadd.cpp
+Example 1: Basics with VecAdd
+-----------------------------
 
-Update the Includes
--------------------
+In this tutorial, we'll walk through the process of converting a `vector
+addition example`_ from Vitis HLS to TAPA. We'll cover the key changes needed
+to make your code TAPA-compatible.
 
-- Replace ``hls_stream.h`` by ``tapa.h``.
-- No changes to other HLS headers such as ``ap_int.h``, etc.
+.. _vector addition example: https://github.com/Xilinx/Vitis_Accel_Examples/blob/6e994917db398446a11d0403b9088bcc251dd2da/hello_world/src/vadd.cpp
+
+Step 1: Update the Includes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+First, we need to replace the HLS-specific header with TAPA's header.
 
 .. code-block:: diff
 
@@ -22,13 +28,13 @@ Update the Includes
   +#include <tapa.h>
    #include "assert.h"
 
-Update the Top Function
------------------------
+Other HLS headers like ``ap_int.h`` and ``hls_vector.h`` are still supported.
+They can be included as usual.
 
-- Update the top function header.
-- Replace the pointer parameters by ``tapa::mmap<T>``.
-  Note that ``tapa::mmap<T>`` is passed by value.
-- We no longer need to write ``#pragma HLS interface``.
+Step 2: Update the Top Function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Next, we'll modify the top function to use TAPA's memory-mapped interface.
 
 .. code-block:: diff
 
@@ -45,16 +51,14 @@ Update the Top Function
   -  #pragma HLS INTERFACE m_axi port = in2 bundle = gmem1
   -  #pragma HLS INTERFACE m_axi port = out bundle = gmem0
 
-- Update the stream definitions.
-- Replace ``hls::stream<DATA_TYPE>`` by ``tapa::stream<DATA_TYPE>``.
-  This creates a stream with the default depth of 2,
-  `as in Vitis HLS <https://xilinx.github.io/Vitis-Tutorials/2021-2/build/html/docs/Hardware_Acceleration/Feature_Tutorials/03-dataflow_debug_and_optimization/fifo_sizing_and_deadlocks.html#deadlock-detection-and-analysis>`_.
-  A different depth can be specified with
-  ``tapa::stream<DATA_TYPE, FIFO_DEPTH>``.
-- If there are stream arrays,
-  we should use ``tapa::streams<DATA_TYPE, ARRAY_SIZE, FIFO_DEPTH>``.
-  Refer to :ref:`Example 2 <tutorial/migrate_from_vitis_hls:example 2>`
-  for details.
+In this step, we replace pointer parameters with ``tapa::mmap<T>``, which is
+passed by value. We also remove HLS interface pragmas as they're no longer
+needed.
+
+Step 3: Update Stream Definitions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Now, let's update the stream definitions to use TAPA's stream type.
 
 .. code-block:: diff
 
@@ -65,15 +69,20 @@ Update the Top Function
   +  tapa::stream<hls::vector<uint32_t, NUM_WORDS>> in2_stream("input_stream_2");
   +  tapa::stream<hls::vector<uint32_t, NUM_WORDS>> out_stream("output_stream");
 
-- Update the task invocations.
-- No need for ``#pragma HLS dataflow``.
-- Use the ``tapa::task().invoke()`` API.
+In this step, we replace ``hls::stream`` with ``tapa::stream``. The default
+depth for TAPA streams is 2, matching Vitis HLS behavior. However, TAPA's
+software simulation enforces the depth, allowing you to catch potential issues
+early.
 
-  - The first argument is the task function;
-    the remaining arguments are passed to the task.
+.. note::
 
-- Use a chain of ``.invoke()`` to call all tasks.
-  Note that we only append ``;`` to the very end.
+  For setting a different depth, use ``tapa::stream<DATA_TYPE, FIFO_DEPTH>``.
+  For stream arrays, use ``tapa::streams<DATA_TYPE, ARRAY_SIZE, FIFO_DEPTH>``.
+
+Step 4: Update Task Invocations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Finally, we'll update how tasks are invoked using TAPA's task API.
 
 .. code-block:: diff
 
@@ -83,24 +92,21 @@ Update the Top Function
   -  compute_add(in1_stream, in2_stream, out_stream, size);
   -  store_result(out, out_stream, size);
   +  tapa::task()
-  +  .invoke(load_input, in1, in1_stream, size)
-  +  .invoke(load_input, in2, in2_stream, size)
-  +  .invoke(compute_add, in1_stream, in2_stream, out_stream, size)
-  +  .invoke(store_result, out, out_stream, size)
+  +    .invoke(load_input, in1, in1_stream, size)
+  +    .invoke(load_input, in2, in2_stream, size)
+  +    .invoke(compute_add, in1_stream, in2_stream, out_stream, size)
+  +    .invoke(store_result, out, out_stream, size)
   +  ;
 
-Update Task Definitions
------------------------
+In this step, we remove the ``#pragma HLS dataflow`` directive as TAPA always
+generates dataflow designs. We replace the function calls with ``tapa::task()``
+and ``.invoke()``, chaining the invocations together and adding a semicolon only
+the end.
 
-- Update stream arguments.
-- Replace ``hls::stream<DATA_TYPE>`` by ``tapa::istream<DATA_TYPE>`` or
-  ``tapa::ostream<DATA_TYPE>``.
+Step 5: Update Task Definitions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  - Note that we distinguish whether a stream argument is an *input* stream or
-    an *output* stream.
-  - No need to specify the stream depth here.
-
-- Don't forget to pass streams by reference (with ``&``).
+Lastly, update the task function signatures to use TAPA's stream types.
 
 .. code-block:: diff
 
@@ -114,13 +120,16 @@ Update Task Definitions
        int size
    ) {
 
-- Update external memory arguments.
-- Replace pointers by ``tapa::mmap<DATA_TYPE>``.
-  Note that ``tapa::mmap<DATA_TYPE>`` is passed by value (without ``*`` or
-  ``&``).
-- The code reads from to ``out_stream``, so it is actually a ``tapa::istream``;
-  likewise, ``in_stream`` is actually a ``tapa::ostream``.
-  Don't be confused by the stream names.
+Compared to Vitis HLS, TAPA requires stream arguments to be directional. We use
+``tapa::istream`` for input streams and ``tapa::ostream`` for output streams,
+in place of ``hls::stream``.
+
+.. note::
+
+   There is no need to specify the stream depth here, and the streams are
+   passed by reference.
+
+Similarly, replace pointers to external memory with ``tapa::mmap<DATA_TYPE>``:
 
 .. code-block:: diff
 
@@ -144,45 +153,51 @@ Update Task Definitions
      // ...
    }
 
-- Update the stream APIs if necessary.
-- Most APIs of ``tapa::stream`` are compatible with ``hls::stream``.
+.. note::
 
-Final Look of Example 1
------------------------
+   The ``tapa::mmap<DATA_TYPE>`` is passed by value, without ``*`` or ``&``.
+
+.. note::
+
+   The code reads from to ``out_stream``, so it is actually a
+   ``tapa::istream``; likewise, ``in_stream`` is actually a ``tapa::ostream``.
+   Don't be confused by the stream names.
+
+Final Code for Example 1
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: migrate_from_vitis_hls/code/example_1_after.cpp
   :language: cpp
 
-Example 2
-=========
+.. note::
 
-This tutorial covers more corner cases not mentioned in
-:ref:`Example 1 <tutorial/migrate_from_vitis_hls:example 1>`.
+   By updating the includes, top function, stream definitions, task invocations,
+   and task definitions, we've successfully migrated the vector addition example
+   from Vitis HLS to TAPA.
 
-Dataflow in a Loop
-------------------
+Example 2: Complex Scenarios
+----------------------------
 
-- Currently TAPA does not support the "dataflow-in-a-loop" coding style. One
-  big idea in TAPA is that we want a strict decoupling of the communication
-  structures from the computing units. The compiler will enforce that the top
-  function should only include:
+In this tutorial, we'll explore more advanced migration scenarios, focusing on
+dataflow in loops and computation in the top function, which are not covered
+in :ref:`Example 1 <tutorial/migrate_from_vitis_hls:example 1: Basics with VecAdd>`
+and require additional attention.
 
-  - Stream definitions
-  - Task invocations
+Scenario 1: Dataflow in a Loop
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- If your original Vitis HLS code uses the dataflow-in-a-loop style,
-  you may push the loop into the tasks.
+TAPA enforces a strict separation between communication structures and
+computing units. This means that the "dataflow-in-a-loop" coding style in
+Vitis HLS is not directly supported in TAPA.
 
-- In the following Vitis HLS example, the dataflow region is defined within a
-  loop to be executed for multiple iterations. However, this is not allowed in
-  TAPA, because the loop will become additional logic that may mess up with the
-  computing logic and thus hinder the timing closure. A common approach is to
-  push the loop into the parallel tasks ---- write a copy of the loop in each
-  task inside the dataflow region.
+.. warning::
 
-- While this restriction may seem bothering, it ensures a good timing quality
-  of the generated hardware. Automated transformation is possible, but that
-  remains a future enhancement.
+   The compiler will enforce that a task that instantiates other tasks should
+   only include stream definitions and task invocations.
+
+In the following example, the dataflow region is defined within a loop to be
+executed for multiple iterations in Vitis HLS. However, this is not allowed in
+TAPA, as it will hinder quality of results by introducing additional logic.
 
 .. code-block:: cpp
 
@@ -200,16 +215,18 @@ Dataflow in a Loop
     foo(); bar();
   }
 
+For the code to be compatible with TAPA, we push the loop into the tasks:
+
 .. code-block:: cpp
 
   // after
 
   // for (int i = 0; i < size; i++) {
   tapa::task()
-  .invoke(load_input, in1, in1_stream, size)
-  .invoke(load_input, in2, in2_stream, size)
-  .invoke(compute_add, in1_stream, in2_stream, out_stream, size)
-  .invoke(store_result, out, out_stream, size)
+    .invoke(load_input, in1, in1_stream, size)
+    .invoke(load_input, in2, in2_stream, size)
+    .invoke(compute_add, in1_stream, in2_stream, out_stream, size)
+    .invoke(store_result, out, out_stream, size)
   ;
   // }
 
@@ -221,15 +238,20 @@ Dataflow in a Loop
     }
   }
 
-Computation in the Top Function
--------------------------------
+We remove the outer loop from the top function and move the loop into each
+task function. While this restriction may seem bothering, it ensures a good
+timing quality of the generated hardware.
 
-- TAPA does not support computation in the top function because we want to
-  strictly decouple communication and computation.
-- If your original Vitis HLS code blends computation into the dataflow region,
-  you could push them into specific tasks.
-- In this example, ``size /= NUM_WORDS;`` is actually invalid for TAPA,
-  although it may seem trivial.
+Scenario 2: Computation in the Top Function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+TAPA aims to strictly separate communication and computation for performance
+and quality of results. Therefore, computation should not be performed in the
+top function.
+
+In the following example, the top function performs computation in a dataflow
+region. This is not allowed in TAPA, and the computation should be pushed into
+child tasks:
 
 .. code-block:: cpp
 
@@ -242,14 +264,18 @@ Computation in the Top Function
   compute_add(in1_stream, in2_stream, out_stream, size);
   store_result(out, out_stream, size);
 
+While ``size /= NUM_WORDS`` seems trivial, it is not allowed in TAPA, as it
+in fact introduces computation in the top function. We need to move the
+computation into the child tasks:
+
 .. code-block:: cpp
 
   // after
   tapa::task()
-  .invoke(load_input, in1, in1_stream, size)
-  .invoke(load_input, in2, in2_stream, size)
-  .invoke(compute_add, in1_stream, in2_stream, out_stream, size)
-  .invoke(store_result, out, out_stream, size)
+    .invoke(load_input, in1, in1_stream, size)
+    .invoke(load_input, in2, in2_stream, size)
+    .invoke(compute_add, in1_stream, in2_stream, out_stream, size)
+    .invoke(store_result, out, out_stream, size)
   ;
 
   void load_input(
@@ -264,24 +290,42 @@ Computation in the Top Function
     }
   }
 
+TAPA requires the top function focused on task invocation and communication
+structure setup.
 
-Final Look of Example 2
------------------------
+Final Code for Example 2
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: migrate_from_vitis_hls/code/example_2_after.cpp
   :language: cpp
 
-HLS-Compat Helpers
-==================
+.. note::
 
-Migrating from existing HLS code can take a long time with a lot of effort.
-To make such migration easier and more tractable, TAPA provides a HLS-compat
-library so that programmers can verify the correctness of their code using
-software simulation during migration, with TAPA coding style but HLS-compatible
-behavior.
+   TAPA requires a strict separation between communication structures and
+   computing units. By pushing the loop and the computation into child tasks,
+   TAPA ensures a good timing quality of the generated hardware.
 
-HLS-Compat Header
------------------
+Example 3: HLS-Compat Helpers
+-----------------------------
+
+HLS-Compat Helpers are designed to bridge the gap between Vitis HLS and TAPA,
+allowing for incremental migration and verification. These helpers provide
+HLS-compatible behavior while using TAPA coding style.
+
+.. warning::
+
+   This helper is only intended for software simulation and **is not
+   synthesizable**. It is designed as the migration from existing HLS code
+   to TAPA can take some efforts. The HLS-Compat helpers provide a way to
+   incrementally migrate and verify the correctness of the code using software
+   simulation.
+
+We start from the HLS code of
+`Example 1 <tutorial/migrate_from_vitis_hls:example 1: Basics with VecAdd>`
+to demonstrate the usage of HLS-Compat helpers.
+
+Step 1: Include the Compat Header
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To use the HLS-compat helpers, in addition to ``tapa.h``, also include
 ``tapa/host/compat.h``.
@@ -291,16 +335,22 @@ To use the HLS-compat helpers, in addition to ``tapa.h``, also include
    #include <hls_vector.h>
   -#include <hls_stream.h>
   +#include <tapa.h>
-  +#include <tapa/host/compat.h>
+  +#include <tapa/host/compat.h
    #include "assert.h"
 
-Infinite-Depth Stream
----------------------
+Step 2: Use Infinite-Depth Streams
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``hls::stream`` has infinite depth in software simulation; ``tapa::stream``,
-however, honors the same depth used for synthesis.
-``tapa::hls_compat::stream`` is the HLS-compat equivalent of ``tapa::stream``
-that has infinite depth in software simulation.
+In Vitis HLS's software simulation, ``hls::stream`` has infinite depth. While
+it helps to simplify the development, it does not match the hardware behavior.
+TAPA takes a different approach by enforcing a fixed depth for streams in the
+simulation as the hardware does. This is usually desired as it helps to catch
+potential issues early.
+
+However, during development, it can be useful to have infinite-depth streams
+for migration and verification.
+The HLS-Compat helpers provide ``tapa::hls_compat::stream`` which behaves like
+``hls::stream`` in software simulation.
 
 .. code-block:: diff
 
@@ -311,15 +361,14 @@ that has infinite depth in software simulation.
   +  tapa::hls_compat::stream<hls::vector<uint32_t, NUM_WORDS>> in2_stream("input_stream_2");
   +  tapa::hls_compat::stream<hls::vector<uint32_t, NUM_WORDS>> out_stream("output_stream");
 
-I/O Direction-Agnostic Stream Interface
----------------------------------------
+Step 3: Use Direction-Agnostic Stream
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 HLS uses ``hls::stream&`` for both stream input and output; TAPA, however,
-requires ``tapa::istream&`` for input streams and ``tapa::ostream&`` for output
-streams.
-``tapa::hls_compat::stream_interface&`` is the HLS-compat equivalent of
-``tapa::istream&`` and ``tapa::ostream&`` that exposes APIs from both in
-software simulation.
+requires ``tapa::istream&`` for input streams and ``tapa::ostream&`` for
+output streams. ``tapa::hls_compat::stream_interface&`` is the HLS-compat
+equivalent of ``tapa::istream&`` and ``tapa::ostream&`` that exposes APIs
+from both in software simulation.
 
 .. code-block:: diff
 
@@ -333,11 +382,12 @@ software simulation.
        int size
    ) {
 
-Sequentially Scheduled Task
----------------------------
+Step 4: Sequentially Scheduling Tasks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 HLS schedules dataflow tasks sequentially for software simulation.
-TAPA's ``tapa::task()``, however, schedules them in parallel by default.
+TAPA's ``tapa::task()``, however, schedules them in parallel by default
+to accelerate simulation and mimic the hardware behavior.
 ``tapa::hls_compat::task()`` is the HLS-compat equivalent of ``tapa::task()``
 that schedules tasks sequentially in the order of invocations.
 
@@ -354,8 +404,15 @@ that schedules tasks sequentially in the order of invocations.
   +  .invoke(store_result, out, out_stream, size)
   +  ;
 
+.. warning::
+
+   Remember that this helper is only for software simulation and is not
+   synthesizable. If sequential scheduling is desired in hardware, use
+   ``tapa::task()`` and pass a token between tasks to signal the completion,
+   and enforce the order of execution.
+
 HLS-Compat Version of Example 1
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: migrate_from_vitis_hls/code/example_1_hls_compat.cpp
   :language: cpp
