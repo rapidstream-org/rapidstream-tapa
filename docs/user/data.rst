@@ -53,8 +53,8 @@ can use the ``invoke`` method of the ``task`` object:
     // ... other tasks
   }
 
-Instantiation
-^^^^^^^^^^^^^
+Stream Instantiation
+^^^^^^^^^^^^^^^^^^^^
 
 Streams are instantiated using the ``stream`` class template. The template
 parameter specifies the data type of the stream. For example, to create a
@@ -87,8 +87,8 @@ realistic and helps avoid deadlocks in the hardware implementation.
    TAPA uses the ``stream`` class template to instantiate streams. The depth
    of the FIFO queue can be specified as an additional template parameter.
 
-Read and Write
-^^^^^^^^^^^^^^
+Stream Read and Write
+^^^^^^^^^^^^^^^^^^^^^
 
 Streams provide two primary operations: read and write. The ``read`` operation
 reads a token from the stream in a blocking manner, while the ``write``
@@ -130,8 +130,8 @@ write operations:
    streams. TAPA provides non-blocking read and write operations through the
    ``try_read`` and ``try_write`` methods.
 
-Readiness Check
-^^^^^^^^^^^^^^^
+Stream Readiness Check
+^^^^^^^^^^^^^^^^^^^^^^
 
 TAPA provides an API to check if a stream has data available for reading. This
 is useful when you need to make decisions based on the availability of data
@@ -164,8 +164,8 @@ full and cannot accept more data:
    for reading, and the ``full()`` method to check if a stream is full and
    cannot accept more data.
 
-Data Peeking
-^^^^^^^^^^^^
+Stream Data Peeking
+^^^^^^^^^^^^^^^^^^^
 
 TAPA provides non-destructive read (peek) functionality for streams, allowing
 you to read a token without removing it. This is useful when computations
@@ -316,8 +316,8 @@ interface.
    TAPA provides the ``mmap`` class template to represent memory-mapped
    memory interfaces, passed by value as formal parameters to tasks.
 
-Instantiation
-^^^^^^^^^^^^^
+MMAP Instantiation
+^^^^^^^^^^^^^^^^^^
 
 Memory spaces could be allocated on the stack or heap on the host side and
 passed to the FPGA kernel as arguments. For example, to create a memory-mapped
@@ -341,8 +341,8 @@ aligned memory allocation:
    TAPA maps host memory to FPGA memory using memory-mapped interfaces by
    passing the memory space as arguments to the FPGA kernel.
 
-Argument Passing
-^^^^^^^^^^^^^^^^
+MMAP Argument Passing
+^^^^^^^^^^^^^^^^^^^^^
 
 The top-level task can be invoked with memory-mapped interfaces as arguments.
 The direction of data flow should be specified in the task invocation:
