@@ -9,8 +9,8 @@ Dataflow Movements
 This section covers various aspects of data movement in TAPA, including stream
 operations, memory-mapped interfaces, and asynchronous memory access.
 
-Stream
-------
+Dataflow Channels (Stream)
+--------------------------
 
 Streams are the primary data movement mechanism in TAPA. They are used to
 transfer data between tasks and modules in a dataflow design. TAPA provides
