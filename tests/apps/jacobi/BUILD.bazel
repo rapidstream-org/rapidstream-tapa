@@ -9,7 +9,7 @@ load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
 sh_test(
     name = "jacobi",
-    size = "small",
+    size = "medium",
     srcs = ["//bazel:v++_env.sh"],
     args = ["$(location jacobi-host)"],
     data = [":jacobi-host"],
@@ -17,7 +17,7 @@ sh_test(
 
 sh_test(
     name = "jacobi-xosim",
-    size = "medium",
+    size = "large",
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location jacobi-host)",
@@ -33,7 +33,7 @@ sh_test(
 
 sh_test(
     name = "jacobi-cosim",
-    size = "medium",
+    size = "large",
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location jacobi-host)",

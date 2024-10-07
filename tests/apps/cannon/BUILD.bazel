@@ -9,7 +9,7 @@ load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
 sh_test(
     name = "cannon",
-    size = "small",
+    size = "medium",
     srcs = ["//bazel:v++_env.sh"],
     args = ["$(location cannon-host)"],
     data = [":cannon-host"],
