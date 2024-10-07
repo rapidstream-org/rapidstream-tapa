@@ -36,7 +36,7 @@ To debug the software simulation with GDB, run the following command:
 
 And set breakpoints on TAPA task functions as needed:
 
-.. code-block:: gdb
+.. code-block::
 
    (gdb) b VecAdd
 
