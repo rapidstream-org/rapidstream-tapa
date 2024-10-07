@@ -1,5 +1,5 @@
-Advanced Data Movements
-=======================
+Dataflow Movements
+==================
 
 .. note::
 
@@ -9,75 +9,163 @@ Advanced Data Movements
 This section covers various aspects of data movement in TAPA, including stream
 operations, memory-mapped interfaces, and asynchronous memory access.
 
-Stream and MMAP Arrays
-----------------------
+Stream
+------
 
-TAPA supports arrays of streams (``istreams``/``ostreams``) and memory-mapped
-interfaces (``mmaps``) to facilitate parameterized designs and reduce code
-repetition (:ref:`api:streams`/:ref:`api:mmaps`). This feature is particularly
-useful for creating flexible, scalable designs.
-
-.. tip::
-
-   A singleton ``stream`` or ``mmap`` is insufficient for parameterized
-   designs. For example, the
-   `network app <https://github.com/rapidstream-org/rapidstream-tapa/blob/main/tests/apps/network/network.cpp>`_
-   shipped with TAPA defines an 8×8 switch network. What if we want to use a
-   16×16 network? Or 4×4? TAPA allows parameterization of network size
-   through arrays of ``stream``/``mmap`` and batch invocation.
-
-With TAPA, you can define arrays of streams and memory-mapped interfaces and
-invoking multiple tasks in parallel using ``invoke<..., n>``, where ``n``
-is the number of invocations:
-
-1. For each task instantiation, the ``streams`` or ``mmaps`` array arguments
-   are accessed in sequence from the array, distributing the elements across
-   multiple invocations.
-2. If the formal parameter is a singleton (``istream``, ``ostream``, ``mmap``,
-   ``async_mmap``), only one element in the array is accessed.
-3. If the formal parameter is an array (``istreams``, ``ostreams``, ``mmaps``),
-   the number of elements accessed is determined by the array length of the
-   formal parameter.
-
-Example usage from the
-`TAPA network app <https://github.com/rapidstream-org/rapidstream-tapa/blob/main/tests/apps/network/network.cpp>`_:
+Streams are the primary data movement mechanism in TAPA. They are used to
+transfer data between tasks and modules in a dataflow design. TAPA provides
+``stream`` as the instantiation of a single data channel, which is a FIFO
+queue with a single reader and writer. ``stream`` variables are supplied as
+parameters to tasks to transfer data between them.
 
 .. code-block:: cpp
 
-  void Switch2x2(int b, istream<pkt_t>& pkt_in_q0, istream<pkt_t>& pkt_in_q1,
-                 ostreams<pkt_t, 2>& pkt_out_q) {
+   tapa::stream<int> channel_1;
+
+In order to specify the direction of data flow, TAPA provides two types of
+streams: ``istream`` and ``ostream``. An ``istream`` is used to read data from
+a stream, while an ``ostream`` is used to write data to a stream. A task
+should specify the direction of data flow for each stream parameter.
+
+.. code-block:: cpp
+
+  void Task(tapa::istream<int>& in, tapa::ostream<int>& out) {
+    int data = in.read();
+    out.write(data);
   }
 
-  void InnerStage(int b, istreams<pkt_t, kN / 2>& in_q0,
-                  istreams<pkt_t, kN / 2>& in_q1, ostreams<pkt_t, kN> out_q) {
-    task().invoke<detach, kN / 2>(Switch2x2, b, in_q0, in_q1, out_q);
+.. warning::
+
+   The stream formal parameters of a task must be a reference to the stream,
+   i.e., ``istream<T>&`` and ``ostream<T>&``, as the stream object is not
+   copyable and the parameter should be pointing to the same stream object.
+
+In this example, the ``Task`` function reads an integer from the input stream
+``in`` and writes it to the output stream ``out``. To invoke this task, you
+can use the ``invoke`` method of the ``task`` object:
+
+.. code-block:: cpp
+
+  void Top() {
+    tapa::stream<int> channel_1;
+    tapa::stream<int> channel_2;
+    tapa::task().invoke(Task, channel_1, channel_2)
+    // ... other tasks
   }
 
-In the ``InnerStage`` function:
+Instantiation
+^^^^^^^^^^^^^
 
-1. It instantiates the ``Switch2x2`` task ``kN / 2`` times using a single
-   ``invoke<..., kN / 2>``.
-2. The first argument ``b`` is a scalar input, broadcast to each ``Switch2x2``
-   instance.
-3. The second argument ``in_q0`` is an ``istreams<pkt_t, kN / 2>`` array. Each
-   of the ``Switch2x2`` instances takes one ``istream<pkt_t>``, as
-   the formal parameter is a singleton (``istream``).
-4. The third argument ``in_q1`` is accessed similarly to ``in_q0``.
-5. The fourth argument ``out_q`` is an ``ostreams<pkt_t, kN>`` array. Each
-   ``Switch2x2`` instance takes one ``ostreams<pkt_t, 2>``, which is
-   effectively two ``ostream<pkt_t>``.
+Streams are instantiated using the ``stream`` class template. The template
+parameter specifies the data type of the stream. For example, to create a
+stream of integers, you can use the following code:
+
+.. code-block:: cpp
+
+  tapa::stream<int> channel;
+
+.. tip::
+
+   To avoid deadlocks and boost performance, it is recommended to set the
+   depth of the FIFO queue to a value that is large enough to hold the
+   in-flight data tokens.
+
+The ``stream`` template could accept an additional template parameter to
+specify the depth of the FIFO queue. By default, the depth is set to 2.
+In order to specify a different depth, you can use the following code:
+
+.. code-block:: cpp
+
+  tapa::stream<int, 16> channel;
+
+TAPA's software simulation considers the stream depth and blocks the writer
+when the stream is full, in contrast to Vitis HLS. This behavior is more
+realistic and helps avoid deadlocks in the hardware implementation.
 
 .. note::
 
-   TAPA uses ``istreams``, ``ostreams``, and ``mmaps`` to support arrays of
-   streams and memory-mapped interfaces, and they are distributed across
-   multiple invocations using ``invoke<..., n>``.
+   TAPA uses the ``stream`` class template to instantiate streams. The depth
+   of the FIFO queue can be specified as an additional template parameter.
 
-Stream Operations
------------------
+Read and Write
+^^^^^^^^^^^^^^
 
-Peeking a Stream
-^^^^^^^^^^^^^^^^
+Streams provide two primary operations: read and write. The ``read`` operation
+reads a token from the stream in a blocking manner, while the ``write``
+operation writes a token to the stream. The following code demonstrates the
+use of the ``read`` and ``write`` operations:
+
+.. code-block:: cpp
+
+  void Task(tapa::istream<int>& in, tapa::ostream<int>& out) {
+    int data = in.read();
+    out.write(data);
+  }
+
+.. tip::
+
+   A shortcut for reading and writing tokens is to use the ``<<`` and ``>>``
+   operators.
+
+To read from multiple streams simultaneously when data is available, achieve
+an initiation interval of one, and improve performance, TAPA provides
+non-blocking read and write operations. The ``try_read`` and ``try_write``
+operations return a boolean value indicating whether the operation was
+successful. The following code demonstrates the use of non-blocking read and
+write operations:
+
+.. code-block:: cpp
+
+  void Task(tapa::istream<int>& in, tapa::ostream<int>& out) {
+    int data;
+    bool success = in.try_read(data);
+    if (success) {
+      out.try_write(data);
+    }
+  }
+
+.. note::
+
+   The ``read`` and ``write`` operations are used to read from and write to
+   streams. TAPA provides non-blocking read and write operations through the
+   ``try_read`` and ``try_write`` methods.
+
+Readiness Check
+^^^^^^^^^^^^^^^
+
+TAPA provides an API to check if a stream has data available for reading. This
+is useful when you need to make decisions based on the availability of data
+in the stream:
+
+.. code-block:: cpp
+
+  void Task(tapa::istream<int>& in, tapa::ostream<int>& out) {
+    if (!in.empty()) {
+      int data = in.read();
+      out.write(data);
+    }
+  }
+
+For output streams, you can use the ``full()`` method to check if the stream is
+full and cannot accept more data:
+
+.. code-block:: cpp
+
+  void Task(tapa::istream<int>& in, tapa::ostream<int>& out) {
+    if (!out.full()) {
+      int data = in.read();
+      out.write(data);
+    }
+  }
+
+.. note::
+
+   TAPA provides the ``empty()`` method to check if a stream has data available
+   for reading, and the ``full()`` method to check if a stream is full and
+   cannot accept more data.
+
+Data Peeking
+^^^^^^^^^^^^
 
 TAPA provides non-destructive read (peek) functionality for streams, allowing
 you to read a token without removing it. This is useful when computations
@@ -198,6 +286,71 @@ In summary, the API for EoT tokens in TAPA is as follows:
 
    TAPA supports the ``close()`` and ``try_eot()`` APIs to close a stream and
    check for the EoT token, respectively.
+
+
+Stream and MMAP Arrays
+----------------------
+
+TAPA supports arrays of streams (``istreams``/``ostreams``) and memory-mapped
+interfaces (``mmaps``) to facilitate parameterized designs and reduce code
+repetition (:ref:`api:streams`/:ref:`api:mmaps`). This feature is particularly
+useful for creating flexible, scalable designs.
+
+.. tip::
+
+   A singleton ``stream`` or ``mmap`` is insufficient for parameterized
+   designs. For example, the
+   `network app <https://github.com/rapidstream-org/rapidstream-tapa/blob/main/tests/apps/network/network.cpp>`_
+   shipped with TAPA defines an 8×8 switch network. What if we want to use a
+   16×16 network? Or 4×4? TAPA allows parameterization of network size
+   through arrays of ``stream``/``mmap`` and batch invocation.
+
+With TAPA, you can define arrays of streams and memory-mapped interfaces and
+invoking multiple tasks in parallel using ``invoke<..., n>``, where ``n``
+is the number of invocations:
+
+1. For each task instantiation, the ``streams`` or ``mmaps`` array arguments
+   are accessed in sequence from the array, distributing the elements across
+   multiple invocations.
+2. If the formal parameter is a singleton (``istream``, ``ostream``, ``mmap``,
+   ``async_mmap``), only one element in the array is accessed.
+3. If the formal parameter is an array (``istreams``, ``ostreams``, ``mmaps``),
+   the number of elements accessed is determined by the array length of the
+   formal parameter.
+
+Example usage from the
+`TAPA network app <https://github.com/rapidstream-org/rapidstream-tapa/blob/main/tests/apps/network/network.cpp>`_:
+
+.. code-block:: cpp
+
+  void Switch2x2(int b, istream<pkt_t>& pkt_in_q0, istream<pkt_t>& pkt_in_q1,
+                 ostreams<pkt_t, 2>& pkt_out_q) {
+  }
+
+  void InnerStage(int b, istreams<pkt_t, kN / 2>& in_q0,
+                  istreams<pkt_t, kN / 2>& in_q1, ostreams<pkt_t, kN> out_q) {
+    task().invoke<detach, kN / 2>(Switch2x2, b, in_q0, in_q1, out_q);
+  }
+
+In the ``InnerStage`` function:
+
+1. It instantiates the ``Switch2x2`` task ``kN / 2`` times using a single
+   ``invoke<..., kN / 2>``.
+2. The first argument ``b`` is a scalar input, broadcast to each ``Switch2x2``
+   instance.
+3. The second argument ``in_q0`` is an ``istreams<pkt_t, kN / 2>`` array. Each
+   of the ``Switch2x2`` instances takes one ``istream<pkt_t>``, as
+   the formal parameter is a singleton (``istream``).
+4. The third argument ``in_q1`` is accessed similarly to ``in_q0``.
+5. The fourth argument ``out_q`` is an ``ostreams<pkt_t, kN>`` array. Each
+   ``Switch2x2`` instance takes one ``ostreams<pkt_t, 2>``, which is
+   effectively two ``ostream<pkt_t>``.
+
+.. note::
+
+   TAPA uses ``istreams``, ``ostreams``, and ``mmaps`` to support arrays of
+   streams and memory-mapped interfaces, and they are distributed across
+   multiple invocations using ``invoke<..., n>``.
 
 Asynchronous Memory Access
 --------------------------
