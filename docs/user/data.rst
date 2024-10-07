@@ -82,10 +82,18 @@ TAPA's software simulation considers the stream depth and blocks the writer
 when the stream is full, in contrast to Vitis HLS. This behavior is more
 realistic and helps avoid deadlocks in the hardware implementation.
 
+A stream could optionally be named for debugging purposes. The name is used
+in the log messages to identify the stream. For example:
+
+.. code-block:: cpp
+
+  tapa::stream<int> channel("channel");
+
 .. note::
 
    TAPA uses the ``stream`` class template to instantiate streams. The depth
    of the FIFO queue can be specified as an additional template parameter.
+   For debugging purposes, a stream can be named.
 
 Stream Read and Write
 ^^^^^^^^^^^^^^^^^^^^^
