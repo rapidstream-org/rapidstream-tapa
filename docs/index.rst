@@ -1,11 +1,13 @@
 RapidStream TAPA Documentation
 ##############################
 
-Welcome to the RapidStream TAPA documentation. RapidStream TAPA is a powerful
-framework for designing high-frequency FPGA dataflow accelerators. It combines
-a robust C++ API for expressing task-parallel designs with advanced
-optimization techniques from `RapidStream`_ to deliver exceptional design
-performance and productivity.
+Welcome to the `RapidStream TAPA`_ documentation. RapidStream TAPA is a
+powerful framework for designing high-frequency FPGA dataflow accelerators.
+It combines a robust C++ API for expressing task-parallel designs with
+advanced optimization techniques from `RapidStream`_ to deliver exceptional
+design performance and productivity.
+
+.. _RapidStream TAPA: https://github.com/rapidstream-org/rapidstream-tapa
 
 .. _RapidStream: https://rapidstream-da.com
 
