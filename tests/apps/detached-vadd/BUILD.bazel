@@ -1,0 +1,76 @@
+"""The detached-vadd test for TAPA."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+load("//bazel:v++_rules.bzl", "vpp_xclbin")
+
+sh_test(
+    name = "detached-vadd",
+    size = "small",
+    srcs = ["//bazel:v++_env.sh"],
+    args = ["$(location detached-vadd-host)"],
+    data = [":detached-vadd-host"],
+)
+
+sh_test(
+    name = "detached-vadd-xosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location detached-vadd-host)",
+        "--bitstream=$(location detached-vadd-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "1000",
+    ],
+    data = [
+        ":detached-vadd-host",
+        ":detached-vadd-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+)
+
+sh_test(
+    name = "detached-vadd-cosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location detached-vadd-host)",
+        "--bitstream=$(location detached-vadd-hw-emu-xclbin)",
+        "1000",
+    ],
+    data = [
+        ":detached-vadd-host",
+        ":detached-vadd-hw-emu-xclbin",
+    ],
+)
+
+cc_binary(
+    name = "detached-vadd-host",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]),
+    deps = [
+        "//tapa-lib:tapa",
+        "@gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "detached-vadd-xo",
+    src = "vadd.cpp",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "VecAddDetach",
+)
+
+vpp_xclbin(
+    name = "detached-vadd-hw-emu-xclbin",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    target = "hw_emu",
+    top_name = "VecAddDetach",
+    xo = ":detached-vadd-xo",
+)
