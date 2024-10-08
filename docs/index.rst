@@ -56,3 +56,11 @@ those contributing to or extending the TAPA framework itself.
 
 Developer Documentation
 =======================
+
+.. _FAQ:
+
+.. toctree::
+  :caption: FAQ
+  :maxdepth: 1
+
+  user/faq
