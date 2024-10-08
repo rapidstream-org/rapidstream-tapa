@@ -473,6 +473,13 @@ In the ``InnerStage`` function:
    ``Switch2x2`` instance takes one ``ostreams<pkt_t, 2>``, which is
    effectively two ``ostream<pkt_t>``.
 
+.. warning::
+
+   TAPA does not support accessing individual streams or memory-mapped
+   interfaces from a ``streams`` or ``mmaps`` array. For example, ``in_q0[0]``
+   will not compile. Instead, use ``tapa::invoke<..., n>`` to distribute the
+   array elements across multiple invocations.
+
 .. note::
 
    TAPA uses ``istreams``, ``ostreams``, and ``mmaps`` to support arrays of
