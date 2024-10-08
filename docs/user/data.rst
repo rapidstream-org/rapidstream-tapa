@@ -420,8 +420,8 @@ Stream and MMAP Arrays
 
 TAPA supports arrays of streams (``istreams``/``ostreams``) and memory-mapped
 interfaces (``mmaps``) to facilitate parameterized designs and reduce code
-repetition (:ref:`api:streams`/:ref:`api:mmaps`). This feature is particularly
-useful for creating flexible, scalable designs.
+repetition (:ref:`tapa::streams <api streams>`/:ref:`tapa::mmaps <api mmaps>`).
+This feature is particularly useful for creating flexible, scalable designs.
 
 .. tip::
 

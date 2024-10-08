@@ -48,9 +48,9 @@ Task ``Add``
 
 The ``Add`` function takes four arguments:
 
-- :ref:`Input Streams <api:istream>`: ``tapa::istream<float>& a``,
+- :ref:`Input Streams <api istream>`: ``tapa::istream<float>& a``,
   ``tapa::istream<float>& b``
-- :ref:`Output Stream <api:ostream>`: ``tapa::ostream<float>& c``
+- :ref:`Output Stream <api ostream>`: ``tapa::ostream<float>& c``
 - Scalar Parameter: ``uint64_t n``
 
 It performs element-wise addition of two vectors by reading from streams
@@ -89,8 +89,8 @@ Tasks ``Mmap2Stream`` and ``Stream2Mmap``
 The ``Mmap2Stream`` function reads an input vector from DRAM and writes it
 to a stream. It takes three arguments:
 
-- :ref:`Memory-Mapped Interface <api:mmap>`: ``tapa::mmap<const float> mmap``
-- :ref:`Output Stream <api:ostream>`: ``tapa::ostream<stream>& stream``
+- :ref:`Memory-Mapped Interface <api mmap>`: ``tapa::mmap<const float> mmap``
+- :ref:`Output Stream <api ostream>`: ``tapa::ostream<stream>& stream``
 - Scalar Parameter: ``uint64_t n``
 
 It reads from the memory referenced by ``mmap``:
@@ -136,7 +136,7 @@ Upper-Level Task ``VecAdd``
 The ``VecAdd`` function instantiates three nested tasks and defines
 communication channels between them. It takes four arguments:
 
-- :ref:`Memory-Mapped Interface <api:mmap>`: ``tapa::mmap<const float> a``,
+- :ref:`Memory-Mapped Interface <api mmap>`: ``tapa::mmap<const float> a``,
   ``b``, and ``tapa::mmap<float> c``
 - Scalar Parameter: ``uint64_t n``
 
@@ -145,7 +145,7 @@ communication channels between them. It takes four arguments:
    As an *upper-level* task, ``VecAdd`` can only contain task instantiations
    and communication channel definitions in the function body, as shown above.
 
-It defines three :ref:`communication channels <api:stream>`: ``a_q``,
+It defines three :ref:`communication channels <api stream>`: ``a_q``,
 ``b_q``, and ``c_q`` to connect the child tasks:
 
 .. code:: cpp
