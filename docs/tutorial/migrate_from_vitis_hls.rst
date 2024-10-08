@@ -1,5 +1,5 @@
-Migrate from Vitis HLS
-======================
+Migrating from Vitis HLS
+========================
 
 .. note::
 

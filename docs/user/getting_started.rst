@@ -11,7 +11,7 @@ Getting Started with TAPA
 
 We'll cover fundamental concepts and usage of RapidStream TAPA. If you're
 migrating from Vitis HLS, see the :ref:`Migrating from Vitis HLS
-<tutorial/migrate_from_vitis_hls:migrate from vitis hls>` tutorial.
+<tutorial/migrate_from_vitis_hls:migrating from vitis hls>` tutorial.
 
 FPGA TAPA Task
 --------------
