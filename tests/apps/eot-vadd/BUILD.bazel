@@ -1,0 +1,76 @@
+"""The eot-vadd test for TAPA."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+load("//bazel:v++_rules.bzl", "vpp_xclbin")
+
+sh_test(
+    name = "eot-vadd",
+    size = "small",
+    srcs = ["//bazel:v++_env.sh"],
+    args = ["$(location eot-vadd-host)"],
+    data = [":eot-vadd-host"],
+)
+
+sh_test(
+    name = "eot-vadd-xosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location eot-vadd-host)",
+        "--bitstream=$(location eot-vadd-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "100",
+    ],
+    data = [
+        ":eot-vadd-host",
+        ":eot-vadd-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+)
+
+sh_test(
+    name = "eot-vadd-cosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location eot-vadd-host)",
+        "--bitstream=$(location eot-vadd-hw-emu-xclbin)",
+        "100",
+    ],
+    data = [
+        ":eot-vadd-host",
+        ":eot-vadd-hw-emu-xclbin",
+    ],
+)
+
+cc_binary(
+    name = "eot-vadd-host",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]),
+    deps = [
+        "//tapa-lib:tapa",
+        "@gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "eot-vadd-xo",
+    src = "vadd.cpp",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "VecAdd",
+)
+
+vpp_xclbin(
+    name = "eot-vadd-hw-emu-xclbin",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    target = "hw_emu",
+    top_name = "VecAdd",
+    xo = ":eot-vadd-xo",
+)
