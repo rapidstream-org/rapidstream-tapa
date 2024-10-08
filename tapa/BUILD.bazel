@@ -144,7 +144,6 @@ py_library(
     name = "util",
     srcs = ["util.py"],
     deps = [
-        requirement("absl-py"),
         requirement("coloredlogs"),
     ],
 )

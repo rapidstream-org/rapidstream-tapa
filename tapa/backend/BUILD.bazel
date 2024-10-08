@@ -4,13 +4,8 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-load("@tapa_deps//:requirements.bzl", "requirement")
-
 py_library(
     name = "backend",
     srcs = glob(["**/*.py"]),
     visibility = ["//tapa:__subpackages__"],
-    deps = [
-        requirement("absl-py"),
-    ],
 )

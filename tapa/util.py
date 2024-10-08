@@ -8,15 +8,16 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import getpass
 import logging
 import os.path
 import shutil
+import socket
 import subprocess
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import absl.logging
 import coloredlogs
 
 if TYPE_CHECKING:
@@ -111,7 +112,7 @@ def nproc() -> int:
 def setup_logging(
     verbose: int | None,
     quiet: int | None,
-    work_dir: str | None,
+    work_dir: str,
     program_name: str = "tapac",
 ) -> None:
     verbose = 0 if verbose is None else verbose
@@ -125,18 +126,18 @@ def setup_logging(
         datefmt="%m%d %H:%M:%S.%f",
     )
 
-    log_dir = None
-    if work_dir is not None:
-        log_dir = os.path.join(work_dir, "log")
-        os.makedirs(log_dir, exist_ok=True)
+    log_dir = os.path.join(work_dir, "log")
+    os.makedirs(log_dir, exist_ok=True)
 
     # The following is copied and modified from absl-py.
-    log_dir, file_prefix, symlink_prefix = absl.logging.find_log_dir_and_names(
-        program_name,
-        log_dir=log_dir,
-    )
-
-    assert log_dir is not None
+    try:
+        username = getpass.getuser()
+    except KeyError:
+        # This can happen, e.g. when running under docker w/o passwd file.
+        username = str(os.getuid())
+    hostname = socket.gethostname()
+    file_prefix = f"{program_name}.{hostname}.{username}.log"
+    symlink_prefix = program_name
     time_str = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
     basename = f"{file_prefix}.INFO.{time_str}.{os.getpid()}"
     filename = os.path.join(log_dir, basename)

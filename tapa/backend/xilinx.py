@@ -22,8 +22,6 @@ from types import TracebackType
 from typing import BinaryIO, NamedTuple, TextIO
 from xml.etree import ElementTree
 
-import absl.flags
-
 _logger = logging.getLogger().getChild(__name__)
 
 
@@ -475,66 +473,6 @@ def parse_device_info(  # noqa: C901
                 "so the target part number can be extracted from it, or "
                 f"specify '{option_string_table[part_num_name]}' directly"
             )
-        device_info = {
-            "clock_period": clock_period,
-            "part_num": part_num,
-        }
-    else:
-        device_info = get_device_info(platform)
-        if clock_period is not None:
-            device_info["clock_period"] = clock_period
-        if part_num is not None:
-            device_info["part_num"] = part_num
-    return device_info
-
-
-def parse_device_info_from_flags(  # noqa: C901
-    platform_name: str,
-    part_num_name: str,
-    clock_period_name: str,
-    flags: absl.flags.FlagValues = absl.flags.FLAGS,
-) -> dict[str, str]:
-    platform = getattr(flags, platform_name)
-    part_num = getattr(flags, part_num_name)
-    clock_period = getattr(flags, clock_period_name)
-    raw_platform_input = platform
-
-    if platform is not None:
-        platform = os.path.join(
-            os.path.dirname(platform),
-            os.path.basename(platform).replace(":", "_").replace(".", "_"),
-        )
-    if platform is not None:
-        for platform_dir in (
-            os.path.join("/", "opt", "xilinx"),
-            os.environ.get("XILINX_VITIS"),
-            os.environ.get("XILINX_SDX"),
-        ):
-            if not os.path.isdir(platform) and platform_dir is not None:
-                platform = os.path.join(platform_dir, "platforms", platform)
-        if not os.path.isdir(platform):
-            absl.flags.IllegalFlagValueError(
-                f"cannot find the specified platform '{raw_platform_input}'; "
-                "are you sure it has been installed, "
-                "e.g., in '/opt/xilinx/platforms'?"
-            )
-    if platform is None or not os.path.isdir(platform):
-        if clock_period is None:
-            msg = (
-                "cannot determine the target clock period; "
-                f"please either specify '--{platform_name}' "
-                "so the target clock period can be extracted from it, or "
-                f"specify '--{clock_period_name}' directly"
-            )
-            raise absl.flags.IllegalFlagValueError(msg)
-        if part_num is None:
-            msg = (
-                "cannot determine the target part number; "
-                f"please either specify '--{platform_name}' "
-                "so the target part number can be extracted from it, or "
-                f"specify '--{part_num_name}' directly"
-            )
-            raise absl.flags.IllegalFlagValueError(msg)
         device_info = {
             "clock_period": clock_period,
             "part_num": part_num,
