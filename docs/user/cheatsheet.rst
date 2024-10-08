@@ -71,7 +71,7 @@ Optimization with RapidStream
     --work-dir ./build \
     --tapa-xo-path kernel.xo \
     --device-config u55c_device.json \
-    --autobridge-config floorplan_config.json
+    --floorplan-config floorplan_config.json
 
 TAPA Code Structure
 -------------------

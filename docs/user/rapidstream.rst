@@ -84,7 +84,7 @@ partition-and-pipeline optimization:
        --work-dir ./build \
        --tapa-xo-path [path-to-xo-file] \
        --device-config u55c_device.json \
-       --autobridge-config floorplan_config.json
+       --floorplan-config floorplan_config.json
 
 This command generates a new XO file with the optimized design.
 
