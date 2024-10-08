@@ -33,5 +33,5 @@ compile_xo() {
 
 @test "apps/eot-vadd: tapa generates an xo file and its simulation passes" {
   compile_xo
-  ${BATS_TMPDIR}/eot-vadd-host --bitstream ${BATS_TMPDIR}/eot-vadd.xo 100
+  ${BATS_TMPDIR}/eot-vadd-host --bitstream ${BATS_TMPDIR}/eot-vadd.xo 1000
 }
