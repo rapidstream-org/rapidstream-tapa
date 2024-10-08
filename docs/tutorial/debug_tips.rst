@@ -37,6 +37,38 @@ is a set of streams that controls the memory access:
    // correct
    void Task(tapa::mmap<int> mem, tapa::async_mmap<int> &amem) { /* ... */ }
 
+Using Streams/MMAPs Arrays
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When defining arrays of streams or memory maps, use the ``tapa::streams<>`` and
+``tapa::mmaps<>`` classes instead of arrays of streams or memory maps:
+
+.. code-block:: cpp
+
+   // incorrect
+   tapa::stream<int> data_q[4];
+
+   // correct
+   tapa::streams<int, 4> data_q;
+
+   // incorrect
+   tapa::mmap<int> mem[4], // ...
+
+   // correct
+   tapa::mmaps<int, 4> mem, // ...
+
+To access individual streams or memory maps in the array, use the ``.invoke``
+method to distribute the array elements to tasks, instead subscripts:
+
+.. code-block:: cpp
+
+   // incorrect
+   tapa::task().invoke(Task, data_q[0], mem[0])
+               .invoke(Task, data_q[1], mem[1]);
+
+   // correct
+   tapa::task().invoke<tapa::join, 2>(Task, data_q, mem);
+
 Ensuring Correct Task Invocations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
