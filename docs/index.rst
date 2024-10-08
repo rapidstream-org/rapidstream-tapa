@@ -56,5 +56,11 @@ those contributing to or extending the TAPA framework itself.
 
 .. _Developer Documentation:
 
-Developer Documentation
-=======================
+.. toctree::
+  :caption: Developer Documentation
+  :maxdepth: 2
+
+  dev/build
+  dev/development
+  dev/contributing
+  dev/release
