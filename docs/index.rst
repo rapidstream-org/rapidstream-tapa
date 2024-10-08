@@ -51,8 +51,8 @@ those contributing to or extending the TAPA framework itself.
   :caption: Reference
   :maxdepth: 3
 
-  api
-  overview/output_file_organization.rst
+  ref/api
+  ref/output_file_organization.rst
 
 .. _Developer Documentation:
 
