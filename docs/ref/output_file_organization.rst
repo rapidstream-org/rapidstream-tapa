@@ -4,8 +4,8 @@ TAPA Output Files
 TAPA generates various output files depending on the input options provided.
 This documentation outlines the structure and contents of these files.
 
-The XO Object
--------------
+XO Object
+---------
 
 The primary output of `tapa` is an XO object, which serves as input for the
 Vitis `v++` compiler for bitstream generation.

@@ -1,8 +1,8 @@
-The TAPA Library (libtapa)
---------------------------
+TAPA Library (libtapa)
+----------------------
 
-The Task Instantiation Library
-::::::::::::::::::::::::::::::
+Task Library
+::::::::::::
 
 .. doxygenstruct:: tapa::task
   :members:
@@ -10,8 +10,8 @@ The Task Instantiation Library
 .. doxygenstruct:: tapa::seq
   :members:
 
-The Streaming Library
-:::::::::::::::::::::
+Stream Library
+::::::::::::::
 
 * A *blocking operation* blocks if the stream is not available (empty or full)
   until the stream becomes available.
@@ -50,8 +50,8 @@ The Streaming Library
 .. doxygenclass:: tapa::streams
   :members:
 
-The MMAP Library
-::::::::::::::::
+MMAP Library
+::::::::::::
 
 .. _api async_mmap:
 
@@ -68,16 +68,16 @@ The MMAP Library
 .. doxygenclass:: tapa::mmaps
   :members:
 
-The Utility Library
-:::::::::::::::::::
+Utility Library
+:::::::::::::::
 
 .. _api widthof:
 
 .. doxygenfunction:: tapa::widthof()
 .. doxygenfunction:: tapa::widthof(T)
 
-The HLS-Compat Library
-::::::::::::::::::::::
+HLS-Compat Library
+::::::::::::::::::
 
 The HLS-compat library provides a set of APIs compatible with Vitis HLS stream
 behavior to ease migration from Vitis HLS.
@@ -101,8 +101,8 @@ behavior to ease migration from Vitis HLS.
 
 .. doxygenstruct:: tapa::hls_compat::task
 
-The TAPA Compiler (tapa)
-------------------------
+TAPA Compiler (tapa)
+--------------------
 
 .. _api tapa:
 
