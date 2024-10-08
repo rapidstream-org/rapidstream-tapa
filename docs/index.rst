@@ -47,7 +47,7 @@ those contributing to or extending the TAPA framework itself.
 
 .. toctree::
   :caption: Reference
-  :maxdepth: 4
+  :maxdepth: 3
 
   api
   overview/output_file_organization.rst

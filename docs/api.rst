@@ -4,8 +4,6 @@ The TAPA Library (libtapa)
 The Task Instantiation Library
 ::::::::::::::::::::::::::::::
 
-task
-^^^^
 .. doxygenstruct:: tapa::task
   :members:
 
@@ -22,59 +20,39 @@ The Streaming Library
 * A *destructive operation* changes the state of the stream.
 * A *non-destructive operation* does not change the state of the stream.
 
-istream
-^^^^^^^
 .. doxygenclass:: tapa::istream
   :members:
 
-istreams
-^^^^^^^^
 .. doxygenclass:: tapa::istreams
   :members:
 
-ostream
-^^^^^^^
 .. doxygenclass:: tapa::ostream
   :members:
 
-ostreams
-^^^^^^^^
 .. doxygenclass:: tapa::ostreams
   :members:
 
-stream
-^^^^^^
 .. doxygenclass:: tapa::stream
   :members:
 
-streams
-^^^^^^^
 .. doxygenclass:: tapa::streams
   :members:
 
 The MMAP Library
 ::::::::::::::::
 
-async_mmap
-^^^^^^^^^^
 .. doxygenclass:: tapa::async_mmap
   :members:
 
-mmap
-^^^^
 .. doxygenclass:: tapa::mmap
   :members:
 
-mmaps
-^^^^^
 .. doxygenclass:: tapa::mmaps
   :members:
 
 The Utility Library
 :::::::::::::::::::
 
-widthof
-^^^^^^^
 .. doxygenfunction:: tapa::widthof()
 .. doxygenfunction:: tapa::widthof(T)
 
@@ -91,16 +69,10 @@ behavior to ease migration from Vitis HLS.
   Before synthesis, remove ``#include <tapa/host/compat.h>`` and replace any
   ``tapa::hls_compat`` API with their synthesizable equivalent.
 
-hls_compat::stream
-^^^^^^^^^^^^^^^^^^
 .. doxygentypedef:: tapa::hls_compat::stream
 
-hls_compat::stream_interface
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. doxygentypedef:: tapa::hls_compat::stream_interface
 
-hls_compat::task
-^^^^^^^^^^^^^^^^
 .. doxygenstruct:: tapa::hls_compat::task
 
 The TAPA Compiler (tapa)
