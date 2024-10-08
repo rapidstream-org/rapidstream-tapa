@@ -58,8 +58,8 @@ Real-World Examples
 ----------------------
 
 The TAPA repo also includes a set of large scale designs under the
-``regression`` directory. This directory is in active development and we are
-adding more sophiticated TAPA designs here.
+``tests/regression`` directory. This directory is under active development and
+we are adding more sophiticated TAPA designs here.
 
 - ``cnn`` and ``lu_decomposition`` are both systolic arrays (of different
   shape) originally published in `FPGA'21

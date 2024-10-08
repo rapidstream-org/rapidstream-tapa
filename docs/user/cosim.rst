@@ -121,7 +121,7 @@ into a file under the specified directory in the following rule:
 Fast Hardware Simulation
 ------------------------
 
-TAPA-generated xo can be used for cosimimulation with Vitis, but this process
+TAPA-generated ``xo`` can be used for cosimulation with Vitis, but this process
 is slow due to complex simulation models for external IPs. Even for a basic
 vector-add application, setup takes over ten minutes, while actual simulation
 only takes seconds.
@@ -190,7 +190,7 @@ Vitis cosimulation can be used.
 Generating Bitstream
 ^^^^^^^^^^^^^^^^^^^^
 
-To generate the Xilinx emulation binary (xclbin) for hardware simulation:
+To generate the Xilinx emulation binary (``xclbin``) for hardware simulation:
 
 .. code-block:: bash
 
