@@ -10,6 +10,7 @@ on:
       - main
       - release
       - release/*
+      - '*-poc'
 
 permissions:
   actions: write
