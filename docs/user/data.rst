@@ -558,7 +558,9 @@ Basic Usage
 
 ``async_mmap`` should be used only as formal parameters in leaf-level tasks.
 It can be constructed from ``mmap``, and an ``mmap`` argument can be passed to
-an ``async_mmap`` parameter.
+an ``async_mmap`` parameter. Note that the only the non-blocking API ``try_ready``
+and ``try_write`` should be used to avoid deadlocks. Detailed usage can be found at
+:ref:`Efficient Memory Accesses <tutorial/async_mmap:Efficient Memory Accesses>`
 
 .. warning::
 
@@ -579,8 +581,9 @@ an ``async_mmap`` parameter.
   // Note the &
   void task1(tapa::async_mmap<data_t>& mem) {
     // ...
-    mem.read_addr.write(...);
-    mem.read_data.read();
+    mem.read_addr.try_write(...);
+    // ...
+    mem.read_data.try_read(...);
     // ...
   }
 
