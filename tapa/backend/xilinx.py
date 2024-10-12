@@ -263,6 +263,9 @@ config_compile -name_max_length 253
 config_interface -m_axi_addr64
 {config}
 {other_configs}
+set_param hls.enable_hidden_option_error false
+config_rtl -enableFreeRunPipeline=false
+config_rtl -disableAutoFreeRunPipeline=true
 csynth_design
 exit
 """
