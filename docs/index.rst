@@ -64,3 +64,11 @@ those contributing to or extending the TAPA framework itself.
   dev/development
   dev/contributing
   dev/release
+
+.. _FAQ:
+
+.. toctree::
+  :caption: FAQ
+  :maxdepth: 1
+
+  user/faq
