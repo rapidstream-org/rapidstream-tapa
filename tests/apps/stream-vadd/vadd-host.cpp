@@ -37,5 +37,5 @@ int main(int argc, char* argv[]) {
       });
 
   if (!has_error) std::clog << "PASS!" << std::endl;
-  return !has_error;
+  return has_error;
 }
