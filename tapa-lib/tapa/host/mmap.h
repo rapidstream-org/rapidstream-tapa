@@ -576,6 +576,16 @@ TAPA_DEFINE_ACCESSER(read_only, WriteOnly);
 TAPA_DEFINE_ACCESSER(write_only, ReadOnly);
 TAPA_DEFINE_ACCESSER(read_write, ReadWrite);
 #undef TAPA_DEFINE_ACCESSER
+
+// If the user uses mmap/mmaps directly in tapa::invoke, it should be an error.
+//
+// This errors when mmap/mmaps are directly passed by value in the argument
+// list, which is the case in tapa::invoke(), where mmap<T> parameter has
+// an argument of mmap<T> instead of mmap<T> &.
+//
+// This does not apply to tapa::task().invoke() because the later always passes
+// by reference, so that stream can be passed into istream &, using accessors.
+// Therefore, mmaps arguments also have types of mmap &, instead of mmap.
 template <typename T>
 struct accessor<mmap<T>, mmap<T>> {
   static_assert(!std::is_same<T, T>::value,
