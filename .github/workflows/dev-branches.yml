@@ -62,8 +62,8 @@ jobs:
           set -e
           sudo apt-get update
           sudo apt-get install -y doxygen
-          python3 -m pip install --user -r tapa/requirements_lock.txt
-          python3 -m pip install --user -r docs/requirements.txt
+          python3 -m pip install --break-system-packages --user -r tapa/requirements_lock.txt
+          python3 -m pip install --break-system-packages --user -r docs/requirements.txt
 
       - name: Build docs
         run: |
