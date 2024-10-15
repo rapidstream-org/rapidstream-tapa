@@ -8,6 +8,7 @@
 /build/
 /compile_commands.json
 __pycache__
+a.out
 artifacts.out/
 node_modules
 run/
