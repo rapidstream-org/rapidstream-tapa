@@ -12,3 +12,8 @@ void StreamAdd(tapa::istream<float>& a, tapa::istream<float>& b,
     c << (a.read() + b.read());
   }
 }
+
+void VecAdd(tapa::istream<float>& a, tapa::istream<float>& b,
+            tapa::ostream<float>& c, uint64_t n) {
+  tapa::task().invoke(StreamAdd, a, b, c, n);
+}
