@@ -87,8 +87,6 @@ class Consumer : public ASTConsumer {
     }
     static const auto task_redefined = diagnostics_engine.getCustomDiagID(
         clang::DiagnosticsEngine::Error, "task '%0' re-defined");
-    static const auto task_defined_here = diagnostics_engine.getCustomDiagID(
-        clang::DiagnosticsEngine::Note, "task '%0' defined here");
     auto report_task_redefinition =
         [&](const vector<const FunctionDecl*>& decls) {
           if (decls.size() > 1) {
@@ -97,15 +95,6 @@ class Consumer : public ASTConsumer {
                   diagnostics_engine.Report(task_redefined);
               diagnostics_builder.AddString(decls[0]->getNameAsString());
             }
-            /*
-            for (auto decl : decls) {
-              auto diagnostics_builder = diagnostics_engine.Report(
-                  decl->getBeginLoc(), task_defined_here);
-              diagnostics_builder.AddSourceRange(
-                  CharSourceRange::getCharRange(decl->getSourceRange()));
-              diagnostics_builder.AddString(decl->getNameAsString());
-            }
-            */
           }
         };
     if (func_table.count(*top_name)) {
