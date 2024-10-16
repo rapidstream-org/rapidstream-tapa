@@ -9,8 +9,7 @@ tapa \
   compile \
   --top Sextans \
   --part-num xcu55c-fsvh2892-2L-e \
-  --clock-period 3.33 \
-  --connectivity src/link_config.ini \
-  -o ${WORK_DIR}/sextans1613-u55c.xo \
+  --clock-period 3.00 \
+  -o ${WORK_DIR}/sextans1613-u55c-333MHz.xo \
   -f src/sextans-no-const-para.cpp \
   2>&1 | tee ${WORK_DIR}/tapa.log
