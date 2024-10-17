@@ -8,9 +8,10 @@
 
 void StreamAdd(tapa::istream<float>& a, tapa::istream<float>& b,
                tapa::ostream<float>& c, uint64_t n) {
-  for (uint64_t i = 0; i < n; ++i) {
-    c << (a.read() + b.read());
-  }
+  for (uint64_t i = 0; i < n; ++i) c << (a.read() + b.read());
+  a.open();
+  b.open();
+  c.close();
 }
 
 void VecAdd(tapa::istream<float>& a, tapa::istream<float>& b,
