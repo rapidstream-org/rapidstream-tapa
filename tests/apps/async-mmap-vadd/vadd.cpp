@@ -11,11 +11,11 @@ inline void async_read(tapa::async_mmap<T>& mem, tapa::ostream<T>& strm, R n) {
   for (int i_req = 0, i_resp = 0; i_resp < n;) {
 #pragma HLS loop_tripcount min = 1 max = 800
 #pragma HLS pipeline II = 1
-    if ((i_req < n) & !mem.read_addr.full()) {
+    if ((i_req < n) && !mem.read_addr.full()) {
       mem.read_addr.try_write(i_req);
       ++i_req;
     }
-    if (!strm.full() & !mem.read_data.empty()) {
+    if (!strm.full() && !mem.read_data.empty()) {
       T tmp;
       mem.read_data.try_read(tmp);
       strm.try_write(tmp);
@@ -29,7 +29,7 @@ inline void async_write(tapa::async_mmap<T>& mem, tapa::istream<T>& strm, R n) {
   for (int i_req = 0, i_resp = 0; i_resp < n;) {
 #pragma HLS loop_tripcount min = 1 max = 800
 #pragma HLS pipeline II = 1
-    if ((i_req < n) & !strm.empty() & !mem.write_addr.full() &
+    if ((i_req < n) && !strm.empty() && !mem.write_addr.full() &&
         !mem.write_data.full()) {
       mem.write_addr.try_write(i_req);
       T tmp;
