@@ -14,3 +14,4 @@ node_modules
 run/
 work.out
 work.xo
+*.jou
