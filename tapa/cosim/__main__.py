@@ -143,7 +143,6 @@ if __name__ == "__main__":
     parser.add_argument("--config_path", type=str, required=True)
     parser.add_argument("--tb_output_dir", type=str, required=True)
     parser.add_argument("--launch_simulation", action="store_true")
-    parser.add_argument("--print_debug_info", action="store_true")
     parser.add_argument("--save_waveform", action="store_true")
     parser.add_argument("--start_gui", action="store_true")
     args = parser.parse_args()
@@ -202,9 +201,8 @@ if __name__ == "__main__":
         fp.write("\n".join(vivado_script))
 
     # launch simulation
-    disable_debug = "" if args.print_debug_info else " | grep -v DEBUG"
     mode = "gui" if args.start_gui else "batch"
-    command = ["vivado", "-mode", mode, "-source", "run_cosim.tcl", disable_debug]
+    command = ["vivado", "-mode", mode, "-source", "run_cosim.tcl"]
     if args.launch_simulation:
         _logger.info("Vivado command: %s", command)
         _logger.info("Starting Vivado...")
