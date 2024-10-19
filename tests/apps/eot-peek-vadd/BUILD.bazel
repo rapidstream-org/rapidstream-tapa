@@ -9,41 +9,48 @@ load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
 sh_test(
     name = "eot-peek-vadd",
-    size = "small",
+    size = "medium",
     srcs = ["//bazel:v++_env.sh"],
     args = ["$(location eot-peek-vadd-host)"],
     data = [":eot-peek-vadd-host"],
+    env = {"TAPA_CONCURRENCY": "1"},
 )
 
 sh_test(
     name = "eot-peek-vadd-xosim",
-    size = "medium",
+    size = "large",
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location eot-peek-vadd-host)",
         "--bitstream=$(location eot-peek-vadd-xo)",
         "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
-        "100",
+        "1000",
     ],
     data = [
         ":eot-peek-vadd-host",
         ":eot-peek-vadd-xo",
         "//tapa/cosim:tapa-fast-cosim",
     ],
+    tags = [
+        "cpu:2",
+    ],
 )
 
 sh_test(
     name = "eot-peek-vadd-cosim",
-    size = "medium",
+    size = "large",
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location eot-peek-vadd-host)",
         "--bitstream=$(location eot-peek-vadd-hw-emu-xclbin)",
-        "100",
+        "1000",
     ],
     data = [
         ":eot-peek-vadd-host",
         ":eot-peek-vadd-hw-emu-xclbin",
+    ],
+    tags = [
+        "cpu:2",
     ],
 )
 
