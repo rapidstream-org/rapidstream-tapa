@@ -22,6 +22,8 @@ int main(int argc, char* argv[]) {
           a.write(static_cast<float>(i));
           b.write(static_cast<float>(i) * 2);
         }
+        a.close();
+        b.close();
       })
       .invoke(StreamAdd, a, b, c, n)
       .invoke([&] {
@@ -34,6 +36,7 @@ int main(int argc, char* argv[]) {
             has_error = true;
           }
         }
+        c.open();
       });
 
   if (!has_error) std::clog << "PASS!" << std::endl;

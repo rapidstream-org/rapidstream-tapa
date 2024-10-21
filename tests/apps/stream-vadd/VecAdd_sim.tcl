@@ -1,10 +1,9 @@
-set script_dir [file dirname [file normalize [info script]]]
-set work_dir_name $argv
-
+set work_dir $argv
 set proj_name "vecadd_proj"
-set proj_dir "$script_dir/$work_dir_name/vivado_proj"
-set source_dir "$script_dir/$work_dir_name/hdl"
+set proj_dir "$work_dir/vivado_proj"
+set source_dir "$work_dir/hdl"
 set log_file "$proj_dir/$proj_name.sim/sim_1/behav/xsim/simulate.log"
+set script_dir [file dirname [file normalize [info script]]]
 
 create_project -force $proj_name $proj_dir
 

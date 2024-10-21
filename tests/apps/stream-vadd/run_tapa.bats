@@ -19,7 +19,7 @@ compile_xo() {
     -w ${BATS_TMPDIR}/stream-vadd-workdir \
     compile \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
-    -f stream-vadd.cpp \
+    -f vadd.cpp \
     -t VecAdd \
     -o ${BATS_TMPDIR}/stream-vadd.xo
 
@@ -31,6 +31,7 @@ compile_xo() {
   ${BATS_TMPDIR}/stream-vadd-host
 }
 
-@test "apps/stream-vadd: tapa generates an xo file" {
+@test "apps/stream-vadd: tapa generates an xo file and passes simulation" {
   compile_xo
+  vivado -mode batch -source VecAdd_sim.tcl -tclargs ${BATS_TMPDIR}/stream-vadd-workdir
 }
