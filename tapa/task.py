@@ -445,13 +445,13 @@ class Task:  # noqa: PLR0904
 
         return fifo_name
 
-    def connect_fifo_externally(self, internal_name: str, top: bool) -> None:
+    def connect_fifo_externally(self, internal_name: str, axis: bool) -> None:
         assert (
             len(self.get_fifo_directions(internal_name)) == 1
         ), "externally connected fifos should have one direction"
         direction = self.get_fifo_directions(internal_name)[0]
         external_name = (
-            self.convert_axis_to_fifo(internal_name) if top else internal_name
+            self.convert_axis_to_fifo(internal_name) if axis else internal_name
         )
 
         # connect fifo with external ports

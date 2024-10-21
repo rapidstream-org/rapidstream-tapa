@@ -70,11 +70,24 @@ _logger = logging.getLogger().getChild(__name__)
         "leaf-level tasks instantiated in the top module"
     ),
 )
+@click.option(
+    "--no-vitis-mode / --vitis-mode",
+    type=bool,
+    default=False,
+    help=(
+        "`--vitis-mode` (default) will generate .xo files for Vitis "
+        "`v++` command, with AXI4-Lite interfaces for task arguments "
+        "and return values, and AXI4-Stream interfaces for task FIFOs; "
+        "`--no-vitis-mode` will only generate RTL code with Vitis HLS "
+        "compatible interfaces"
+    ),
+)
 def analyze(
     input_files: tuple[str, ...],
     top: str,
     cflags: tuple[str, ...],
     flatten_hierarchy: bool,
+    no_vitis_mode: bool,
 ) -> None:
     """Analyze TAPA program and store the program description."""
     tapacc = find_clang_binary("tapacc")
@@ -82,6 +95,8 @@ def analyze(
 
     work_dir = get_work_dir()
     cflags += ("-std=c++17",)
+
+    vitis_mode = not no_vitis_mode
 
     tapacc_cflags, system_cflags = find_tapacc_cflags(cflags)
     flatten_files = run_flatten(
@@ -92,6 +107,7 @@ def analyze(
         flatten_files,
         top,
         tapacc_cflags + system_cflags,
+        vitis_mode,
     )
     graph_dict["cflags"] = tapacc_cflags
 
@@ -101,10 +117,10 @@ def analyze(
         tapa_graph = tapa_graph.get_flatten_graph()
     graph_dict = tapa_graph.to_dict()
 
-    store_tapa_program(Program(graph_dict, work_dir))
+    store_tapa_program(Program(graph_dict, vitis_mode, work_dir))
 
     store_persistent_context("graph", graph_dict)
-    store_persistent_context("settings", {})
+    store_persistent_context("settings", {"vitis-mode": vitis_mode})
 
     is_pipelined("analyze", True)
 
@@ -307,6 +323,7 @@ def run_tapacc(
     files: tuple[str, ...],
     top: str,
     cflags: tuple[str, ...],
+    vitis_mode: bool,
 ) -> dict:
     """Execute tapacc and return the program description.
 
@@ -315,6 +332,7 @@ def run_tapacc(
       tapacc: The path of the tapacc binary.
       files: C/C++ files to flatten.
       cflags: User specified CFLAGS with TAPA specific headers.
+      vitis_mode: Insert Vitis compatible interfaces or not.
 
     Returns:
     -------
@@ -324,6 +342,7 @@ def run_tapacc(
     tapacc_args = (
         "-top",
         top,
+        *(("-vitis",) if vitis_mode else ()),
         "--",
         *cflags,
         "-DTAPA_TARGET_DEVICE_",

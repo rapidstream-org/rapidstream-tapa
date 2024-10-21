@@ -118,10 +118,13 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
       toplevel_ports: Tuple of Port objects.
       _tasks: Dict mapping names of tasks to Task objects.
       files: Dict mapping file names to contents that appear in the HDL directory.
+      vitis_mode: Whether the generated RTL should match Vitis XO requirements.
 
     """
 
-    def __init__(self, obj: dict, work_dir: str | None = None) -> None:
+    def __init__(
+        self, obj: dict, vitis_mode: bool, work_dir: str | None = None
+    ) -> None:
         """Construct Program object from a json file.
 
         Args:
@@ -134,6 +137,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         self.top: str = obj["top"]
         self.cflags = " ".join(obj.get("cflags", []))
         self.headers: dict[str, str] = obj.get("headers", {})
+        self.vitis_mode = vitis_mode
         if work_dir is None:
             self.work_dir = tempfile.mkdtemp(prefix="tapa-")
             self.is_temp = True
@@ -492,7 +496,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                     task.module.add_signals([wire])
 
             if task.is_fifo_external(fifo_name):
-                task.connect_fifo_externally(fifo_name, task.name == self.top)
+                task.connect_fifo_externally(
+                    fifo_name, task.name == self.top and self.vitis_mode
+                )
 
     def _instantiate_fifos(self, task: Task, print_fifo_ops: bool) -> None:
         _logger.debug("  instantiating FIFOs in %s", task.name)
