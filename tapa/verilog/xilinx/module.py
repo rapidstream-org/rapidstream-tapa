@@ -55,6 +55,7 @@ from tapa.verilog.util import (
 )
 from tapa.verilog.xilinx.ast_types import Directive, IOPort, Logic, Signal
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
+from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import (
     CLK,
     CLK_SENS_LIST,
@@ -838,6 +839,10 @@ def get_rs_pragma(node: Input | Output) -> Pragma | None:
                         "RS_HS",
                         f"{node.name[:-len(port)]}.{get_rs_port(port)}",
                     )
+
+        for suffix, role in AXIS_PORTS.items():
+            if node.name.endswith(suffix):
+                return make_pragma("RS_HS", f"{node.name[:-len(suffix)]}.{role}")
 
         _logger.error("not adding pragma for unknown port '%s'", node.name)
         return None

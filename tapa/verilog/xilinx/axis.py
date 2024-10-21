@@ -37,6 +37,14 @@ AXIS_CONSTANTS = {
     "TKEEP": 1,
 }
 
+AXIS_PORTS = {
+    "_TDATA": "data",
+    "_TLAST": "data",
+    "_TVALID": "valid",
+    "_TREADY": "ready",
+    "_TKEEP": "data",
+}
+
 
 def get_axis_port_width_int(port: str, data_width: int) -> int:
     width = AXIS_PORT_WIDTHS[port]
