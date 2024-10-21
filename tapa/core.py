@@ -993,7 +993,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         """Codegen for the top task."""
         assert task.is_upper
         task.module.cleanup()
-        if task.name == self.top:
+        if task.name == self.top and self.vitis_mode:
             task.module.add_rs_pragmas()
         task.add_rs_pragmas_to_fsm()
 
