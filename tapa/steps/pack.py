@@ -75,7 +75,7 @@ def pack(output: str, bitstream_script: str | None) -> None:
         msg = "You must run `link` before you can `pack`."
         raise click.BadArgumentUsage(msg)
 
-    if settings.get("no-vitis-mode", False):
+    if not settings.get("vitis-mode", True):
         logging.warning(
             "you are not in Vitis mode, the generated RTL will not be packed."
         )
