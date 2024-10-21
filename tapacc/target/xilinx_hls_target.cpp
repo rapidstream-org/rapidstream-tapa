@@ -16,6 +16,8 @@ using llvm::StringRef;
 namespace tapa {
 namespace internal {
 
+extern bool vitis_mode;
+
 static void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {
   auto param_name = param->getNameAsString();
   auto add_dummy_read = [&add_line](std::string name) {
@@ -75,20 +77,35 @@ static void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelFunc(ADD_FOR_FUNC_ARGS_DEF) {
-  add_pragma({"HLS interface s_axilite port = return bundle = control"});
-  add_line("");
+  // Set top-level control to s_axilite for Vitis mode.
+  if (vitis_mode) {
+    add_pragma({"HLS interface s_axilite port = return bundle = control"});
+    add_line("");
+  }
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
-  add_pragma({"HLS interface axis port =", param->getNameAsString()});
-  AddDummyStreamRW(ADD_FOR_PARAMS_ARGS, true);
+  if (vitis_mode) {
+    add_pragma({"HLS interface axis port =", param->getNameAsString()});
+    AddDummyStreamRW(ADD_FOR_PARAMS_ARGS, true);
+  } else {
+    AddCodeForMiddleLevelStream(ADD_FOR_PARAMS_ARGS);
+  }
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
+  if (!vitis_mode) {
+    add_line("#error top-level async_mmaps not supported in non-Vitis mode");
+    return;
+  }
   AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS);
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
+  if (!vitis_mode) {
+    add_line("#error top-level mmaps not supported in non-Vitis mode");
+    return;
+  }
   auto param_name = param->getNameAsString();
   if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
     for (int i = 0; i < GetArraySize(param); ++i) {
@@ -103,9 +120,13 @@ void XilinxHLSTarget::AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {
-  add_pragma({"HLS interface s_axilite port =", param->getNameAsString(),
-              "bundle = control"});
-  AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS);
+  if (vitis_mode) {
+    add_pragma({"HLS interface s_axilite port =", param->getNameAsString(),
+                "bundle = control"});
+    AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS);
+  } else {
+    AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS);
+  }
 }
 
 void XilinxHLSTarget::AddCodeForMiddleLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
@@ -208,14 +229,20 @@ void XilinxHLSTarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {
-  // We need a empty shell.
-  auto lines = GenerateCodeForTopLevelFunc(func);
-  rewriter.ReplaceText(func->getBody()->getSourceRange(),
-                       "{\n" + llvm::join(lines, "\n") + "}\n");
+  if (vitis_mode) {
+    // We need a empty shell.
+    auto lines = GenerateCodeForTopLevelFunc(func);
+    rewriter.ReplaceText(func->getBody()->getSourceRange(),
+                         "{\n" + llvm::join(lines, "\n") + "}\n");
 
-  // SDAccel only works with extern C kernels.
-  rewriter.InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
-  rewriter.InsertTextAfterToken(func->getEndLoc(), "\n\n}  // extern \"C\"\n");
+    // Vitis only works with extern C kernels.
+    rewriter.InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
+    rewriter.InsertTextAfterToken(func->getEndLoc(),
+                                  "\n\n}  // extern \"C\"\n");
+  } else {
+    // Otherwise, treat it as a normal HLS kernel.
+    RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS);
+  }
 }
 
 void XilinxHLSTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
@@ -243,7 +270,8 @@ void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl* func,
         rewritten_text += "uint64_t " + GetArrayElem(param_name, i);
       }
       rewriter.ReplaceText(param->getSourceRange(), rewritten_text);
-    } else if (top && IsTapaType(param, "(i|o)stream")) {
+    } else if (top && IsTapaType(param, "(i|o)stream") && vitis_mode) {
+      // For Vitis mode, replace istream and ostream with qdma_axis.
       // TODO: support streams
       int width =
           param->getASTContext()

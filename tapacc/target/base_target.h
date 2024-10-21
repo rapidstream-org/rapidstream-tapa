@@ -29,7 +29,7 @@
 #define REWRITE_STMT_ARGS_DEF \
   const clang::Stmt *stmt, const clang::Attr *attr, clang::Rewriter &rewriter
 
-#define ADD_FOR_FUNC_ARGS func, add_line, add_pragma, rewriter
+#define ADD_FOR_FUNC_ARGS func, add_line, add_pragma
 #define ADD_FOR_PARAMS_ARGS param, add_line, add_pragma
 #define REWRITE_FUNC_ARGS func, rewriter
 #define REWRITE_DECL_ARGS decl, attr, rewriter

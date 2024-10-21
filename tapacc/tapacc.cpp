@@ -58,6 +58,7 @@ namespace tapa {
 namespace internal {
 
 const string* top_name;
+bool vitis_mode = true;
 
 class Consumer : public ASTConsumer {
  public:
@@ -162,6 +163,9 @@ static OptionCategory tapa_option_category("TAPA Compiler Companion");
 static llvm::cl::opt<string> tapa_opt_top_name(
     "top", NumOccurrencesFlag::Required, ValueExpected::ValueRequired,
     llvm::cl::desc("Top-level task name"), llvm::cl::cat(tapa_option_category));
+static llvm::cl::opt<bool> tapa_opt_vitis_mode(
+    "vitis", llvm::cl::desc("Enable Vitis mode"),
+    llvm::cl::cat(tapa_option_category));
 
 int main(int argc, const char** argv) {
   auto expected_parser =
@@ -170,6 +174,7 @@ int main(int argc, const char** argv) {
   ClangTool tool{parser.getCompilations(), parser.getSourcePathList()};
   string top_name{tapa_opt_top_name.getValue()};
   tapa::internal::top_name = &top_name;
+  tapa::internal::vitis_mode = tapa_opt_vitis_mode.getValue();
   int ret = tool.run(newFrontendActionFactory<tapa::internal::Action>().get());
   return ret;
 }
