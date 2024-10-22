@@ -48,7 +48,6 @@ cc_test(
     name = "frt-test",
     size = "small",
     srcs = glob(["**/*_test.cpp"]),
-    visibility = ["//visibility:public"],
     deps = [
         ":frt",
         "@googletest//:gtest",
