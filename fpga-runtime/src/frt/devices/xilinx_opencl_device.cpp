@@ -9,7 +9,6 @@
 #include <fstream>
 #include <initializer_list>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -25,20 +24,13 @@
 #include <CL/cl2.hpp>
 #include <nlohmann/json.hpp>
 
+#include "frt/devices/filesystem.h"
 #include "frt/devices/opencl_device_matcher.h"
 #include "frt/devices/opencl_util.h"
 #include "frt/devices/xilinx_environ.h"
 #include "frt/stream_wrapper.h"
 #include "frt/subprocess.h"
 #include "frt/tag.h"
-
-#ifdef __cpp_lib_filesystem
-#include <filesystem>
-namespace fs = std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#endif
 
 DEFINE_string(xocl_bdf, "",
               "if not empty, use the specified PCIe Bus:Device:Function "

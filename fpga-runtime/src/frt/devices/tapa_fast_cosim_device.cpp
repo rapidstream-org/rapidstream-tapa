@@ -26,17 +26,10 @@
 #include <nlohmann/json.hpp>
 
 #include "frt/arg_info.h"
+#include "frt/devices/filesystem.h"
 #include "frt/devices/xilinx_environ.h"
 #include "frt/subprocess.h"
 #include "frt/zip_file.h"
-
-#ifdef __cpp_lib_filesystem
-#include <filesystem>
-namespace fs = std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#endif
 
 DEFINE_bool(xosim_start_gui, false, "start Vivado GUI for simulation");
 DEFINE_bool(xosim_save_waveform, false, "save waveform in the work directory");
