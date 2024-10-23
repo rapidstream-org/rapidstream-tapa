@@ -15,8 +15,8 @@ from pathlib import Path
 
 import click
 
-import tapa.common.paths
-import tapa.util
+from tapa.common.paths import get_tapa_cflags, get_tapa_ldflags
+from tapa.util import get_xilinx_hls_path
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -35,28 +35,18 @@ def gcc(executable: str, argv: Iterable[str]) -> None:
     This is intended only for usage with pre-built binary installation.
     Developers building TAPA from source should compile binaries using `bazel`.
     """
-    installation_dir = tapa.util.get_installation_path().absolute()
     vendor_include_paths = []
-    xilinx_hls_path = tapa.util.get_xilinx_hls_path()
+    xilinx_hls_path = get_xilinx_hls_path()
     if xilinx_hls_path is not None:
         vendor_include_paths.append(Path(xilinx_hls_path) / "include")
+
     args = [
         executable,
         "-std=c++17",
-        f"-isystem{installation_dir}/usr/include",
+        *get_tapa_cflags(),
         *(f"-isystem{p}" for p in vendor_include_paths),
         *argv,
-        f"-Wl,-rpath,{installation_dir}/usr/lib",
-        f"-L{installation_dir}/usr/lib",
-        "-ltapa",
-        "-lcontext",
-        "-lthread",
-        "-lfrt",
-        "-lglog",
-        "-lgflags",
-        "-l:libOpenCL.so.1",
-        "-ltinyxml2",
-        "-lstdc++fs",
+        *get_tapa_ldflags(),
     ]
     _logger.info("running g++ command: %s", shlex.join(args))
     sys.exit(subprocess.run(args, check=False).returncode)
