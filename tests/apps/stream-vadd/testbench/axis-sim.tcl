@@ -26,7 +26,7 @@ foreach v_file $v_files {
 }
 
 # Add the testbench
-add_files -norecurse -fileset sim_1 $script_dir/VecAdd_tb.sv
+add_files -norecurse -fileset sim_1 $script_dir/axis-tb.sv
 
 # Set the top module for simulation
 set_property top VecAdd_tb [get_filesets sim_1]

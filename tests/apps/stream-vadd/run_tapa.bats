@@ -33,5 +33,5 @@ compile_xo() {
 
 @test "apps/stream-vadd: tapa generates an xo file and passes simulation" {
   compile_xo
-  vivado -mode batch -source VecAdd_sim.tcl -tclargs ${BATS_TMPDIR}/stream-vadd-workdir
+  vivado -mode batch -source testbench/axis-sim.tcl -tclargs ${BATS_TMPDIR}/stream-vadd-workdir
 }
