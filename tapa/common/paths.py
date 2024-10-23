@@ -6,8 +6,12 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import logging
+import sys
 from functools import cache
 from pathlib import Path
+
+_logger = logging.getLogger().getChild(__name__)
 
 # The potential paths for the distribution paths, in order of preference.
 # TAPA will attempt to find the executable by iteratively visiting each
@@ -27,6 +31,10 @@ POTENTIAL_PATHS: dict[str, tuple[str, ...]] = {
     "tapa-lib": (
         "tapa-lib",
         "usr/include",
+    ),
+    "tapa-lib-link": (
+        "tapa-lib",
+        "usr/lib",
     ),
     "tapa-system-include": (
         "tapa-system-include/tapa-system-include",
@@ -58,3 +66,50 @@ def find_resource(file: str) -> Path | None:
                 return potential_path
 
     return None
+
+
+@cache
+def get_tapa_cflags() -> tuple[str, ...]:
+    """Return the CFLAGS for compiling TAPA programs.
+
+    The CFLAGS include the TAPA include and system include paths
+    when applicable.
+    """
+    # Add TAPA include files to tapacc cflags
+    tapa_include = find_resource("tapa-lib")
+    if tapa_include is None:
+        _logger.error("unable to find tapa include folder")
+        sys.exit(-1)
+    tapa_extra_runtime_include = find_resource("tapa-extra-runtime-include")
+    if tapa_extra_runtime_include is None:
+        _logger.error("unable to find tapa runtime include folder")
+        sys.exit(-1)
+
+    return ("-isystem", str(tapa_include), "-isystem", str(tapa_extra_runtime_include))
+
+
+@cache
+def get_tapa_ldflags() -> tuple[str, ...]:
+    """Return the LDFLAGS for linking TAPA programs.
+
+    The LDFLAGS include the TAPA library path when applicable,
+    and adds the -l flags for the TAPA libraries.
+    """
+    tapa_lib_link = find_resource("tapa-lib-link")
+    if tapa_lib_link is None:
+        _logger.error("unable to find tapa library folder")
+        sys.exit(-1)
+
+    return (
+        f"-Wl,-rpath,{tapa_lib_link}",
+        f"-L{tapa_lib_link}",
+        "-ltapa",
+        "-lcontext",
+        "-lthread",
+        "-lfrt",
+        "-lglog",
+        "-lgflags",
+        "-l:libOpenCL.so.1",
+        "-ltinyxml2",
+        "-lstdc++fs",
+    )

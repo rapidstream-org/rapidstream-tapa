@@ -19,7 +19,7 @@ from pathlib import Path
 import click
 
 from tapa.common.graph import Graph as TapaGraph
-from tapa.common.paths import find_resource
+from tapa.common.paths import find_resource, get_tapa_cflags
 from tapa.core import Program
 from tapa.steps.common import (
     get_work_dir,
@@ -189,16 +189,6 @@ def find_tapacc_cflags(
       click.UsageError: Unable to find the include folders.
 
     """
-    # Add TAPA include files to tapacc cflags
-    tapa_include = find_resource("tapa-lib")
-    if tapa_include is None:
-        _logger.error("unable to find tapa include folder")
-        sys.exit(-1)
-    tapa_extra_runtime_include = find_resource("tapa-extra-runtime-include")
-    if tapa_extra_runtime_include is None:
-        _logger.error("unable to find tapa runtime include folder")
-        sys.exit(-1)
-
     # Add vendor include files to tapacc cflags
     vendor_include_paths = ()
     for vendor_path in get_vendor_include_paths():
@@ -218,8 +208,7 @@ def find_tapacc_cflags(
         + ("-DNDEBUG",)
         # Use the stdc++ library from the HLS toolchain.
         + ("-nostdinc++",)
-        + ("-isystem", str(tapa_include))
-        + ("-isystem", str(tapa_extra_runtime_include))
+        + get_tapa_cflags()
         + vendor_include_paths,
         tuple(system_includes),
     )
