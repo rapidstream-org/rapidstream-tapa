@@ -2,12 +2,13 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-set work_dir $argv
+set work_dir [lindex $argv 0]
+set testbench_path [lindex $argv 1]
+
 set proj_name "vecadd_proj"
 set proj_dir "$work_dir/vivado_proj"
 set source_dir "$work_dir/hdl"
 set log_file "$proj_dir/$proj_name.sim/sim_1/behav/xsim/simulate.log"
-set script_dir [file dirname [file normalize [info script]]]
 
 create_project -force $proj_name $proj_dir
 
@@ -26,7 +27,7 @@ foreach v_file $v_files {
 }
 
 # Add the testbench
-add_files -norecurse -fileset sim_1 $script_dir/axis-tb.sv
+add_files -norecurse -fileset sim_1 $testbench_path
 
 # Set the top module for simulation
 set_property top VecAdd_tb [get_filesets sim_1]
