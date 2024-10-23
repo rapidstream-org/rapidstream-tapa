@@ -86,16 +86,16 @@ module VecAdd_tb();
         a_TDATA = $shortrealtobits(0.0 + i);
         a_TKEEP = 4'hF;
         a_TLAST = 0;
-        while (!a_TREADY) @(posedge ap_clk);
         @(posedge ap_clk);
+        while (!a_TREADY) @(posedge ap_clk);
       end
 
       a_TVALID = 1;
       a_TDATA = 0;
       a_TKEEP = 4'hF;
       a_TLAST = 1;
-      while (!a_TREADY) @(posedge ap_clk);
       @(posedge ap_clk);
+      while (!a_TREADY) @(posedge ap_clk);
 
       a_TVALID = 0;
     end
@@ -109,16 +109,16 @@ module VecAdd_tb();
         b_TDATA = $shortrealtobits(1.0 + i);
         b_TKEEP = 4'hF;
         b_TLAST = 0;
-        while (!b_TREADY) @(posedge ap_clk);
         @(posedge ap_clk);
+        while (!b_TREADY) @(posedge ap_clk);
       end
 
       b_TVALID = 1;
       b_TDATA = 0;
       b_TKEEP = 4'hF;
       b_TLAST = 1;
-      while (!b_TREADY) @(posedge ap_clk);
       @(posedge ap_clk);
+      while (!b_TREADY) @(posedge ap_clk);
 
       b_TVALID = 0;
     end
