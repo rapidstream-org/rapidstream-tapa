@@ -12,11 +12,11 @@ compile_host() {
   [ -x "${BATS_TMPDIR}/stream-vadd-host" ]
 }
 
-compile_xo() {
+compile_xo_axis() {
   cd "${BATS_TEST_DIRNAME}"
 
-  ${RAPIDSTREAM_TAPA_HOME}/usr/bin/tapa \
-    -w ${BATS_TMPDIR}/stream-vadd-workdir \
+  tapa \
+    -w ${BATS_TMPDIR}/stream-vadd-axis-workdir \
     compile \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f vadd.cpp \
@@ -26,12 +26,41 @@ compile_xo() {
   [ -f "${BATS_TMPDIR}/stream-vadd.xo" ]
 }
 
+compile_hls() {
+  cd "${BATS_TEST_DIRNAME}"
+
+  tapa \
+    -w ${BATS_TMPDIR}/stream-vadd-hls-workdir \
+    compile \
+    --no-vitis-mode \
+    --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
+    -f vadd.cpp \
+    -t VecAdd
+
+  [ -d "${BATS_TMPDIR}/stream-vadd-hls-workdir" ]
+}
+
 @test "apps/stream-vadd: tapa c simulation passes" {
   compile_host
   ${BATS_TMPDIR}/stream-vadd-host
 }
 
-@test "apps/stream-vadd: tapa generates an xo file and passes simulation" {
-  compile_xo
-  vivado -mode batch -source testbench/axis-sim.tcl -tclargs ${BATS_TMPDIR}/stream-vadd-workdir
+@test "apps/stream-vadd: tapa generates an xo file for axis and passes simulation" {
+  compile_xo_axis
+  vivado \
+    -mode batch \
+    -source testbench/sim.tcl \
+    -tclargs \
+      ${BATS_TMPDIR}/stream-vadd-axis-workdir \
+      testbench/axis-tb.sv
+}
+
+@test "apps/stream-vadd: tapa generates rtl for hls stream and passes simulation" {
+  compile_hls
+  vivado \
+    -mode batch \
+    -source testbench/sim.tcl \
+    -tclargs \
+      ${BATS_TMPDIR}/stream-vadd-hls-workdir \
+      testbench/hls-stream-tb.sv
 }
