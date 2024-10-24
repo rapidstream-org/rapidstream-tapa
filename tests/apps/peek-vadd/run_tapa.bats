@@ -6,7 +6,7 @@ compile_host() {
   cd "${BATS_TEST_DIRNAME}"
 
   tapa g++ \
-    peek-vadd-host.cpp vadd.cpp \
+    vadd-host.cpp vadd.cpp \
     -o ${BATS_TMPDIR}/vadd-host
 
   [ -x "${BATS_TMPDIR}/peek-vadd-host" ]
