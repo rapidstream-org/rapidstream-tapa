@@ -1,3 +1,5 @@
+"""Generate a Vivado TCL script for cosimulation."""
+
 __copyright__ = """
 Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
@@ -10,10 +12,13 @@ def get_vivado_tcl(
     tb_rtl_path: str,
     save_waveform: bool,
 ) -> list[str]:
+    """Generate a Vivado TCL script for cosimulation."""
     tapa_hdl_path = config["verilog_path"]
 
     script = []
-    script.append("create_project -force tapa-fast-cosim ./vivado")
+
+    part_num = config["part_num"]
+    script.append(f"create_project -force tapa-fast-cosim ./vivado -part {part_num}")
 
     # read in the original RTLs by HLS
     script.append(f'set ORIG_RTL_PATH "{tapa_hdl_path}"')
