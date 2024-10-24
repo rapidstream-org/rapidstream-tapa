@@ -6,7 +6,7 @@ compile_host() {
   cd "${BATS_TEST_DIRNAME}"
 
   tapa g++ \
-    vadd-host.cpp detached-vadd.cpp \
+    vadd-host.cpp vadd.cpp \
     -o ${BATS_TMPDIR}/detached-vadd-host
 
   [ -x "${BATS_TMPDIR}/detached-vadd-host" ]
