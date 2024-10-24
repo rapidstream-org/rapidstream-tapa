@@ -39,6 +39,9 @@ DEFINE_string(xosim_work_dir, "",
 DEFINE_string(xosim_executable, "",
               "if not empty, use the specified executable instead of "
               "`tapa-fast-cosim`");
+DEFINE_bool(xosim_setup_only, false, "only setup the simulation");
+DEFINE_bool(xosim_resume_from_post_sim, false,
+            "skip simulation and do post-sim checking");
 
 namespace fpga {
 namespace internal {
@@ -237,10 +240,24 @@ void TapaFastCosimDevice::Exec() {
   if (FLAGS_xosim_save_waveform) {
     argv.push_back("--save_waveform");
   }
+  if (FLAGS_xosim_setup_only) {
+    argv.push_back("--setup_only");
+  }
+
+  // skip launch the simulation if resume from post sim
+  if (FLAGS_xosim_resume_from_post_sim) {
+    return;
+  }
+
   int rc =
       subprocess::Popen(argv, subprocess::environment(xilinx::GetEnviron()))
           .wait();
   LOG_IF(FATAL, rc != 0) << "TAPA fast cosim failed";
+
+  // skip the rest of the function if only setup is needed
+  if (FLAGS_xosim_setup_only) {
+    exit(0);
+  }
 
   compute_time_ = clock::now() - tic;
 }

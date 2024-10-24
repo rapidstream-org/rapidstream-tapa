@@ -138,13 +138,15 @@ def set_default_nettype(verilog_path: str) -> None:
                 f.write("`default_nettype wire\n" + content)
 
 
-if __name__ == "__main__":
+def main() -> None:  # pylint: disable=too-many-locals
+    """Main entry point for the TAPA fast cosim tool."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path", type=str, required=True)
     parser.add_argument("--tb_output_dir", type=str, required=True)
     parser.add_argument("--launch_simulation", action="store_true")
     parser.add_argument("--save_waveform", action="store_true")
     parser.add_argument("--start_gui", action="store_true")
+    parser.add_argument("--setup_only", action="store_true")
     args = parser.parse_args()
 
     _logger.info("TAPA fast cosim version: %s", __version__)
@@ -200,12 +202,19 @@ if __name__ == "__main__":
     with open(f"{args.tb_output_dir}/run/run_cosim.tcl", "w", encoding="utf-8") as fp:
         fp.write("\n".join(vivado_script))
 
+    if args.setup_only:
+        _logger.info("User requested to only setup the cosim environment, exiting...")
+        return
+
     # launch simulation
     mode = "gui" if args.start_gui else "batch"
     command = ["vivado", "-mode", mode, "-source", "run_cosim.tcl"]
     if args.launch_simulation:
-        _logger.info("Vivado command: %s", command)
-        _logger.info("Starting Vivado...")
+        _logger.info("Running vivado command: %s", command)
         subprocess.run(
             command, cwd=Path(f"{args.tb_output_dir}/run").resolve(), check=True
         )
+
+
+if __name__ == "__main__":
+    main()
