@@ -23,7 +23,7 @@ compile_xo() {
     -t VecAdd \
     -o ${BATS_TMPDIR}/mmaps-strms-vadd.xo
 
-  [ -f "${BATS_TMPDIR}/vavadd-mmaps-strmsdd.xo" ]
+  [ -f "${BATS_TMPDIR}/mmaps-strms-vadd.xo" ]
 }
 
 @test "apps/vavadd-mmaps-strmsdd: tapa c simulation passes" {
