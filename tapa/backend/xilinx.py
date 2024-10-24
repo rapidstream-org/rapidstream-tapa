@@ -142,7 +142,9 @@ set tmp_ip_dir "{tmpdir}/tmp_ip_dir"
 set tmp_project "{tmpdir}/tmp_project"
 
 create_project -force kernel_pack ${{tmp_project}}{part_num}
-add_files -norecurse [glob {hdl_dir}/*.v {hdl_dir}/*/*.v {hdl_dir}/*.dat]
+add_files {{
+  {src_files}
+}}
 foreach tcl_file [glob -nocomplain {hdl_dir}/*.tcl {hdl_dir}/*/*.tcl] {{
   source ${{tcl_file}}
 }}
@@ -229,9 +231,14 @@ class PackageXo(Vivado):
             for key, value in m_axi_names.get(m_axi_name, {}).items():
                 bus_ifaces.append(BUS_PARAM.format(m_axi_iface_name, key, value))
 
+        # get all files under hdl_dir that does not ends with .tcl
+        all_files = glob.glob(f"{hdl_dir}/**", recursive=True)
+        src_files = [f for f in all_files if not f.endswith(".tcl")]
+
         kwargs = {
             "top_name": top_name,
             "kernel_xml": kernel_xml,
+            "src_files": " ".join(src_files),
             "hdl_dir": hdl_dir,
             "xo_file": xo_file,
             "bus_ifaces": "".join(bus_ifaces),
