@@ -55,7 +55,7 @@ runs:
         run: |
           bucket="${{ inputs.cloudflareR2BucketName }}"
           channel="${{ inputs.channel }}"
-          version=$(date +%Y%m%d%H%M%S)
+          version="$(cat VERSION)"
           retry -- wrangler r2 object put \
             \$bucket/rapidstream-tapa-\$channel-latest.tar.gz \
             --file=/workspace/artifacts.out/tapa.tar.gz
