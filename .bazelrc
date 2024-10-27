@@ -1,22 +1,14 @@
 build --copt=-DBOOST_USE_ASAN
 build --copt=-DBOOST_USE_UCONTEXT
 
-build:asan --copt -DADDRESS_SANITIZER
-build:asan --copt -O1
-build:asan --copt -fno-omit-frame-pointer
+build:asan --compilation_mode=dbg
 build:asan --copt -fsanitize=address
-build:asan --copt -g
 build:asan --linkopt -fsanitize=address
 build:asan --strip=never
 
 build:release --compilation_mode=opt
-build:release --copt=-DNDEBUG
 build:release --copt=-Os
-build:release --copt=-fPIC
 build:release --copt=-flto=thin
-build:release --copt=-g0
-build:release --cxxopt=-stdlib=libstdc++
 build:release --linkopt=-Os
 build:release --linkopt=-flto=thin
-build:release --linkopt=-lstdc++
 build:release --strip=always

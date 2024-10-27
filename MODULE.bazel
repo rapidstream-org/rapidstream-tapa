@@ -11,7 +11,6 @@ module(name = "rapidstream-tapa")
 
 # Bazel dependencies
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "patchelf", version = "0.18.0")
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "rules_cc", version = "0.0.9")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
@@ -31,7 +30,10 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 
 # LLVM toolchain
-llvm.toolchain(llvm_version = "16.0.0")
+llvm.toolchain(
+    llvm_version = "16.0.0",
+    stdlib = {"": "stdc++"},
+)
 use_repo(llvm, "llvm_toolchain")
 use_repo(llvm, "llvm_toolchain_llvm")
 
@@ -114,6 +116,47 @@ http_archive(
     sha256 = "b3f1dc5b17e75328f19bd88250bee2ef9f91fc8cbb7bd48bdb31390338636052",
     strip_prefix = "binutils-2.38",
     urls = ["https://ftp.gnu.org/gnu/binutils/binutils-2.38.tar.gz"],
+)
+
+bazel_dep(name = "patchelf", version = "0.18.0")
+
+# For compatibility with GCC7
+# Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/4f4bad8f463685498cf9e0a4ba45ffe9e290a853/modules/patchelf/0.18.0/patches
+git_override(
+    module_name = "patchelf",
+    commit = "a0f54334df36770b335c051e540ba40afcbf8378",
+    patch_cmds = [
+        # 0001-Add-MODULE.bazel.patch
+        """
+        cat >BUILD.bazel <<EOF
+cc_binary(
+    name = "patchelf",
+    srcs = glob([
+        "src/*.cc",
+        "src/*.h",
+    ]),
+    copts = [
+        "-std=c++17",
+    ],
+    local_defines = [
+        "D_FILE_OFFSET_BITS=64",
+    ],
+    visibility = ["//visibility:public"],
+)
+EOF
+""",
+        # 0002-Add-BUILD.bazel.patch
+        """
+        cat >MODULE.bazel <<EOF
+module(
+    name = "patchelf",
+    version = "0.18.0",
+    compatibility_level = 0,
+)
+EOF
+""",
+    ],
+    remote = "https://github.com/NixOS/patchelf.git",
 )
 
 # Build LLVM from source
