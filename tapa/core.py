@@ -339,14 +339,20 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 msg = f"HLS failed for {task.name}"
                 raise RuntimeError(msg)
 
-        worker_num: int | None = None
+        worker_num = nproc()
         if worker_num_str := os.getenv("TAPA_CONCURRENCY", None) is None:
-            worker_num = nproc()
-        else:
-            worker_num = int(worker_num_str)
+            if int(worker_num_str) > 0:
+                worker_num = int(worker_num_str)
+            else:
+                _logger.warning(
+                    "TAPA_CONCURRENCY is set to %s, which is invalid; using %d",
+                    worker_num_str,
+                    worker_num,
+                )
 
         _logger.info(
-            "spawn %d workers for parallel HLS synthesis of the tasks",
+            "spawn %d workers for parallel HLS synthesis of the tasks. Set the "
+            "TAPA_CONCURRENCY environment variable to change the number of workers",
             worker_num,
         )
         with futures.ThreadPoolExecutor(max_workers=worker_num) as executor:
