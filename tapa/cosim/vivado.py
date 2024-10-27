@@ -18,6 +18,14 @@ def get_vivado_tcl(
     script = []
 
     part_num = config["part_num"]
+
+    if not part_num:
+        msg = (
+            "part_num is not set. Either provide an xo that contains HLS reports or "
+            "use the --xosim-part-num option to specify the part number."
+        )
+        raise ValueError(msg)
+
     script.append(f"create_project -force tapa-fast-cosim ./vivado -part {part_num}")
 
     # read in the original RTLs by HLS

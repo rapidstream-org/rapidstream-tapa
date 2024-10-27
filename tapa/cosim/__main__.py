@@ -143,6 +143,7 @@ def main() -> None:  # pylint: disable=too-many-locals
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path", type=str, required=True)
     parser.add_argument("--tb_output_dir", type=str, required=True)
+    parser.add_argument("--part_num", type=str, required=False)
     parser.add_argument("--launch_simulation", action="store_true")
     parser.add_argument("--save_waveform", action="store_true")
     parser.add_argument("--start_gui", action="store_true")
@@ -151,7 +152,7 @@ def main() -> None:  # pylint: disable=too-many-locals
 
     _logger.info("TAPA fast cosim version: %s", __version__)
 
-    config = preprocess_config(args.config_path, args.tb_output_dir)
+    config = preprocess_config(args.config_path, args.tb_output_dir, args.part_num)
 
     top_name = config["top_name"]
     verilog_path = config["verilog_path"]

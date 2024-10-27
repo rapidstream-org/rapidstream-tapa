@@ -89,6 +89,13 @@ name. For instance, to build only the TAPA compiler:
 
    To view all available targets, run ``bazel query //...``.
 
+To skip building for the tests, you could use:
+
+.. code-block:: bash
+
+   bazel build //... -- -//tests/...
+
+
 After the build process completes, you can find the compiled binaries in the
 ``bazel-bin`` directory. For example, the TAPA compiler binary is located at
 ``bazel-bin/tapa/tapa``.
