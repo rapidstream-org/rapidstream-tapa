@@ -339,7 +339,12 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 msg = f"HLS failed for {task.name}"
                 raise RuntimeError(msg)
 
-        worker_num = nproc()
+        worker_num: int | None = None
+        if worker_num_str := os.getenv("TAPA_CONCURRENCY", None) is None:
+            worker_num = nproc()
+        else:
+            worker_num = int(worker_num_str)
+
         _logger.info(
             "spawn %d workers for parallel HLS synthesis of the tasks",
             worker_num,
