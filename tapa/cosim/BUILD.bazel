@@ -23,6 +23,9 @@ nuitka_binary(
 py_binary(
     name = "tapa-fast-cosim",
     srcs = ["__main__.py"],
+    data = [
+        "//fpga-runtime:tapa_fast_cosim_dpi",
+    ],
     main = "__main__.py",
     visibility = ["//visibility:public"],
     deps = [

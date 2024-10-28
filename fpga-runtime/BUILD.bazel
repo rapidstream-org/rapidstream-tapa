@@ -5,6 +5,7 @@
 # RapidStream Contributor License Agreement.
 
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files", "strip_prefix")
+load("//bazel:dpi_rules.bzl", "dpi_library")
 
 cc_library(
     name = "frt",
@@ -15,6 +16,7 @@ cc_library(
         ],
         exclude = [
             "src/frt/**/*_test.cpp",
+            "src/frt/devices/tapa_fast_cosim_dpi.cpp",
         ],
     ),
     hdrs = [
@@ -59,6 +61,23 @@ cc_test(
     ],
 )
 
+dpi_library(
+    name = "tapa_fast_cosim_dpi",
+    srcs = [
+        "src/frt/devices/shared_memory_queue.cpp",
+        "src/frt/devices/tapa_fast_cosim_dpi.cpp",
+    ],
+    hdrs = [
+        "src/frt/devices/shared_memory_queue.h",
+    ],
+    includes = ["src"],
+    visibility = ["//tapa/cosim:__pkg__"],
+    deps = [
+        "@glog",
+        "@xsim//:svdpi",
+    ],
+)
+
 filegroup(
     name = "include",
     srcs = [
@@ -79,7 +98,10 @@ filegroup(
 
 pkg_files(
     name = "pkg-lib",
-    srcs = [":frt"],
+    srcs = [
+        ":frt",
+        ":tapa_fast_cosim_dpi",
+    ],
     prefix = "usr/lib",
     strip_prefix = strip_prefix.files_only(),
     visibility = ["//visibility:public"],

@@ -93,6 +93,20 @@ cc_library(
     path = "/opt/tools/xilinx/Vitis_HLS/2024.1",
 )
 
+new_local_repository(
+    name = "xsim",
+    build_file_content = """
+cc_library(
+    name = "svdpi",
+    hdrs = glob(["include/svdpi.h"]),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+    """,
+    # Use the oldest supported version to ensure compatibility
+    path = "/opt/tools/xilinx/Vivado/2022.1/data/xsim",
+)
+
 # Required by FRT
 bazel_dep(name = "tinyxml2", version = "10.0.0")
 bazel_dep(name = "libuuid", version = "2.39.3.bcr.1")

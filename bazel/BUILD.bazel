@@ -37,3 +37,8 @@ sh_binary(
 )
 
 exports_files(srcs = ["vitis_hls_env.sh"])
+
+sh_binary(
+    name = "xsc",
+    srcs = ["xsc.sh"],
+)
