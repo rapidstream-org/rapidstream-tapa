@@ -8,27 +8,27 @@ load("//bazel:tapa_rules.bzl", "tapa_xo")
 load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
 sh_test(
-    name = "mmaps-strms-vadd",
+    name = "mmaps-iostrms-vadd",
     size = "medium",
     srcs = ["//bazel:v++_env.sh"],
-    args = ["$(location mmaps-strms-vadd-host)"],
-    data = [":mmaps-strms-vadd-host"],
+    args = ["$(location mmaps-iostrms-vadd-host)"],
+    data = [":mmaps-iostrms-vadd-host"],
     env = {"TAPA_CONCURRENCY": "1"},
 )
 
 sh_test(
-    name = "mmaps-strms-vadd-xosim",
+    name = "mmaps-iostrms-vadd-xosim",
     size = "large",
     srcs = ["//bazel:v++_env.sh"],
     args = [
-        "$(location mmaps-strms-vadd-host)",
-        "--bitstream=$(location mmaps-strms-vadd-xo)",
+        "$(location mmaps-iostrms-vadd-host)",
+        "--bitstream=$(location mmaps-iostrms-vadd-xo)",
         "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
         "1000",
     ],
     data = [
-        ":mmaps-strms-vadd-host",
-        ":mmaps-strms-vadd-xo",
+        ":mmaps-iostrms-vadd-host",
+        ":mmaps-iostrms-vadd-xo",
         "//tapa/cosim:tapa-fast-cosim",
     ],
     tags = [
@@ -37,17 +37,17 @@ sh_test(
 )
 
 sh_test(
-    name = "mmaps-strms-vadd-cosim",
+    name = "mmaps-iostrms-vadd-cosim",
     size = "large",
     srcs = ["//bazel:v++_env.sh"],
     args = [
-        "$(location mmaps-strms-vadd-host)",
-        "--bitstream=$(location mmaps-strms-vadd-hw-emu-xclbin)",
+        "$(location mmaps-iostrms-vadd-host)",
+        "--bitstream=$(location mmaps-iostrms-vadd-hw-emu-xclbin)",
         "1000",
     ],
     data = [
-        ":mmaps-strms-vadd-host",
-        ":mmaps-strms-vadd-hw-emu-xclbin",
+        ":mmaps-iostrms-vadd-host",
+        ":mmaps-iostrms-vadd-hw-emu-xclbin",
     ],
     tags = [
         "cpu:2",
@@ -55,7 +55,7 @@ sh_test(
 )
 
 cc_binary(
-    name = "mmaps-strms-vadd-host",
+    name = "mmaps-iostrms-vadd-host",
     srcs = glob([
         "*.cpp",
         "*.h",
@@ -68,7 +68,7 @@ cc_binary(
 )
 
 tapa_xo(
-    name = "mmaps-strms-vadd-xo",
+    name = "mmaps-iostrms-vadd-xo",
     src = "vadd.cpp",
     hdrs = glob(["*.h"]),
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
@@ -76,9 +76,9 @@ tapa_xo(
 )
 
 vpp_xclbin(
-    name = "mmaps-strms-vadd-hw-emu-xclbin",
+    name = "mmaps-iostrms-vadd-hw-emu-xclbin",
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     target = "hw_emu",
     top_name = "VecAdd",
-    xo = ":mmaps-strms-vadd-xo",
+    xo = ":mmaps-iostrms-vadd-xo",
 )
