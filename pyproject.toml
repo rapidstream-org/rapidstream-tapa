@@ -114,3 +114,15 @@ ignore = [
 
 [tool.ruff.format]
 docstring-code-format = true
+
+
+[tool.pyright]
+exclude = [
+  # Please keep sorted
+  "**/.*",
+  "**/__pycache__",
+  "**/node_modules",
+  "bazel-*",
+  "build",
+  "external",
+]
