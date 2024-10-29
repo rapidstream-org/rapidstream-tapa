@@ -93,7 +93,7 @@ RUN curl -sSL \
 
 # Install Pre-Commit
 RUN curl -sSL \
-        https://github.com/niess/python-appimage/releases/download/python3.12/python3.12.3-cp312-cp312-manylinux2014_x86_64.AppImage \
+        https://github.com/niess/python-appimage/releases/download/python3.12/python3.12.7-cp312-cp312-manylinux2014_x86_64.AppImage \
         -o /opt/python3.12 && \
     chmod +x /opt/python3.12 && \
     cd /opt && \
