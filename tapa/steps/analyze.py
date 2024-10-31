@@ -201,11 +201,14 @@ def find_tapacc_cflags(
     if system_include_path:
         system_includes.extend(["-isystem", str(system_include_path)])
 
-    # WORKAROUND: -DNDEBUG is added to disable assertions in the generated
-    #             code, which are not be supported by the HLS tool.
+    # TODO: Vitis HLS highly depends on the assert to be defined in
+    #       the system include path in a certain way. One attempt was
+    #       to disable NDEBUG but this causes hls::assume to fail.
+    #       A full solution is to provide tapa::assume that guarantees
+    #       the produce the pattern that HLS likes.
+    #       For now, newer versions of glibc will not be supported.
     return (
         cflags[:]
-        + ("-DNDEBUG",)
         # Use the stdc++ library from the HLS toolchain.
         + ("-nostdinc++",)
         + get_tapa_cflags()
