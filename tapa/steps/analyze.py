@@ -298,6 +298,8 @@ def run_flatten(
                 #        synthesis-specific macros, as the macros will be
                 #        expanded by clang cpp.
                 "-D__SYNTHESIS__",
+                "-DAESL_SYN",
+                "-DAP_AUTOCC",
                 "-DTAPA_TARGET_DEVICE_",
                 "-DTAPA_TARGET_STUB_",
                 *cflags,
