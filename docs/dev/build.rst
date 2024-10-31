@@ -22,6 +22,8 @@ To build TAPA from source, you need:
 - `Bazel <https://bazel.build>`_ 7.3.2 or later
 - `Binutils <https://www.gnu.org/software/binutils/>`_ 2.30 or later
 - `Git <https://git-scm.com>`_
+- `Libstdc++ <https://gcc.gnu.org/libstdc++/>`_ matching the most recent GCC
+  version installed on your system
 - `Python <https://www.python.org>`_ 3.6 or later
 - :ref:`Other TAPA dependencies <user/installation:System Prerequisites>`
 
