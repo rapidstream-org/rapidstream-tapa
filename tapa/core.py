@@ -340,7 +340,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 raise RuntimeError(msg)
 
         worker_num = nproc()
-        if worker_num_str := os.getenv("TAPA_CONCURRENCY", None) is None:
+        if worker_num_str := os.getenv("TAPA_CONCURRENCY", None):
             if int(worker_num_str) > 0:
                 worker_num = int(worker_num_str)
             else:
