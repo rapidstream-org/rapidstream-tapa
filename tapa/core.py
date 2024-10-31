@@ -351,10 +351,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 )
 
         _logger.info(
-            "spawn %d workers for parallel HLS synthesis of the tasks. Set the "
-            "TAPA_CONCURRENCY environment variable to change the number of workers",
-            worker_num,
+            "spawn %d workers for parallel HLS synthesis of the tasks", worker_num
         )
+        _logger.info("set TAPA_CONCURRENCY to change the number of workers")
         with futures.ThreadPoolExecutor(max_workers=worker_num) as executor:
             any(executor.map(worker, self._tasks.values(), itertools.count(0)))
 
