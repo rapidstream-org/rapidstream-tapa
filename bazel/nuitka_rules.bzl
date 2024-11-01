@@ -26,6 +26,7 @@ def _nuitka_binary_impl(ctx):
     #   mkdir -p /tmp/.nuitka_cache  # This won't be written, but must exist.
     #   mkdir -p "/var/tmp/${USER}/nuitka-cache"  # This will be written.
     #   echo "build --sandbox_add_mount_pair=/var/tmp/${USER}/nuitka-cache:/tmp/.nuitka_cache" >> ~/.bazelrc
+    #   echo "build --sandbox_writable_path=/tmp/.nuitka_cache" >> ~/.bazelrc
     nuitka_cmd = [
         nuitka.path,
         src.path,
