@@ -39,6 +39,7 @@ class SharedMemoryQueue {
 
   int64_t size() const;
   int64_t capacity() const;
+  int64_t width() const;
   bool empty() const;
   bool full() const;
   std::string front() const;

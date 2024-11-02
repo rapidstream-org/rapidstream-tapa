@@ -114,6 +114,8 @@ int64_t SharedMemoryQueue::size() const { return head_ - tail_; }
 
 int64_t SharedMemoryQueue::capacity() const { return depth_; }
 
+int64_t SharedMemoryQueue::width() const { return width_; }
+
 bool SharedMemoryQueue::empty() const { return size() <= 0; }
 
 bool SharedMemoryQueue::full() const { return size() >= capacity(); }

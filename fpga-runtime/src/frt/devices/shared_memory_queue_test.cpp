@@ -58,5 +58,14 @@ TEST_F(SharedMemoryQueueTest, PopFailsWhenEmpty) {
   EXPECT_DEATH(queue_->pop(), "empty");
 }
 
+TEST_F(SharedMemoryQueueTest, GettersSucceed) {
+  EXPECT_EQ(queue_->width(), kWidth);
+  EXPECT_EQ(queue_->capacity(), kDepth);
+  EXPECT_EQ(queue_->size(), 0);
+
+  queue_->push("val");
+  EXPECT_EQ(queue_->size(), 1);
+}
+
 }  // namespace
 }  // namespace fpga::internal
