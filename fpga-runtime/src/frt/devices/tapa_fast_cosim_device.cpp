@@ -11,8 +11,8 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -213,16 +213,22 @@ void TapaFastCosimDevice::Exec() {
 
   nlohmann::json json;
   json["xo_path"] = xo_path;
-  auto& scalar_to_val = json["scalar_to_val"];
+
+  nlohmann::json scalar_to_val = nlohmann::json::object();
   for (const auto& [index, scalar] : scalars_) {
     scalar_to_val[std::to_string(index)] = scalar;
   }
-  auto& axi_to_c_array_size = json["axi_to_c_array_size"];
-  auto& axi_to_data_file = json["axi_to_data_file"];
+  json["scalar_to_val"] = std::move(scalar_to_val);
+
+  nlohmann::json axi_to_c_array_size = nlohmann::json::object();
+  nlohmann::json axi_to_data_file = nlohmann::json::object();
   for (const auto& [index, content] : buffer_table_) {
     axi_to_c_array_size[std::to_string(index)] = content.SizeInCount();
     axi_to_data_file[std::to_string(index)] = GetInputDataPath(work_dir, index);
   }
+  json["axi_to_c_array_size"] = std::move(axi_to_c_array_size);
+  json["axi_to_data_file"] = std::move(axi_to_data_file);
+
   std::ofstream(GetConfigPath(work_dir)) << json.dump(2);
 
   std::vector<std::string> argv;
