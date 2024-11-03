@@ -12,7 +12,7 @@ RapidStream Contributor License Agreement.
 
 This design source is collected from [Sextans](https://github.com/linghaosong/Sextans).
 
-## How to Run
+## How to Run the Regression
 
 To reproduce the result, please simply run:
 ```
@@ -21,7 +21,7 @@ bash run_tapaopt.sh
 ```
 
 To run from the very beginning,
-1. the [Sextans1613.xo](./rapidstream/Sextans1613.xo) is generated from [./tapa](./tapa/).
+1. the [sextans1613-u55c-333MHz.xo](./rapidstream/sextans1613-u55c-333MHz.xo) is generated from [./tapa](./tapa/).
    * Please check the [README](./tapa/README.md) to understand the update in [run_tapa.sh](./tapa/run_tapa.sh).
    * run `bash run_tapa.sh` to generate the Vitis XO file.
 2. Make sure your `--tapa-xo-path` in [run_tapaopt.sh](./rapidstream/run_tapaopt.sh) is set to the newly generated Vitis XO file (if applicable).
