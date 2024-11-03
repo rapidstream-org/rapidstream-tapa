@@ -1,0 +1,8 @@
+{
+    "max_workers": 5,
+    "placement_strategy": "EarlyBlockPlacement",
+    "port_to_clock_period": {
+        "ap_clk": 3.33
+    },
+    "vitis_platform": "xilinx_u55c_gen3x16_xdma_3_202210_1"
+}
