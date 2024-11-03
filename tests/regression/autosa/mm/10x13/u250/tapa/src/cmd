@@ -1,0 +1,5 @@
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+./autosa ./autosa_tests/large/mm/kernel.c --config=./autosa_config/autosa_config.json --target=autosa_tapa --output-dir=./autosa.tmp/output --sa-sizes={kernel[]->space_time[3];kernel[]->array_part[80,104,64];kernel[]->latency[8,8];kernel[]->simd[16]} --data-pack-sizes={kernel[]->cin[64,64,64];kernel[]->cout[64,64,64];kernel[]->w[64,64,64]} --simd-info=./autosa_tests/large/mm/simd_info.json --host-serialize --hls
