@@ -11,6 +11,6 @@ tapa \
   --part-num xcu280-fsvh2892-2L-e \
   --connectivity src/link_config.ini \
   --clock-period 3.33 \
-  -o ${WORK_DIR}/serpens32.xo \
-  -f src/serpens_tapa.cpp \
+  -o ${WORK_DIR}/serpens32_256.xo \
+  -f src/serpens_tapa_256.cpp \
   2>&1 | tee ${WORK_DIR}/tapa.log
