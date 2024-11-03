@@ -10,8 +10,8 @@
             "area": {
                 "bram_18k": 384,
                 "dsp": 720,
-                "ff": 185040,
-                "lut": 82520,
+                "ff": 175040,
+                "lut": 77520,
                 "uram": 64
             },
             "centroid_x_coor": 0,
@@ -97,14 +97,14 @@
             "area": {
                 "bram_18k": 384,
                 "dsp": 720,
-                "ff": 196560,
-                "lut": 88280,
+                "ff": 186560,
+                "lut": 83280,
                 "uram": 64
             },
             "centroid_x_coor": 100,
             "centroid_y_coor": 0,
             "east_anchor_region": [],
-            "east_wire_capacity": 40320,
+            "east_wire_capacity": 11000,
             "north_anchor_region": [],
             "north_wire_capacity": 5760,
             "pblock_ranges": [
@@ -139,7 +139,7 @@
             "centroid_x_coor": 100,
             "centroid_y_coor": 150,
             "east_anchor_region": [],
-            "east_wire_capacity": 40320,
+            "east_wire_capacity": 11000,
             "north_anchor_region": [],
             "north_wire_capacity": 5760,
             "pblock_ranges": [
@@ -184,8 +184,8 @@
             "area": {
                 "bram_18k": 432,
                 "dsp": 1224,
-                "ff": 276000,
-                "lut": 118000,
+                "ff": 266000,
+                "lut": 113000,
                 "uram": 192
             },
             "centroid_x_coor": 200,
@@ -220,7 +220,7 @@
                 "CLK_RST"
             ],
             "west_anchor_region": [],
-            "west_wire_capacity": 40320,
+            "west_wire_capacity": 11000,
             "x": 2,
             "y": 0
         },
@@ -228,8 +228,8 @@
             "area": {
                 "bram_18k": 384,
                 "dsp": 1148,
-                "ff": 295680,
-                "lut": 147840,
+                "ff": 285680,
+                "lut": 142840,
                 "uram": 192
             },
             "centroid_x_coor": 200,
@@ -248,7 +248,7 @@
                 "S_AXI_CONTROL"
             ],
             "west_anchor_region": [],
-            "west_wire_capacity": 40320,
+            "west_wire_capacity": 11000,
             "x": 2,
             "y": 1
         },
