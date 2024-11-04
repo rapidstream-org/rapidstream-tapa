@@ -12,6 +12,7 @@
 #include "tapa/host/logging.h"
 
 #include <sys/wait.h>
+#include <unistd.h>
 #include <chrono>
 #include <memory>
 #include <optional>
