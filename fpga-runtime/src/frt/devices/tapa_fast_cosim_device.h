@@ -6,15 +6,13 @@
 #define FPGA_RUNTIME_TAPA_FAST_COSIM_
 
 #include <chrono>
-#include <ratio>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
-
-#include <CL/cl2.hpp>
 #include <unordered_set>
 
-#include "frt/buffer.h"
+#include "frt/buffer_arg.h"
 #include "frt/device.h"
 #include "frt/stream_arg.h"
 

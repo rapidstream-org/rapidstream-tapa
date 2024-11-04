@@ -5,24 +5,34 @@
 #ifndef FPGA_RUNTIME_STREAM_ARG_H_
 #define FPGA_RUNTIME_STREAM_ARG_H_
 
-#include <memory>
-#include <string>
-
-#include "frt/stream_interface.h"
+#include <any>
+#include <utility>
 
 namespace fpga {
 namespace internal {
 
+// Type-erased streaming interface. Used to pass stream arguments to devices
+// with arbitrary type-safe context.
 class StreamArg {
  public:
-  void Attach(std::unique_ptr<StreamInterface>&& stream) {
-    stream_ = std::move(stream);
-  }
-  const std::string name;
+  explicit StreamArg(std::any context) : context_(std::move(context)) {}
 
- protected:
-  StreamArg(const std::string& name) : name(name) {}
-  std::unique_ptr<StreamInterface> stream_;
+  // Not copyable or movable.
+  StreamArg(const StreamArg&) = delete;
+  StreamArg& operator=(const StreamArg&) = delete;
+
+  template <typename Context>
+  Context get() const {
+    return std::any_cast<Context>(context_);
+  }
+
+  template <typename Context>
+  void set(Context context) {
+    context_ = context;
+  }
+
+ private:
+  std::any context_;
 };
 
 }  // namespace internal

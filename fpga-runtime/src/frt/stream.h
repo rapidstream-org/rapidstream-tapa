@@ -21,22 +21,12 @@ template <>
 class Stream<Tag::kReadOnly> : public StreamArg {
  public:
   Stream(const std::string& name) : StreamArg(name) {}
-
-  template <typename T>
-  void Read(T* host_ptr, size_t size, bool eot = true) {
-    stream_->Read(host_ptr, size * sizeof(T), eot);
-  }
 };
 
 template <>
 class Stream<Tag::kWriteOnly> : public StreamArg {
  public:
   Stream(const std::string& name) : StreamArg(name) {}
-
-  template <typename T>
-  void Write(const T* host_ptr, size_t size, bool eot = true) {
-    stream_->Write(host_ptr, size * sizeof(T), eot);
-  }
 };
 
 }  // namespace internal
