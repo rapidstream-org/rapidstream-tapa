@@ -85,7 +85,18 @@ def get_tapa_cflags() -> tuple[str, ...]:
         _logger.error("unable to find tapa runtime include folder")
         sys.exit(-1)
 
-    return ("-isystem", str(tapa_include), "-isystem", str(tapa_extra_runtime_include))
+    return (
+        "-isystem",
+        str(tapa_include),
+        "-isystem",
+        str(tapa_extra_runtime_include),
+        # Suppress warnings that does not recognize TAPA attributes
+        "-Wno-unknown-attributes",
+        # Suppress warnings that does not recognize HLS pragmas
+        "-Wno-unknown-pragmas",
+        # Suppress warnings that does not recognize HLS labels
+        "-Wno-unused-label",
+    )
 
 
 @cache
