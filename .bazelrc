@@ -1,5 +1,8 @@
 build --copt=-DBOOST_USE_ASAN
 build --copt=-DBOOST_USE_UCONTEXT
+build --copt=-Wno-unknown-attributes
+build --copt=-Wno-unknown-pragmas
+build --copt=-Wno-unused-label
 
 build:asan --compilation_mode=dbg
 build:asan --copt -fsanitize=address
