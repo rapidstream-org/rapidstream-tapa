@@ -51,9 +51,9 @@ In this example, we invoke the ``Task`` function with the scalar argument
 Leaf Tasks
 ----------
 
-A **leaf task** is a task that doesn't invoke other tasks. Leaf tasks are
-self-contained and perform a specific computation. They are the building
-blocks of a TAPA design and are invoked by the upper-level tasks.
+A leaf task is a task that doesn't invoke other tasks. Leaf tasks may perform
+a specific computation. They are the building blocks of a TAPA design and
+are invoked by the upper-level tasks.
 
 A leaf module could contain arbitrary computation in HLS C++. For example,
 the following leaf task ``Task`` reads from an input stream, performs a
@@ -66,10 +66,15 @@ computation, and writes to an output stream:
      out.write(x + a);
    }
 
+.. warning::
+
+   Leaf tasks should not call other TAPA tasks. However, they can call
+   other C++ functions.
+
 Upper-Level Tasks
 -----------------
 
-An **upper-level task** is a task that invokes other tasks. Upper-level tasks
+An upper-level task is a task that invokes other tasks. Upper-level tasks
 orchestrate the execution of leaf tasks and manage the dataflow between them.
 They are responsible for instantiating streams, passing them to child tasks,
 and invoking them.
