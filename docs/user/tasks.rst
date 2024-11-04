@@ -48,6 +48,45 @@ In this example, we invoke the ``Task`` function with the scalar argument
    perform computation on an FPGA. Tasks communicate with each other through
    streams, and the external memory interface is abstracted as a memory map.
 
+Leaf Tasks
+----------
+
+A **leaf task** is a task that doesn't invoke other tasks. Leaf tasks are
+self-contained and perform a specific computation. They are the building
+blocks of a TAPA design and are invoked by the upper-level tasks.
+
+A leaf module could contain arbitrary computation in HLS C++. For example,
+the following leaf task ``Task`` reads from an input stream, performs a
+computation, and writes to an output stream:
+
+.. code-block:: cpp
+
+   void Task(int a, tapa::istream<int> &in, tapa::ostream<int> &out) {
+     int x = in.read();
+     out.write(x + a);
+   }
+
+Upper-Level Tasks
+-----------------
+
+An **upper-level task** is a task that invokes other tasks. Upper-level tasks
+orchestrate the execution of leaf tasks and manage the dataflow between them.
+They are responsible for instantiating streams, passing them to child tasks,
+and invoking them.
+
+Note that upper-level tasks could only contain the instantiation of streams
+and the invocation of other tasks. They should not contain any computation
+logic. It must follow this structure:
+
+.. code-block:: cpp
+
+   void UpperLevel(/* arguments */) {
+     tapa::stream<int> in("in");
+     /* and other streams */
+     tapa::task().invoke(Task, /* arguments */)
+                 .invoke(/* other tasks */);
+   }
+
 Top-Level Task
 --------------
 
@@ -56,7 +95,8 @@ accelerator. It orchestrates the execution of other tasks and manages the
 dataflow between them. The top-level task is responsible for instantiating
 streams, passing them to child tasks, and invoking them.
 
-For example, the top-level task ``TopLevel`` invokes the task ``Task``:
+A top-level task must be in the form of an upper-level task. For example,
+the top-level task ``TopLevel`` invokes the task ``Task``:
 
 .. code-block:: cpp
 

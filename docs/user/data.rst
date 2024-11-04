@@ -476,9 +476,10 @@ In the ``InnerStage`` function:
 .. warning::
 
    TAPA does not support accessing individual streams or memory-mapped
-   interfaces from a ``streams`` or ``mmaps`` array. For example, ``in_q0[0]``
-   will not compile. Instead, use ``tapa::invoke<..., n>`` to distribute the
-   array elements across multiple invocations.
+   interfaces from a ``streams`` or ``mmaps`` array, unless it is in the leaf
+   level of the task invocation hierarchy. For example, ``in_q0[0]`` will not
+   compile. Instead, use ``tapa::invoke<..., n>`` to distribute the array
+   elements across multiple invocations.
 
 .. note::
 
