@@ -11,14 +11,13 @@ void Add(tapa::istream<float>& a, tapa::istream<float>& b,
          tapa::ostream<float>& c, uint64_t n) {
   bool eot_a;
   bool eot_b;
-  float tmp_a, tmp_b, tmp_peek_a, tmp_peek_b;
   bool valid_a, valid_b;
   while (1) {
     if (a.empty() || b.empty() || c.full()) {
       continue;
     }
-    tmp_peek_a = a.peek(valid_a, eot_a);
-    tmp_peek_b = b.peek(valid_b, eot_b);
+    a.peek(valid_a, eot_a);
+    b.peek(valid_b, eot_b);
     if (eot_a && eot_b) {
       break;
     }

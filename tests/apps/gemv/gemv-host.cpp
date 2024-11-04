@@ -58,8 +58,6 @@ int main(int argc, char* argv[]) {
   int64_t num_errors = 0;
   const int64_t threshold = 10;  // only report up to these errors
   for (int i = 0; i < kMatrixSize; i++) {
-    bool mismatch = false;
-
     Data expected = host_y[i];
     Data actual = y[i];
 
