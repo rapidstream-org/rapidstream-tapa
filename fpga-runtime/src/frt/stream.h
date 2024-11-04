@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "frt/stream_wrapper.h"
+#include "frt/stream_arg.h"
 #include "frt/tag.h"
 
 namespace fpga {
@@ -18,9 +18,9 @@ template <Tag tag>
 class Stream;
 
 template <>
-class Stream<Tag::kReadOnly> : public StreamWrapper {
+class Stream<Tag::kReadOnly> : public StreamArg {
  public:
-  Stream(const std::string& name) : StreamWrapper(name) {}
+  Stream(const std::string& name) : StreamArg(name) {}
 
   template <typename T>
   void Read(T* host_ptr, size_t size, bool eot = true) {
@@ -29,9 +29,9 @@ class Stream<Tag::kReadOnly> : public StreamWrapper {
 };
 
 template <>
-class Stream<Tag::kWriteOnly> : public StreamWrapper {
+class Stream<Tag::kWriteOnly> : public StreamArg {
  public:
-  Stream(const std::string& name) : StreamWrapper(name) {}
+  Stream(const std::string& name) : StreamArg(name) {}
 
   template <typename T>
   void Write(const T* host_ptr, size_t size, bool eot = true) {

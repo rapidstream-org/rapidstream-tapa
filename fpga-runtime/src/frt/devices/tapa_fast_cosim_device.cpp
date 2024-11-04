@@ -28,6 +28,7 @@
 #include "frt/arg_info.h"
 #include "frt/devices/filesystem.h"
 #include "frt/devices/xilinx_environ.h"
+#include "frt/stream_arg.h"
 #include "frt/subprocess.h"
 #include "frt/zip_file.h"
 
@@ -178,7 +179,7 @@ void TapaFastCosimDevice::SetBufferArg(int index, Tag tag,
   }
 }
 
-void TapaFastCosimDevice::SetStreamArg(int index, Tag tag, StreamWrapper& arg) {
+void TapaFastCosimDevice::SetStreamArg(int index, Tag tag, StreamArg& arg) {
   LOG(FATAL) << "TAPA fast cosim device does not support streaming";
 }
 

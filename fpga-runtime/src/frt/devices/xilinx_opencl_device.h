@@ -24,7 +24,7 @@ class XilinxOpenclDevice : public OpenclDevice {
 
   static std::unique_ptr<Device> New(const cl::Program::Binaries& binaries);
 
-  void SetStreamArg(int index, Tag tag, StreamWrapper& arg) override;
+  void SetStreamArg(int index, Tag tag, StreamArg& arg) override;
   void WriteToDevice() override;
   void ReadFromDevice() override;
 

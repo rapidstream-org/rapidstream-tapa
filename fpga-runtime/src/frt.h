@@ -21,7 +21,7 @@
 #include "frt/buffer.h"
 #include "frt/device.h"
 #include "frt/stream.h"
-#include "frt/stream_wrapper.h"
+#include "frt/stream_arg.h"
 #include "frt/tag.h"
 
 namespace fpga {
@@ -111,7 +111,7 @@ class Instance {
     bool has_stream = false;
     bool _[sizeof...(Args)] = {(
         has_stream |=
-        std::is_base_of<internal::StreamWrapper,
+        std::is_base_of<internal::StreamArg,
                         typename std::remove_reference<Args>::type>::value)...};
     ConditionallyFinish(has_stream);
     return *this;

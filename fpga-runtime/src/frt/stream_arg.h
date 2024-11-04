@@ -2,8 +2,8 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#ifndef FPGA_RUNTIME_STREAM_WRAPPER_H_
-#define FPGA_RUNTIME_STREAM_WRAPPER_H_
+#ifndef FPGA_RUNTIME_STREAM_ARG_H_
+#define FPGA_RUNTIME_STREAM_ARG_H_
 
 #include <memory>
 #include <string>
@@ -13,7 +13,7 @@
 namespace fpga {
 namespace internal {
 
-class StreamWrapper {
+class StreamArg {
  public:
   void Attach(std::unique_ptr<StreamInterface>&& stream) {
     stream_ = std::move(stream);
@@ -21,11 +21,11 @@ class StreamWrapper {
   const std::string name;
 
  protected:
-  StreamWrapper(const std::string& name) : name(name) {}
+  StreamArg(const std::string& name) : name(name) {}
   std::unique_ptr<StreamInterface> stream_;
 };
 
 }  // namespace internal
 }  // namespace fpga
 
-#endif  // FPGA_RUNTIME_STREAM_WRAPPER_H_
+#endif  // FPGA_RUNTIME_STREAM_ARG_H_

@@ -16,7 +16,7 @@
 
 #include "frt/devices/opencl_device_matcher.h"
 #include "frt/devices/opencl_util.h"
-#include "frt/stream_wrapper.h"
+#include "frt/stream_arg.h"
 #include "frt/tag.h"
 
 namespace fpga {
@@ -146,7 +146,7 @@ std::unique_ptr<Device> IntelOpenclDevice::New(
   return std::make_unique<IntelOpenclDevice>(binaries);
 }
 
-void IntelOpenclDevice::SetStreamArg(int index, Tag tag, StreamWrapper& arg) {
+void IntelOpenclDevice::SetStreamArg(int index, Tag tag, StreamArg& arg) {
   LOG(FATAL) << "Intel OpenCL device does not support streaming";
 };
 

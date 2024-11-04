@@ -19,7 +19,6 @@
 #include "frt/arg_info.h"
 #include "frt/device.h"
 #include "frt/devices/opencl_device_matcher.h"
-#include "frt/stream_wrapper.h"
 #include "frt/tag.h"
 
 namespace fpga {

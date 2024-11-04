@@ -28,7 +28,7 @@
 #include "frt/devices/opencl_device_matcher.h"
 #include "frt/devices/opencl_util.h"
 #include "frt/devices/xilinx_environ.h"
-#include "frt/stream_wrapper.h"
+#include "frt/stream_arg.h"
 #include "frt/subprocess.h"
 #include "frt/tag.h"
 
@@ -317,7 +317,7 @@ std::unique_ptr<Device> XilinxOpenclDevice::New(
   return std::make_unique<XilinxOpenclDevice>(binaries);
 }
 
-void XilinxOpenclDevice::SetStreamArg(int index, Tag tag, StreamWrapper& arg) {
+void XilinxOpenclDevice::SetStreamArg(int index, Tag tag, StreamArg& arg) {
   LOG(FATAL) << "Xilinx OpenCL streaming is disabled";
 }
 

@@ -12,7 +12,7 @@
 
 #include "frt/arg_info.h"
 #include "frt/buffer_arg.h"
-#include "frt/stream_wrapper.h"
+#include "frt/stream_arg.h"
 #include "frt/tag.h"
 
 namespace fpga {
@@ -24,7 +24,7 @@ class Device {
 
   virtual void SetScalarArg(int index, const void* arg, int size) = 0;
   virtual void SetBufferArg(int index, Tag tag, const BufferArg& arg) = 0;
-  virtual void SetStreamArg(int index, Tag tag, StreamWrapper& arg) = 0;
+  virtual void SetStreamArg(int index, Tag tag, StreamArg& arg) = 0;
   virtual size_t SuspendBuffer(int index) = 0;
 
   virtual void WriteToDevice() = 0;
