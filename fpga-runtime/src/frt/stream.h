@@ -5,28 +5,56 @@
 #ifndef FPGA_RUNTIME_STREAM_H_
 #define FPGA_RUNTIME_STREAM_H_
 
-#include <memory>
-#include <string>
+#include "frt/devices/shared_memory_queue.h"
 
+#include <memory>
+
+#include <glog/logging.h>
+
+#include "frt/devices/shared_memory_stream.h"
 #include "frt/stream_arg.h"
+#include "frt/stringify.h"
 #include "frt/tag.h"
 
 namespace fpga {
 namespace internal {
 
-template <Tag tag>
-class Stream;
-
-template <>
-class Stream<Tag::kReadOnly> : public StreamArg {
+template <typename T>
+class StreamBase : public StreamArg {
  public:
-  Stream(const std::string& name) : StreamArg(name) {}
+  explicit StreamBase(int64_t depth)
+      : StreamArg(
+            std::make_shared<SharedMemoryStream>(SharedMemoryStream::Options{
+                .depth = depth,
+                .width = ToBinaryString(T()).size(),
+            })) {}
+
+ protected:
+  SharedMemoryQueue& queue() const {
+    return *CHECK_NOTNULL(get<std::shared_ptr<SharedMemoryStream>>()->queue());
+  }
 };
 
-template <>
-class Stream<Tag::kWriteOnly> : public StreamArg {
+template <typename T, Tag tag>
+class Stream;
+
+template <typename T>
+class Stream<T, Tag::kReadOnly> : public StreamBase<T> {
  public:
-  Stream(const std::string& name) : StreamArg(name) {}
+  using StreamBase<T>::StreamBase;
+
+  bool empty() const { return this->queue().empty(); }
+  T pop() { return FromBinaryString<T>(this->queue().pop()); };
+  T front() const { return FromBinaryString<T>(this->queue().front()); }
+};
+
+template <typename T>
+class Stream<T, Tag::kWriteOnly> : public StreamBase<T> {
+ public:
+  using StreamBase<T>::StreamBase;
+
+  bool full() const { return this->queue().full(); }
+  void push(const T& val) { this->queue().push(ToBinaryString(val)); }
 };
 
 }  // namespace internal

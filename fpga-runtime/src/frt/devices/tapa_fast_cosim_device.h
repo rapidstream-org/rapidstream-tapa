@@ -14,6 +14,7 @@
 
 #include "frt/buffer_arg.h"
 #include "frt/device.h"
+#include "frt/devices/shared_memory_stream.h"
 #include "frt/stream_arg.h"
 
 namespace fpga {
@@ -55,6 +56,7 @@ class TapaFastCosimDevice : public Device {
  private:
   std::unordered_map<int, std::string> scalars_;
   std::unordered_map<int, BufferArg> buffer_table_;
+  std::unordered_map<int, std::shared_ptr<SharedMemoryStream>> stream_table_;
   std::vector<ArgInfo> args_;
   std::unordered_set<int> load_indices_;
   std::unordered_set<int> store_indices_;

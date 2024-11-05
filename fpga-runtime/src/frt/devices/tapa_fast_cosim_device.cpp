@@ -27,6 +27,7 @@
 
 #include "frt/arg_info.h"
 #include "frt/devices/filesystem.h"
+#include "frt/devices/shared_memory_stream.h"
 #include "frt/devices/xilinx_environ.h"
 #include "frt/stream_arg.h"
 #include "frt/subprocess.h"
@@ -180,7 +181,7 @@ void TapaFastCosimDevice::SetBufferArg(int index, Tag tag,
 }
 
 void TapaFastCosimDevice::SetStreamArg(int index, Tag tag, StreamArg& arg) {
-  LOG(FATAL) << "TAPA fast cosim device does not support streaming";
+  stream_table_[index] = arg.get<std::shared_ptr<SharedMemoryStream>>();
 }
 
 size_t TapaFastCosimDevice::SuspendBuffer(int index) {
@@ -229,6 +230,13 @@ void TapaFastCosimDevice::Exec() {
   }
   json["axi_to_c_array_size"] = std::move(axi_to_c_array_size);
   json["axi_to_data_file"] = std::move(axi_to_data_file);
+
+  nlohmann::json axis_to_data_file = nlohmann::json::object();
+  for (const auto& [index, stream] : stream_table_) {
+    VLOG(1) << "arg[" << index << "] is a stream backed by " << stream->path();
+    axis_to_data_file[std::to_string(index)] = stream->path();
+  }
+  json["axis_to_data_file"] = std::move(axis_to_data_file);
 
   std::ofstream(GetConfigPath(work_dir)) << json.dump(2);
 

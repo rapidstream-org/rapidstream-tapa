@@ -53,8 +53,10 @@ PlaceholderBuffer<T> Placeholder(T* ptr, size_t n) {
   return PlaceholderBuffer<T>(ptr, n);
 }
 
-using ReadStream = internal::Stream<internal::Tag::kReadOnly>;
-using WriteStream = internal::Stream<internal::Tag::kWriteOnly>;
+template <typename T>
+using ReadStream = internal::Stream<T, internal::Tag::kReadOnly>;
+template <typename T>
+using WriteStream = internal::Stream<T, internal::Tag::kWriteOnly>;
 
 class Instance {
  public:
@@ -73,8 +75,8 @@ class Instance {
   }
 
   // Sets a stream argument.
-  template <internal::Tag tag>
-  void SetArg(int index, internal::Stream<tag>& arg) {
+  template <typename T, internal::Tag tag>
+  void SetArg(int index, internal::Stream<T, tag>& arg) {
     device_->SetStreamArg(index, tag, arg);
   }
 
