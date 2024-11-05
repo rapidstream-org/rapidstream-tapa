@@ -133,7 +133,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             if is_trimming_enabled:
                 # trim the body since we only need the interface information
                 new_files = []
-                for idx, file in enumerate(files):
+
+                def gen_trimmed_file(file: str, idx: int) -> str:
                     lines = []
                     with open(file, encoding="utf-8") as fp:
                         for line in fp:
@@ -149,7 +150,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                     new_file = os.path.join(output_dir, f"trimmed_{idx}.v")
                     with open(new_file, "w", encoding="utf-8") as fp:
                         fp.writelines(lines)
-                    new_files.append(new_file)
+                    return new_file
+
+                for idx, file in enumerate(files):
+                    new_files.append(gen_trimmed_file(file, idx))
                 files = new_files
             codeparser = VerilogCodeParser(
                 files,
