@@ -192,6 +192,9 @@ check_install_dir() {
     if [ "$QUIET" = "no" ]; then
       echo "Overwriting the installation directory: \"$RAPIDSTREAM_INSTALL_DIR\"..."
     fi
+
+    # Remove the existing installation directory
+    rm -rf "$RAPIDSTREAM_INSTALL_DIR"
   fi
 }
 
