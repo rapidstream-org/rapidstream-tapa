@@ -74,7 +74,10 @@ non_module_boost_repositories = use_extension("@com_github_nelhage_rules_boost//
 use_repo(non_module_boost_repositories, "boost")
 
 bazel_dep(name = "gflags", version = "2.2.2")
-bazel_dep(name = "glog", version = "0.7.1")
+
+# glog must be 0.5.0 as in later versions, bazel is strictly required for
+# including glog headers for the host code
+bazel_dep(name = "glog", version = "0.5.0")
 bazel_dep(name = "googletest", version = "1.15.2")
 
 new_local_repository(
