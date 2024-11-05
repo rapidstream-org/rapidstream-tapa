@@ -127,5 +127,4 @@ Place the license file in one of these locations or set the
 ``RAPIDSTREAM_LICENSE_FILE`` environment variable:
 
 - ``~/.rapidstream.lic``
-- ``~/.rapidstream/rapidstream.lic``
 - ``/opt/licenses/rapidstream.lic``
