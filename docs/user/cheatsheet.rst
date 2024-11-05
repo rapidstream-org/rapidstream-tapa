@@ -24,7 +24,7 @@ Compilation with TAPA
 .. code-block:: bash
 
   # Host compilation
-  tapa g++ kernel.cpp host.cpp -o program
+  tapa g++ -- kernel.cpp host.cpp -o program
 
   # HLS synthesis
   tapa compile \

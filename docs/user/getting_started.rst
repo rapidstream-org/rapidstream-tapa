@@ -242,17 +242,17 @@ Host Compilation
 ~~~~~~~~~~~~~~~~
 
 To compile the example host code, pass both the kernel and host code to the
-TAPA compiler using the ``tapa g++`` command:
+TAPA compiler using the ``tapa g++ --`` command:
 
 .. code-block:: bash
 
-   tapa g++ vadd.cpp vadd-host.cpp -o vadd
+   tapa g++ -- vadd.cpp vadd-host.cpp -o vadd
 
 This generates the host executable ``vadd``.
 
 .. note::
 
-   ``tapa g++`` is a wrapper around the GNU C++ compiler that includes
+   ``tapa g++ --`` is a wrapper around the GNU C++ compiler that includes
    necessary TAPA headers and libraries. It outputs the ``g++`` command
    invoked for reference.
 
