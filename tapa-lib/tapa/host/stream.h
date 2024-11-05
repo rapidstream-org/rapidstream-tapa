@@ -21,6 +21,7 @@
 #include <string_view>
 #include <vector>
 
+#include <frt.h>
 #include <glog/logging.h>
 
 #include "tapa/base/stream.h"
@@ -42,6 +43,18 @@ template <typename T, uint64_t S>
 class ostreams;
 
 namespace internal {
+
+template <typename T>
+std::string ToBinaryStringImpl(const elem_t<T>* val) {
+  return fpga::ToBinaryString(val->eot) + fpga::ToBinaryString(val->val);
+}
+template <typename T>
+void FromBinaryStringImpl(std::string_view str, elem_t<T>& val) {
+  CHECK_GE(str.size(), 1);
+  val.eot = fpga::FromBinaryString<bool>(str.substr(0, 1));
+  str.remove_prefix(1);
+  val.val = fpga::FromBinaryString<T>(str);
+}
 
 template <typename Param, typename Arg>
 struct accessor;
