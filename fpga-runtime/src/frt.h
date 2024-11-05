@@ -22,6 +22,7 @@
 #include "frt/device.h"
 #include "frt/stream.h"
 #include "frt/stream_arg.h"
+#include "frt/stringify.h"  // IWYU pragma: export
 #include "frt/tag.h"
 
 namespace fpga {

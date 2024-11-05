@@ -25,6 +25,7 @@ cc_library(
         "src/frt/device.h",
         "src/frt/stream.h",
         "src/frt/stream_arg.h",
+        "src/frt/stringify.h",
         "src/frt/tag.h",
     ],
     copts = [
@@ -37,6 +38,7 @@ cc_library(
     linkopts = ["-lstdc++fs"],
     visibility = ["//visibility:public"],
     deps = [
+        "@boost//:endian",
         "@glog",
         "@nlohmann_json//:json",
         "@tinyxml2",
@@ -65,6 +67,7 @@ filegroup(
         "src/frt/device.h",
         "src/frt/stream.h",
         "src/frt/stream_arg.h",
+        "src/frt/stringify.h",
         "src/frt/tag.h",
     ],
     visibility = ["//visibility:public"],
