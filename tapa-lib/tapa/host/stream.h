@@ -19,6 +19,7 @@
 #include <mutex>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include <frt.h>
@@ -98,7 +99,7 @@ class base_queue : public type_erased_queue {
  public:
   virtual void push(const T& val) = 0;
   virtual T pop() = 0;
-  virtual const T& front() const = 0;
+  virtual T front() const = 0;
 
  protected:
   using type_erased_queue::type_erased_queue;
@@ -127,9 +128,7 @@ class lock_free_queue : public base_queue<T> {
   bool full() const override {
     return this->head - this->tail >= this->buffer.size();
   }
-  const T& front() const override {
-    return this->buffer[this->tail % buffer.size()];
-  }
+  T front() const override { return this->buffer[this->tail % buffer.size()]; }
   T pop() override {
     auto val = this->front();
     ++this->tail;
@@ -167,7 +166,7 @@ class locked_queue : public base_queue<T> {
     std::unique_lock<std::mutex> lock(this->mtx);
     return this->buffer.size() >= this->depth;
   }
-  const T& front() const override {
+  T front() const override {
     std::unique_lock<std::mutex> lock(this->mtx);
     return this->buffer.front();
   }
@@ -184,6 +183,33 @@ class locked_queue : public base_queue<T> {
   }
 
   ~locked_queue() { this->check_leftover(); }
+};
+
+// Implementation of `base_queue` that is a wrapper of either `fpga::ReadStream`
+// or `fpga::WriteStream`.
+template <typename T>
+class frt_queue : public base_queue<T> {
+ public:
+  using ReadStream = fpga::ReadStream<T>;
+  using WriteStream = fpga::WriteStream<T>;
+
+  template <typename Stream>
+  explicit frt_queue(std::in_place_type_t<Stream> in_place_arg,
+                     const std::string& name, int64_t depth)
+      : base_queue<T>(name), stream_(in_place_arg, depth) {}
+  bool empty() const override { return GetReadStream().empty(); }
+  bool full() const override { return GetWriteStream().full(); }
+  void push(const T& val) override { GetWriteStream().push(val); }
+  T pop() override { return GetReadStream().pop(); };
+  T front() const override { return GetReadStream().front(); }
+
+  auto& GetReadStream() { return std::get<ReadStream>(stream_); }
+  auto& GetReadStream() const { return std::get<ReadStream>(stream_); }
+  auto& GetWriteStream() { return std::get<WriteStream>(stream_); }
+  auto& GetWriteStream() const { return std::get<WriteStream>(stream_); }
+
+ private:
+  std::variant<fpga::ReadStream<T>, fpga::WriteStream<T>> stream_;
 };
 
 template <typename T>
@@ -371,7 +397,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return           Whether @c value is updated.
   bool try_peek(T& value) const {
     if (!empty()) {
-      auto& elem = this->ptr->front();
+      auto elem = this->ptr->front();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' peeked when closed";
       }
@@ -423,7 +449,7 @@ class istream : virtual public internal::basic_stream<T> {
   ///                        returned.
   T peek(bool& is_success, bool& is_eot) const {
     if (!empty()) {
-      auto& elem = this->ptr->front();
+      auto elem = this->ptr->front();
       is_success = true;
       is_eot = elem.eot;
       return elem.val;
@@ -685,6 +711,8 @@ class stream : public internal::unbound_stream<T> {
             internal::make_queue<internal::elem_t<T>>(N, name)) {}
 
  private:
+  template <typename Param, typename Arg>
+  friend struct internal::accessor;
   template <typename U, uint64_t friend_length, uint64_t friend_depth>
   friend class streams;
   stream(const internal::basic_stream<T>& base)
@@ -907,6 +935,30 @@ class streams : public internal::unbound_streams<T, S> {
 };
 
 namespace internal {
+
+template <typename T, uint64_t N, typename U>
+struct accessor<istream<T>&, stream<U, N>&> {
+  static istream<T> access(stream<U, N>& arg) { return arg; }
+  static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
+    auto ptr = std::make_shared<frt_queue<elem_t<T>>>(
+        std::in_place_type_t<fpga::WriteStream<elem_t<T>>>(), arg.get_name(),
+        arg.depth);
+    instance.SetArg(idx++, ptr->GetWriteStream());
+    arg.ptr = std::move(ptr);
+  }
+};
+
+template <typename T, uint64_t N, typename U>
+struct accessor<ostream<T>&, stream<U, N>&> {
+  static ostream<T> access(stream<U, N>& arg) { return arg; }
+  static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
+    auto ptr = std::make_shared<frt_queue<elem_t<T>>>(
+        std::in_place_type_t<fpga::ReadStream<elem_t<T>>>(), arg.get_name(),
+        arg.depth);
+    instance.SetArg(idx++, ptr->GetReadStream());
+    arg.ptr = std::move(ptr);
+  }
+};
 
 #define TAPA_DEFINE_ACCESSER(io, reference)                              \
   /* param = i/ostream, arg = streams */                                 \
