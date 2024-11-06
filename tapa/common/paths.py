@@ -60,12 +60,10 @@ def find_resource(file: str) -> Path | None:
     assert file in POTENTIAL_PATHS, f"Unknown file: {file}"
 
     for path in POTENTIAL_PATHS[file]:
-        for self in (Path(__file__).resolve(), Path(__file__).absolute()):
-            for parent in self.parents:
-                potential_path = parent / path
-                if potential_path.exists():
-                    _logger.info("found %s: %s", file, potential_path)
-                    return potential_path
+        for parent in Path(__file__).absolute().parents:
+            potential_path = parent / path
+            if potential_path.exists():
+                return potential_path
 
     return None
 
