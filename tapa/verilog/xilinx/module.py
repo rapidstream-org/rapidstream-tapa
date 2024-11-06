@@ -325,19 +325,17 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                     arg=arg_name,
                 )
 
-            if STREAM_PORT_DIRECTION[suffix] == "output":
-                arg_name = ""
-
-            # peek port
-            match = match_array_name(port)
-            if match is None:
-                peek_port = f"{port}_peek"
-            else:
-                peek_port = f"{match[0]}_peek[{match[1]}]"
-            yield make_port_arg(
-                port=self.get_port_of(peek_port, suffix).name,
-                arg=arg_name,
-            )
+            if STREAM_PORT_DIRECTION[suffix] == "input":
+                # peek port
+                match = match_array_name(port)
+                if match is None:
+                    peek_port = f"{port}_peek"
+                else:
+                    peek_port = f"{match[0]}_peek[{match[1]}]"
+                yield make_port_arg(
+                    port=self.get_port_of(peek_port, suffix).name,
+                    arg=arg_name,
+                )
 
     def generate_ostream_ports(
         self,
