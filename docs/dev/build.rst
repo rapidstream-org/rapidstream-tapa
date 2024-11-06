@@ -107,8 +107,6 @@ After the build process completes, you can find the compiled binaries in the
    The build process duration may vary depending on your system's performance.
    LLVM, a significant dependency used by TAPA for code generation, requires
    considerable time to build. Bazel will cache it after the initial build.
-   However, if your build environment changes (e.g., sourcing a different Vivado
-   settings script), Bazel might need to rebuild LLVM.
 
 Use the Built TAPA
 ------------------
@@ -134,10 +132,6 @@ TAPA compiler or runtime library to ensure you're using the latest version.
 
 Run TAPA Tests
 --------------
-
-.. important::
-
-   Source the Vivado settings script before running the tests.
 
 To run all TAPA tests, including unit tests and integration tests, use the
 following command in the repository's root directory:
