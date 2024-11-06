@@ -10,12 +10,13 @@ import glob
 import json
 import logging
 import os
-import re
 import shutil
 import sys
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree
+
+from tapa.cosim.common import Arg, Port
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -98,20 +99,36 @@ def _parse_xo_update_config(config: dict, tb_output_dir: str) -> None:
 
     # extract other kernel information
     kernel_file_path = glob.glob(f"{tmp_path}/*/kernel.xml")[0]
-    with open(kernel_file_path, encoding="utf-8") as fp:
-        kernel_file = fp.read()
-
-    match = re.search(r'kernel name="(\w+)"', kernel_file)
-    if not match:
+    kernel_xml = ElementTree.parse(kernel_file_path).getroot().find("./kernel")
+    if kernel_xml is None:
         _logger.error("Fail to extract kernel name")
         sys.exit(1)
-    config["top_name"] = match.group(1)
+    config["top_name"] = kernel_xml.attrib["name"]
+
+    # parse kernel ports and args
+    ports = {}
+    for port_xml in kernel_xml.findall("./ports/port"):
+        port = Port(
+            name=port_xml.attrib["name"],
+            mode=port_xml.attrib["mode"],
+            data_width=int(port_xml.attrib["dataWidth"]),
+        )
+        ports[port.name] = port
+        _logger.debug("port: %s", port)
+    args = []
+    for arg_xml in kernel_xml.findall("./args/arg"):
+        arg = Arg(
+            name=arg_xml.attrib["name"],
+            address_qualifier=int(arg_xml.attrib["addressQualifier"]),
+            id=int(arg_xml.attrib["id"]),
+            port=ports[arg_xml.attrib["port"]],
+        )
+        args.append(arg)
+        _logger.debug("arg: %s", arg)
+    config["args"] = args
 
     # convert argument index in the config file to actual names
-    arg_name_id_pair_list = re.findall(
-        r'arg name="(\w+)" addressQualifier="\d" id="(\d+)"', kernel_file
-    )
-    id_to_name: dict[int, str] = {int(x): name for name, x in arg_name_id_pair_list}
+    id_to_name = {arg.id: arg.name for arg in args}
 
     # update scalar arguments
     def change_id_to_name(id_to_val: dict[str, str]) -> dict[str, str]:
@@ -120,7 +137,12 @@ def _parse_xo_update_config(config: dict, tb_output_dir: str) -> None:
             for scalar_arg_id, val in id_to_val.items()
         }
 
-    for entry in ("scalar_to_val", "axi_to_data_file", "axi_to_c_array_size"):
+    for entry in (
+        "scalar_to_val",
+        "axi_to_data_file",
+        "axis_to_data_file",
+        "axi_to_c_array_size",
+    ):
         config[entry] = change_id_to_name(config[entry] or {})
 
     config["part_num"] = parse_part_num(tmp_path)

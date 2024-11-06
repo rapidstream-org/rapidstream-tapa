@@ -6,6 +6,12 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import logging
+
+from tapa.common import paths
+
+_logger = logging.getLogger().getChild(__name__)
+
 
 def get_vivado_tcl(
     config: dict,
@@ -60,12 +66,23 @@ def get_vivado_tcl(
     script.append("upgrade_ip -quiet [get_ips *]")
 
     # read in tb files
-    script.append(f"set tb_files [glob {tb_rtl_path}/*.v]")
+    script.append(f"set tb_files [glob {tb_rtl_path}/*.v {tb_rtl_path}/*.sv]")
     script.append(r"set_property SOURCE_SET sources_1 [get_filesets sim_1]")
     script.append(r"add_files -fileset sim_1 -norecurse -scan_for_includes ${tb_files}")
 
     script.append("set_property top test [get_filesets sim_1]")
     script.append("set_property top_lib xil_defaultlib [get_filesets sim_1]")
+
+    dpi_library_dir = paths.find_resource("tapa-fast-cosim-dpi")
+    if dpi_library_dir is None:
+        _logger.fatal("DPI directory not found")
+    else:
+        _logger.info("DPI directory: %s", dpi_library_dir)
+        script.append(
+            "set_property -name {xelab.more_options} "
+            f"-value {{-sv_root {dpi_library_dir} -sv_lib tapa_fast_cosim_dpi}} "
+            "-objects [get_filesets sim_1]"
+        )
 
     # log all signals
     if save_waveform:

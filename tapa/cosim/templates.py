@@ -7,8 +7,9 @@ RapidStream Contributor License Agreement.
 import logging
 import os
 import sys
+from collections.abc import Sequence
 
-from tapa.cosim.common import AXI, MAX_AXI_BRAM_ADDR_WIDTH
+from tapa.cosim.common import AXI, MAX_AXI_BRAM_ADDR_WIDTH, Arg
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -199,7 +200,40 @@ def get_s_axi_control() -> str:
 """
 
 
-def get_dut(top_name: str, axi_list: list[AXI]) -> str:
+def get_axis(args: Sequence[Arg]) -> str:
+    axis_args = [arg for arg in args if arg.is_stream]
+
+    # create type alias for widths used for axis
+    widths = set()
+    for arg in axis_args:
+        widths |= {
+            arg.port.data_width,
+            arg.port.data_width + 1,  # for eot
+        }
+    lines = []
+    # list comprehension is only more readable when short
+    # ruff: noqa: PERF401
+    for width in widths:
+        lines.append(
+            f"""
+    typedef logic unpacked_uint{width}_t[{width - 1}:0];
+    typedef logic [{width - 1}:0] packed_uint{width}_t;
+"""
+        )
+    for arg in axis_args:
+        lines.append(
+            f"""
+  packed_uint{arg.port.data_width}_t axis_{arg.name}_tdata;
+  unpacked_uint{arg.port.data_width + 1}_t axis_{arg.name}_tdata_unpacked;
+  logic axis_{arg.name}_tlast;
+  logic axis_{arg.name}_tvalid;
+  logic axis_{arg.name}_tready;
+"""
+        )
+    return "\n".join(lines)
+
+
+def get_dut(top_name: str, args: Sequence[Arg]) -> str:
     dut = f"""
   {top_name} dut (
     .s_axi_control_AWVALID (s_axi_control_awvalid),
@@ -226,45 +260,53 @@ def get_dut(top_name: str, axi_list: list[AXI]) -> str:
     .s_axi_control_BRESP   (s_axi_control_bresp  ),
 """
 
-    for axi in axi_list:
-        dut += f"""
-    .m_axi_{axi.name}_ARADDR  (axi_{axi.name}_araddr ),
-    .m_axi_{axi.name}_ARBURST (axi_{axi.name}_arburst),
-    .m_axi_{axi.name}_ARCACHE (axi_{axi.name}_arcache),
-    .m_axi_{axi.name}_ARID    (axi_{axi.name}_arid   ),
-    .m_axi_{axi.name}_ARLEN   (axi_{axi.name}_arlen  ),
-    .m_axi_{axi.name}_ARLOCK  (axi_{axi.name}_arlock ),
-    .m_axi_{axi.name}_ARPROT  (axi_{axi.name}_arprot ),
-    .m_axi_{axi.name}_ARQOS   (axi_{axi.name}_arqos  ),
-    .m_axi_{axi.name}_ARREADY (axi_{axi.name}_arready),
-    .m_axi_{axi.name}_ARSIZE  (axi_{axi.name}_arsize ),
-    .m_axi_{axi.name}_ARVALID (axi_{axi.name}_arvalid),
-    .m_axi_{axi.name}_AWADDR  (axi_{axi.name}_awaddr ),
-    .m_axi_{axi.name}_AWBURST (axi_{axi.name}_awburst),
-    .m_axi_{axi.name}_AWCACHE (axi_{axi.name}_awcache),
-    .m_axi_{axi.name}_AWID    (axi_{axi.name}_awid   ),
-    .m_axi_{axi.name}_AWLEN   (axi_{axi.name}_awlen  ),
-    .m_axi_{axi.name}_AWLOCK  (axi_{axi.name}_awlock ),
-    .m_axi_{axi.name}_AWPROT  (axi_{axi.name}_awprot ),
-    .m_axi_{axi.name}_AWQOS   (axi_{axi.name}_awqos  ),
-    .m_axi_{axi.name}_AWREADY (axi_{axi.name}_awready),
-    .m_axi_{axi.name}_AWSIZE  (axi_{axi.name}_awsize ),
-    .m_axi_{axi.name}_AWVALID (axi_{axi.name}_awvalid),
-    .m_axi_{axi.name}_BID     (axi_{axi.name}_bid    ),
-    .m_axi_{axi.name}_BREADY  (axi_{axi.name}_bready ),
-    .m_axi_{axi.name}_BRESP   (axi_{axi.name}_bresp  ),
-    .m_axi_{axi.name}_BVALID  (axi_{axi.name}_bvalid ),
-    .m_axi_{axi.name}_RDATA   (axi_{axi.name}_rdata  ),
-    .m_axi_{axi.name}_RID     (axi_{axi.name}_rid    ),
-    .m_axi_{axi.name}_RLAST   (axi_{axi.name}_rlast  ),
-    .m_axi_{axi.name}_RREADY  (axi_{axi.name}_rready ),
-    .m_axi_{axi.name}_RRESP   (axi_{axi.name}_rresp  ),
-    .m_axi_{axi.name}_RVALID  (axi_{axi.name}_rvalid ),
-    .m_axi_{axi.name}_WDATA   (axi_{axi.name}_wdata  ),
-    .m_axi_{axi.name}_WLAST   (axi_{axi.name}_wlast  ),
-    .m_axi_{axi.name}_WREADY  (axi_{axi.name}_wready ),
-    .m_axi_{axi.name}_WSTRB   (axi_{axi.name}_wstrb  ),
-    .m_axi_{axi.name}_WVALID  (axi_{axi.name}_wvalid ),
+    for arg in args:
+        if arg.is_mmap:
+            dut += f"""
+    .m_axi_{arg.name}_ARADDR  (axi_{arg.name}_araddr ),
+    .m_axi_{arg.name}_ARBURST (axi_{arg.name}_arburst),
+    .m_axi_{arg.name}_ARCACHE (axi_{arg.name}_arcache),
+    .m_axi_{arg.name}_ARID    (axi_{arg.name}_arid   ),
+    .m_axi_{arg.name}_ARLEN   (axi_{arg.name}_arlen  ),
+    .m_axi_{arg.name}_ARLOCK  (axi_{arg.name}_arlock ),
+    .m_axi_{arg.name}_ARPROT  (axi_{arg.name}_arprot ),
+    .m_axi_{arg.name}_ARQOS   (axi_{arg.name}_arqos  ),
+    .m_axi_{arg.name}_ARREADY (axi_{arg.name}_arready),
+    .m_axi_{arg.name}_ARSIZE  (axi_{arg.name}_arsize ),
+    .m_axi_{arg.name}_ARVALID (axi_{arg.name}_arvalid),
+    .m_axi_{arg.name}_AWADDR  (axi_{arg.name}_awaddr ),
+    .m_axi_{arg.name}_AWBURST (axi_{arg.name}_awburst),
+    .m_axi_{arg.name}_AWCACHE (axi_{arg.name}_awcache),
+    .m_axi_{arg.name}_AWID    (axi_{arg.name}_awid   ),
+    .m_axi_{arg.name}_AWLEN   (axi_{arg.name}_awlen  ),
+    .m_axi_{arg.name}_AWLOCK  (axi_{arg.name}_awlock ),
+    .m_axi_{arg.name}_AWPROT  (axi_{arg.name}_awprot ),
+    .m_axi_{arg.name}_AWQOS   (axi_{arg.name}_awqos  ),
+    .m_axi_{arg.name}_AWREADY (axi_{arg.name}_awready),
+    .m_axi_{arg.name}_AWSIZE  (axi_{arg.name}_awsize ),
+    .m_axi_{arg.name}_AWVALID (axi_{arg.name}_awvalid),
+    .m_axi_{arg.name}_BID     (axi_{arg.name}_bid    ),
+    .m_axi_{arg.name}_BREADY  (axi_{arg.name}_bready ),
+    .m_axi_{arg.name}_BRESP   (axi_{arg.name}_bresp  ),
+    .m_axi_{arg.name}_BVALID  (axi_{arg.name}_bvalid ),
+    .m_axi_{arg.name}_RDATA   (axi_{arg.name}_rdata  ),
+    .m_axi_{arg.name}_RID     (axi_{arg.name}_rid    ),
+    .m_axi_{arg.name}_RLAST   (axi_{arg.name}_rlast  ),
+    .m_axi_{arg.name}_RREADY  (axi_{arg.name}_rready ),
+    .m_axi_{arg.name}_RRESP   (axi_{arg.name}_rresp  ),
+    .m_axi_{arg.name}_RVALID  (axi_{arg.name}_rvalid ),
+    .m_axi_{arg.name}_WDATA   (axi_{arg.name}_wdata  ),
+    .m_axi_{arg.name}_WLAST   (axi_{arg.name}_wlast  ),
+    .m_axi_{arg.name}_WREADY  (axi_{arg.name}_wready ),
+    .m_axi_{arg.name}_WSTRB   (axi_{arg.name}_wstrb  ),
+    .m_axi_{arg.name}_WVALID  (axi_{arg.name}_wvalid ),
+"""
+        if arg.is_stream:
+            dut += f"""
+    .{arg.name}_TDATA  (axis_{arg.name}_tdata ),
+    .{arg.name}_TVALID (axis_{arg.name}_tvalid),
+    .{arg.name}_TREADY (axis_{arg.name}_tready),
+    .{arg.name}_TLAST  (axis_{arg.name}_tlast ),
 """
 
     dut += """
@@ -280,12 +322,62 @@ def get_dut(top_name: str, axi_list: list[AXI]) -> str:
 def get_test_signals(
     arg_to_reg_addrs: dict[str, str],
     scalar_arg_to_val: dict[str, str],
-    axi_list: list[AXI],
+    args: list[Arg],
 ) -> str:
     dump_signal_init = "\n".join(
-        f"    axi_ram_{axi_obj.name}_dump_mem = 1'b0;" for axi_obj in axi_list
+        f"    axi_ram_{arg.name}_dump_mem = 1'b0;" for arg in args if arg.is_mmap
     )
+    axis_signal_init = []
+    axis_dpi_calls = []
+    axis_assignments = []
+    for arg in args:
+        if not arg.is_stream:
+            continue
+        axis_signal_init.append(
+            f"""
+    axis_{arg.name}_tvalid = 1'b0;
+    axis_{arg.name}_tready = 1'b0;
+"""
+        )
+        if arg.port.is_istream:
+            axis_dpi_calls.append(
+                f"""
+    tapa::istream(
+        axis_{arg.name}_tdata_unpacked,
+        axis_{arg.name}_tvalid,
+        axis_{arg.name}_tready,
+        "{arg.name}"
+    );
+"""
+            )
+            axis_assignments.append(
+                f"""
+    assign {{axis_{arg.name}_tlast, axis_{arg.name}_tdata}} =
+        packed_uint{arg.port.data_width + 1}_t'(axis_{arg.name}_tdata_unpacked);
+"""
+            )
+        elif arg.port.is_ostream:
+            axis_dpi_calls.append(
+                f"""
+    tapa::ostream(
+        axis_{arg.name}_tdata_unpacked,
+        axis_{arg.name}_tready,
+        axis_{arg.name}_tvalid,
+        "{arg.name}"
+    );
+"""
+            )
+            axis_assignments.append(
+                f"""
+    assign axis_{arg.name}_tdata_unpacked =
+        unpacked_uint{arg.port.data_width + 1}_t'
+            ({{axis_{arg.name}_tlast, axis_{arg.name}_tdata}});
+"""
+            )
+        else:
+            _logger.fatal("unexpected arg.port.mode: %s", arg.port.mode)
 
+    newline = "\n"
     test = f"""
   parameter HALF_CLOCK_PERIOD = 2;
   parameter CLOCK_PERIOD = HALF_CLOCK_PERIOD * 2;
@@ -296,7 +388,13 @@ def get_test_signals(
       #HALF_CLOCK_PERIOD;
       ap_clk = 1'b0;
       #HALF_CLOCK_PERIOD;
+
+    if (ap_rst_n) begin
+        {newline.join(axis_dpi_calls)}
+    end
   end
+
+{newline.join(axis_assignments)}
 
   wire [31:0] REG_MASK_32_BIT = {{32{{1\'b1}}}};
   initial begin
@@ -305,6 +403,7 @@ def get_test_signals(
     s_axi_w_write = 1'b0;
     s_axi_w_din = 1'b0;
 {dump_signal_init}
+{newline.join(axis_signal_init)}
     s_axi_control_arvalid = 1'b0;
     ap_rst_n = 1'b0;
 
@@ -348,7 +447,7 @@ def get_test_signals(
 """
 
     dump_signals = "\n".join(
-        f"          axi_ram_{axi_obj.name}_dump_mem = 1;" for axi_obj in axi_list
+        f"          axi_ram_{arg.name}_dump_mem = 1;" for arg in args if arg.is_mmap
     )
     test += f"""
   // polling on ap_done
@@ -373,6 +472,21 @@ def get_test_signals(
 def get_begin() -> str:
     return """
 `timescale 1 ns / 1 ps
+
+package tapa;
+  import "DPI-C" function void istream(
+    output logic  dout[],
+    output logic  empty_n,
+    input  logic  read,
+    input  string id
+  );
+  import "DPI-C" function void ostream(
+    input  logic  din[],
+    output logic  full_n,
+    input  logic  write,
+    input  string id
+  );
+endpackage
 
 module test();
 

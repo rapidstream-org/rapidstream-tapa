@@ -24,6 +24,10 @@ POTENTIAL_PATHS: dict[str, tuple[str, ...]] = {
         "tapa-cpp/tapa-cpp",
         "usr/bin/tapa-cpp",
     ),
+    "tapa-fast-cosim-dpi": (
+        "fpga-runtime",
+        "usr/lib",
+    ),
     "tapa-extra-runtime-include": (
         "tapa-system-include/tapa-extra-runtime-include",
         "usr/include",

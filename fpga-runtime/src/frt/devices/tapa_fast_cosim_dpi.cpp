@@ -130,7 +130,7 @@ extern "C" {
 DPI_DLLESPEC void istream(
     /* output */ svOpenArrayHandle dout,
     /* output */ svLogic& empty_n,
-    /* input */ svLogic read, int time,
+    /* input */ svLogic read,
     /* input */ const char* id) {
   SharedMemoryQueue* istream = GetStream(id);
   CHECK(istream != nullptr);
