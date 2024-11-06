@@ -7,6 +7,12 @@
 
 #include "tapa/base/util.h"
 
+#if __has_include("ap_utils.h")
+#include "ap_utils.h"
+#else
+#include "etc/ap_utils.h"
+#endif
+
 #include <cstring>
 
 namespace tapa {

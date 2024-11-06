@@ -6,6 +6,15 @@
 
 #include "tapa/base/util.h"
 
+// FIXME: TAPA should provide its equivalence
+#ifndef ap_wait
+void ap_wait(void);
+#endif
+
+#ifndef ap_wait_n
+void ap_wait_n(int);
+#endif
+
 namespace tapa {
 
 template <typename To, typename From>
