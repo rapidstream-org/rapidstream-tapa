@@ -10,11 +10,14 @@
 #include <algorithm>
 #include <atomic>
 #include <deque>
+#include <fstream>
 #include <functional>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -110,6 +113,27 @@ rlim_t get_stack_size() {
     throw runtime_error(std::strerror(errno));
   }
   return rl.rlim_cur;
+}
+
+int get_physical_core_count() {
+  std::ifstream cpuinfo("/proc/cpuinfo");
+  std::string line;
+  std::set<int> cores;
+
+  while (std::getline(cpuinfo, line)) {
+    std::istringstream iss(line);
+    std::string token;
+    std::string value;
+    if (std::getline(iss, token, ':') && std::getline(iss, value)) {
+      token.erase(0, token.find_first_not_of(" \t"));
+      token.erase(token.find_last_not_of(" \t") + 1);
+      value.erase(0, value.find_first_not_of(" \t"));
+      value.erase(value.find_last_not_of(" \t") + 1);
+      if (token == "core id") cores.insert(std::stoi(value));
+    }
+  }
+
+  return cores.size();
 }
 
 class worker {
@@ -236,7 +260,7 @@ class thread_pool {
       if (auto concurrency = getenv("TAPA_CONCURRENCY")) {
         worker_count = atoi(concurrency);
       } else {
-        worker_count = std::thread::hardware_concurrency();
+        worker_count = get_physical_core_count();
       }
     }
     this->add_worker(worker_count);
