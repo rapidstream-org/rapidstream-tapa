@@ -95,7 +95,7 @@ def get_tapa_cflags() -> tuple[str, ...]:
         "-isystem",
         str(tapa_extra_runtime_include),
         # Suppress warnings that does not recognize TAPA attributes
-        "-Wno-unknown-attributes",
+        "-Wno-attributes",
         # Suppress warnings that does not recognize HLS pragmas
         "-Wno-unknown-pragmas",
         # Suppress warnings that does not recognize HLS labels
