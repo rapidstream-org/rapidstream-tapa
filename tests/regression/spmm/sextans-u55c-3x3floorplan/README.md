@@ -17,13 +17,5 @@ This design source is collected from [Sextans](https://github.com/linghaosong/Se
 To reproduce the result, please simply run:
 ```
 cd rapidstream
-bash run_tapaopt.sh
+bash run_rs.sh
 ```
-
-To run from the very beginning,
-1. the [sextans1613-u55c-333MHz.xo](./rapidstream/sextans1613-u55c-333MHz.xo) is generated from [./tapa](./tapa/).
-   * Please check the [README](./tapa/README.md) to understand the update in [run_tapa.sh](./tapa/run_tapa.sh).
-   * run `bash run_tapa.sh` to generate the Vitis XO file.
-2. Make sure your `--tapa-xo-path` in [run_tapaopt.sh](./rapidstream/run_tapaopt.sh) is set to the newly generated Vitis XO file (if applicable).
-3. Generate the device configuration json [u55c_device.json](./rapidstream/u55c_device.json) by running [gen_device.py](./rapidstream/gen_device.py) with RapidStream.
-4. run `bash run_tapaopt.sh`.
