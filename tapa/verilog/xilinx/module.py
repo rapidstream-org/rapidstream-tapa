@@ -8,6 +8,7 @@ import collections
 import itertools
 import logging
 import os.path
+import re
 import tempfile
 from collections.abc import Callable, Iterable, Iterator
 from typing import get_args
@@ -301,6 +302,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self,
         port: str,
         arg: str,
+        ignore_peek_fifos: Iterable[str] = (),
     ) -> Iterator[PortArg]:
         for suffix in ISTREAM_SUFFIXES:
             if suffix in STREAM_DATA_SUFFIXES:
@@ -327,6 +329,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
             if STREAM_PORT_DIRECTION[suffix] == "input":
                 # peek port
+                if port in ignore_peek_fifos:
+                    continue
                 match = match_array_name(port)
                 if match is None:
                     peek_port = f"{port}_peek"
@@ -440,6 +444,32 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         )
         self._increment_idx(len(decl_list), "io_port")
         return self
+
+    def del_ports(self, port_names: Iterable[str]) -> tuple[str, ...]:
+        """Delete IO ports from this module."""
+
+        def func(item: Node) -> bool:
+            if isinstance(item, Decl):
+                for decl in item.list:
+                    if isinstance(decl, IOPort) and decl.name in port_names:
+                        return False
+            return True
+
+        self._filter(func, "port")
+
+        removed_ports = tuple(
+            port.name
+            for port in self._module_def.portlist.ports
+            if port.name in port_names
+        )
+
+        self._module_def.portlist.ports = tuple(
+            port
+            for port in self._module_def.portlist.ports
+            if port.name not in port_names
+        )
+
+        return removed_ports
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
         signal_tuple = tuple(signals)
@@ -814,6 +844,20 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def get_nodes_of_type(self, *target_types: type) -> Iterator:
         yield from self._get_nodes_of_type(self.ast, *target_types)
+
+
+def get_streams_fifos(module: Module, streams_name: str) -> list[str]:
+    """Get all FIFOs that are related to a streams."""
+    pattern = re.compile(rf"{streams_name}_(\d+)_")
+    fifos = set()
+
+    for s in module.ports:
+        match = pattern.match(s)
+        if match:
+            number = match.group(1)
+            fifos.add(f"{streams_name}_{number}")
+
+    return list(fifos)
 
 
 def generate_m_axi_ports(

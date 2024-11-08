@@ -406,3 +406,18 @@ class Port:
 
     def __str__(self) -> str:
         return ", ".join(f"{k}: {v}" for k, v in self.__dict__.items())
+
+    @property
+    def is_istreams(self) -> bool:
+        """If port is istreams."""
+        return self.cat.is_scalar and "istreams" in self.ctype
+
+    @property
+    def is_ostreams(self) -> bool:
+        """If port is ostreams."""
+        return self.cat.is_scalar and "ostreams" in self.ctype
+
+    @property
+    def is_streams(self) -> bool:
+        """If port is streams."""
+        return self.is_istreams or self.is_ostreams
