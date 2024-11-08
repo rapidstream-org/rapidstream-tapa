@@ -38,7 +38,7 @@ T __attribute__((noinline)) reg_impl(T x, DepthTag<Depth>) {
   {
 #pragma HLS protocol float
     ap_wait();
-    return data;
+    return *((T*)&data);
   }
 }
 
