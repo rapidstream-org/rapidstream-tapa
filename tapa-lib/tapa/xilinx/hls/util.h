@@ -27,11 +27,17 @@ bit_cast(From from) noexcept {
 }
 
 template <typename T>
-T reg(T x) {
+T __attribute__((noinline)) reg(T x) {
 #pragma HLS inline off
 #pragma HLS pipeline II = 1
 #pragma HLS latency min = 1 max = 1
-  return x;
+  volatile T registered;
+  {
+#pragma HLS protocol float
+    ap_wait();
+    registered = x;
+  }
+  return registered;
 }
 
 }  // namespace tapa
