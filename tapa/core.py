@@ -67,7 +67,7 @@ from tapa.verilog.ast_utils import (
     make_port_arg,
     make_width,
 )
-from tapa.verilog.util import Pipeline, wire_name
+from tapa.verilog.util import Pipeline, match_array_name, wire_name
 from tapa.verilog.xilinx import ctrl_instance_name, generate_handshake_ports, pack
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,
@@ -612,6 +612,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         self,
         task: Task,
         width_table: dict[str, int],
+        ignore_peeks_fifos: tuple[str, ...] = (),
     ) -> list[Pipeline]:
         _logger.debug("  instantiating children tasks in %s", task.name)
         is_done_signals: list[Pipeline] = []
@@ -848,6 +849,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                         instance.task.module.generate_istream_ports(
                             port=arg.port,
                             arg=arg.name,
+                            ignore_peek_fifos=ignore_peeks_fifos,
                         ),
                     )
                 elif arg.cat.is_ostream:
@@ -1021,12 +1023,47 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             task.module.add_rs_pragmas()
         task.add_rs_pragmas_to_fsm()
 
+        # remove top level peek ports
+        top_fifos = set()
+        if task.name == self.top_task.name:
+            _logger.debug("remove top peek ports")
+            for port_name, port in task.ports.items():
+                if port.cat.is_istream:
+                    fifos = [port_name]
+                elif port.is_istreams:
+                    fifos = get_streams_fifos(task.module, port_name)
+                else:
+                    continue
+                for fifo in fifos:
+                    for suffix in ISTREAM_SUFFIXES:
+                        match = match_array_name(fifo)
+                        if match is None:
+                            peek_port = f"{fifo}_peek"
+                        else:
+                            peek_port = f"{match[0]}_peek[{match[1]}]"
+
+                        if not task.module.find_port(peek_port, suffix):
+                            continue
+
+                        _logger.debug(
+                            "  remove %s",
+                            task.module.get_port_of(peek_port, suffix).name,
+                        )
+                        if task.module.del_ports(
+                            [task.module.get_port_of(peek_port, suffix).name]
+                        ):
+                            top_fifos.add(fifo)
+                        else:
+                            msg = f"failed to remove {peek_port} from {task.name}"
+                            raise ValueError(msg)
+
         self._instantiate_fifos(task, print_fifo_ops)
         self._connect_fifos(task)
         width_table = {port.name: port.width for port in task.ports.values()}
         is_done_signals = self._instantiate_children_tasks(
             task,
             width_table,
+            tuple(top_fifos),
         )
         self._instantiate_global_fsm(task.fsm_module, is_done_signals)
 

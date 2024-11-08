@@ -36,13 +36,6 @@ module VecAdd_tb();
     .c_din(c_din),
     .c_full_n(c_full_n),
     .c_write(c_write),
-    // TODO: Hide peek ports from upper level tasks
-    .a_peek_dout(a_s_dout),
-    .a_peek_empty_n(),
-    .a_peek_read(),
-    .b_peek_dout(b_s_dout),
-    .b_peek_empty_n(),
-    .b_peek_read(),
     .n(n)
   );
 
