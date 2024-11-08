@@ -27,8 +27,8 @@ bit_cast(From from) noexcept {
   return to;
 }
 
-template <typename T>
-inline T reg(T x) {
+template <typename T, size_t Depth = 1>
+T reg(T x) {
   return x;
 }
 

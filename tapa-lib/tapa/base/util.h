@@ -62,9 +62,6 @@ template <typename To, typename From>
 inline typename std::enable_if<sizeof(To) == sizeof(From), To>::type  //
 bit_cast(From from) noexcept;
 
-template <typename T>
-T reg(T x);
-
 template <typename Addr, typename Payload>
 struct packet {
   Addr addr;

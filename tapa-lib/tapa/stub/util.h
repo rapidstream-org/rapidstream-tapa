@@ -21,7 +21,7 @@ template <typename To, typename From>
 inline typename std::enable_if<sizeof(To) == sizeof(From), To>::type  //
 bit_cast(From from) noexcept;
 
-template <typename T>
+template <typename T, size_t Depth = 1>
 T reg(T x);
 
 }  // namespace tapa

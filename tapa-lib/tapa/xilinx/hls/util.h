@@ -14,6 +14,7 @@
 #endif
 
 #include <cstring>
+#include <type_traits>
 
 namespace tapa {
 
@@ -26,18 +27,31 @@ bit_cast(From from) noexcept {
   return to;
 }
 
-template <typename T>
-T __attribute__((noinline)) reg(T x) {
+template <size_t Depth>
+struct DepthTag {};
+
+template <typename T, size_t Depth>
+T __attribute__((noinline)) reg_impl(T x, DepthTag<Depth>) {
 #pragma HLS inline off
 #pragma HLS pipeline II = 1
-#pragma HLS latency min = 1 max = 1
-  volatile T registered;
+  volatile T data = reg_impl<T>(x, DepthTag<Depth - 1>{});
   {
 #pragma HLS protocol float
     ap_wait();
-    registered = x;
+    return data;
   }
-  return registered;
+}
+
+template <typename T>
+inline T reg_impl(T x, DepthTag<0>) {
+#pragma HLS inline
+  return x;
+}
+
+template <typename T, size_t Depth = 1>
+inline T reg(T x) {
+#pragma HLS inline
+  return reg_impl(x, DepthTag<Depth>{});
 }
 
 }  // namespace tapa
