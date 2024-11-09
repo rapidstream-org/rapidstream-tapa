@@ -27,6 +27,8 @@ def _dpi_library_impl(ctx):
 
     # Link against the dynamic libraries in `deps`.
     direct_inputs = ctx.files.hdrs + ctx.files.srcs
+    output = ctx.actions.declare_file(ctx.label.name + ".so")
+    runfiles = []
     for dep in ctx.attr.deps:
         for linker_input in dep[CcInfo].linking_context.linker_inputs.to_list():
             for library in linker_input.libraries:
@@ -42,11 +44,18 @@ def _dpi_library_impl(ctx):
                 link_options += [
                     "-L" + dynamic_library.dirname,
                     "-l" + name,
-                    "-Wl,-rpath," + dynamic_library.dirname,
                 ]
+                library_symlink = ctx.actions.declare_file(
+                    dynamic_library.basename,
+                    sibling = output,
+                )
+                ctx.actions.symlink(
+                    output = library_symlink,
+                    target_file = dynamic_library,
+                )
+                runfiles.append(library_symlink)
 
     # Assemble arguments.
-    output = ctx.actions.declare_file(ctx.label.name + ".so")
     args = [
         "--output=" + output.path,
         "--mt=off",
@@ -64,7 +73,10 @@ def _dpi_library_impl(ctx):
         mnemonic = "DpiCompile",
     )
     return [
-        DefaultInfo(files = depset([output])),
+        DefaultInfo(
+            files = depset([output]),
+            runfiles = ctx.runfiles(files = runfiles),
+        ),
     ]
 
 _dpi_library = rule(
