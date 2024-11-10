@@ -81,6 +81,11 @@ std::string GetConfigPath(const std::string& work_dir) {
 
 }  // namespace
 
+struct TapaFastCosimDevice::Context {
+  std::chrono::time_point<std::chrono::steady_clock> start_timestamp;
+  subprocess::Popen proc;
+};
+
 TapaFastCosimDevice::TapaFastCosimDevice(std::string_view xo_path)
     : xo_path(fs::absolute(xo_path)), work_dir(GetWorkDirectory()) {
   miniz_cpp::zip_file xo_file = this->xo_path;
@@ -281,9 +286,17 @@ void TapaFastCosimDevice::Exec() {
     return;
   }
 
-  int rc =
-      subprocess::Popen(argv, subprocess::environment(xilinx::GetEnviron()))
-          .wait();
+  context_ = std::make_unique<Context>(Context{
+      .start_timestamp = tic,
+      .proc = subprocess::Popen(argv,
+                                subprocess::environment(xilinx::GetEnviron())),
+  });
+}
+
+void TapaFastCosimDevice::Finish() {
+  LOG_IF(FATAL, context_ == nullptr) << "Exec() must be called before Finish()";
+  int rc = context_->proc.wait();
+
   LOG_IF(FATAL, rc != 0) << "TAPA fast cosim failed";
 
   // skip the rest of the function if only setup is needed
@@ -291,13 +304,15 @@ void TapaFastCosimDevice::Exec() {
     exit(0);
   }
 
-  compute_time_ = clock::now() - tic;
-}
+  compute_time_ = clock::now() - context_->start_timestamp;
 
-void TapaFastCosimDevice::Finish() {
   if (is_read_from_device_scheduled_) {
     ReadFromDeviceImpl();
   }
+}
+
+bool TapaFastCosimDevice::IsFinished() const {
+  return context_ != nullptr && context_->proc.poll() >= 0;
 }
 
 std::vector<ArgInfo> TapaFastCosimDevice::GetArgsInfo() const { return args_; }

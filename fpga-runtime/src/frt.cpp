@@ -55,6 +55,8 @@ void Instance::Exec() { device_->Exec(); }
 
 void Instance::Finish() { device_->Finish(); }
 
+bool Instance::IsFinished() const { return device_->IsFinished(); }
+
 std::vector<ArgInfo> Instance::GetArgsInfo() const {
   return device_->GetArgsInfo();
 }

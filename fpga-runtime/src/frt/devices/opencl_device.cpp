@@ -106,6 +106,8 @@ void OpenclDevice::Finish() {
   CL_CHECK(cmd_.finish());
 }
 
+bool OpenclDevice::IsFinished() const { LOG(FATAL) << "Not implemented"; }
+
 std::vector<ArgInfo> OpenclDevice::GetArgsInfo() const {
   std::vector<ArgInfo> args;
   args.reserve(arg_table_.size());

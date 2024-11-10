@@ -32,6 +32,7 @@ class OpenclDevice : public Device {
 
   void Exec() override;
   void Finish() override;
+  bool IsFinished() const override;
 
   std::vector<ArgInfo> GetArgsInfo() const override;
   int64_t LoadTimeNanoSeconds() const override;

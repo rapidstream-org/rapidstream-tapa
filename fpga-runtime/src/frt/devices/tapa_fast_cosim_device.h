@@ -42,6 +42,7 @@ class TapaFastCosimDevice : public Device {
   void ReadFromDevice() override;
   void Exec() override;
   void Finish() override;
+  bool IsFinished() const override;
 
   std::vector<ArgInfo> GetArgsInfo() const override;
   int64_t LoadTimeNanoSeconds() const override;
@@ -70,6 +71,9 @@ class TapaFastCosimDevice : public Device {
   std::chrono::nanoseconds load_time_;
   std::chrono::nanoseconds compute_time_;
   std::chrono::nanoseconds store_time_;
+
+  struct Context;
+  std::unique_ptr<Context> context_;  // For asynchronous execution.
 };
 
 }  // namespace internal

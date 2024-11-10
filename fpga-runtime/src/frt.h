@@ -62,6 +62,10 @@ class Instance {
  public:
   Instance(const std::string& bitstream);
 
+  // Move-only.
+  Instance(Instance&&) = default;
+  Instance& operator=(Instance&&) = default;
+
   // Sets a scalar argument.
   template <typename T>
   void SetArg(int index, T arg) {
@@ -101,6 +105,9 @@ class Instance {
 
   // Waits for the program to finish.
   void Finish();
+
+  // Returns whether the program has finished.
+  bool IsFinished() const;
 
   // Invokes the program on the device. This is a shortcut for `SetArgs`,
   // `WriteToDevice`, `Exec`, `ReadFromDevice`, and if there is no stream
