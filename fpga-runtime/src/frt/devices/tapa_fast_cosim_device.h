@@ -54,12 +54,18 @@ class TapaFastCosimDevice : public Device {
   const std::string work_dir;
 
  private:
+  void WriteToDeviceImpl();
+  void ReadFromDeviceImpl();
+
   std::unordered_map<int, std::string> scalars_;
   std::unordered_map<int, BufferArg> buffer_table_;
   std::unordered_map<int, std::shared_ptr<SharedMemoryStream>> stream_table_;
   std::vector<ArgInfo> args_;
   std::unordered_set<int> load_indices_;
   std::unordered_set<int> store_indices_;
+
+  bool is_write_to_device_scheduled_ = false;
+  bool is_read_from_device_scheduled_ = false;
 
   std::chrono::nanoseconds load_time_;
   std::chrono::nanoseconds compute_time_;

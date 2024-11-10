@@ -189,6 +189,10 @@ size_t TapaFastCosimDevice::SuspendBuffer(int index) {
 }
 
 void TapaFastCosimDevice::WriteToDevice() {
+  is_write_to_device_scheduled_ = true;
+}
+
+void TapaFastCosimDevice::WriteToDeviceImpl() {
   // All buffers must have a data file.
   auto tic = clock::now();
   for (const auto& [index, buffer_arg] : buffer_table_) {
@@ -200,6 +204,10 @@ void TapaFastCosimDevice::WriteToDevice() {
 }
 
 void TapaFastCosimDevice::ReadFromDevice() {
+  is_read_from_device_scheduled_ = true;
+}
+
+void TapaFastCosimDevice::ReadFromDeviceImpl() {
   auto tic = clock::now();
   for (int index : store_indices_) {
     auto buffer_arg = buffer_table_.at(index);
@@ -211,6 +219,10 @@ void TapaFastCosimDevice::ReadFromDevice() {
 }
 
 void TapaFastCosimDevice::Exec() {
+  if (is_write_to_device_scheduled_) {
+    WriteToDeviceImpl();
+  }
+
   auto tic = clock::now();
 
   nlohmann::json json;
@@ -283,7 +295,9 @@ void TapaFastCosimDevice::Exec() {
 }
 
 void TapaFastCosimDevice::Finish() {
-  // Not implemented.
+  if (is_read_from_device_scheduled_) {
+    ReadFromDeviceImpl();
+  }
 }
 
 std::vector<ArgInfo> TapaFastCosimDevice::GetArgsInfo() const { return args_; }
