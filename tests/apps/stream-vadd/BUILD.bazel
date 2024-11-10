@@ -15,6 +15,25 @@ sh_test(
     env = {"TAPA_CONCURRENCY": "1"},
 )
 
+sh_test(
+    name = "stream-vadd-xosim",
+    size = "large",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location stream-vadd-host)",
+        "--bitstream=$(location vadd-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+    ],
+    data = [
+        ":stream-vadd-host",
+        ":vadd-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+    tags = [
+        "cpu:3",
+    ],
+)
+
 tapa_xo(
     name = "vadd-xo",
     src = "vadd.cpp",

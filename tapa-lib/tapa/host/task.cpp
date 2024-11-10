@@ -22,6 +22,10 @@
 
 #include <sched.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
+#include <time.h>
+
+#include <frt.h>
 
 #if TAPA_ENABLE_COROUTINE
 
@@ -33,9 +37,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/stacktrace.hpp>
 #endif  // TAPA_ENABLE_STACKTRACE
-
-#include <sys/resource.h>
-#include <time.h>
 
 using std::function;
 using std::runtime_error;
@@ -416,4 +417,19 @@ void deallocate(void* addr, size_t length) {
 }
 
 }  // namespace internal
+
+task& task::invoke_frt(std::shared_ptr<fpga::Instance> instance) {
+  instance->WriteToDevice();
+  instance->Exec();
+  instance->ReadFromDevice();
+  internal::schedule(
+      /*detach=*/false, [instance = std::move(instance)]() {
+        while (!instance->IsFinished()) {
+          internal::yield("fpga::Instance() is not finished");
+        }
+        instance->Finish();
+      });
+  return *this;
+}
+
 }  // namespace tapa

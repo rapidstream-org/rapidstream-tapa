@@ -2,14 +2,23 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#include <tapa.h>
+// C++ STL
 #include <iostream>
+
+// 3rd-party library
+#include <gflags/gflags.h>
+#include <tapa.h>
 
 void StreamAdd(tapa::istream<float>& a, tapa::istream<float>& b,
                tapa::ostream<float>& c, uint64_t n);
 
+DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
+
 int main(int argc, char* argv[]) {
-  const uint64_t n = argc > 1 ? atoll(argv[1]) : 1024 * 1024;
+  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
+
+  const uint64_t n =
+      argc > 1 ? atoll(argv[1]) : (FLAGS_bitstream.empty() ? 65536 : 1024);
 
   tapa::stream<float> a("a");
   tapa::stream<float> b("b");
@@ -17,6 +26,9 @@ int main(int argc, char* argv[]) {
 
   bool has_error = false;
   tapa::task()
+      // The kernel must be invoked before any direct reader/writer; otherwise
+      // `tapa::stream` will not bind correctly.
+      .invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c, n)
       .invoke([&] {
         for (uint64_t i = 0; i < n; ++i) {
           a.write(static_cast<float>(i));
@@ -25,7 +37,6 @@ int main(int argc, char* argv[]) {
         a.close();
         b.close();
       })
-      .invoke(StreamAdd, a, b, c, n)
       .invoke([&] {
         for (uint64_t i = 0; i < n; ++i) {
           auto actual = c.read();
