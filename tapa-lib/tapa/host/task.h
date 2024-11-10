@@ -106,8 +106,7 @@ struct invoker {
   template <typename... Args>
   static int64_t invoke(F&& f, const std::string& bitstream, Args&&... args) {
     auto instance = fpga::Instance(bitstream);
-    int idx = 0;
-    set_fpga_args(instance, idx, std::forward<F>(f),
+    set_fpga_args(instance, std::forward<F>(f),
                   std::index_sequence_for<Args...>{},
                   std::forward<Args>(args)...);
     instance.WriteToDevice();
@@ -127,9 +126,10 @@ struct invoker {
   }
 
   template <typename Func, size_t... Is, typename... CapturedArgs>
-  static void set_fpga_args(fpga::Instance& instance, int& idx, Func&& func,
+  static void set_fpga_args(fpga::Instance& instance, Func&& func,
                             std::index_sequence<Is...>,
                             CapturedArgs&&... args) {
+    int idx = 0;
     int _[] = {
         (accessor<std::tuple_element_t<Is, Params>, CapturedArgs>::access(
              instance, idx, std::forward<CapturedArgs>(args)),
