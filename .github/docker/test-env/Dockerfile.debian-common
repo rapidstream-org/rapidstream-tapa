@@ -10,6 +10,7 @@ ARG DOCKER_GROUP_ID
 #   - parallel
 
 # Required by Vivado:
+#   - gcc-multilib
 #   - libtinfo5
 #   - libx11-6
 #   - locales
@@ -26,6 +27,7 @@ RUN apt-get update && \
       apt-get install --no-install-recommends -y \
         ca-certificates \
         g++ \
+        gcc-multilib \
         git \
         iverilog \
         libtinfo5 \
