@@ -53,6 +53,7 @@ compile_hls() {
     -tclargs \
       ${BATS_TMPDIR}/stream-vadd-axis-workdir \
       testbench/axis-tb.sv
+  ${BATS_TMPDIR}/stream-vadd-host --bitstream ${BATS_TMPDIR}/stream-vadd.xo
 }
 
 @test "apps/stream-vadd: tapa generates rtl for hls stream and passes simulation" {
