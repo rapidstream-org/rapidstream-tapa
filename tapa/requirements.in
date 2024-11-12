@@ -2,6 +2,7 @@ click
 coloredlogs
 jinja2
 nuitka
+psutil
 pyverilog
 pyyaml
 toposort

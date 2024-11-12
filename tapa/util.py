@@ -105,10 +105,6 @@ def get_installation_path() -> Path:
     return Path(__file__).parent.parent.parent.parent.parent.parent
 
 
-def nproc() -> int:
-    return int(subprocess.check_output(["nproc"]))
-
-
 def setup_logging(
     verbose: int | None,
     quiet: int | None,

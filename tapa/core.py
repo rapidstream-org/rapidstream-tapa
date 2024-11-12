@@ -26,6 +26,7 @@ from xml.etree import ElementTree
 
 import toposort
 import yaml
+from psutil import cpu_count
 from pyverilog.vparser.ast import (
     Always,
     Assign,
@@ -55,7 +56,6 @@ from tapa.util import (
     get_instance_name,
     get_module_name,
     get_vendor_include_paths,
-    nproc,
 )
 from tapa.verilog.ast_utils import (
     make_block,
@@ -339,7 +339,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 msg = f"HLS failed for {task.name}"
                 raise RuntimeError(msg)
 
-        worker_num = nproc()
+        worker_num = cpu_count(logical=False)
         if worker_num_str := os.getenv("TAPA_CONCURRENCY", None):
             if int(worker_num_str) > 0:
                 worker_num = int(worker_num_str)

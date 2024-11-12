@@ -104,6 +104,7 @@ py_library(
         ":util",
         "//tapa/backend",
         "//tapa/verilog",
+        requirement("psutil"),
         requirement("pyverilog"),
         requirement("pyyaml"),
         requirement("toposort"),
