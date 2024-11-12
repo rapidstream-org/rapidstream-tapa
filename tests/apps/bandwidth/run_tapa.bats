@@ -18,6 +18,7 @@ compile_xo() {
   ${RAPIDSTREAM_TAPA_HOME}/usr/bin/tapa \
     -w ${BATS_TMPDIR}/bandwidth-workdir \
     compile \
+    --jobs 1 \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f bandwidth.cpp \
     -t Bandwidth \

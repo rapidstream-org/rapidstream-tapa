@@ -18,6 +18,7 @@ compile_xo_axis() {
   tapa \
     -w ${BATS_TMPDIR}/stream-vadd-axis-workdir \
     compile \
+    --jobs 1 \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f vadd.cpp \
     -t VecAdd \
@@ -32,6 +33,7 @@ compile_hls() {
   tapa \
     -w ${BATS_TMPDIR}/stream-vadd-hls-workdir \
     compile \
+    --jobs 1 \
     --no-vitis-mode \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f vadd.cpp \
