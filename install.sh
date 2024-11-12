@@ -40,7 +40,7 @@ elif [ "$(id -u)" -ne 0 ]; then
 
 fi
 
-VERBOSE="${VERBOSE:-no}"
+VERBOSE="${VERBOSE:-yes}"
 QUIET="${QUIET:-no}"
 
 # Display the usage of this script.
@@ -58,8 +58,8 @@ Options:
       --no-create-symlinks     Do not create symbolic links in the system path.
       --no-modify-path         Do not modify the PATH environment variable.
 
-  -v, --verbose                Enable verbose output.
-  -q, --quiet                  Disable progress output.
+  -q, --quiet                  Disable verbose output.
+  -qq, --quiet-all             Disable most of the output.
 
   -h, --help                   Display this help message and exit.
 EOF
@@ -141,11 +141,12 @@ parse_args() {
       MODIFY_PROFILE_PATH="no"
       shift
       ;;
-    -v | --verbose)
-      VERBOSE="yes"
+    -q | --quiet)
+      VERBOSE="no"
       shift
       ;;
-    -q | --quiet)
+    -qq | --quiet-all)
+      VERBOSE="no"
       QUIET="yes"
       shift
       ;;
@@ -229,7 +230,7 @@ download_and_extract_rapidstream_tapa() {
   # Extract the RapidStream TAPA software.
   if [ "$VERBOSE" = "yes" ]; then
     echo "Extracting RapidStream TAPA to: \"$RAPIDSTREAM_INSTALL_DIR\"..."
-    tar_opts="-xzvf"
+    tar_opts="-xzf"
   elif [ "$QUIET" = "no" ]; then
     echo "Extracting RapidStream TAPA..."
     tar_opts="-xzf"
