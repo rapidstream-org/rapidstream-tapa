@@ -282,6 +282,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         part_num: str,
         skip_based_on_mtime: bool = False,
         other_configs: str = "",
+        jobs: int | None = None,
     ) -> Program:
         """Run HLS with extracted HLS C++ files and generate tarballs."""
         self.extract_cpp()
@@ -339,22 +340,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 msg = f"HLS failed for {task.name}"
                 raise RuntimeError(msg)
 
-        worker_num = cpu_count(logical=False)
-        if worker_num_str := os.getenv("TAPA_CONCURRENCY", None):
-            if int(worker_num_str) > 0:
-                worker_num = int(worker_num_str)
-            else:
-                _logger.warning(
-                    "TAPA_CONCURRENCY is set to %s, which is invalid; using %d",
-                    worker_num_str,
-                    worker_num,
-                )
-
-        _logger.info(
-            "spawn %d workers for parallel HLS synthesis of the tasks", worker_num
-        )
-        _logger.info("set TAPA_CONCURRENCY to change the number of workers")
-        with futures.ThreadPoolExecutor(max_workers=worker_num) as executor:
+        jobs = jobs or cpu_count(logical=False)
+        _logger.info("spawn %d workers for parallel HLS synthesis of the tasks", jobs)
+        with futures.ThreadPoolExecutor(max_workers=jobs) as executor:
             any(executor.map(worker, self._tasks.values(), itertools.count(0)))
 
         return self

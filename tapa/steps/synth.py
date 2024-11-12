@@ -34,6 +34,7 @@ from tapa.steps.common import (
     "`--part-num` is not provided.",
 )
 @click.option("--clock-period", type=float, help="Target clock period in nanoseconds.")
+@click.option("--jobs", "-j", type=int, help="Number of parallel jobs for HLS.")
 @click.option(
     "--skip-hls-based-on-mtime / --no-skip-hls-based-on-mtime",
     type=bool,
@@ -61,6 +62,7 @@ def synth(  # noqa: PLR0913,PLR0917
     part_num: str | None,
     platform: str | None,
     clock_period: float | None,
+    jobs: int | None,
     skip_hls_based_on_mtime: bool,
     other_hls_configs: str,
     print_fifo_ops: bool,
@@ -85,6 +87,7 @@ def synth(  # noqa: PLR0913,PLR0917
         part_num,
         skip_hls_based_on_mtime,
         other_hls_configs,
+        jobs=jobs,
     )
     program.generate_task_rtl(print_fifo_ops)
 
