@@ -276,13 +276,14 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 header_fp.write(content)
         return self
 
-    def run_hls(
+    def run_hls(  # noqa: PLR0913,PLR0917  # TODO: refactor this method
         self,
         clock_period: float | str,
         part_num: str,
         skip_based_on_mtime: bool = False,
         other_configs: str = "",
         jobs: int | None = None,
+        keep_hls_work_dir: bool = False,
     ) -> Program:
         """Run HLS with extracted HLS C++ files and generate tarballs."""
         self.extract_cpp()
@@ -317,6 +318,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 RunHls(
                     tarfileobj,
                     kernel_files=[(self.get_cpp(task.name), hls_cflags)],
+                    work_dir=f"{self.work_dir}/hls" if keep_hls_work_dir else None,
                     top_name=task.name,
                     clock_period=str(clock_period),
                     part_num=part_num,

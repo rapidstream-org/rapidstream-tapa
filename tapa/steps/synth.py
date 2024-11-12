@@ -36,6 +36,12 @@ from tapa.steps.common import (
 @click.option("--clock-period", type=float, help="Target clock period in nanoseconds.")
 @click.option("--jobs", "-j", type=int, help="Number of parallel jobs for HLS.")
 @click.option(
+    "--keep-hls-work-dir / --remove-hls-work-dir",
+    type=bool,
+    default=False,
+    help="Keep HLS working directory in the TAPA work directory.",
+)
+@click.option(
     "--skip-hls-based-on-mtime / --no-skip-hls-based-on-mtime",
     type=bool,
     default=False,
@@ -63,6 +69,7 @@ def synth(  # noqa: PLR0913,PLR0917
     platform: str | None,
     clock_period: float | None,
     jobs: int | None,
+    keep_hls_work_dir: bool,
     skip_hls_based_on_mtime: bool,
     other_hls_configs: str,
     print_fifo_ops: bool,
@@ -88,6 +95,7 @@ def synth(  # noqa: PLR0913,PLR0917
         skip_hls_based_on_mtime,
         other_hls_configs,
         jobs=jobs,
+        keep_hls_work_dir=keep_hls_work_dir,
     )
     program.generate_task_rtl(print_fifo_ops)
 

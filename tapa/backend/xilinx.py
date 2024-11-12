@@ -287,6 +287,8 @@ class RunHls(VivadoHls):
     Args:
       tarfileobj: File object that will contain the reports and HDL files.
       kernel_files: File names or tuple of file names and cflags of the kernels.
+      work_dir: The working directory for the HLS run or None for a temporary
+          directory.
       top_name: Top-level module name.
       clock_period: Target clock period.
       part_num: Target part number.
@@ -300,6 +302,7 @@ class RunHls(VivadoHls):
         self,
         tarfileobj: BinaryIO,
         kernel_files: Iterable[str | tuple[str, str]],
+        work_dir: str | None,
         top_name: str,
         clock_period: str,
         part_num: str,
@@ -309,7 +312,13 @@ class RunHls(VivadoHls):
         std: str = "c++11",
         other_configs: str = "",
     ) -> None:
-        self.project_dir = tempfile.TemporaryDirectory(prefix=f"run-hls-{top_name}-")
+        if work_dir is None:
+            self.tempdir = tempfile.TemporaryDirectory(prefix=f"run-hls-{top_name}-")
+            self.project_path = self.tempdir.name
+        else:
+            self.tempdir = None
+            self.project_path = f"{work_dir}/{top_name}"
+            os.makedirs(self.project_path, exist_ok=True)
         self.project_name = "project"
         self.solution_name = top_name
         self.tarfileobj = tarfileobj
@@ -331,7 +340,7 @@ class RunHls(VivadoHls):
             elif hls == "vitis_hls":
                 rtl_config += " -module_auto_prefix"
         kwargs = {
-            "project_dir": self.project_dir.name,
+            "project_dir": self.project_path,
             "project_name": self.project_name,
             "solution_name": self.solution_name,
             "top_name": top_name,
@@ -341,7 +350,7 @@ class RunHls(VivadoHls):
             "config": rtl_config,
             "other_configs": other_configs,
         }
-        super().__init__(HLS_COMMANDS.format(**kwargs), hls, self.project_dir.name)
+        super().__init__(HLS_COMMANDS.format(**kwargs), hls, self.project_path)
 
     def __exit__(
         self,
@@ -354,14 +363,14 @@ class RunHls(VivadoHls):
         if self.returncode == 0:
             with tarfile.open(mode="w", fileobj=self.tarfileobj) as tar:
                 solution_dir = os.path.join(
-                    self.project_dir.name, self.project_name, self.solution_name
+                    self.project_path, self.project_name, self.solution_name
                 )
                 try:
                     tar.add(os.path.join(solution_dir, "syn/report"), arcname="report")
                     tar.add(os.path.join(solution_dir, "syn/verilog"), arcname="hdl")
                     tar.add(
                         os.path.join(
-                            solution_dir, self.project_dir.name, f"{self.hls}.log"
+                            solution_dir, self.project_path, f"{self.hls}.log"
                         ),
                         arcname="log/" + self.solution_name + ".log",
                     )
@@ -378,7 +387,8 @@ class RunHls(VivadoHls):
                     self.returncode = 1
                     _logger.error("%s", e)
         super().__exit__(exc_type, exc_value, traceback)
-        self.project_dir.cleanup()
+        if self.tempdir is not None:
+            self.tempdir.cleanup()
 
 
 XILINX_XML_NS = {"xd": "http://www.xilinx.com/xd"}
