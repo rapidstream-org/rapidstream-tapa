@@ -62,11 +62,15 @@ ISTREAM_SUFFIXES = (
     "_read",
 )
 
+ISTREAM_SUFFIXES_WITH_EOT = (*ISTREAM_SUFFIXES, "_dout_eot")
+
 OSTREAM_SUFFIXES = (
     "_din",
     "_full_n",
     "_write",
 )
+
+OSTREAM_SUFFIXES_WITH_EOT = (*OSTREAM_SUFFIXES, "_din_eot")
 
 STREAM_DATA_SUFFIXES = (
     "_dout",
@@ -78,9 +82,11 @@ STREAM_EOT_SUFFIX = "_eot"
 # => {port_suffix: direction}
 STREAM_PORT_DIRECTION = {
     "_dout": "input",
+    "_dout_eot": "input",
     "_empty_n": "input",
     "_read": "output",
     "_din": "output",
+    "_din_eot": "output",
     "_full_n": "input",
     "_write": "output",
 }
@@ -99,9 +105,11 @@ STREAM_PORT_OPPOSITE = {
 # => {port_suffix: width}, 0 is variable
 STREAM_PORT_WIDTH = {
     "_dout": 0,
+    "_dout_eot": 1,
     "_empty_n": 1,
     "_read": 1,
     "_din": 0,
+    "_din_eot": 1,
     "_full_n": 1,
     "_write": 1,
 }
@@ -161,7 +169,7 @@ BUILTIN_INSTANCES = {"hmss_0"}
 def get_stream_width(port: str, data_width: int) -> Width | None:
     width = STREAM_PORT_WIDTH[port]
     if width == 0:
-        width = data_width + 1  # for eot
+        width = data_width
     if width == 1:
         return None
     return Width(msb=Constant(width - 1), lsb=Constant(0))

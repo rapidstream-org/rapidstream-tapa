@@ -37,8 +37,10 @@ from pyverilog.vparser.ast import (
     IntConst,
     Land,
     Minus,
+    Node,
     NonblockingSubstitution,
     Output,
+    Plus,
     PortArg,
     Reg,
     SingleStatement,
@@ -98,9 +100,10 @@ from tapa.verilog.xilinx.const import (
     STATE,
     STREAM_DATA_SUFFIXES,
     STREAM_EOT_SUFFIX,
+    STREAM_PORT_DIRECTION,
     TRUE,
 )
-from tapa.verilog.xilinx.module import Module, generate_m_axi_ports
+from tapa.verilog.xilinx.module import Module, generate_m_axi_ports, get_streams_fifos
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -496,6 +499,17 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                         .width
                     )
 
+                    # if the task is lower, the eot and data are concated together
+                    # so we need to subtract the eot width to get the data width
+                    if (
+                        suffix in STREAM_DATA_SUFFIXES
+                        and self.get_task(task_name).is_lower
+                    ):
+                        wire_width = Width(
+                            Minus(wire_width.msb, IntConst(1)),
+                            wire_width.lsb,
+                        )
+
                     if suffix in STREAM_DATA_SUFFIXES:
                         if not isinstance(wire_width, Width):
                             msg = (
@@ -505,10 +519,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                             raise ValueError(msg)
                         data_wire = Wire(
                             name=w_name,
-                            width=Width(
-                                msb=Minus(wire_width.msb, IntConst(1)),
-                                lsb=wire_width.lsb,
-                            ),
+                            width=wire_width,
                         )
                         task.module.add_signals([data_wire])
                         eot_wire = Wire(
@@ -850,6 +861,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                             port=arg.port,
                             arg=arg.name,
                             ignore_peek_fifos=ignore_peeks_fifos,
+                            split_eot=instance.task.is_upper,
                         ),
                     )
                 elif arg.cat.is_ostream:
@@ -857,6 +869,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                         instance.task.module.generate_ostream_ports(
                             port=arg.port,
                             arg=arg.name,
+                            split_eot=instance.task.is_upper,
                         ),
                     )
                 elif arg.cat.is_sync_mmap:
@@ -1011,7 +1024,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         module.add_pipeline(self.start_q, init=START)
         module.add_pipeline(self.done_q, init=is_state(STATE10))
 
-    def _instrument_upper_task(
+    def _instrument_upper_task(  # noqa: C901,PLR0912, PLR0915 # TODO: refactor this method
         self,
         task: Task,
         print_fifo_ops: bool,
@@ -1057,6 +1070,62 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                             msg = f"failed to remove {peek_port} from {task.name}"
                             raise ValueError(msg)
 
+        # split stream dout to data and eot
+        _logger.info("split stream data ports to data and eot on %s", task.name)
+        for port_name, port in task.ports.items():
+            if not port.cat.is_stream and not port.is_streams:
+                continue
+            for suffix in STREAM_DATA_SUFFIXES:
+                if port.cat.is_stream:
+                    fifos = [port_name]
+                else:
+                    # streams
+                    fifos = get_streams_fifos(task.module, port_name)
+                # peek
+                if (
+                    self.top_task.name != task.name
+                    and STREAM_PORT_DIRECTION[suffix] == "input"
+                ):
+                    match = match_array_name(port_name)
+                    if match is None:
+                        peek_port = f"{port_name}_peek"
+                    else:
+                        peek_port = f"{match[0]}_peek[{match[1]}]"
+                    if port.cat.is_stream:
+                        fifos.append(peek_port)
+                    else:
+                        # streams
+                        fifos.extend(get_streams_fifos(task.module, peek_port))
+
+                for subport_name in fifos:
+                    if not task.module.find_port(subport_name, suffix):
+                        continue
+
+                    _logger.info("  split %s.%s", subport_name, suffix)
+
+                    dout_port = task.module.get_port_of(subport_name, suffix)
+                    dout_width = dout_port.width
+                    assert isinstance(dout_width, Width)
+
+                    # remove original dout port
+                    removed_ports = task.module.del_ports(
+                        [task.module.get_port_of(subport_name, suffix).name]
+                    )
+                    assert removed_ports[0] == dout_port.name
+
+                    # add new data and eot ports
+                    new_data_port = type(dout_port)(
+                        name=dout_port.name,
+                        width=Width(
+                            msb=Minus(dout_width.msb, IntConst(1)),
+                            lsb=dout_width.lsb,
+                        ),
+                    )
+                    new_eot_port = type(dout_port)(
+                        name=f"{dout_port.name}{STREAM_EOT_SUFFIX}"
+                    )
+                    task.module.add_ports([new_data_port, new_eot_port])
+
         self._instantiate_fifos(task, print_fifo_ops)
         self._connect_fifos(task)
         width_table = {port.name: port.width for port in task.ports.values()}
@@ -1078,11 +1147,15 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         with open(self.get_rtl(task.name), "w", encoding="utf-8") as rtl_code:
             rtl_code.write(task.module.code)
 
-    def _get_fifo_width(self, task: Task, fifo: str) -> int:
+    def _get_fifo_width(self, task: Task, fifo: str) -> Node:
         producer_task, _, fifo_port = task.get_connection_to(fifo, "produced_by")
         port = self.get_task(producer_task).module.get_port_of(
             fifo_port,
             OSTREAM_SUFFIXES[0],
         )
+        if task.is_upper:
+            # upper task have separated data and eot ports
+            # so the width should be the data port width + 1
+            return Plus(Minus(port.width.msb, port.width.lsb), IntConst(2))
         # TODO: err properly if not integer literals
-        return int(port.width.msb.value) - int(port.width.lsb.value) + 1
+        return Plus(Minus(port.width.msb, port.width.lsb), IntConst(1))
