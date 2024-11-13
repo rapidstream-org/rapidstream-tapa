@@ -15,13 +15,12 @@ from typing import ClassVar, NamedTuple
 
 from pyverilog.vparser.ast import (
     Assign,
-    Concat,
     Constant,
     Decl,
     Identifier,
     IntConst,
     ParamArg,
-    Partselect,
+    Plus,
     Width,
     Wire,
 )
@@ -45,10 +44,10 @@ from tapa.verilog.xilinx.const import (
     HANDSHAKE_RST_N,
     HANDSHAKE_START,
     ISTREAM_SUFFIXES,
+    ISTREAM_SUFFIXES_WITH_EOT,
     OSTREAM_SUFFIXES,
+    OSTREAM_SUFFIXES_WITH_EOT,
     RST,
-    STREAM_DATA_SUFFIXES,
-    STREAM_EOT_SUFFIX,
     STREAM_PORT_DIRECTION,
     get_stream_width,
 )
@@ -364,11 +363,17 @@ class Task:  # noqa: PLR0904
         ]
 
     @staticmethod
-    def get_fifo_suffixes(direction: str) -> list[str]:
-        suffixes = {
-            "consumed_by": ISTREAM_SUFFIXES,
-            "produced_by": OSTREAM_SUFFIXES,
-        }
+    def get_fifo_suffixes(direction: str, with_eot: bool = False) -> list[str]:
+        if not with_eot:
+            suffixes = {
+                "consumed_by": ISTREAM_SUFFIXES,
+                "produced_by": OSTREAM_SUFFIXES,
+            }
+        else:
+            suffixes = {
+                "consumed_by": ISTREAM_SUFFIXES_WITH_EOT,
+                "produced_by": OSTREAM_SUFFIXES_WITH_EOT,
+            }
         return suffixes[direction]
 
     def is_fifo_external(self, fifo_name: str) -> bool:
@@ -395,7 +400,7 @@ class Task:  # noqa: PLR0904
         self.module.add_fifo_instance(
             name=fifo_name,
             rst=RST,
-            width=data_width + 1,
+            width=Plus(IntConst(data_width), IntConst(1)),
             depth=2,
         )
 
@@ -421,30 +426,20 @@ class Task:  # noqa: PLR0904
                 )
 
         # connect the FIFO to the AXIS interface
-        for suffix in self.get_fifo_suffixes(direction_axis):
+        for suffix in self.get_fifo_suffixes(direction_axis, with_eot=True):
             w_name = wire_name(fifo_name, suffix)
 
-            offset = 0
             for axis_suffix in STREAM_TO_AXIS[suffix]:
                 port_name = self.module.find_port(axis_name, axis_suffix)
                 width = get_axis_port_width_int(axis_suffix, data_width)
 
-                if len(STREAM_TO_AXIS[suffix]) > 1:
-                    wire = Partselect(
-                        Identifier(w_name),
-                        IntConst(str(offset + width - 1)),
-                        IntConst(str(offset)),
-                    )
-                else:
-                    wire = Identifier(w_name)
+                wire = Identifier(w_name)
 
                 self.assign_directional(
                     Identifier(port_name),
                     wire,
                     STREAM_PORT_DIRECTION[suffix],
                 )
-
-                offset += width
 
         return fifo_name
 
@@ -458,22 +453,12 @@ class Task:  # noqa: PLR0904
         )
 
         # connect fifo with external ports
-        for suffix in self.get_fifo_suffixes(direction):
+        for suffix in self.get_fifo_suffixes(direction, with_eot=True):
             if external_name == internal_name:
                 rhs = self.module.get_port_of(external_name, suffix).name
             else:
                 rhs = wire_name(external_name, suffix)
-            if suffix in STREAM_DATA_SUFFIXES:
-                internal_signal = Concat(
-                    [
-                        Identifier(
-                            wire_name(internal_name, suffix + STREAM_EOT_SUFFIX)
-                        ),
-                        Identifier(wire_name(internal_name, suffix)),
-                    ]
-                )
-            else:
-                internal_signal = Identifier(wire_name(internal_name, suffix))
+            internal_signal = Identifier(wire_name(internal_name, suffix))
             self.assign_directional(
                 internal_signal,
                 Identifier(rhs),
