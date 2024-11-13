@@ -18,7 +18,8 @@ sh_test(
 
 sh_test(
     name = "mmaps-iostrms-vadd-xosim",
-    size = "large",
+    size = "enormous",
+    timeout = "moderate",
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location mmaps-iostrms-vadd-host)",
@@ -38,7 +39,8 @@ sh_test(
 
 sh_test(
     name = "mmaps-iostrms-vadd-cosim",
-    size = "large",
+    size = "enormous",
+    timeout = "moderate",
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location mmaps-iostrms-vadd-host)",

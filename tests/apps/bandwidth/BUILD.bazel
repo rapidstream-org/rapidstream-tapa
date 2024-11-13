@@ -18,7 +18,8 @@ sh_test(
 
 sh_test(
     name = "bandwidth-xosim",
-    size = "large",
+    size = "enormous",
+    timeout = "moderate",
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location bandwidth-host)",
@@ -38,7 +39,8 @@ sh_test(
 
 sh_test(
     name = "bandwidth-cosim",
-    size = "large",
+    size = "enormous",
+    timeout = "moderate",
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location bandwidth-host)",
