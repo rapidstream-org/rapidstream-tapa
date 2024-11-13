@@ -52,11 +52,15 @@ module VecAdd_tb();
     // Wait for Vivado to finish the simulation setup
     #1000;
 
-    // Reset and start UUT
-    #(CLK_PERIOD*10) ap_rst_n = 0; #(CLK_PERIOD*10) ap_rst_n = 1; #(CLK_PERIOD*10);
-    @(posedge ap_clk);
+    // Reset UUT
+    #(CLK_PERIOD*10);
+    ap_rst_n = 0;
+    #(CLK_PERIOD*10);
+    ap_rst_n = 1;
+    #(CLK_PERIOD*10);
 
-    ap_start = 1;
+    // Start UUT
+    ap_start <= 1;
     @(posedge ap_clk);
 
     fork
@@ -65,7 +69,8 @@ module VecAdd_tb();
       read_c_data();
       begin
         wait(ap_ready);
-        ap_start = 0;
+        ap_start <= 0;
+        @(posedge ap_clk);
       end
     join
 
@@ -76,65 +81,79 @@ module VecAdd_tb();
   task stream_a_data;
     integer i;
     begin
-      // Write numbers to stream A
       for (i = 0; i < 5; i = i + 1) begin
-        a_s_empty_n = 1;
-        a_s_dout = {1'b0, $shortrealtobits(0.0 + i)};
+        // Clock in data
+        a_s_empty_n <= 1;
+        a_s_dout <= {1'b0, $shortrealtobits(0.0 + i)};
         @(posedge ap_clk);
+
+        // Wait for the cycle that the data is read
         while (!a_s_read) @(posedge ap_clk);
       end
 
-      // Write a close token
-      a_s_empty_n = 1;
-      a_s_dout = {1'b1, 0};
+      // Clock in close token
+      a_s_empty_n <= 1;
+      a_s_dout <= {1'b1, 0};
       @(posedge ap_clk);
+
+      // Wait for the cycle that the close token is consumed
       while (!a_s_read) @(posedge ap_clk);
 
-      a_s_empty_n = 0;
+      // Stop clocking in data
+      a_s_empty_n <= 0;
+      @(posedge ap_clk);
     end
   endtask
 
   task stream_b_data;
     integer i;
     begin
-      // Write numbers to stream B
       for (i = 0; i < 5; i = i + 1) begin
-        b_s_empty_n = 1;
-        b_s_dout = {1'b0, $shortrealtobits(1.0 + i)};
+        b_s_empty_n <= 1;
+        b_s_dout <= {1'b0, $shortrealtobits(1.0 + i)};
         @(posedge ap_clk);
         while (!b_s_read) @(posedge ap_clk);
       end
 
-      // Write a close token
-      b_s_empty_n = 1;
-      b_s_dout = {1'b1, 0};
+      b_s_empty_n <= 1;
+      b_s_dout <= {1'b1, 0};
       @(posedge ap_clk);
       while (!b_s_read) @(posedge ap_clk);
 
-      b_s_empty_n = 0;
+      b_s_empty_n <= 0;
+      @(posedge ap_clk);
     end
   endtask
 
   task read_c_data;
     shortreal real_data;
     begin
-      c_full_n = 1;
-
       for (int i = 0; i < 5; i++) begin
+        // Indicate that we are ready to read
+        c_full_n <= 1;
+
+        // If the data is already available in the previous cycle, read it.
+        // Otherwise, wait for the cycle where data is available.
         while (!c_write) @(posedge ap_clk);
-        real_data = $bitstoshortreal(c_din[31:0]);
+
+        // Clock in data to the testbench
+        real_data <= $bitstoshortreal(c_din[31:0]);
+        @(posedge ap_clk);
+
+        // Check the data
         $display("c_din[%0d] = %f", i, real_data);
         if (real_data != 1.0 + 2 * i)
           $fatal(1, "Error: c_din[%0d] = %f, expected %f", i, real_data, 1.0 + 2 * i);
-        @(posedge ap_clk);
       end
 
+      c_full_n <= 1;
       while (!c_write) @(posedge ap_clk);
       if (c_din[32] !== 1'b1)
         $fatal(1, "Error: close token not set on last data");
       @(posedge ap_clk);
 
-      c_full_n = 0;
+      c_full_n <= 0;
+      @(posedge ap_clk);
     end
   endtask
 
