@@ -16,6 +16,7 @@ from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
     Always,
     Assign,
+    Concat,
     Constant,
     Decl,
     Description,
@@ -71,6 +72,8 @@ from tapa.verilog.xilinx.const import (
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
     RST_N,
+    STREAM_DATA_SUFFIXES,
+    STREAM_EOT_SUFFIX,
     STREAM_PORT_DIRECTION,
     TRUE,
 )
@@ -126,7 +129,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             self._handshake_output_ports: dict[str, Assign] = {}
             self._calculate_indices()
             return
-        with tempfile.TemporaryDirectory(prefix="pyverilog-") as output_dir:  # noqa: PLR1702
+        with tempfile.TemporaryDirectory(prefix="pyverilog-") as output_dir:
             if is_trimming_enabled:
                 # trim the body since we only need the interface information
                 new_files = []
@@ -296,13 +299,28 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         arg: str,
     ) -> Iterator[PortArg]:
         for suffix in ISTREAM_SUFFIXES:
-            arg_name = wire_name(arg, suffix)
+            if suffix in STREAM_DATA_SUFFIXES:
+                arg_name = Concat(
+                    [
+                        Identifier(wire_name(arg, suffix + STREAM_EOT_SUFFIX)),
+                        Identifier(wire_name(arg, suffix)),
+                    ]
+                )
 
-            # read port
-            yield make_port_arg(
-                port=self.get_port_of(port, suffix).name,
-                arg=arg_name,
-            )
+                # read port
+                yield make_port_arg(
+                    port=self.get_port_of(port, suffix).name,
+                    arg=arg_name,
+                )
+            else:
+                arg_name = wire_name(arg, suffix)
+
+                # read port
+                yield make_port_arg(
+                    port=self.get_port_of(port, suffix).name,
+                    arg=arg_name,
+                )
+
             if STREAM_PORT_DIRECTION[suffix] == "output":
                 arg_name = ""
 
@@ -323,10 +341,24 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         arg: str,
     ) -> Iterator[PortArg]:
         for suffix in OSTREAM_SUFFIXES:
-            yield make_port_arg(
-                port=self.get_port_of(port, suffix).name,
-                arg=wire_name(arg, suffix),
-            )
+            if suffix in STREAM_DATA_SUFFIXES:
+                arg_name = Concat(
+                    [
+                        Identifier(wire_name(arg, suffix + STREAM_EOT_SUFFIX)),
+                        Identifier(wire_name(arg, suffix)),
+                    ]
+                )
+
+                # write port
+                yield make_port_arg(
+                    port=self.get_port_of(port, suffix).name,
+                    arg=arg_name,
+                )
+            else:
+                yield make_port_arg(
+                    port=self.get_port_of(port, suffix).name,
+                    arg=wire_name(arg, suffix),
+                )
 
     @property
     def signals(self) -> dict[str, Wire | Reg]:
@@ -571,15 +603,32 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         def ports() -> Iterator[PortArg]:
             yield make_port_arg(port="clk", arg=CLK)
             yield make_port_arg(port="reset", arg=rst)
-            yield from (
-                make_port_arg(port=port_name, arg=wire_name(name, arg_suffix))
-                for port_name, arg_suffix in zip(FIFO_READ_PORTS, ISTREAM_SUFFIXES)
-            )
+            for port_name, arg_suffix in zip(FIFO_READ_PORTS, ISTREAM_SUFFIXES):
+                if arg_suffix in STREAM_DATA_SUFFIXES:
+                    data_eot_concat = Concat(
+                        [
+                            Identifier(wire_name(name, arg_suffix + STREAM_EOT_SUFFIX)),
+                            Identifier(wire_name(name, arg_suffix)),
+                        ]
+                    )
+                    yield make_port_arg(port=port_name, arg=data_eot_concat)
+
+                else:
+                    yield make_port_arg(port=port_name, arg=wire_name(name, arg_suffix))
+
             yield make_port_arg(port=FIFO_READ_PORTS[-1], arg=TRUE)
-            yield from (
-                make_port_arg(port=port_name, arg=wire_name(name, arg_suffix))
-                for port_name, arg_suffix in zip(FIFO_WRITE_PORTS, OSTREAM_SUFFIXES)
-            )
+            for port_name, arg_suffix in zip(FIFO_WRITE_PORTS, OSTREAM_SUFFIXES):
+                if arg_suffix in STREAM_DATA_SUFFIXES:
+                    data_eot_concat = Concat(
+                        [
+                            Identifier(wire_name(name, arg_suffix + STREAM_EOT_SUFFIX)),
+                            Identifier(wire_name(name, arg_suffix)),
+                        ]
+                    )
+                    yield make_port_arg(port=port_name, arg=data_eot_concat)
+
+                else:
+                    yield make_port_arg(port=port_name, arg=wire_name(name, arg_suffix))
             yield make_port_arg(port=FIFO_WRITE_PORTS[-1], arg=TRUE)
 
         partition_count = self.partition_count_of(name)

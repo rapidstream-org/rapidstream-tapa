@@ -68,6 +68,13 @@ OSTREAM_SUFFIXES = (
     "_write",
 )
 
+STREAM_DATA_SUFFIXES = (
+    "_dout",
+    "_din",
+)
+
+STREAM_EOT_SUFFIX = "_eot"
+
 # => {port_suffix: direction}
 STREAM_PORT_DIRECTION = {
     "_dout": "input",

@@ -44,6 +44,7 @@ from pyverilog.vparser.ast import (
     SingleStatement,
     StringConst,
     SystemCall,
+    Width,
     Wire,
 )
 
@@ -95,6 +96,8 @@ from tapa.verilog.xilinx.const import (
     RTL_SUFFIX,
     START,
     STATE,
+    STREAM_DATA_SUFFIXES,
+    STREAM_EOT_SUFFIX,
     TRUE,
 )
 from tapa.verilog.xilinx.module import Module, generate_m_axi_ports
@@ -492,8 +495,29 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                         .module.get_port_of(fifo_port, suffix)
                         .width
                     )
-                    wire = Wire(name=w_name, width=wire_width)
-                    task.module.add_signals([wire])
+
+                    if suffix in STREAM_DATA_SUFFIXES:
+                        if not isinstance(wire_width, Width):
+                            msg = (
+                                f"width of {w_name} is not a pyverilog Width: "
+                                f"{wire_width}"
+                            )
+                            raise ValueError(msg)
+                        data_wire = Wire(
+                            name=w_name,
+                            width=Width(
+                                msb=Minus(wire_width.msb, IntConst(1)),
+                                lsb=wire_width.lsb,
+                            ),
+                        )
+                        task.module.add_signals([data_wire])
+                        eot_wire = Wire(
+                            name=wire_name(fifo_name, suffix + STREAM_EOT_SUFFIX)
+                        )
+                        task.module.add_signals([eot_wire])
+                    else:
+                        data_wire = Wire(name=w_name, width=wire_width)
+                        task.module.add_signals([data_wire])
 
             if task.is_fifo_external(fifo_name):
                 task.connect_fifo_externally(

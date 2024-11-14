@@ -15,6 +15,7 @@ from typing import ClassVar, NamedTuple
 
 from pyverilog.vparser.ast import (
     Assign,
+    Concat,
     Constant,
     Decl,
     Identifier,
@@ -46,6 +47,8 @@ from tapa.verilog.xilinx.const import (
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
     RST,
+    STREAM_DATA_SUFFIXES,
+    STREAM_EOT_SUFFIX,
     STREAM_PORT_DIRECTION,
     get_stream_width,
 )
@@ -460,8 +463,19 @@ class Task:  # noqa: PLR0904
                 rhs = self.module.get_port_of(external_name, suffix).name
             else:
                 rhs = wire_name(external_name, suffix)
+            if suffix in STREAM_DATA_SUFFIXES:
+                internal_signal = Concat(
+                    [
+                        Identifier(
+                            wire_name(internal_name, suffix + STREAM_EOT_SUFFIX)
+                        ),
+                        Identifier(wire_name(internal_name, suffix)),
+                    ]
+                )
+            else:
+                internal_signal = Identifier(wire_name(internal_name, suffix))
             self.assign_directional(
-                Identifier(wire_name(internal_name, suffix)),
+                internal_signal,
                 Identifier(rhs),
                 STREAM_PORT_DIRECTION[suffix],
             )
