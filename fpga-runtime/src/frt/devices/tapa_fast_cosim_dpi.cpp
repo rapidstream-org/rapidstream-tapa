@@ -135,14 +135,22 @@ DPI_DLLESPEC void istream(
   SharedMemoryQueue* istream = GetStream(id);
   CHECK(istream != nullptr);
   CHECK_EQ(istream->width(), svSize(dout, 1));
-  empty_n = istream->empty() ? sv_0 : sv_1;
-  std::string bits(istream->width(), 'x');
-  if (!istream->empty()) {
-    bits = istream->front();
-  }
-  StringToOpenArrayHandle(bits, dout);
-  if (read == sv_1 && !istream->empty()) {
-    istream->pop();
+
+  if (istream->empty()) {
+    // No data can be provided in this cycle.
+    StringToOpenArrayHandle(std::string(istream->width(), 'x'), dout);
+    empty_n = sv_0;
+  } else {
+    // Data is provided in this cycle.
+    StringToOpenArrayHandle(istream->front(), dout);
+    empty_n = sv_1;
+
+    // If the downstream is ready to take data, the provided data will be
+    // consumed before the next clock edge. After the clock edge, the next
+    // data shall be provided.
+    if (read == sv_1) {
+      istream->pop();
+    }
   }
 }
 
@@ -154,12 +162,34 @@ DPI_DLLESPEC void ostream(
   SharedMemoryQueue* ostream = GetStream(id);
   CHECK(ostream != nullptr);
   CHECK_EQ(ostream->width(), svSize(din, 1));
-  if (write == sv_1) {
-    CHECK(!ostream->full());
-    const std::string bits = OpenArrayHandleToString(din);
-    ostream->push(bits);
+
+  static std::unordered_map<std::string, bool> last_full_n;
+
+  if (ostream->full()) {
+    // In the previous cycle we should have indicated that we are full, or this
+    // is the first cycle of the simulation. Otherwise, we have to consume data
+    // in this cycle which is not possible.
+    CHECK(last_full_n.find(id) != last_full_n.end() ||
+          last_full_n[id] == false);
+
+    // No data can be read in the next cycle because we are full
+    full_n = sv_0;
+    last_full_n[id] = false;
+  } else {
+    // If in the *previous* cycle we have indicated that we are not full, we
+    // shall consume data in this cycle if it is available.
+    if (last_full_n.find(id) != last_full_n.end() && last_full_n[id] == true &&
+        write == sv_1) {
+      const std::string bits = OpenArrayHandleToString(din);
+      ostream->push(bits);
+    }
+
+    // If we are still not full after the consumption, we can accept data in
+    // the next cycle.
+    bool is_full = ostream->full();
+    full_n = is_full ? sv_0 : sv_1;
+    last_full_n[id] = is_full ? false : true;
   }
-  full_n = (ostream->size() < ostream->capacity()) ? sv_1 : sv_0;
 }
 
 }  // extern "C"
