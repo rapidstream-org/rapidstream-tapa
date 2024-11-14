@@ -49,14 +49,17 @@ compile_hls() {
 
 @test "apps/stream-vadd: tapa generates an xo file for axis and passes simulation" {
   compile_xo_axis
+
+  # Test the generated RTL using testbench
   vivado \
     -mode batch \
     -source testbench/sim.tcl \
     -tclargs \
       ${BATS_TMPDIR}/stream-vadd-axis-workdir \
       testbench/axis-tb.sv
-  # TODO: re-enable after deflaking
-  # ${BATS_TMPDIR}/stream-vadd-host --bitstream ${BATS_TMPDIR}/stream-vadd.xo
+
+  # Test the generated xo file using DPI
+  ${BATS_TMPDIR}/stream-vadd-host --bitstream ${BATS_TMPDIR}/stream-vadd.xo
 }
 
 @test "apps/stream-vadd: tapa generates rtl for hls stream and passes simulation" {

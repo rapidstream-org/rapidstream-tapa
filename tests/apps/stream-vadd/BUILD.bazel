@@ -32,7 +32,6 @@ sh_test(
     ],
     tags = [
         "cpu:3",
-        "manual",  # TODO: re-enable after deflaking
     ],
 )
 
