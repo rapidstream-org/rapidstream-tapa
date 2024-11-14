@@ -52,9 +52,9 @@ class SharedMemoryQueue {
   size_t mmap_len() const;
 
   char magic_[4] = {};
-  int32_t version_ = 0;
   int32_t depth_ = 0;
   int32_t width_ = 0;
+  int32_t data_padding_ = 0;
   std::atomic<int64_t> tail_{};
   std::atomic<int64_t> head_{};
   char data_[];
