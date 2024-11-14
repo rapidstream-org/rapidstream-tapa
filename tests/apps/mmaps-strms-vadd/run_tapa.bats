@@ -27,7 +27,7 @@ compile_xo() {
   [ -f "${BATS_TMPDIR}/mmaps-strms-vadd.xo" ]
 }
 
-@test "apps/vavadd-mmaps-strmsdd: tapa c simulation passes" {
+@test "apps/mmaps-strms-add: tapa c simulation passes" {
   compile_host
   ${BATS_TMPDIR}/mmaps-strms-vadd-host
 }
