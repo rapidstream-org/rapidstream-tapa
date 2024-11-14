@@ -384,9 +384,9 @@ def get_test_signals(
 
   // clock
   always begin
-      ap_clk = 1'b1;
-      #HALF_CLOCK_PERIOD;
       ap_clk = 1'b0;
+      #HALF_CLOCK_PERIOD;
+      ap_clk = 1'b1;
       #HALF_CLOCK_PERIOD;
 
     if (ap_rst_n) begin
