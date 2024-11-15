@@ -65,8 +65,6 @@ SharedMemoryQueue::UniquePtr SharedMemoryQueue::New(int fd) {
     return nullptr;
   }
 
-  CHECK(msync(ptr, sizeof(SharedMemoryQueue), MS_SYNC | MS_INVALIDATE) == 0);
-
   ptr = static_cast<SharedMemoryQueue*>(
       mremap(ptr, sizeof(SharedMemoryQueue), ptr->mmap_len(), MREMAP_MAYMOVE));
   if (ptr == MAP_FAILED) {
@@ -129,24 +127,15 @@ std::string SharedMemoryQueue::front() const {
 std::string SharedMemoryQueue::pop() {
   CHECK_GT(size(), 0) << "pop called on an empty queue";
   std::string val = front();
-  ++tail_;  // This is atomic, no need for a memory barrier.
+  ++tail_;
   return val;
 }
 
 void SharedMemoryQueue::push(const std::string& val) {
   CHECK_LT(size(), capacity()) << "push called on a full queue";
   CHECK_EQ(val.size(), width_) << "unexpected input: " << val;
-  size_t offset = (head_ % depth_) * width_;
-
-  // Write the data into the file first and ensure that the data is properly
-  // synchronized to other processes.
-  memcpy(&data_[offset], val.data(), val.size());
-  // addr must be aligned to the page size, so just fully synchronize...
-  CHECK(msync(this, mmap_len(), MS_SYNC | MS_INVALIDATE) == 0);
-
-  // Only when the data is properly propagated to the file, we update the head
-  // pointer so that it is safe to read the data from the file.
-  ++head_;  // This is atomic, no need for a memory barrier.
+  memcpy(&data_[(head_ % depth_) * width_], val.data(), val.size());
+  ++head_;
 }
 
 size_t SharedMemoryQueue::mmap_len() const {
