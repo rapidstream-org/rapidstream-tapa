@@ -23,6 +23,7 @@ namespace internal {
 namespace {
 
 constexpr char kMagic[] = "tapa";
+constexpr int32_t kVersion = 1;
 
 }  // namespace
 
@@ -45,6 +46,12 @@ SharedMemoryQueue::UniquePtr SharedMemoryQueue::New(int fd) {
   if (magic != kMagic) {
     LOG(ERROR) << "unexpected magic '" << magic << "'; want '" << kMagic << "'"
                << "; size: " << magic.size();
+    return nullptr;
+  }
+
+  if (ptr->version_ != kVersion) {
+    LOG(ERROR) << "unexpected version " << ptr->version_ << "; want "
+               << kVersion;
     return nullptr;
   }
 
@@ -82,10 +89,10 @@ int SharedMemoryQueue::CreateFile(std::string& path, int32_t depth,
   SharedMemoryQueue queue;
   static_assert(sizeof(queue.magic_) + 1 == sizeof(kMagic));  // +1 for '\0'
   memcpy(queue.magic_, kMagic, sizeof(queue.magic_));
+  queue.version_ = kVersion;
   queue.depth_ = depth;
   queue.width_ = width;
-  queue.data_padding_ = getpagesize() - sizeof(queue) % getpagesize();
-  int rc = ftruncate(fd, queue.mmap_len());
+  int rc = ftruncate(fd, sizeof(queue) + depth * width);
   if (rc == 0) {
     rc = write(fd, &queue, sizeof(queue));
     if (rc == sizeof(queue)) {
@@ -116,7 +123,7 @@ bool SharedMemoryQueue::empty() const { return size() <= 0; }
 bool SharedMemoryQueue::full() const { return size() >= capacity(); }
 
 std::string SharedMemoryQueue::front() const {
-  return std::string(&data_[data_padding_ + (tail_ % depth_) * width_], width_);
+  return std::string(&data_[(tail_ % depth_) * width_], width_);
 }
 
 std::string SharedMemoryQueue::pop() {
@@ -129,13 +136,13 @@ std::string SharedMemoryQueue::pop() {
 void SharedMemoryQueue::push(const std::string& val) {
   CHECK_LT(size(), capacity()) << "push called on a full queue";
   CHECK_EQ(val.size(), width_) << "unexpected input: " << val;
-  size_t offset = data_padding_ + (head_ % depth_) * width_;
+  size_t offset = (head_ % depth_) * width_;
 
   // Write the data into the file first and ensure that the data is properly
   // synchronized to other processes.
   memcpy(&data_[offset], val.data(), val.size());
-  CHECK(msync(&data_[data_padding_], depth_ * width_,
-              MS_SYNC | MS_INVALIDATE) == 0);
+  // addr must be aligned to the page size, so just fully synchronize...
+  CHECK(msync(this, mmap_len(), MS_SYNC | MS_INVALIDATE) == 0);
 
   // Only when the data is properly propagated to the file, we update the head
   // pointer so that it is safe to read the data from the file.
@@ -143,7 +150,7 @@ void SharedMemoryQueue::push(const std::string& val) {
 }
 
 size_t SharedMemoryQueue::mmap_len() const {
-  return sizeof(*this) + data_padding_ + depth_ * width_;
+  return sizeof(*this) + depth_ * width_;
 }
 
 }  // namespace internal
