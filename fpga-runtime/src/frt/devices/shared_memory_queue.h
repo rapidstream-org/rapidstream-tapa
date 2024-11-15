@@ -27,8 +27,9 @@ class SharedMemoryQueue {
   // Returns `nullptr` on failure with logging.
   static UniquePtr New(int fd);
 
-  // Creates a file suitable for backing a `SharedMemoryQueue` and returns the
-  // corresponding file descriptor, with `path_template` modified by `mkostemp`.
+  // Creates (using `shm_open`) a shared memory object suitable for backing a
+  // `SharedMemoryQueue` and returns the corresponding file descriptor, with
+  // `path_template` modified to the path of the created shared memory object.
   // Returns a negative fd on failure with the corresponding errno and logging.
   static int CreateFile(std::string& path_template, int32_t depth,
                         int32_t width);

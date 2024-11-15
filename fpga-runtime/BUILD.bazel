@@ -39,7 +39,10 @@ cc_library(
         "-DCL_TARGET_OPENCL_VERSION=120",
     ],
     includes = ["src"],
-    linkopts = ["-lstdc++fs"],
+    linkopts = [
+        "-lstdc++fs",
+        "-lrt",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "@boost//:endian",

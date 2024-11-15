@@ -4,10 +4,10 @@
 
 #include "frt/devices/shared_memory_queue.h"
 
+#include <sys/mman.h>
+
 #include <glog/logging.h>
 #include <gtest/gtest.h>
-
-#include "frt/devices/filesystem.h"
 
 namespace fpga::internal {
 namespace {
@@ -21,15 +21,13 @@ class SharedMemoryQueueTest : public testing::Test {
     if (fd_ >= 0) {
       PLOG_IF(WARNING, close(fd_) != 0) << "close";
       fd_ = -1;
+      PLOG_IF(ERROR, shm_unlink(temp_file_.c_str())) << "shm_unlink";
     }
-    fs::remove_all(temp_file_);
   }
 
   const testing::TestInfo* const test_info_ =
       testing::UnitTest::GetInstance()->current_test_info();
-  std::string temp_file_ = fs::temp_directory_path() /
-                           (std::string(test_info_->test_suite_name()) + "." +
-                            test_info_->name() + ".shared_memory_queue.XXXXXX");
+  std::string temp_file_ = "/shared_memory_queue.XXXXXX";
   int fd_ = SharedMemoryQueue::CreateFile(temp_file_, kDepth, kWidth);
   SharedMemoryQueue::UniquePtr queue_ = SharedMemoryQueue::New(fd_);
 };

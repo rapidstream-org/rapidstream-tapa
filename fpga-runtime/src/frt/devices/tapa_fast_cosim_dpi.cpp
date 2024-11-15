@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <fcntl.h>
+#include <sys/mman.h>
 
 #include <glog/logging.h>
 #include <svdpi.h>
@@ -42,7 +43,7 @@ std::unordered_map<std::string, SharedMemoryQueue::UniquePtr> InitStreamMap() {
   for (const std::tuple<std::string, std::string>& entry : stream_id_and_path) {
     const std::string& stream_id = std::get<0>(entry);
     const std::string& stream_path = std::get<1>(entry);
-    int fd = open(stream_path.c_str(), O_RDWR | O_CLOEXEC);
+    int fd = shm_open(stream_path.c_str(), O_RDWR, 0600);
     VLOG(2) << "fd: " << fd << " <=> arg: " << stream_id;
     streams[stream_id] = SharedMemoryQueue::New(fd);
   }

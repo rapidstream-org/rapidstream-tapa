@@ -20,7 +20,9 @@ class SharedMemoryStream {
   struct Options {
     int64_t depth = 0;
     int64_t width = 0;
-    std::string path_template = "/tmp/shared_memory_queue.XXXXXX";
+
+    // This will be consumed by `shm_open`.
+    std::string path_template = "/shared_memory_queue.XXXXXX";
   };
 
   explicit SharedMemoryStream(Options options);

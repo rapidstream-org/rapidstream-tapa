@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include <sys/mman.h>
 #include <unistd.h>
 
 #include <glog/logging.h>
@@ -22,7 +23,7 @@ SharedMemoryStream::SharedMemoryStream(Options options)
 
 SharedMemoryStream::~SharedMemoryStream() {
   if (fd_ >= 0) {
-    PLOG_IF(WARNING, unlink(path_.c_str())) << __func__ << ": unlink";
+    PLOG_IF(WARNING, shm_unlink(path_.c_str())) << __func__ << ": shm_unlink";
     PLOG_IF(WARNING, close(fd_)) << __func__ << ": close";
   }
 }

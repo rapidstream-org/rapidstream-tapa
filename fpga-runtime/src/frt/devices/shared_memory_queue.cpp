@@ -78,9 +78,9 @@ SharedMemoryQueue::UniquePtr SharedMemoryQueue::New(int fd) {
 
 int SharedMemoryQueue::CreateFile(std::string& path, int32_t depth,
                                   int32_t width) {
-  int fd = mkostemp(&path[0], O_CLOEXEC);
+  int fd = shm_open(mktemp(&path[0]), O_RDWR | O_CREAT | O_EXCL, 0600);
   if (fd < 0) {
-    PLOG(ERROR) << "mkostemp";
+    PLOG(ERROR) << "shm_open";
     return fd;
   }
 
@@ -106,7 +106,7 @@ int SharedMemoryQueue::CreateFile(std::string& path, int32_t depth,
     PLOG(ERROR) << "ftruncate";
   }
   PLOG_IF(ERROR, close(fd)) << "close";
-  PLOG_IF(ERROR, unlink(path.c_str())) << "unlink";
+  PLOG_IF(ERROR, shm_unlink(path.c_str())) << "shm_unlink";
   return rc;
 }
 
