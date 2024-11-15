@@ -20,27 +20,7 @@ module VecAdd_tb();
 
   reg [63:0] n = 5;
 
-  VecAdd uut (
-    .ap_clk(ap_clk),
-    .ap_rst_n(ap_rst_n),
-    .ap_start(ap_start),
-    .ap_done(ap_done),
-    .ap_idle(ap_idle),
-    .ap_ready(ap_ready),
-    .a_s_dout_eot(a_s_dout_eot),
-    .a_s_dout(a_s_dout),
-    .a_s_empty_n(a_s_empty_n),
-    .a_s_read(a_s_read),
-    .b_s_dout_eot(b_s_dout_eot),
-    .b_s_dout(b_s_dout),
-    .b_s_empty_n(b_s_empty_n),
-    .b_s_read(b_s_read),
-    .c_din_eot(c_din_eot),
-    .c_din(c_din),
-    .c_full_n(c_full_n),
-    .c_write(c_write),
-    .n(n)
-  );
+  VecAdd uut (.*);
 
   always #(CLK_PERIOD/2) ap_clk = ~ap_clk;
 
