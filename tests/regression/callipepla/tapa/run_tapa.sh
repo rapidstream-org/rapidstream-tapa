@@ -10,11 +10,6 @@ tapa \
   --top Callipepla \
   --part-num xcu55c-fsvh2892-2L-e \
   --clock-period 3.33 \
-  --connectivity src_noconst/link_config.ini \
-  --read-only-args edge_list_ptr \
-  --read-only-args edge_list_ch* \
-  --read-only-args vec_digA \
-  --write-only-args vec_res \
   -o ${WORK_DIR}/callipepla-u55c.xo \
   -f src_noconst/callipepla.cpp \
   2>&1 | tee ${WORK_DIR}/tapa.log

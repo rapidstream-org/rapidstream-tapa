@@ -21,12 +21,5 @@ This design source is collected from [Callipepla](https://github.com/UCLA-VAST/C
 To reproduce the result, please simply run:
 ```
 cd rapidstream
-bash run_tapaopt.sh
+bash run_rs.sh
 ```
-
-To run from the very beginning,
-1. the [callipepla-u55c.xo](./rapidstream/callipepla-u55c.xo) is generated from [./tapa](./tapa/).
-   * run `bash run_tapa.sh` to generate the Vitis XO file.
-2. Make sure your `--tapa-xo-path` in [run_tapaopt.sh](./rapidstream/run_tapaopt.sh) is set to the newly generated Vitis XO file (if applicable).
-3. Generate the device configuration json [u55c_device.json](./rapidstream/u55c_device.json) by running [gen_device.py](./rapidstream/gen_device.py) with RapidStream.
-4. run `bash run_tapaopt.sh`.
