@@ -29,6 +29,7 @@ rapidstream-tapaopt \
     --connectivity-ini ./link_config.ini \
     --implementation-config ./impl_config.json \
     --pp-scheme double \
+    --pipeline-data-of-intra-slot-fifo \
     --run-impl \
     # --extract-metrics \
     # --skip-preprocess \
