@@ -61,6 +61,11 @@ static std::map<TapaTargetAttr::TargetType,
              {TapaTargetAttr::VendorType::Xilinx,
               XilinxHLSTarget::GetInstance()},
          }},
+        {TapaTargetAttr::TargetType::AIE,
+         {
+             {TapaTargetAttr::VendorType::Xilinx,
+              XilinxAIETarget::GetInstance()},
+         }},
     };
 
 extern const string* top_name;
@@ -112,6 +117,7 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
 
   TapaTargetAttr::TargetType target;
   TapaTargetAttr::VendorType vendor;
+
   if (auto attr = func->getAttr<TapaTargetAttr>()) {
     target = attr->getTarget();
     vendor = attr->getVendor();
