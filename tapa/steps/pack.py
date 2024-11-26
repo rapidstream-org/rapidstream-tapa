@@ -70,6 +70,8 @@ def pack(output: str, bitstream_script: str | None) -> None:
     """Pack the generated RTL into a Xilinx object file."""
     program = load_tapa_program()
     settings = load_persistent_context("settings")
+    if settings.get("has_template", False):
+        logging.info("skip packing for template program")
 
     if not settings.get("linked", False):
         msg = "You must run `link` before you can `pack`."
