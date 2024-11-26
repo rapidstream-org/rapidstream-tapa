@@ -82,12 +82,20 @@ _logger = logging.getLogger().getChild(__name__)
         "compatible interfaces"
     ),
 )
-def analyze(
+@click.option(
+    "--gen-template",
+    multiple=True,
+    type=str,
+    default=(),
+    help="Generate templates for the specified task for rtl integration",
+)
+def analyze(  # noqa: PLR0913,PLR0917
     input_files: tuple[str, ...],
     top: str,
     cflags: tuple[str, ...],
     flatten_hierarchy: bool,
     no_vitis_mode: bool,
+    gen_template: tuple[str, ...],
 ) -> None:
     """Analyze TAPA program and store the program description."""
     tapacc = find_clang_binary("tapacc")
@@ -117,10 +125,11 @@ def analyze(
         tapa_graph = tapa_graph.get_flatten_graph()
     graph_dict = tapa_graph.to_dict()
 
-    store_tapa_program(Program(graph_dict, vitis_mode, work_dir))
+    store_tapa_program(Program(graph_dict, vitis_mode, work_dir, gen_template))
 
     store_persistent_context("graph", graph_dict)
     store_persistent_context("settings", {"vitis-mode": vitis_mode})
+    store_persistent_context("has_template", bool(gen_template))
 
     is_pipelined("analyze", True)
 

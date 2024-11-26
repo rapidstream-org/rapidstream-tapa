@@ -27,19 +27,24 @@ from xml.etree import ElementTree
 import toposort
 import yaml
 from psutil import cpu_count
+from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
     Always,
     Assign,
+    Decl,
     Eq,
     Identifier,
     IfStatement,
+    Inout,
     Input,
     IntConst,
     Land,
     Minus,
+    ModuleDef,
     Node,
     NonblockingSubstitution,
     Output,
+    Parameter,
     Plus,
     PortArg,
     Reg,
@@ -49,6 +54,7 @@ from pyverilog.vparser.ast import (
     Width,
     Wire,
 )
+from pyverilog.vparser.parser import parse
 
 from tapa.backend.xilinx import RunHls
 from tapa.instance import Instance, Port
@@ -112,6 +118,8 @@ STATE01 = IntConst("2'b01")
 STATE11 = IntConst("2'b11")
 STATE10 = IntConst("2'b10")
 
+MOD_DEF_IOS = []
+
 
 class Program:  # noqa: PLR0904  # TODO: refactor this class
     """Describes a TAPA program.
@@ -129,7 +137,11 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
     """
 
     def __init__(
-        self, obj: dict, vitis_mode: bool, work_dir: str | None = None
+        self,
+        obj: dict,
+        vitis_mode: bool,
+        work_dir: str | None = None,
+        gen_templates: tuple[str, ...] = (),
     ) -> None:
         """Construct Program object from a json file.
 
@@ -138,6 +150,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
           obj: json object.
           work_dir: Specify a working directory as a string. If None, a temporary
               one will be created.
+          gen_templates: Tuple of task names that are templates. If a task is
+              specified as a template, its verilog module will only contains io
+              ports and no logic.
 
         """
         self.top: str = obj["top"]
@@ -153,9 +168,17 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             self.is_temp = False
         self.toplevel_ports = tuple(map(Port, obj["tasks"][self.top]["ports"]))
         self._tasks: dict[str, Task] = collections.OrderedDict()
-        for name in toposort.toposort_flatten(
+
+        task_names = toposort.toposort_flatten(
             {k: set(v.get("tasks", ())) for k, v in obj["tasks"].items()},
-        ):
+        )
+        for template in gen_templates:
+            assert (
+                template in task_names
+            ), f"template task {template} not found in design"
+        self.gen_templates = gen_templates
+
+        for name in task_names:
             task_properties = obj["tasks"][name]
             task = Task(
                 name=name,
@@ -203,6 +226,10 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         return os.path.join(self.work_dir, "hdl")
 
     @property
+    def template_dir(self) -> str:
+        return os.path.join(self.work_dir, "template")
+
+    @property
     def report_dir(self) -> str:
         return os.path.join(self.work_dir, "report")
 
@@ -226,6 +253,13 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         return os.path.join(
             self.rtl_dir,
             (get_module_name(name) if prefix else name) + RTL_SUFFIX,
+        )
+
+    def get_rtl_template(self, name: str) -> str:
+        os.makedirs(self.template_dir, exist_ok=True)
+        return os.path.join(
+            self.template_dir,
+            name + RTL_SUFFIX,
         )
 
     def _get_hls_report_xml(self, name: str) -> ElementTree.ElementTree:
@@ -410,6 +444,8 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         for task in self._tasks.values():
             if task.is_upper and task.name != self.top:
                 self._instrument_upper_task(task, print_fifo_ops)
+            elif not task.is_upper and task.name in self.gen_templates:
+                self.gen_leaf_rtl_template(task)
 
         return self
 
@@ -425,6 +461,10 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             Program: Return self.
 
         """
+        if self.top_task.name in self.gen_templates:
+            msg = "top task cannot be a template"
+            raise ValueError(msg)
+
         # instrument the top-level RTL
         _logger.info("instrumenting top-level RTL")
         self._instrument_upper_task(
@@ -1126,26 +1166,35 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                     )
                     task.module.add_ports([new_data_port, new_eot_port])
 
-        self._instantiate_fifos(task, print_fifo_ops)
-        self._connect_fifos(task)
-        width_table = {port.name: port.width for port in task.ports.values()}
-        is_done_signals = self._instantiate_children_tasks(
-            task,
-            width_table,
-            tuple(top_fifos),
-        )
-        self._instantiate_global_fsm(task.fsm_module, is_done_signals)
+        if task.name in self.gen_templates:
+            _logger.info("skip instrumenting template task %s", task.name)
+        else:
+            self._instantiate_fifos(task, print_fifo_ops)
+            self._connect_fifos(task)
+            width_table = {port.name: port.width for port in task.ports.values()}
+            is_done_signals = self._instantiate_children_tasks(
+                task,
+                width_table,
+                tuple(top_fifos),
+            )
+            self._instantiate_global_fsm(task.fsm_module, is_done_signals)
 
-        with open(
-            self.get_rtl(task.fsm_module.name),
-            "w",
-            encoding="utf-8",
-        ) as rtl_code:
-            rtl_code.write(task.fsm_module.code)
+            with open(
+                self.get_rtl(task.fsm_module.name),
+                "w",
+                encoding="utf-8",
+            ) as rtl_code:
+                rtl_code.write(task.fsm_module.code)
 
         # generate the top-level task
         with open(self.get_rtl(task.name), "w", encoding="utf-8") as rtl_code:
             rtl_code.write(task.module.code)
+
+        if task.name in self.gen_templates:
+            with open(
+                self.get_rtl_template(task.name), "w", encoding="utf-8"
+            ) as rtl_code:
+                rtl_code.write(task.module.code)
 
     def _get_fifo_width(self, task: Task, fifo: str) -> Node:
         producer_task, _, fifo_port = task.get_connection_to(fifo, "produced_by")
@@ -1159,3 +1208,48 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             return Plus(Minus(port.width.msb, port.width.lsb), IntConst(2))
         # TODO: err properly if not integer literals
         return Plus(Minus(port.width.msb, port.width.lsb), IntConst(1))
+
+    def gen_leaf_rtl_template(self, task: Task) -> None:
+        """Replace the RTL code with the template."""
+        # replace the RTL with the template
+        _logger.info("replacing %s's RTL with the template", task.name)
+        # Parse the Verilog code
+        with open(self.get_rtl(task.name), encoding="utf-8") as f:
+            rtl_code = f.read()
+            ast, _ = parse([rtl_code])
+
+        # Traverse the AST to locate the modules
+        def filter_module_io(module: ModuleDef) -> None:
+            # Create a new module structure with only I/O ports
+            new_items = []
+            for item in module.items:
+                if not isinstance(item, Decl):
+                    continue
+                # add io port width parameter declaration to template
+                if any(
+                    isinstance(item2, Parameter) and "WIDTH" in item2.name
+                    for item2 in item.children()
+                ):
+                    new_items.append(item)
+                # add io port declaration to template
+                if any(
+                    isinstance(item2, Input | Output | Inout)
+                    for item2 in item.children()
+                ):
+                    new_items.append(item)
+            module.items = new_items
+
+        # Visit module and strip internal logic
+        module_defs = []
+        for description in ast.description.definitions:
+            if isinstance(description, ModuleDef):
+                filter_module_io(description)
+                module_defs.append(description)
+        assert len(module_defs) == 1
+
+        rtl = ASTCodeGenerator().visit(ast)
+        # Generate the new Verilog code from the simplified AST
+        with open(self.get_rtl(task.name), "w", encoding="utf-8") as f:
+            f.write(rtl)
+        with open(self.get_rtl_template(task.name), "w", encoding="utf-8") as f:
+            f.write(rtl)
