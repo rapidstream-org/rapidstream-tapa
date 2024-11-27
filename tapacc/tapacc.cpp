@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <regex>
+#include <set>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -27,6 +28,7 @@ using std::make_shared;
 using std::regex;
 using std::regex_match;
 using std::regex_replace;
+using std::set;
 using std::shared_ptr;
 using std::stoi;
 using std::string;
@@ -62,16 +64,24 @@ bool vitis_mode = true;
 
 class Consumer : public ASTConsumer {
  public:
-  explicit Consumer(ASTContext& context, vector<const FunctionDecl*>& funcs)
-      : visitor_{context, funcs, rewriters_, metadata_}, funcs_{funcs} {}
+  explicit Consumer(ASTContext& context, vector<const FunctionDecl*>& funcs,
+                    set<const FunctionDecl*>& tapa_tasks)
+      : visitor_{context, funcs, tapa_tasks, rewriters_, metadata_},
+        funcs_{funcs},
+        tapa_tasks_{tapa_tasks} {}
   void HandleTranslationUnit(ASTContext& context) override {
-    // First pass traversal extracts all global functions as potential tasks.
-    // this->funcs_ stores all potential tasks.
+    // First pass traversal extracts all global functions into this->funcs_.
+    visitor_.is_first_traversal = true;
     visitor_.TraverseDecl(context.getTranslationUnitDecl());
+    visitor_.is_first_traversal = false;
 
-    // Look for the top-level task. Starting from there, find all tasks using
-    // DFS.
-    // Note that task functions cannot share the same name.
+    // Create rewriters for all global functions.
+    for (auto func : funcs_) {
+      rewriters_[func] =
+          Rewriter(context.getSourceManager(), context.getLangOpts());
+    }
+
+    // Utilities to show diagnostics.
     auto& diagnostics_engine = context.getDiagnostics();
     if (top_name == nullptr) {
       static const auto diagnostic_id = diagnostics_engine.getCustomDiagID(
@@ -91,22 +101,21 @@ class Consumer : public ASTConsumer {
     auto report_task_redefinition =
         [&](const vector<const FunctionDecl*>& decls) {
           if (decls.size() > 1) {
-            {
-              auto diagnostics_builder =
-                  diagnostics_engine.Report(task_redefined);
-              diagnostics_builder.AddString(decls[0]->getNameAsString());
-            }
+            auto diagnostics_builder =
+                diagnostics_engine.Report(task_redefined);
+            diagnostics_builder.AddString(decls[0]->getNameAsString());
           }
         };
+
+    // Look for the top-level task. Starting from there, find all tasks using
+    // DFS. Note that task functions cannot share the same name.
     if (func_table.count(*top_name)) {
       auto tasks = FindAllTasks(func_table[*top_name][0]);
-      funcs_.clear();
+      tapa_tasks_.clear();
       for (auto task : tasks) {
         auto task_name = task->getNameAsString();
         report_task_redefinition(func_table[task_name]);
-        funcs_.push_back(func_table[task_name][0]);
-        rewriters_[task] =
-            Rewriter(context.getSourceManager(), context.getLangOpts());
+        tapa_tasks_.insert(func_table[task_name][0]);
       }
     } else {
       static const auto top_not_found = diagnostics_engine.getCustomDiagID(
@@ -115,14 +124,15 @@ class Consumer : public ASTConsumer {
       diagnostics_builder.AddString(*top_name);
     }
 
-    // funcs_ has been reset to only contain the tasks.
-    // Traverse the AST for each task and obtain the transformed source code.
-    for (auto task : funcs_) {
+    // tapa_tasks has been reset to only contain the TAPA tasks from the top
+    // level task's call graph. Now we can traverse the AST again to extract
+    // metadata and rewrite the source code.
+    for (auto task : tapa_tasks_) {
       visitor_.VisitTask(task);
     }
     unordered_map<const FunctionDecl*, string> code_table;
     json code;
-    for (auto task : funcs_) {
+    for (auto task : tapa_tasks_) {
       auto task_name = task->getNameAsString();
       raw_string_ostream oss{code_table[task]};
       rewriters_[task]
@@ -141,6 +151,7 @@ class Consumer : public ASTConsumer {
  private:
   Visitor visitor_;
   vector<const FunctionDecl*>& funcs_;
+  set<const FunctionDecl*>& tapa_tasks_;
   unordered_map<const FunctionDecl*, Rewriter> rewriters_;
   unordered_map<const FunctionDecl*, json> metadata_;
 };
@@ -149,11 +160,13 @@ class Action : public ASTFrontendAction {
  public:
   unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance& compiler,
                                             StringRef file) override {
-    return std::make_unique<Consumer>(compiler.getASTContext(), funcs_);
+    return std::make_unique<Consumer>(compiler.getASTContext(), funcs_,
+                                      tapa_tasks_);
   }
 
  private:
   vector<const FunctionDecl*> funcs_;
+  set<const FunctionDecl*> tapa_tasks_;
 };
 
 }  // namespace internal

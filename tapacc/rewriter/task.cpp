@@ -4,6 +4,7 @@
 
 #include "task.h"
 
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -145,39 +146,43 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
 bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
   rewriting_func = nullptr;
 
+  // If the visited function is a global function with a body, and it is in the
+  // main file, then it is a candidate for transformation.
   if (func->hasBody() && func->isGlobal() &&
       context_.getSourceManager().isWrittenInMainFile(func->getBeginLoc())) {
-    if (rewriters_.size() == 0) {
+    if (is_first_traversal) {
+      // For the first traversal, collect all functions.
       funcs_.push_back(func);
     } else {
-      if (rewriters_.count(func) > 0) {
-        rewriting_func = func;
-        // Run this before the function body is purged
-        if (func->hasAttrs()) {
-          HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
-        }
+      // For the second traversal, process tapa task functions.
+      assert(rewriters_.count(func) > 0);
+      rewriting_func = func;
 
-        if (func == current_task) {
-          if (auto task = GetTapaTask(func->getBody())) {
-            // Run this before "extern C" is injected by
-            // `ProcessUpperLevelTask`.
-#ifdef TAPA_ENABLE_LEGACY_FRT_INTERFACE
-            if (IsTapaTopLevel(func)) {
-              GetMetadata()["frt_interface"] = GetFrtInterface(func);
-            }
-#endif  // TAPA_ENABLE_LEGACY_FRT_INTERFACE
-            ProcessUpperLevelTask(task, func);
-          } else {
-            ProcessLowerLevelTask(func);
-          }
-        } else {
+      // Run this before the function body is purged
+      if (func->hasAttrs()) {
+        HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
+      }
+
+      if (tapa_tasks_.count(func) > 0) {
+        // If the function is a tapa task:
+        if (func != current_task) {
+          // For tapa tasks, remove tasks that are not the current task.
           current_target->RewriteFuncArguments(func, GetRewriter(),
                                                IsTapaTopLevel(func));
           if (func->hasBody()) {
             auto range = func->getBody()->getSourceRange();
             GetRewriter().ReplaceText(range, ";");
           }
+        } else if (auto task = GetTapaTask(func->getBody())) {
+          // If the first tapa::task is obtained in the function body.
+          // This is a tapa upper-level task.
+          ProcessUpperLevelTask(task, func);
+        } else {
+          ProcessLowerLevelTask(func);
         }
+      } else {
+        // Otherwise, for non-tapa task functions:
+        ProcessOtherFunc(func);
       }
     }
   }
@@ -557,6 +562,10 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 // Apply tapa s2s transformations on a lower-level task.
 void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   current_target->RewriteLowerLevelFunc(func, GetRewriter());
+}
+
+void Visitor::ProcessOtherFunc(const FunctionDecl* func) {
+  current_target->RewriteOtherFunc(func, GetRewriter());
 }
 
 #ifdef TAPA_ENABLE_LEGACY_FRT_INTERFACE

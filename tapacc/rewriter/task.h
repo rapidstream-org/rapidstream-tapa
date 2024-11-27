@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <queue>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -34,11 +35,13 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   explicit Visitor(
       clang::ASTContext& context,
       std::vector<const clang::FunctionDecl*>& funcs,
+      std::set<const clang::FunctionDecl*>& tapa_tasks,
       std::unordered_map<const clang::FunctionDecl*, clang::Rewriter>&
           rewriters,
       std::unordered_map<const clang::FunctionDecl*, nlohmann::json>& metadata)
       : context_{context},
         funcs_{funcs},
+        tapa_tasks_{tapa_tasks},
         rewriters_{rewriters},
         metadata_{metadata} {}
 
@@ -47,6 +50,10 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
 
   void VisitTask(const clang::FunctionDecl* func);
 
+  // Indicate whether the current traversal is the first one to obtain the
+  // full list of functions.
+  bool is_first_traversal = true;
+
  private:
   static thread_local const clang::FunctionDecl* rewriting_func;
   static thread_local const clang::FunctionDecl* current_task;
@@ -54,6 +61,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
 
   clang::ASTContext& context_;
   std::vector<const clang::FunctionDecl*>& funcs_;
+  std::set<const clang::FunctionDecl*>& tapa_tasks_;
   std::unordered_map<const clang::FunctionDecl*, clang::Rewriter>& rewriters_;
   std::unordered_map<const clang::FunctionDecl*, nlohmann::json>& metadata_;
 
@@ -68,6 +76,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
                              const clang::FunctionDecl* func);
 
   void ProcessLowerLevelTask(const clang::FunctionDecl* func);
+  void ProcessOtherFunc(const clang::FunctionDecl* func);
 #ifdef TAPA_ENABLE_LEGACY_FRT_INTERFACE
   std::string GetFrtInterface(const clang::FunctionDecl* func);
 #endif  // TAPA_ENABLE_LEGACY_FRT_INTERFACE

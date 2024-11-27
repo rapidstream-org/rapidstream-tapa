@@ -21,6 +21,9 @@ void BaseTarget::AddCodeForMiddleLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
 void BaseTarget::AddCodeForLowerLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForStream(ADD_FOR_PARAMS_ARGS);
 }
+void BaseTarget::AddCodeForOtherStream(ADD_FOR_PARAMS_ARGS_DEF) {
+  AddCodeForStream(ADD_FOR_PARAMS_ARGS);
+}
 
 void BaseTarget::AddCodeForAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {}
 void BaseTarget::AddCodeForTopLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
@@ -30,6 +33,9 @@ void BaseTarget::AddCodeForMiddleLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForAsyncMmap(ADD_FOR_PARAMS_ARGS);
 }
 void BaseTarget::AddCodeForLowerLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
+  AddCodeForAsyncMmap(ADD_FOR_PARAMS_ARGS);
+}
+void BaseTarget::AddCodeForOtherAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForAsyncMmap(ADD_FOR_PARAMS_ARGS);
 }
 
@@ -43,6 +49,9 @@ void BaseTarget::AddCodeForMiddleLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 void BaseTarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForMmap(ADD_FOR_PARAMS_ARGS);
 }
+void BaseTarget::AddCodeForOtherMmap(ADD_FOR_PARAMS_ARGS_DEF) {
+  AddCodeForMmap(ADD_FOR_PARAMS_ARGS);
+}
 
 void BaseTarget::AddCodeForScalar(ADD_FOR_PARAMS_ARGS_DEF) {}
 void BaseTarget::AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {
@@ -52,6 +61,9 @@ void BaseTarget::AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForScalar(ADD_FOR_PARAMS_ARGS);
 }
 void BaseTarget::AddCodeForLowerLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {
+  AddCodeForScalar(ADD_FOR_PARAMS_ARGS);
+}
+void BaseTarget::AddCodeForOtherScalar(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForScalar(ADD_FOR_PARAMS_ARGS);
 }
 
@@ -129,6 +141,27 @@ std::vector<std::string> BaseTarget::GenerateCodeForLowerLevelFunc(
   return lines;
 }
 
+std::vector<std::string> BaseTarget::GenerateCodeForOtherFunc(
+    const clang::FunctionDecl* func) {
+  std::vector<std::string> lines = {""};
+  LINES_FUNCTIONS;
+
+  for (const auto param : func->parameters()) {
+    if (IsTapaType(param, "(i|o)streams?")) {
+      AddCodeForOtherStream(param, add_line, add_pragma);
+    } else if (IsTapaType(param, "async_mmaps?")) {
+      AddCodeForOtherAsyncMmap(param, add_line, add_pragma);
+    } else if (IsTapaType(param, "(mmaps?|hmap)")) {
+      AddCodeForOtherMmap(param, add_line, add_pragma);
+    } else {
+      AddCodeForOtherScalar(param, add_line, add_pragma);
+    }
+    add_line("");  // Separate each parameter.
+  }
+
+  return lines;
+}
+
 void BaseTarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   auto lines = GenerateCodeForTopLevelFunc(func);
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
@@ -141,6 +174,11 @@ void BaseTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
 }
 void BaseTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   auto lines = GenerateCodeForLowerLevelFunc(func);
+  rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
+                                llvm::join(lines, "\n"));
+}
+void BaseTarget::RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF) {
+  auto lines = GenerateCodeForOtherFunc(func);
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
                                 llvm::join(lines, "\n"));
 }

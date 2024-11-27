@@ -49,21 +49,26 @@ class Target {
   virtual void AddCodeForTopLevelStream(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForMiddleLevelStream(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForLowerLevelStream(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForOtherStream(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForMiddleLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForOtherMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForTopLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForMiddleLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForLowerLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForOtherAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForLowerLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForOtherScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
+  virtual void RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top) = 0;
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                     const clang::Stmt* body) = 0;
@@ -90,21 +95,25 @@ class BaseTarget : public Target {
   virtual void AddCodeForTopLevelStream(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForMiddleLevelStream(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForLowerLevelStream(ADD_FOR_PARAMS_ARGS_DEF);
+  virtual void AddCodeForOtherStream(ADD_FOR_PARAMS_ARGS_DEF);
 
   virtual void AddCodeForMmap(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForMiddleLevelMmap(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF);
+  virtual void AddCodeForOtherMmap(ADD_FOR_PARAMS_ARGS_DEF);
 
   virtual void AddCodeForAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForTopLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForMiddleLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForLowerLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF);
+  virtual void AddCodeForOtherAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF);
 
   virtual void AddCodeForScalar(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForLowerLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
+  virtual void AddCodeForOtherScalar(ADD_FOR_PARAMS_ARGS_DEF);
 
   virtual std::vector<std::string> GenerateCodeForTopLevelFunc(
       const clang::FunctionDecl* func);
@@ -112,10 +121,13 @@ class BaseTarget : public Target {
       const clang::FunctionDecl* func);
   virtual std::vector<std::string> GenerateCodeForLowerLevelFunc(
       const clang::FunctionDecl* func);
+  virtual std::vector<std::string> GenerateCodeForOtherFunc(
+      const clang::FunctionDecl* func);
 
   virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF);
 
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
 
