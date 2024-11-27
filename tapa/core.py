@@ -22,6 +22,7 @@ import tarfile
 import tempfile
 import zipfile
 from concurrent import futures
+from pathlib import Path
 from xml.etree import ElementTree
 
 import toposort
@@ -143,6 +144,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         vitis_mode: bool,
         work_dir: str | None = None,
         gen_templates: tuple[str, ...] = (),
+        rtl_paths: tuple[Path, ...] = (),
     ) -> None:
         """Construct Program object from a json file.
 
@@ -194,6 +196,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         self.files: dict[str, str] = {}
         self._hls_report_xmls: dict[str, ElementTree.ElementTree] = {}
 
+        # Collect user custom RTL files
+        self.custom_rtl: list[Path] = Program.get_custom_rtl_files(rtl_paths)
+
     def __del__(self) -> None:
         if self.is_temp:
             shutil.rmtree(self.work_dir)
@@ -239,6 +244,29 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         cpp_dir = os.path.join(self.work_dir, "cpp")
         os.makedirs(cpp_dir, exist_ok=True)
         return cpp_dir
+
+    @staticmethod
+    def get_custom_rtl_files(rtl_paths: tuple[Path, ...]) -> list[Path]:
+        custom_rtl: list[Path] = []
+        for path in rtl_paths:
+            if path.is_file():
+                if path.suffix != ".v":
+                    msg = f"unsupported file type: {path}"
+                    raise ValueError(msg)
+                custom_rtl.append(path)
+            elif path.is_dir():
+                vlg_files = list(path.rglob("*.v"))
+                if not vlg_files:
+                    msg = f"no verilog files found in {path}"
+                    raise ValueError(msg)
+                custom_rtl.extend(vlg_files)
+            elif path.exists():
+                msg = f"unsupported path: {path}"
+                raise ValueError(msg)
+            else:
+                msg = f"path does not exist: {path.absolute()}"
+                raise ValueError(msg)
+        return custom_rtl
 
     def get_task(self, name: str) -> Task:
         return self._tasks[name]
@@ -1277,3 +1305,29 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             f.write(rtl)
         with open(self.get_rtl_template(task.name), "w", encoding="utf-8") as f:
             f.write(rtl)
+
+    def replace_custom_rtl(self) -> None:
+        """Add custom RTL files to the project.
+
+        It will replace all files that originally exist in the project.
+
+        Args:
+            file_paths (List[Path]): List of file paths to copy.
+            destination_folder (Path): The target folder where files will be copied.
+        """
+        rtl_path = Path(self.rtl_dir)
+        assert Path.exists(rtl_path)
+
+        for file_path in self.custom_rtl:
+            assert file_path.is_file()
+
+            # Determine destination path
+            dest_path = rtl_path / file_path.name
+
+            if dest_path.exists():
+                _logger.info("Replacing %s with custom RTL.", file_path.name)
+            else:
+                _logger.info("Adding custom RTL %s.", file_path.name)
+
+            # Copy file to destination, replacing if necessary
+            shutil.copy2(file_path, dest_path)
