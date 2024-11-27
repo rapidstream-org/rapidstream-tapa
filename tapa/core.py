@@ -257,12 +257,14 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         assert period.text
         return decimal.Decimal(period.text)
 
-    def extract_cpp(self, target: str = "HLS") -> Program:
+    def extract_cpp(self, target: str = "hls") -> Program:
         """Extract HLS/AIE C++ files."""
         _logger.info("extracting %s C++ files", target)
         check_mmap_arg_name(list(self._tasks.values()))
 
         for task in self._tasks.values():
+            if task.name == self.top and target == "aie":
+                continue
             code_content = clang_format(task.code)
             try:
                 with open(self.get_cpp(task.name), encoding="utf-8") as src_code:
@@ -295,10 +297,10 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         flow_type: str = "hls",
         platform: str | None = None,
     ) -> Program:
-        """Run HLS with extracted HLS C++ files and generate tarballs."""
-        self.extract_cpp()
+        """Run HLS with extracted HLS/AIE C++ files and generate tarballs."""
+        self.extract_cpp(flow_type)
 
-        _logger.info("running HLS")
+        _logger.info("running %s", flow_type)
 
         def worker(task: Task, idx: int) -> None:
             os.nice(idx % 19)

@@ -147,6 +147,39 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
   TraverseDecl(func->getASTContext().getTranslationUnitDecl());
 }
 
+static clang::SourceRange ExtendAttrRemovalRange(clang::Rewriter& rewriter,
+                                                 clang::SourceRange range) {
+  auto begin = range.getBegin();
+  auto end = range.getEnd();
+
+#define BEGIN(OFF) (begin.getLocWithOffset(OFF))
+#define END(OFF) (end.getLocWithOffset(OFF))
+#define STR_AT(BEGIN, END) \
+  (rewriter.getRewrittenText(clang::SourceRange((BEGIN), (END))))
+#define IS_IGNORE(STR) ((STR) == "" || std::isspace((STR)[0]))
+
+  // Find the true end of the token
+  for (; std::isalpha(STR_AT(END(1), END(1))[0]); end = END(1));
+
+  // Remove all whitespaces around the attribute
+  for (; IS_IGNORE(STR_AT(BEGIN(-1), BEGIN(-1))); begin = BEGIN(-1));
+  for (; IS_IGNORE(STR_AT(END(1), END(1))); end = END(1));
+
+  // Remove comma if around the attribute
+  if (STR_AT(BEGIN(-1), BEGIN(-1)) == ",") {
+    begin = BEGIN(-1);
+  } else if (STR_AT(END(1), END(1)) == ",") {
+    end = END(1);
+  } else if (STR_AT(BEGIN(-2), BEGIN(-1)) == "[[" &&
+             STR_AT(END(1), END(2)) == "]]") {
+    // Check if the attribute is completely removed
+    begin = BEGIN(-2);
+    end = END(2);
+  }
+
+  return clang::SourceRange(begin, end);
+}
+
 // Apply tapa s2s transformations on a function.
 bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
   rewriting_func = nullptr;
@@ -174,15 +207,26 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
 #endif  // TAPA_ENABLE_LEGACY_FRT_INTERFACE
             ProcessUpperLevelTask(task, func);
           } else {
+            current_target->RewriteFuncArguments(func, GetRewriter(),
+                                                 IsTapaTopLevel(func));
+            auto attr = func->getAttr<TapaTargetAttr>();
+            GetRewriter().RemoveText(
+                ExtendAttrRemovalRange(GetRewriter(), attr->getRange()));
             ProcessLowerLevelTask(func);
           }
         } else {
-          current_target->RewriteFuncArguments(func, GetRewriter(),
-                                               IsTapaTopLevel(func));
-          if (func->hasBody()) {
-            auto range = func->getBody()->getSourceRange();
-            GetRewriter().ReplaceText(range, ";");
-          }
+          // current_target->RewriteFuncArguments(func, GetRewriter(),
+          //                                      IsTapaTopLevel(func));
+          // if (func->hasBody()) {
+          //   auto range = func->getBody()->getSourceRange();
+          //   GetRewriter().ReplaceText(range, ";");
+          // }
+
+          auto range = func->getSourceRange();
+          GetRewriter().ReplaceText(range, "");  // Replace with a space.
+          auto attr = func->getAttr<TapaTargetAttr>();
+          GetRewriter().RemoveText(
+              ExtendAttrRemovalRange(GetRewriter(), attr->getRange()));
         }
       }
     }
