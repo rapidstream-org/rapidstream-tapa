@@ -245,9 +245,10 @@ def run_and_check(cmd: tuple[str, ...]) -> str:
         check=False,
     )
     if proc.returncode != 0:
+        quoted_cmd = " ".join(f'"{arg}"' if " " in arg else arg for arg in cmd)
         _logger.error(
             "command %s failed with exit code %d",
-            cmd,
+            quoted_cmd,
             proc.returncode,
         )
         sys.exit(proc.returncode)
@@ -352,6 +353,7 @@ def run_tapacc(
         "-DTAPA_TARGET_STUB_",
     )
     tapacc_cmd = (tapacc, *files, *tapacc_args)
-    _logger.info("Running tapacc command: %s", " ".join(tapacc_cmd))
+    quoted_cmd = " ".join(f'"{arg}"' if " " in arg else arg for arg in tapacc_cmd)
+    _logger.info("Running tapacc command: %s", quoted_cmd)
 
     return json.loads(run_and_check(tapacc_cmd))
