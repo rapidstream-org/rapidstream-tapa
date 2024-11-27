@@ -5,18 +5,17 @@
 # RapidStream Contributor License Agreement.
 
 load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_filegroup", "pkg_files", "pkg_mklink", "strip_prefix")
-load("@tapa_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 load("//bazel:nuitka_rules.bzl", "nuitka_binary")
 
 nuitka_binary(
     name = "nuitka",
-    src = ":__main__.py",
+    src = ":tapa-fast-cosim",
     flags = [
         "--deployment",
         "--include-package-data=tapa",
         "--python-flag=isolated,no_docstrings,no_site,no_warnings",
     ],
-    nuitka_environment = ":tapa-nuitka-env.py",
     output_name = "tapa-fast-cosim",
 )
 
@@ -31,17 +30,6 @@ py_binary(
     deps = [
         ":tapa-cosim-py-libs",
         "//tapa:tapa-py-libs",
-    ],
-)
-
-py_binary(
-    name = "tapa-nuitka-env.py",
-    srcs = ["//bazel:nuitka_wrapper.py"],
-    main = "nuitka_wrapper.py",
-    deps = [
-        ":tapa-cosim-py-libs",
-        "//tapa:tapa-py-libs",
-        requirement("nuitka"),
     ],
 )
 

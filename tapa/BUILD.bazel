@@ -7,6 +7,7 @@
 load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_filegroup", "pkg_files", "pkg_mklink", "strip_prefix")
 load("@rules_python//python:packaging.bzl", "py_wheel")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@tapa_deps//:requirements.bzl", "requirement")
 load("//bazel:nuitka_rules.bzl", "nuitka_binary")
 
@@ -20,7 +21,7 @@ compile_pip_requirements(
 
 nuitka_binary(
     name = "nuitka",
-    src = ":__main__.py",
+    src = ":tapa",
     flags = [
         "--deployment",
         "--include-package-data=pyverilog",
@@ -30,18 +31,7 @@ nuitka_binary(
         # ply depends on docstrings so no_docstrings is not an option
         "--python-flag=isolated,no_site,no_warnings",
     ],
-    nuitka_environment = ":tapa-nuitka-env.py",
     output_name = "tapa-bin",
-)
-
-py_binary(
-    name = "tapa-nuitka-env.py",
-    srcs = ["//bazel:nuitka_wrapper.py"],
-    main = "nuitka_wrapper.py",
-    deps = [
-        requirement("nuitka"),
-        ":tapa-py-libs",
-    ],
 )
 
 py_binary(

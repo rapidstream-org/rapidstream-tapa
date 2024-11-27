@@ -4,10 +4,12 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+load("@rules_python//python:py_executable_info.bzl", "PyExecutableInfo")
+
 # Define the implementation function for the custom Nuitka rule.
 def _nuitka_binary_impl(ctx):
     # Retrieve the inputs and attributes from the rule invocation.
-    src = ctx.file.src
+    src = ctx.attr.src[PyExecutableInfo].main
     flags = ctx.attr.flags
     output_dir = ctx.actions.declare_directory(src.basename.split(".")[0] + ".dist")
 
@@ -17,8 +19,8 @@ def _nuitka_binary_impl(ctx):
     py_bin_dir = py_toolchain.interpreter.dirname
     py_lib_dir = py_toolchain.interpreter.dirname.rsplit("/", 1)[0] + "/lib"
 
-    # Get the Nuitka environment executable.
-    nuitka = ctx.executable.nuitka_environment
+    # Get the Nuitka executable.
+    nuitka = ctx.executable._nuitka
 
     # Start building the command to run Nuitka.
     # By default, caching is enable but discarded due to sandboxing.
@@ -100,9 +102,9 @@ nuitka_binary = rule(
     # Define the attributes (inputs) for the rule.
     attrs = {
         "src": attr.label(
-            doc = "The source file to compile.",
+            doc = "The Python binary to compile.",
             mandatory = True,
-            allow_single_file = True,
+            providers = [PyExecutableInfo],
         ),
         "output_name": attr.string(
             doc = "The name of the output binary.",
@@ -112,8 +114,8 @@ nuitka_binary = rule(
             doc = "Flags to pass to Nuitka.",
             default = [],
         ),
-        "nuitka_environment": attr.label(
-            doc = "The Nuitka executable environment.",
+        "_nuitka": attr.label(
+            doc = "The Nuitka executable.",
             default = Label("//bazel:nuitka"),
             executable = True,
             cfg = "exec",

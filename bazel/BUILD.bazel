@@ -15,8 +15,6 @@ py_binary(
     deps = [requirement("nuitka")],
 )
 
-exports_files(srcs = ["nuitka_wrapper.py"])
-
 sh_binary(
     name = "v++",
     srcs = ["v++.sh"],
