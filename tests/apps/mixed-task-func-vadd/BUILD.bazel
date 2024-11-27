@@ -1,0 +1,85 @@
+"""The mixed-task-func-vadd test for TAPA."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+load("//bazel:v++_rules.bzl", "vpp_xclbin")
+
+sh_test(
+    name = "mixed-task-func-vadd",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = ["$(location mixed-task-func-vadd-host)"],
+    data = [":mixed-task-func-vadd-host"],
+    env = {"TAPA_CONCURRENCY": "1"},
+)
+
+sh_test(
+    name = "mixed-task-func-vadd-xosim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location mixed-task-func-vadd-host)",
+        "--bitstream=$(location mixed-task-func-vadd-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "1000",
+    ],
+    data = [
+        ":mixed-task-func-vadd-host",
+        ":mixed-task-func-vadd-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)
+
+sh_test(
+    name = "mixed-task-func-vadd-cosim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location mixed-task-func-vadd-host)",
+        "--bitstream=$(location mixed-task-func-vadd-hw-emu-xclbin)",
+        "1000",
+    ],
+    data = [
+        ":mixed-task-func-vadd-host",
+        ":mixed-task-func-vadd-hw-emu-xclbin",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)
+
+cc_binary(
+    name = "mixed-task-func-vadd-host",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]),
+    deps = [
+        "//tapa-lib:tapa",
+        "@gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "mixed-task-func-vadd-xo",
+    src = "vadd.cpp",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "VecAddMixed",
+)
+
+vpp_xclbin(
+    name = "mixed-task-func-vadd-hw-emu-xclbin",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    target = "hw_emu",
+    top_name = "VecAddMixed",
+    xo = ":mixed-task-func-vadd-xo",
+)
