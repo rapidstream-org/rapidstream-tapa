@@ -163,25 +163,34 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
         HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
       }
 
-      if (tapa_tasks_.count(func) > 0) {
-        // If the function is a tapa task:
-        if (func != current_task) {
-          // For tapa tasks, remove tasks that are not the current task.
-          current_target->RewriteFuncArguments(func, GetRewriter(),
-                                               IsTapaTopLevel(func));
-          if (func->hasBody()) {
-            auto range = func->getBody()->getSourceRange();
-            GetRewriter().ReplaceText(range, ";");
-          }
-        } else if (auto task = GetTapaTask(func->getBody())) {
-          // If the first tapa::task is obtained in the function body.
-          // This is a tapa upper-level task.
-          ProcessUpperLevelTask(task, func);
-        } else {
-          ProcessLowerLevelTask(func);
+      // If the first tapa::task is obtained in the function body, this is a
+      // upper-level tapa task.
+      bool is_upper_level_task = GetTapaTask(func->getBody()) != nullptr;
+      // If the task is in the task invocation graph from the top-level task,
+      // it is a lower-level tapa task.
+      bool is_lower_level_task =
+          !is_upper_level_task && tapa_tasks_.count(func) > 0;
+
+      if ((is_upper_level_task || is_lower_level_task) &&
+          func != current_task) {
+        // If the function is a tapa task but not the current task
+        current_target->RewriteFuncArguments(func, GetRewriter(),
+                                             IsTapaTopLevel(func));
+        // Remove the function body.
+        if (func->hasBody()) {
+          auto range = func->getBody()->getSourceRange();
+          GetRewriter().ReplaceText(range, ";");
         }
+
+      } else if (is_upper_level_task) {
+        auto task = GetTapaTask(func->getBody());
+        ProcessUpperLevelTask(task, func);
+
+      } else if (is_lower_level_task) {
+        ProcessLowerLevelTask(func);
+
       } else {
-        // Otherwise, for non-tapa task functions:
+        // Otherwise, it is a non-tapa task function.
         ProcessOtherFunc(func);
       }
     }
