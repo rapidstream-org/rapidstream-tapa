@@ -192,8 +192,10 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
 }
 
 bool Visitor::VisitAttributedStmt(clang::AttributedStmt* stmt) {
-  if (current_task && rewriting_func == current_task &&
-      rewriters_.count(current_task) > 0) {
+  bool rewriting_current_task = current_task && rewriting_func == current_task;
+  bool is_other_func = tapa_tasks_.count(rewriting_func) == 0;
+  bool should_rewrite = rewriting_current_task || is_other_func;
+  if (should_rewrite && rewriters_.count(current_task) > 0) {
     HandleAttrOnNodeWithBody(stmt, GetLoopBody(stmt->getSubStmt()),
                              stmt->getAttrs());
   }
