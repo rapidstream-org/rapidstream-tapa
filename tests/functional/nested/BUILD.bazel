@@ -1,0 +1,57 @@
+"""The test with nested task calls for TAPA."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+
+sh_test(
+    name = "nested",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = ["$(location nested-host)"],
+    data = [":nested-host"],
+    env = {"TAPA_CONCURRENCY": "1"},
+)
+
+sh_test(
+    name = "nested-xosim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location nested-host)",
+        "--bitstream=$(location nested-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "1000",
+    ],
+    data = [
+        ":nested-host",
+        ":nested-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)
+
+cc_binary(
+    name = "nested-host",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]),
+    deps = [
+        "//tapa-lib:tapa",
+        "@gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "nested-xo",
+    src = "vadd.cpp",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "VecAddNested",
+)

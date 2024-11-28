@@ -6,14 +6,12 @@ RapidStream Contributor License Agreement.
 
 ## General
 
-## General
-
-This directory contains multiple small example TAPA designs. We provide a reference `.ini` file for each design that includes the binding to physical HBM/DDR ports.
+This directory contains multiple small example TAPA designs.
 
 For large and complex designs, refer to the `tests/regression` directory.
 
-
 ## Running TAPA application with rapidstream optimization
+
 In each app, an `run_rs.sh` file is provided to demonstrate the workflow to csynth TAPA
 applications to XO files, optimize the design with RapidStream, and cosimulate the
 design with TAPA.

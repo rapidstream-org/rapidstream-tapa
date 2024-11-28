@@ -1,0 +1,52 @@
+"""The detached test for TAPA."""
+
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+
+sh_test(
+    name = "detached",
+    size = "small",
+    srcs = ["//bazel:v++_env.sh"],
+    args = ["$(location detached-host)"],
+    data = [":detached-host"],
+)
+
+sh_test(
+    name = "detached-xosim",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location detached-host)",
+        "--bitstream=$(location detached-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "1000",
+    ],
+    data = [
+        ":detached-host",
+        ":detached-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+)
+
+cc_binary(
+    name = "detached-host",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]),
+    deps = [
+        "//tapa-lib:tapa",
+        "@gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "detached-xo",
+    src = "vadd.cpp",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "VecAddDetach",
+)
