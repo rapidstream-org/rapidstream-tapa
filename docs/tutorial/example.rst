@@ -1,4 +1,4 @@
-Refer to the TAPA Github repo for the full code.
+Rshared-vaddefer to the TAPA Github repo for the full code.
 
 Mini Examples
 -----------------
@@ -7,49 +7,34 @@ Vector Add
 :::::::::::::::::
 
 
-.. literalinclude:: ../../tests/apps//vadd/vadd.cpp
-   :language: cpp
-
-
-Vector Add with Shared Memory Interface
-::::::::::::::::::::::::::::::::::::::::::::::::
-
-
-.. literalinclude:: ../../tests/apps//shared-vadd/vadd.cpp
-   :language: cpp
-
-
-Vector Add with Multiple Task Hierarchy
-::::::::::::::::::::::::::::::::::::::::::::::::
-
-.. literalinclude:: ../../tests/apps//nested-vadd/vadd.cpp
+.. literalinclude:: ../../tests/apps/vadd/vadd.cpp
    :language: cpp
 
 
 Bandwidth Test (using ``async_mmap``)
 :::::::::::::::::::::::::::::::::::::::::::
 
-.. literalinclude:: ../../tests/apps//bandwidth/bandwidth.cpp
+.. literalinclude:: ../../tests/apps/bandwidth/bandwidth.cpp
    :language: cpp
 
 
 Network
 :::::::::::
 
-.. literalinclude:: ../../tests/apps//network/network.cpp
+.. literalinclude:: ../../tests/apps/network/network.cpp
    :language: cpp
 
 Cannon
 :::::::::::
 
-.. literalinclude:: ../../tests/apps//cannon/cannon.cpp
+.. literalinclude:: ../../tests/apps/cannon/cannon.cpp
    :language: cpp
 
 Jacobi
 :::::::::::
 
 
-.. literalinclude:: ../../tests/apps//jacobi/jacobi.cpp
+.. literalinclude:: ../../tests/apps/jacobi/jacobi.cpp
    :language: cpp
 
 
