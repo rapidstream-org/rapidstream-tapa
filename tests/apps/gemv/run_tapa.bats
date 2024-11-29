@@ -18,7 +18,7 @@ compile_xo() {
   ${RAPIDSTREAM_TAPA_HOME}/usr/bin/tapa \
     -w ${BATS_TMPDIR}/gemv-workdir \
     compile \
-    --jobs 1 \
+    --jobs 2 \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f gemv.cpp \
     -t Gemv \

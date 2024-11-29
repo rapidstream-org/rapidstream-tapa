@@ -36,8 +36,9 @@ def _tapa_xo_impl(ctx):
     # Build the command for tapa-cli synth.
     tapa_cmd.extend(["synth", "--platform", platform_name])
 
-    # Limit the number of jobs to 1 as Bazel handles parallelism.
-    tapa_cmd.extend(["--jobs", "1"])
+    # Limit the number of jobs to reduce excessive amount of processes.
+    # Launch 2 workers to avoid wasting time on I/O.
+    tapa_cmd.extend(["--jobs", "2"])
 
     # Add optional parameters to synth command.
     if ctx.attr.clock_period:
