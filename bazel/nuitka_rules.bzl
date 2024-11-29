@@ -4,7 +4,9 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_executable_info.bzl", "PyExecutableInfo")
+load("@tapa_deps//:requirements.bzl", "requirement")
 
 # Define the implementation function for the custom Nuitka rule.
 def _nuitka_binary_impl(ctx):
@@ -20,7 +22,7 @@ def _nuitka_binary_impl(ctx):
     py_lib_dir = py_toolchain.interpreter.dirname.rsplit("/", 1)[0] + "/lib"
 
     # Get the Nuitka executable.
-    nuitka = ctx.executable._nuitka
+    nuitka = ctx.executable.nuitka
 
     # Start building the command to run Nuitka.
     # By default, caching is enable but discarded due to sandboxing.
@@ -38,6 +40,11 @@ def _nuitka_binary_impl(ctx):
         "--show-scons",
         "--standalone",
     ]
+
+    # Do not package the generated main file as data.
+    for file in ctx.attr.src.files.to_list():
+        if not file.is_source:
+            nuitka_cmd.append("--noinclude-data-files=" + file.short_path)
 
     # Add optional flags, if specified.
     if flags:
@@ -97,7 +104,7 @@ def _nuitka_binary_impl(ctx):
     return [DefaultInfo(files = depset([output_dir]))]
 
 # Define the custom Bazel rule.
-nuitka_binary = rule(
+_nuitka_binary = rule(
     implementation = _nuitka_binary_impl,
     # Define the attributes (inputs) for the rule.
     attrs = {
@@ -114,9 +121,9 @@ nuitka_binary = rule(
             doc = "Flags to pass to Nuitka.",
             default = [],
         ),
-        "_nuitka": attr.label(
+        "nuitka": attr.label(
             doc = "The Nuitka executable.",
-            default = Label("//bazel:nuitka"),
+            mandatory = True,
             executable = True,
             cfg = "exec",
         ),
@@ -153,3 +160,18 @@ nuitka_binary = rule(
     ],
     fragments = ["cpp"],
 )
+
+def nuitka_binary(name, src, **kwargs):
+    # Generate a Nuitka binary with all Python dependencies.
+    py_binary(
+        name = name + ".nuitka.py",
+        srcs = ["//bazel:nuitka_wrapper.py"],
+        main = "nuitka_wrapper.py",
+        deps = [src, requirement("nuitka")],
+    )
+    _nuitka_binary(
+        name = name,
+        src = src,
+        nuitka = name + ".nuitka.py",
+        **kwargs
+    )

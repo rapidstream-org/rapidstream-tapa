@@ -4,16 +4,9 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-load("@tapa_deps//:requirements.bzl", "requirement")
-
 package(default_visibility = ["//visibility:public"])
 
-py_binary(
-    name = "nuitka",
-    srcs = ["nuitka_wrapper.py"],
-    main = "nuitka_wrapper.py",
-    deps = [requirement("nuitka")],
-)
+exports_files(["nuitka_wrapper.py"])
 
 sh_binary(
     name = "v++",
