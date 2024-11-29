@@ -16,8 +16,12 @@
 namespace tapa {
 
 template <typename T>
-class istream {
+class tapa_stream {
  public:
+  tapa_stream() = default;
+  tapa_stream(const char* name) {}
+  tapa_stream(const tapa_stream&) = delete;
+
   bool empty() const {
 #pragma HLS inline
     return _.empty();
@@ -87,7 +91,7 @@ class istream {
     return _.read().val;
   }
 
-  istream& operator>>(T& value) {
+  tapa_stream& operator>>(T& value) {
 #pragma HLS inline
     value = read();
     return *this;
@@ -131,13 +135,6 @@ class istream {
     assert(elem.eot);
   }
 
-  hls::stream<internal::elem_t<T>> _;
-  mutable hls::stream<internal::elem_t<T>> _peek;
-};
-
-template <typename T>
-class ostream {
- public:
   bool full() const {
 #pragma HLS inline
     return _.full();
@@ -153,7 +150,7 @@ class ostream {
     _.write({value, false});
   }
 
-  ostream& operator<<(const T& value) {
+  tapa_stream& operator<<(const T& value) {
 #pragma HLS inline
     write(value);
     return *this;
@@ -175,11 +172,21 @@ class ostream {
   }
 
   hls::stream<internal::elem_t<T>> _;
+  mutable hls::stream<internal::elem_t<T>> _peek;
 };
 
-/// Defines a communication channel between two task instances.
-template <typename T, uint64_t N = kStreamDefaultDepth>
-class stream;
+// Stream, istream, ostream are all refer to the same tapa_stream class so
+// that in HLS without tapacc rewriting the code, the user can still pass the
+// stream object to the function that takes istream or ostream.
+
+template <typename T>
+using istream = tapa_stream<T>;
+
+template <typename T>
+using ostream = tapa_stream<T>;
+
+template <typename T, uint64_t S>
+using stream = tapa_stream<T>;
 
 template <typename T, uint64_t S>
 using istreams = istream<T>[S];
@@ -188,7 +195,7 @@ template <typename T, uint64_t S>
 using ostreams = ostream<T>[S];
 
 template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth>
-class streams;
+using streams = stream<T, N>[S];
 
 }  // namespace tapa
 

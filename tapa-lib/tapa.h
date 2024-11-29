@@ -17,5 +17,3 @@
 #include "tapa/stub/tapa.h"  // IWYU pragma: export
 
 #endif
-
-#include "tapa/traits.h"  // IWYU pragma: export
