@@ -36,6 +36,18 @@ def _vpp_xclbin_impl(ctx):
         xo.path,
     ]
 
+    if target == "hw_emu":
+        # Reduce `mt_level` to avoid excessive amount of processes. Run time of
+        # `bazel build //tests/apps/vadd:vadd-hw-emu-xclbin` for reference:
+        #   mt_level=1: 651s ("off", +67%)
+        #   mt_level=2: 483s (+24$)
+        #   mt_level=4: 405s (+4%)
+        #   mt_level=8: 390s (default)
+        vpp_cmd += [
+            "--vivado.prop=fileset.sim_1.xsim.compile.xsc.mt_level=2",
+            "--vivado.prop=fileset.sim_1.xsim.elaborate.mt_level=2",
+        ]
+
     # Define a custom action to run the synthesized command.
     ctx.actions.run(
         outputs = [xclbin],
@@ -43,6 +55,7 @@ def _vpp_xclbin_impl(ctx):
         tools = [vpp],
         executable = vpp,
         arguments = vpp_cmd,
+        mnemonic = "VppLink",
     )
 
     # Return default information, including the output file.
@@ -74,6 +87,7 @@ vpp_xclbin = rule(
         "target": attr.string(
             mandatory = True,
             doc = "The target to be linked (sw_emu, hw_emu, hw).",
+            values = ["sw_emu", "hw_emu", "hw"],
         ),
         "xclbin": attr.string(
             mandatory = False,
