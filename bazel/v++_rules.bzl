@@ -56,10 +56,16 @@ def _vpp_xclbin_impl(ctx):
         executable = vpp,
         arguments = vpp_cmd,
         mnemonic = "VppLink",
+        resource_set = _resource_set,
     )
 
     # Return default information, including the output file.
     return [DefaultInfo(files = depset([xclbin]))]
+
+# Tell bazel v++ consumes a lot of memory. 2GB is a conservative estimation that
+# avoids wasting memory.
+def _resource_set(_os, _num_inputs):
+    return {"memory": 2000}  # MB
 
 # Define the v++ rule.
 vpp_xclbin = rule(
