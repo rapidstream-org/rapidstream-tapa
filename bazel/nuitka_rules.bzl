@@ -55,10 +55,8 @@ def _nuitka_binary_impl(ctx):
     for tool_name, tool in {
         # Please keep sorted.
         "ld": ctx.executable._ld,
-        "ldd": "/usr/bin/ldd",
         "patchelf": ctx.executable._patchelf,
         "readelf": ctx.executable._readelf,
-        "sh": "/bin/sh",
     }.items():
         if type(tool) == type(""):
             # `tool` is a path string; create symlink to that path verbatim.
@@ -74,7 +72,7 @@ def _nuitka_binary_impl(ctx):
     env = {
         "PATH": ctx.configuration.host_path_separator.join(
             # Using `depset` for deduplication.
-            depset([py_bin_dir] + [x.dirname for x in tools]).to_list(),
+            depset([py_bin_dir] + [x.dirname for x in tools]).to_list() + ["/usr/bin", "/bin"],
         ),
         "LIBRARY_PATH": py_lib_dir,
         "LD_LIBRARY_PATH": py_lib_dir,
