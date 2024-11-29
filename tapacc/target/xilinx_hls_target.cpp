@@ -251,26 +251,13 @@ void XilinxHLSTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
                        "{\n" + llvm::join(lines, "\n") + "}\n");
 }
 
-void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl* func,
-                                           clang::Rewriter& rewriter,
-                                           bool top) {
-  bool qdma_header_inserted = false;
+void XilinxHLSTarget::RewriteTopLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {
+  RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS);
 
+  bool qdma_header_inserted = false;
   // Replace mmaps arguments with 64-bit base addresses.
   for (const auto param : func->parameters()) {
-    const std::string param_name = param->getNameAsString();
-    if (IsTapaType(param, "(async_)?mmap")) {
-      rewriter.ReplaceText(
-          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "uint64_t ");
-    } else if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
-      std::string rewritten_text;
-      for (int i = 0; i < GetArraySize(param); ++i) {
-        if (!rewritten_text.empty()) rewritten_text += ", ";
-        rewritten_text += "uint64_t " + GetArrayElem(param_name, i);
-      }
-      rewriter.ReplaceText(param->getSourceRange(), rewritten_text);
-    } else if (top && IsTapaType(param, "(i|o)stream") && vitis_mode) {
+    if (IsTapaType(param, "(i|o)stream") && vitis_mode) {
       // For Vitis mode, replace istream and ostream with qdma_axis.
       // TODO: support streams
       int width =
@@ -290,6 +277,27 @@ void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl* func,
     }
   }
 }
+
+void XilinxHLSTarget::RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {
+  // Replace mmaps arguments with 64-bit base addresses.
+  for (const auto param : func->parameters()) {
+    const std::string param_name = param->getNameAsString();
+    if (IsTapaType(param, "(async_)?mmap")) {
+      rewriter.ReplaceText(
+          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+          "uint64_t");
+    } else if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
+      std::string rewritten_text;
+      for (int i = 0; i < GetArraySize(param); ++i) {
+        if (!rewritten_text.empty()) rewritten_text += ", ";
+        rewritten_text += "uint64_t " + GetArrayElem(param_name, i);
+      }
+      rewriter.ReplaceText(param->getSourceRange(), rewritten_text);
+    }
+  }
+}
+
+void XilinxHLSTarget::RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF) {}
 
 static clang::SourceRange ExtendAttrRemovalRange(clang::Rewriter& rewriter,
                                                  clang::SourceRange range) {

@@ -168,6 +168,7 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
         HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
       }
 
+      bool is_top_level_task = IsTapaTopLevel(func);
       // If the first tapa::task is obtained in the function body, this is a
       // upper-level tapa task.
       bool is_upper_level_task = GetTapaTask(func->getBody()) != nullptr;
@@ -176,12 +177,21 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       bool is_lower_level_task =
           !is_upper_level_task && tapa_tasks_.count(func) > 0;
 
+      // Rewrite the function arguments.
+      if (is_top_level_task) {
+        current_target->RewriteTopLevelFuncArguments(func, GetRewriter());
+      } else if (is_upper_level_task) {
+        current_target->RewriteMiddleLevelFuncArguments(func, GetRewriter());
+      } else if (is_lower_level_task) {
+        current_target->RewriteLowerLevelFuncArguments(func, GetRewriter());
+      } else {
+        current_target->RewriteOtherFuncArguments(func, GetRewriter());
+      }
+
       if ((is_upper_level_task || is_lower_level_task) &&
           func != current_task) {
-        // If the function is a tapa task but not the current task
-        current_target->RewriteFuncArguments(func, GetRewriter(),
-                                             IsTapaTopLevel(func));
-        // Remove the function body.
+        // If the function is a tapa task but not the current task,
+        // remove the function body.
         if (func->hasBody()) {
           auto range = func->getBody()->getSourceRange();
           GetRewriter().ReplaceText(range, ";");
@@ -219,9 +229,6 @@ bool Visitor::VisitAttributedStmt(clang::AttributedStmt* stmt) {
 // Apply tapa s2s transformations on a upper-level task.
 void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                     const FunctionDecl* func) {
-  current_target->RewriteFuncArguments(func, GetRewriter(),
-                                       IsTapaTopLevel(func));
-
   if (IsTapaTopLevel(func)) {
     current_target->RewriteTopLevelFunc(func, GetRewriter());
   } else {

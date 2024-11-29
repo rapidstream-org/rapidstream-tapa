@@ -26,7 +26,9 @@ class XilinxHLSTarget : public BaseTarget {
   virtual void AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
-  virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
+  virtual void RewriteTopLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF);
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                     const clang::Stmt* body);
   virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
