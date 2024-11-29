@@ -13,7 +13,7 @@ nuitka_binary(
     src = ":tapa-fast-cosim",
     flags = [
         "--deployment",
-        "--include-package-data=tapa",
+        "--include-package-data=tapa:VERSION",
         "--python-flag=isolated,no_docstrings,no_site,no_warnings",
     ],
     output_name = "tapa-fast-cosim",
