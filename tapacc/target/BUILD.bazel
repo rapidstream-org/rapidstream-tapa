@@ -11,6 +11,7 @@ cc_library(
     hdrs = ["all_targets.h"],
     deps = [
         ":base_target",
+        ":xilinx_aie_target",
         ":xilinx_hls_target",
     ],
 )
@@ -29,6 +30,18 @@ cc_library(
     name = "xilinx_hls_target",
     srcs = ["xilinx_hls_target.cpp"],
     hdrs = ["xilinx_hls_target.h"],
+    deps = [
+        ":base_target",
+        "//tapacc/rewriter:mmap",
+        "//tapacc/rewriter:stream",
+        "//tapacc/rewriter:type",
+    ],
+)
+
+cc_library(
+    name = "xilinx_aie_target",
+    srcs = ["xilinx_aie_target.cpp"],
+    hdrs = ["xilinx_aie_target.h"],
     deps = [
         ":base_target",
         "//tapacc/rewriter:mmap",

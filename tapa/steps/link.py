@@ -30,13 +30,23 @@ _logger = logging.getLogger().getChild(__name__)
     default=False,
     help="Print all FIFO operations in cosim.",
 )
+@click.option(
+    "--flow-type",
+    type=click.Choice(["hls", "aie"], case_sensitive=False),
+    default="hls",
+    help="Flow Option: 'hls' for FPGA Fabric steps, 'aie' for Versal AIE steps.",
+)
 def link(
     ctx: click.Context,
     print_fifo_ops: bool,
+    flow_type: str,
 ) -> None:
     """Link the generated RTL."""
     program = load_tapa_program()
     settings = load_persistent_context("settings")
+
+    if flow_type == "aie":
+        return
 
     if not is_pipelined("synth"):
         _logger.warning(

@@ -62,6 +62,11 @@ static std::map<TapaTargetAttr::TargetType,
              {TapaTargetAttr::VendorType::Xilinx,
               XilinxHLSTarget::GetInstance()},
          }},
+        {TapaTargetAttr::TargetType::AIE,
+         {
+             {TapaTargetAttr::VendorType::Xilinx,
+              XilinxAIETarget::GetInstance()},
+         }},
     };
 
 extern const string* top_name;

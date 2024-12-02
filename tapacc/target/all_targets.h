@@ -3,4 +3,5 @@
 // RapidStream Contributor License Agreement.
 
 #include "base_target.h"
+#include "xilinx_aie_target.h"
 #include "xilinx_hls_target.h"

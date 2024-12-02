@@ -16,7 +16,7 @@ import socket
 import subprocess
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import coloredlogs
 
@@ -77,18 +77,33 @@ def get_module_name(module: str) -> str:
     return f"{module}"
 
 
-def get_xilinx_hls_path() -> str | None:
-    "Returns the XILINX_HLS path."
-    xilinx_hls = os.environ.get("XILINX_HLS")
-    if xilinx_hls is None:
-        _logger.critical("not adding vendor include paths; please set XILINX_HLS")
+def get_xilinx_tool_path(tool_name: Literal["HLS", "VITIS"] = "HLS") -> str | None:
+    "Returns the XILINX_<TOOL> path."
+    xilinx_tool_path = os.environ.get(f"XILINX_{tool_name}")
+    if xilinx_tool_path is None:
+        _logger.critical("not adding vendor include paths;")
+        _logger.critical("please set XILINX_%s", tool_name)
         _logger.critical("you may run `source /path/to/Vitis/settings64.sh`")
-    return xilinx_hls
+    return xilinx_tool_path
+
+
+def get_xpfm_path(platform: str) -> str | None:
+    "Returns the XPFM path for a platform."
+    xilinx_vitis_path = get_xilinx_tool_path("VITIS")
+    path_in_vitis = f"{xilinx_vitis_path}/base_platforms/{platform}/{platform}.xpfm"
+    path_in_opt = f"/opt/xilinx/platforms/{platform}/{platform}.xpfm"
+    if os.path.exists(path_in_vitis):
+        return path_in_vitis
+    if os.path.exists(path_in_opt):
+        return path_in_opt
+
+    _logger.critical("Cannot find XPFM for platform %s", platform)
+    return None
 
 
 def get_vendor_include_paths() -> Iterable[str]:
     """Yields include paths that are automatically available in vendor tools."""
-    xilinx_hls = get_xilinx_hls_path()
+    xilinx_hls = get_xilinx_tool_path("HLS")
     if xilinx_hls is not None:
         cpp_include = "tps/lnx64/gcc-6.2.0/include/c++/6.2.0"
         yield os.path.join(xilinx_hls, "include")

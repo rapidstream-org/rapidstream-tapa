@@ -66,12 +66,25 @@ NEWLINE = [""]
     type=click.Path(dir_okay=False, writable=True),
     help="Script file to generate the bitstream.",
 )
-def pack(output: str, bitstream_script: str | None) -> None:
+@click.option(
+    "--flow-type",
+    type=click.Choice(["hls", "aie"], case_sensitive=False),
+    default="hls",
+    help="Flow Option: 'hls' for FPGA Fabric steps, 'aie' for Versal AIE steps.",
+)
+def pack(
+    output: str,
+    bitstream_script: str | None,
+    flow_type: str,
+) -> None:
     """Pack the generated RTL into a Xilinx object file."""
     program = load_tapa_program()
     settings = load_persistent_context("settings")
     if settings.get("has_template", False):
         logging.info("skip packing for template program")
+
+    if flow_type == "aie":
+        return
 
     if not settings.get("linked", False):
         msg = "You must run `link` before you can `pack`."

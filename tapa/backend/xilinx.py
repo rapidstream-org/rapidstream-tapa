@@ -391,6 +391,93 @@ class RunHls(VivadoHls):
             self.tempdir.cleanup()
 
 
+class RunAie(subprocess.Popen):
+    """Runs Vitis AIE for the given kernels and generate aie.a files
+
+    This is a subclass of subprocess.Popen. A temporary directory will be created
+    and used as the working directory.
+    """
+
+    def __init__(  # noqa: PLR0913,PLR0917
+        self,
+        tarfileobj: BinaryIO,
+        kernel_files: Iterable[str],
+        work_dir: str | None,
+        top_name: str,
+        clock_period: str,  # noqa: ARG002
+        xpfm: str | None,
+    ) -> None:
+        if work_dir is None:
+            self.tempdir = tempfile.TemporaryDirectory(prefix=f"run-aie-{top_name}-")
+            self.project_path = self.tempdir.name
+        else:
+            self.tempdir = None
+            self.project_path = f"{work_dir}/{top_name}"
+            os.makedirs(self.project_path, exist_ok=True)
+        self.project_name = "project"
+        self.solution_name = top_name
+        self.tarfileobj = tarfileobj
+        self.aiecompiler = "aiecompiler"
+        include_path_str = [f"--include={os.path.dirname(f)}" for f in kernel_files]
+        cmd_args = [
+            self.aiecompiler,
+            "--target=hw",
+            f"--platform={xpfm}",
+            *include_path_str,
+            f"--workdir={self.project_path}",
+            *kernel_files,
+        ]
+        kwargs = {
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "env": os.environ
+            | {
+                "HOME": self.project_path,
+            },
+        }
+
+        cmd_args = get_cmd_args(cmd_args, ["XILINX_VITIS"], kwargs)
+        super().__init__(cmd_args, cwd=self.project_path, **kwargs)
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        # wait for process termination and keep the log
+        subprocess.Popen.__exit__(self, exc_type, exc_value, traceback)
+        if self.returncode == 0:
+            with tarfile.open(mode="w", fileobj=self.tarfileobj) as tar:
+                solution_dir = os.path.join(
+                    self.project_path, self.project_name, self.solution_name
+                )
+                try:
+                    tar.add(os.path.join(solution_dir, "syn/report"), arcname="report")
+                    tar.add(os.path.join(solution_dir, "syn/verilog"), arcname="hdl")
+                    tar.add(
+                        os.path.join(
+                            solution_dir, self.project_path, f"{self.hls}.log"
+                        ),
+                        arcname="log/" + self.solution_name + ".log",
+                    )
+                    for pattern in (
+                        "*.sched.adb.xml",
+                        "*.verbose.sched.rpt",
+                        "*.verbose.sched.rpt.xml",
+                    ):
+                        for f in glob.glob(
+                            os.path.join(solution_dir, ".autopilot", "db", pattern)
+                        ):
+                            tar.add(f, arcname="report/" + os.path.basename(f))
+                except FileNotFoundError as e:
+                    self.returncode = 1
+                    _logger.error("%s", e)
+        super().__exit__(exc_type, exc_value, traceback)
+        if self.tempdir is not None:
+            self.tempdir.cleanup()
+
+
 XILINX_XML_NS = {"xd": "http://www.xilinx.com/xd"}
 
 

@@ -16,7 +16,7 @@ from pathlib import Path
 import click
 
 from tapa.common.paths import get_tapa_cflags, get_tapa_ldflags
-from tapa.util import get_xilinx_hls_path
+from tapa.util import get_xilinx_tool_path
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -36,7 +36,7 @@ def gcc(executable: str, argv: Iterable[str]) -> None:
     Developers building TAPA from source should compile binaries using `bazel`.
     """
     vendor_include_paths = []
-    xilinx_hls_path = get_xilinx_hls_path()
+    xilinx_hls_path = get_xilinx_tool_path()
     if xilinx_hls_path is not None:
         vendor_include_paths.append(Path(xilinx_hls_path) / "include")
 

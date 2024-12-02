@@ -56,7 +56,7 @@ from pyverilog.vparser.ast import (
 )
 from pyverilog.vparser.parser import parse
 
-from tapa.backend.xilinx import RunHls
+from tapa.backend.xilinx import RunAie, RunHls
 from tapa.instance import Instance, Port
 from tapa.safety_check import check_mmap_arg_name
 from tapa.task import Task
@@ -65,6 +65,7 @@ from tapa.util import (
     get_instance_name,
     get_module_name,
     get_vendor_include_paths,
+    get_xpfm_path,
 )
 from tapa.verilog.ast_utils import (
     make_block,
@@ -290,9 +291,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         assert period.text
         return decimal.Decimal(period.text)
 
-    def extract_cpp(self) -> Program:
-        """Extract HLS C++ files."""
-        _logger.info("extracting HLS C++ files")
+    def extract_cpp(self, target: str = "hls") -> Program:
+        """Extract HLS/AIE C++ files."""
+        _logger.info("extracting %s C++ files", target)
         check_mmap_arg_name(list(self._tasks.values()))
 
         for task in self._tasks.values():
@@ -316,7 +317,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 header_fp.write(content)
         return self
 
-    def run_hls(  # noqa: PLR0913,PLR0917  # TODO: refactor this method
+    def run_hls_or_aie(  # noqa: PLR0913,PLR0917  # TODO: refactor this method
         self,
         clock_period: float | str,
         part_num: str,
@@ -324,11 +325,13 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         other_configs: str = "",
         jobs: int | None = None,
         keep_hls_work_dir: bool = False,
+        flow_type: str = "hls",
+        platform: str | None = None,
     ) -> Program:
         """Run HLS with extracted HLS C++ files and generate tarballs."""
-        self.extract_cpp()
+        self.extract_cpp(flow_type)
 
-        _logger.info("running HLS")
+        _logger.info("running %s", flow_type)
 
         def worker(task: Task, idx: int) -> None:
             os.nice(idx % 19)
@@ -353,22 +356,41 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                     *(f"-isystem{x}" for x in get_vendor_include_paths()),
                 ),
             )
-            with (
-                open(self.get_tar(task.name), "wb") as tarfileobj,
-                RunHls(
-                    tarfileobj,
-                    kernel_files=[(self.get_cpp(task.name), hls_cflags)],
-                    work_dir=f"{self.work_dir}/hls" if keep_hls_work_dir else None,
-                    top_name=task.name,
-                    clock_period=str(clock_period),
-                    part_num=part_num,
-                    auto_prefix=True,
-                    hls="vitis_hls",
-                    std="c++17",
-                    other_configs=other_configs,
-                ) as proc,
-            ):
-                stdout, stderr = proc.communicate()
+            if flow_type == "hls":
+                with (
+                    open(self.get_tar(task.name), "wb") as tarfileobj,
+                    RunHls(
+                        tarfileobj,
+                        kernel_files=[(self.get_cpp(task.name), hls_cflags)],
+                        work_dir=f"{self.work_dir}/hls" if keep_hls_work_dir else None,
+                        top_name=task.name,
+                        clock_period=str(clock_period),
+                        part_num=part_num,
+                        auto_prefix=True,
+                        hls="vitis_hls",
+                        std="c++17",
+                        other_configs=other_configs,
+                    ) as proc,
+                ):
+                    stdout, stderr = proc.communicate()
+            elif flow_type == "aie":
+                assert platform is not None, "Platform must be specified for AIE flow."
+                with (
+                    open(self.get_tar(task.name), "wb") as tarfileobj,
+                    RunAie(
+                        tarfileobj,
+                        kernel_files=[self.get_cpp(task.name)],
+                        work_dir=f"{self.work_dir}/aie" if keep_hls_work_dir else None,
+                        top_name=task.name,
+                        clock_period=str(clock_period),
+                        xpfm=get_xpfm_path(platform),
+                    ) as proc,
+                ):
+                    stdout, stderr = proc.communicate()
+            else:
+                msg = f"Unknown flow type: {flow_type}"
+                raise ValueError(msg)
+
             if proc.returncode != 0:
                 if b"Pre-synthesis failed." in stdout and b"\nERROR:" not in stdout:
                     _logger.error(
@@ -379,11 +401,13 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                     return
                 sys.stdout.write(stdout.decode("utf-8"))
                 sys.stderr.write(stderr.decode("utf-8"))
-                msg = f"HLS failed for {task.name}"
+                msg = f"{flow_type} failed for {task.name}"
                 raise RuntimeError(msg)
 
         jobs = jobs or cpu_count(logical=False)
-        _logger.info("spawn %d workers for parallel HLS synthesis of the tasks", jobs)
+        _logger.info(
+            "spawn %d workers for parallel %s synthesis of the tasks", jobs, flow_type
+        )
         with futures.ThreadPoolExecutor(max_workers=jobs) as executor:
             any(executor.map(worker, self._tasks.values(), itertools.count(0)))
 

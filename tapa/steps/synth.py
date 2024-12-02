@@ -64,6 +64,12 @@ from tapa.steps.common import (
     default=False,
     help="Print all FIFO operations in cosim.",
 )
+@click.option(
+    "--flow-type",
+    type=click.Choice(["hls", "aie"], case_sensitive=False),
+    default="hls",
+    help="Flow Option: 'hls' for FPGA Fabric steps, 'aie' for Versal AIE steps.",
+)
 def synth(  # noqa: PLR0913,PLR0917
     part_num: str | None,
     platform: str | None,
@@ -73,6 +79,7 @@ def synth(  # noqa: PLR0913,PLR0917
     skip_hls_based_on_mtime: bool,
     other_hls_configs: str,
     print_fifo_ops: bool,
+    flow_type: str,
 ) -> None:
     """Synthesize the TAPA program into RTL code."""
     program = load_tapa_program()
@@ -89,13 +96,15 @@ def synth(  # noqa: PLR0913,PLR0917
     settings["clock_period"] = clock_period
 
     # Generate RTL code
-    program.run_hls(
+    program.run_hls_or_aie(
         clock_period,
         part_num,
         skip_hls_based_on_mtime,
         other_hls_configs,
         jobs=jobs,
         keep_hls_work_dir=keep_hls_work_dir,
+        flow_type=flow_type,
+        platform=platform,
     )
     program.generate_task_rtl(print_fifo_ops)
 
