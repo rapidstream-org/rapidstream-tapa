@@ -224,8 +224,8 @@ EOF
         """.format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH),
     ],
     patches = [
-        "//tapa-llvm-project:0001-Disable-zlib-zstd-mpfr-and-pfm.patch",
-        "//tapa-llvm-project:0002-Add-TAPA-pragmas-to-Clang.patch",
+        "//bazel:patches/tapa-llvm-project/0001-Disable-zlib-zstd-mpfr-and-pfm.patch",
+        "//bazel:patches/tapa-llvm-project/0002-Add-TAPA-pragmas-to-Clang.patch",
     ],
     sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a",
     strip_prefix = "llvm-project-{}.src".format(LLVM_VERSION),
