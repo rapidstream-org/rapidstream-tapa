@@ -86,6 +86,11 @@ bazel_dep(name = "gflags", version = "2.2.2")
 bazel_dep(name = "glog", version = "0.5.0")
 bazel_dep(name = "googletest", version = "1.15.2")
 
+single_version_override(
+    module_name = "glog",
+    patches = ["//bazel:patches/glog/0001-Fix-unused-but-set-variable.patch"],
+)
+
 new_local_repository(
     name = "vitis_hls",
     build_file_content = """
@@ -226,6 +231,7 @@ EOF
     patches = [
         "//bazel:patches/tapa-llvm-project/0001-Disable-zlib-zstd-mpfr-and-pfm.patch",
         "//bazel:patches/tapa-llvm-project/0002-Add-TAPA-pragmas-to-Clang.patch",
+        "//bazel:patches/tapa-llvm-project/0003-Wno-error-deprecated-declarations.patch",
     ],
     sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a",
     strip_prefix = "llvm-project-{}.src".format(LLVM_VERSION),

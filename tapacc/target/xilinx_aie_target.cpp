@@ -123,26 +123,6 @@ void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
   ::aie_log_out("aielog.txt", "\n", true);
 }
 
-static clang::SourceRange ExtendAttrRemovalRange(clang::Rewriter& rewriter,
-                                                 clang::SourceRange range) {
-  auto begin = range.getBegin();
-  auto end = range.getEnd();
-
-  return clang::SourceRange(begin, end);
-}
-
-static void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
-                            std::string pragma) {}
-
-static void AddPipelinePragma(clang::Rewriter& rewriter,
-                              const clang::TapaPipelineAttr* attr,
-                              const clang::Stmt* body) {
-  auto II = attr->getII();
-  std::string pragma = "AIE pipeline";
-  if (II) pragma += std::string(" II = ") + std::to_string(II);
-  AddPragmaToBody(rewriter, body, pragma);
-}
-
 void XilinxAIETarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                            const clang::Stmt* body) {}
 

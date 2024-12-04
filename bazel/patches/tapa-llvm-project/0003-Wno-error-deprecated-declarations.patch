@@ -1,0 +1,11 @@
+--- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
+@@ -247,7 +247,7 @@
+         "include/llvm/Support/Extension.def",
+         "include/llvm/Support/VCSRevision.h",
+     ],
+-    copts = llvm_copts,
++    copts = llvm_copts + ["-Wno-error=deprecated-declarations"],
+     defines = select({
+         "@platforms//cpu:aarch64": [
+         ],

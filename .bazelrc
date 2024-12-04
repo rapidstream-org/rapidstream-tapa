@@ -1,6 +1,7 @@
 build --copt=-Wno-attributes
 build --copt=-Wno-unknown-pragmas
 build --copt=-Wno-unused-label
+build --copt=-Werror
 build --incompatible_strict_action_env
 
 build:asan --compilation_mode=dbg
