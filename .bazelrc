@@ -1,5 +1,3 @@
-build --copt=-DBOOST_USE_ASAN
-build --copt=-DBOOST_USE_UCONTEXT
 build --copt=-Wno-attributes
 build --copt=-Wno-unknown-pragmas
 build --copt=-Wno-unused-label
