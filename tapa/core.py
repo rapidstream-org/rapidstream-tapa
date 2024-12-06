@@ -55,7 +55,7 @@ from pyverilog.vparser.ast import (
     Width,
     Wire,
 )
-from pyverilog.vparser.parser import parse
+from pyverilog.vparser.parser import VerilogCodeParser, parse
 
 from tapa.backend.xilinx import RunAie, RunHls
 from tapa.instance import Instance, Port
@@ -77,7 +77,12 @@ from tapa.verilog.ast_utils import (
     make_port_arg,
     make_width,
 )
-from tapa.verilog.util import Pipeline, match_array_name, wire_name
+from tapa.verilog.util import (
+    Pipeline,
+    get_ports_from_module,
+    match_array_name,
+    wire_name,
+)
 from tapa.verilog.xilinx import ctrl_instance_name, generate_handshake_ports, pack
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,
@@ -1318,6 +1323,8 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         rtl_path = Path(self.rtl_dir)
         assert Path.exists(rtl_path)
 
+        self.check_custom_rtl_format(self.custom_rtl)
+
         for file_path in self.custom_rtl:
             assert file_path.is_file()
 
@@ -1331,3 +1338,38 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
 
             # Copy file to destination, replacing if necessary
             shutil.copy2(file_path, dest_path)
+
+    def check_custom_rtl_format(self, rtl_paths: list[Path]) -> None:
+        """Check if the custom RTL files are in the correct format."""
+        if not rtl_paths:
+            return
+        _logger.info("Checking custom RTL files format.")
+        with tempfile.TemporaryDirectory(prefix="pyverilog-") as output_dir:
+            codeparser = VerilogCodeParser(
+                rtl_paths,
+                preprocess_output=os.path.join(output_dir, "preprocess.output"),
+                outputdir=output_dir,
+                debug=False,
+            )
+            ast = codeparser.parse()
+        # Traverse the AST to find module definitions
+        module_defs: list[ModuleDef] = [
+            mod_def
+            for mod_def in ast.description.definitions
+            if isinstance(mod_def, ModuleDef)
+        ]
+
+        for module_def in module_defs:
+            for task_name, task in self._tasks.items():
+                if task_name != module_def.name:
+                    continue
+                _logger.info("Checking custom RTL file for task %s.", task_name)
+                task_ports = set(task.module.ports.keys())
+                custom_rtl_ports = get_ports_from_module(module_def)
+                if task_ports != custom_rtl_ports:
+                    msg = (
+                        f"Custom RTL file for task {task_name} does not match the "
+                        f"expected ports. Task ports: {task_ports}, Custom RTL ports: "
+                        f"{custom_rtl_ports}"
+                    )
+                    raise ValueError(msg)
