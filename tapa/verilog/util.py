@@ -9,7 +9,7 @@ RapidStream Contributor License Agreement.
 import re
 from collections.abc import Iterator
 
-from pyverilog.vparser.ast import Identifier, Pragma, Reg, Width, Wire
+from pyverilog.vparser.ast import Identifier, ModuleDef, Pragma, Reg, Width, Wire
 
 from tapa.verilog.ast_utils import make_pragma, make_width
 
@@ -85,3 +85,8 @@ def wire_name(fifo: str, suffix: str) -> str:
 
 def async_mmap_instance_name(variable_name: str) -> str:
     return f"{variable_name}__m_axi"
+
+
+def get_ports_from_module(module_def: ModuleDef) -> set[str]:
+    """Extract port names from a given Verilog module definition."""
+    return {port.name for port in module_def.portlist.ports}

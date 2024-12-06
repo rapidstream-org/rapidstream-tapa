@@ -22,6 +22,7 @@ import tarfile
 import tempfile
 import zipfile
 from concurrent import futures
+from pathlib import Path
 from xml.etree import ElementTree
 
 import toposort
@@ -54,7 +55,7 @@ from pyverilog.vparser.ast import (
     Width,
     Wire,
 )
-from pyverilog.vparser.parser import parse
+from pyverilog.vparser.parser import VerilogCodeParser, parse
 
 from tapa.backend.xilinx import RunAie, RunHls
 from tapa.instance import Instance, Port
@@ -76,7 +77,12 @@ from tapa.verilog.ast_utils import (
     make_port_arg,
     make_width,
 )
-from tapa.verilog.util import Pipeline, match_array_name, wire_name
+from tapa.verilog.util import (
+    Pipeline,
+    get_ports_from_module,
+    match_array_name,
+    wire_name,
+)
 from tapa.verilog.xilinx import ctrl_instance_name, generate_handshake_ports, pack
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,
@@ -143,6 +149,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         vitis_mode: bool,
         work_dir: str | None = None,
         gen_templates: tuple[str, ...] = (),
+        rtl_paths: tuple[Path, ...] = (),
     ) -> None:
         """Construct Program object from a json file.
 
@@ -194,6 +201,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         self.files: dict[str, str] = {}
         self._hls_report_xmls: dict[str, ElementTree.ElementTree] = {}
 
+        # Collect user custom RTL files
+        self.custom_rtl: list[Path] = Program.get_custom_rtl_files(rtl_paths)
+
     def __del__(self) -> None:
         if self.is_temp:
             shutil.rmtree(self.work_dir)
@@ -239,6 +249,29 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         cpp_dir = os.path.join(self.work_dir, "cpp")
         os.makedirs(cpp_dir, exist_ok=True)
         return cpp_dir
+
+    @staticmethod
+    def get_custom_rtl_files(rtl_paths: tuple[Path, ...]) -> list[Path]:
+        custom_rtl: list[Path] = []
+        for path in rtl_paths:
+            if path.is_file():
+                if path.suffix != ".v":
+                    msg = f"unsupported file type: {path}"
+                    raise ValueError(msg)
+                custom_rtl.append(path)
+            elif path.is_dir():
+                vlg_files = list(path.rglob("*.v"))
+                if not vlg_files:
+                    msg = f"no verilog files found in {path}"
+                    raise ValueError(msg)
+                custom_rtl.extend(vlg_files)
+            elif path.exists():
+                msg = f"unsupported path: {path}"
+                raise ValueError(msg)
+            else:
+                msg = f"path does not exist: {path.absolute()}"
+                raise ValueError(msg)
+        return custom_rtl
 
     def get_task(self, name: str) -> Task:
         return self._tasks[name]
@@ -1277,3 +1310,66 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             f.write(rtl)
         with open(self.get_rtl_template(task.name), "w", encoding="utf-8") as f:
             f.write(rtl)
+
+    def replace_custom_rtl(self) -> None:
+        """Add custom RTL files to the project.
+
+        It will replace all files that originally exist in the project.
+
+        Args:
+            file_paths (List[Path]): List of file paths to copy.
+            destination_folder (Path): The target folder where files will be copied.
+        """
+        rtl_path = Path(self.rtl_dir)
+        assert Path.exists(rtl_path)
+
+        self.check_custom_rtl_format(self.custom_rtl)
+
+        for file_path in self.custom_rtl:
+            assert file_path.is_file()
+
+            # Determine destination path
+            dest_path = rtl_path / file_path.name
+
+            if dest_path.exists():
+                _logger.info("Replacing %s with custom RTL.", file_path.name)
+            else:
+                _logger.info("Adding custom RTL %s.", file_path.name)
+
+            # Copy file to destination, replacing if necessary
+            shutil.copy2(file_path, dest_path)
+
+    def check_custom_rtl_format(self, rtl_paths: list[Path]) -> None:
+        """Check if the custom RTL files are in the correct format."""
+        if not rtl_paths:
+            return
+        _logger.info("Checking custom RTL files format.")
+        with tempfile.TemporaryDirectory(prefix="pyverilog-") as output_dir:
+            codeparser = VerilogCodeParser(
+                rtl_paths,
+                preprocess_output=os.path.join(output_dir, "preprocess.output"),
+                outputdir=output_dir,
+                debug=False,
+            )
+            ast = codeparser.parse()
+        # Traverse the AST to find module definitions
+        module_defs: list[ModuleDef] = [
+            mod_def
+            for mod_def in ast.description.definitions
+            if isinstance(mod_def, ModuleDef)
+        ]
+
+        for module_def in module_defs:
+            for task_name, task in self._tasks.items():
+                if task_name != module_def.name:
+                    continue
+                _logger.info("Checking custom RTL file for task %s.", task_name)
+                task_ports = set(task.module.ports.keys())
+                custom_rtl_ports = get_ports_from_module(module_def)
+                if task_ports != custom_rtl_ports:
+                    msg = (
+                        f"Custom RTL file for task {task_name} does not match the "
+                        f"expected ports. Task ports: {task_ports}, Custom RTL ports: "
+                        f"{custom_rtl_ports}"
+                    )
+                    raise ValueError(msg)

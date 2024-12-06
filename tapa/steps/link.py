@@ -61,6 +61,7 @@ def link(
             raise click.BadArgumentUsage(msg)
 
     program.generate_top_rtl(print_fifo_ops)
+    program.replace_custom_rtl()
 
     settings["linked"] = True
     store_persistent_context("settings")
