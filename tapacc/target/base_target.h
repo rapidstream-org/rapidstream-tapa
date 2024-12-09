@@ -123,7 +123,8 @@ class BaseTarget : public Target {
       const clang::FunctionDecl* func);
   virtual std::vector<std::string> GenerateCodeForOtherFunc(
       const clang::FunctionDecl* func);
-
+  virtual clang::SourceRange ExtendAttrRemovalRange(clang::Rewriter& rewriter,
+                                                    clang::SourceRange range);
   virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF);
