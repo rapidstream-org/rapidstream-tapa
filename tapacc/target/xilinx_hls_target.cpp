@@ -251,6 +251,12 @@ void XilinxHLSTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
                        "{\n" + llvm::join(lines, "\n") + "}\n");
 }
 
+void XilinxHLSTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
+  auto lines = GenerateCodeForLowerLevelFunc(func);
+  rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
+                                llvm::join(lines, "\n"));
+}
+
 void XilinxHLSTarget::ProcessNonCurrentTask(const clang::FunctionDecl* func,
                                             clang::Rewriter& rewriter) {
   this->RewriteFuncArguments(func, rewriter, false);
