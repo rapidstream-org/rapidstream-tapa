@@ -46,6 +46,14 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
         metadata_{metadata} {}
 
   bool VisitAttributedStmt(clang::AttributedStmt* stmt);
+  void CaptureWriteCalls(
+      std::string name, const clang::Stmt* stmt,
+      std::vector<const clang::CXXMemberCallExpr*>& writeCalls,
+      clang::Rewriter& rewriter);
+  void CaptureReadCalls(
+      std::string name, const clang::Stmt* stmt,
+      std::vector<const clang::CXXMemberCallExpr*>& writeCalls,
+      clang::Rewriter& rewriter);
   bool VisitFunctionDecl(clang::FunctionDecl* func);
 
   void VisitTask(const clang::FunctionDecl* func);

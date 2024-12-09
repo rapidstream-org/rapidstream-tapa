@@ -14,6 +14,7 @@
 
 #include "nlohmann/json.hpp"
 
+#include <fstream>
 #include "mmap.h"
 #include "stream.h"
 #include "type.h"
@@ -50,6 +51,11 @@ using llvm::dyn_cast;
 using llvm::StringRef;
 
 using nlohmann::json;
+
+void task_log_out(std::string path, std::string str, bool append) {
+  std::ofstream file(path, append ? std::ios::app : std::ios::out);
+  file << str << std::endl;
+}
 
 namespace tapa {
 namespace internal {
@@ -147,6 +153,76 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
   TraverseDecl(func->getASTContext().getTranslationUnitDecl());
 }
 
+void Visitor::CaptureWriteCalls(
+    std::string name, const clang::Stmt* stmt,
+    std::vector<const clang::CXXMemberCallExpr*>& writeCalls,
+    clang::Rewriter& rewriter) {
+  if (stmt == nullptr) return;
+
+  for (const auto* child : stmt->children()) {
+    // Recursively traverse the children
+    CaptureWriteCalls(name, child, writeCalls, rewriter);
+  }
+  ::task_log_out("write_calls.txt", name, true);
+  if (const auto* callExpr = llvm::dyn_cast<clang::CXXMemberCallExpr>(stmt)) {
+    if (const auto* methodDecl = callExpr->getMethodDecl()) {
+      if (methodDecl->getNameAsString() == "write") {
+        if (const auto* memberExpr =
+                llvm::dyn_cast<clang::MemberExpr>(callExpr->getCallee())) {
+          const clang::Expr* base = memberExpr->getBase();  // `<yyy>`
+          const clang::Expr* arg = callExpr->getArg(0);     // `<xxx>`
+
+          // Get rewritten text for the base and argument
+          std::string baseText =
+              rewriter.getRewrittenText(base->getSourceRange());
+          std::string argText =
+              rewriter.getRewrittenText(arg->getSourceRange());
+
+          // Construct the replacement text
+          std::string replacement =
+              "writeincr(" + baseText + ", " + argText + ")";
+
+          // Replace the original call with the new expression
+          rewriter.ReplaceText(callExpr->getSourceRange(), replacement);
+        }
+      }
+    }
+  }
+}
+
+void Visitor::CaptureReadCalls(
+    std::string name, const clang::Stmt* stmt,
+    std::vector<const clang::CXXMemberCallExpr*>& writeCalls,
+    clang::Rewriter& rewriter) {
+  if (stmt == nullptr) return;
+
+  for (const auto* child : stmt->children()) {
+    // Recursively traverse the children
+    CaptureReadCalls(name, child, writeCalls, rewriter);
+  }
+  ::task_log_out("read_calls.txt", name, true);
+  if (const auto* callExpr = llvm::dyn_cast<clang::CXXMemberCallExpr>(stmt)) {
+    if (const auto* methodDecl = callExpr->getMethodDecl()) {
+      if (methodDecl->getNameAsString() == "read") {
+        if (const auto* memberExpr =
+                llvm::dyn_cast<clang::MemberExpr>(callExpr->getCallee())) {
+          const clang::Expr* base = memberExpr->getBase();  // `<yyy>`
+
+          // Get rewritten text for the base and argument
+          std::string baseText =
+              rewriter.getRewrittenText(base->getSourceRange());
+
+          // Construct the replacement text
+          std::string replacement = "readincr(" + baseText + ")";
+
+          // Replace the original call with the new expression
+          rewriter.ReplaceText(callExpr->getSourceRange(), replacement);
+        }
+      }
+    }
+  }
+}
+
 // Apply tapa s2s transformations on a function.
 bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
   rewriting_func = nullptr;
@@ -162,6 +238,13 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       // For the second traversal, process tapa task functions.
       assert(rewriters_.count(func) > 0);
       rewriting_func = func;
+
+      // Traverse the function body to capture all write calls
+      std::vector<const clang::CXXMemberCallExpr*> writeCalls;
+      CaptureWriteCalls(func->getNameAsString(), func->getBody(), writeCalls,
+                        GetRewriter());
+      CaptureReadCalls(func->getNameAsString(), func->getBody(), writeCalls,
+                       GetRewriter());
 
       // Run this before the function body is purged
       if (func->hasAttrs()) {
