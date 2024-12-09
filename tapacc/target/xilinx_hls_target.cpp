@@ -259,7 +259,7 @@ void XilinxHLSTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
 
 void XilinxHLSTarget::ProcessNonCurrentTask(const clang::FunctionDecl* func,
                                             clang::Rewriter& rewriter) {
-  this->RewriteFuncArguments(func, rewriter, false);
+  RewriteFuncArguments(func, rewriter, false);
 
   // Remove the function body.
   if (func->hasBody()) {
