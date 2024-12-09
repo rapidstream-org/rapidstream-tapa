@@ -251,6 +251,16 @@ void XilinxHLSTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
                        "{\n" + llvm::join(lines, "\n") + "}\n");
 }
 
+void XilinxHLSTarget::ProcessNonCurrentTask(const clang::FunctionDecl* func,
+                                            clang::Rewriter& rewriter) {
+  this->RewriteFuncArguments(func, rewriter, false);
+
+  // Remove the function body.
+  if (func->hasBody()) {
+    auto range = func->getBody()->getSourceRange();
+    rewriter.ReplaceText(range, ";");
+  }
+}
 void XilinxHLSTarget::RewriteFuncArguments(const clang::FunctionDecl* func,
                                            clang::Rewriter& rewriter,
                                            bool top) {

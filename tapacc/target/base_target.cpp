@@ -215,7 +215,7 @@ void BaseTarget::RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF) {
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
                                 llvm::join(lines, "\n"));
 }
-
+void BaseTarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF) {}
 void BaseTarget::RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top) {}
 void BaseTarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                       const clang::Stmt* body) {}

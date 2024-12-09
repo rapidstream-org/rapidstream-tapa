@@ -69,6 +69,7 @@ class Target {
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF) = 0;
+  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top) = 0;
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                     const clang::Stmt* body) = 0;
@@ -129,7 +130,7 @@ class BaseTarget : public Target {
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF);
-
+  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
 
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
