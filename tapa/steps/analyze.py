@@ -71,9 +71,9 @@ _logger = logging.getLogger().getChild(__name__)
     ),
 )
 @click.option(
-    "--no-vitis-mode / --vitis-mode",
+    "--vitis-mode / --no-vitis-mode",
     type=bool,
-    default=False,
+    default=True,
     help=(
         "`--vitis-mode` (default) will generate .xo files for Vitis "
         "`v++` command, with AXI4-Lite interfaces for task arguments "
@@ -105,7 +105,7 @@ def analyze(  # noqa: PLR0913,PLR0917
     top: str,
     cflags: tuple[str, ...],
     flatten_hierarchy: bool,
-    no_vitis_mode: bool,
+    vitis_mode: bool,
     gen_template: tuple[str, ...],
     add_rtl: tuple[Path, ...],
 ) -> None:
@@ -115,8 +115,6 @@ def analyze(  # noqa: PLR0913,PLR0917
 
     work_dir = get_work_dir()
     cflags += ("-std=c++17",)
-
-    vitis_mode = not no_vitis_mode
 
     tapacc_cflags, system_cflags = find_tapacc_cflags(cflags)
     flatten_files = run_flatten(
