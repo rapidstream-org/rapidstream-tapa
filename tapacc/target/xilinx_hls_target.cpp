@@ -76,6 +76,41 @@ static void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {
   }
 }
 
+static void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
+                            std::string pragma) {
+  if (auto compound = llvm::dyn_cast<clang::CompoundStmt>(body)) {
+    rewriter.InsertTextAfterToken(compound->getLBracLoc(),
+                                  std::string("\n#pragma ") + pragma + "\n");
+  } else {
+    rewriter.InsertTextBefore(body->getBeginLoc(),
+                              std::string("_Pragma(\"") + pragma + "\")");
+  }
+}
+
+static void AddPragmaAfterStmt(clang::Rewriter& rewriter,
+                               const clang::Stmt* stmt, std::string pragma) {
+  rewriter.InsertTextAfterToken(stmt->getEndLoc(),
+                                std::string("\n#pragma ") + pragma + "\n");
+}
+
+static void AddPipelinePragma(clang::Rewriter& rewriter,
+                              const clang::TapaPipelineAttr* attr,
+                              const clang::Stmt* body) {
+  auto II = attr->getII();
+  std::string pragma = "HLS pipeline";
+  if (II) pragma += std::string(" II = ") + std::to_string(II);
+  AddPragmaToBody(rewriter, body, pragma);
+}
+
+static void AddStreamDepthPragma(clang::Rewriter& rewriter,
+                                 const clang::Stmt* stmt, std::string name,
+                                 int depth) {
+  std::string pragma = "HLS STREAM";
+  pragma += " variable = " + name + "._";
+  pragma += " depth = " + std::to_string(depth);
+  AddPragmaAfterStmt(rewriter, stmt, pragma);
+}
+
 void XilinxHLSTarget::AddCodeForTopLevelFunc(ADD_FOR_FUNC_ARGS_DEF) {
   // Set top-level control to s_axilite for Vitis mode.
   if (vitis_mode) {
@@ -251,6 +286,33 @@ void XilinxHLSTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
                        "{\n" + llvm::join(lines, "\n") + "}\n");
 }
 
+static void RewriteStreamDefinitions(REWRITE_FUNC_ARGS_DEF) {
+  for (const auto child : func->getBody()->children()) {
+    if (const auto decl_stmt = llvm::dyn_cast<clang::DeclStmt>(child)) {
+      if (const auto var_decl =
+              llvm::dyn_cast<clang::VarDecl>(*decl_stmt->decl_begin())) {
+        if (auto decl = GetTapaStreamDecl(var_decl->getType())) {
+          const auto args = decl->getTemplateArgs().asArray();
+          const uint64_t fifo_depth{*args[1].getAsIntegral().getRawData()};
+          AddStreamDepthPragma(rewriter, decl_stmt, var_decl->getNameAsString(),
+                               fifo_depth);
+        }
+      }
+      // TODO: Support streams
+    }
+  }
+}
+
+void XilinxHLSTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
+  BaseTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS);
+  RewriteStreamDefinitions(REWRITE_FUNC_ARGS);
+}
+
+void XilinxHLSTarget::RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF) {
+  BaseTarget::RewriteOtherFunc(REWRITE_FUNC_ARGS);
+  RewriteStreamDefinitions(REWRITE_FUNC_ARGS);
+}
+
 void XilinxHLSTarget::RewriteTopLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {
   RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS);
 
@@ -330,26 +392,6 @@ static clang::SourceRange ExtendAttrRemovalRange(clang::Rewriter& rewriter,
   }
 
   return clang::SourceRange(begin, end);
-}
-
-static void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
-                            std::string pragma) {
-  if (auto compound = llvm::dyn_cast<clang::CompoundStmt>(body)) {
-    rewriter.InsertTextAfterToken(compound->getLBracLoc(),
-                                  std::string("\n#pragma ") + pragma + "\n");
-  } else {
-    rewriter.InsertTextBefore(body->getBeginLoc(),
-                              std::string("_Pragma(\"") + pragma + "\")");
-  }
-}
-
-static void AddPipelinePragma(clang::Rewriter& rewriter,
-                              const clang::TapaPipelineAttr* attr,
-                              const clang::Stmt* body) {
-  auto II = attr->getII();
-  std::string pragma = "HLS pipeline";
-  if (II) pragma += std::string(" II = ") + std::to_string(II);
-  AddPragmaToBody(rewriter, body, pragma);
 }
 
 void XilinxHLSTarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,

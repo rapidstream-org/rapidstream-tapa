@@ -9,10 +9,8 @@
 // Leaf task to instantiate a stream as a sliding window.
 void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
                  tapa::ostream<float>& stream) {
-  tapa::stream<float, 8> intermediate_stream("intermediate_stream");
-// TODO: Remove the pragma
-#pragma HLS STREAM variable = intermediate_stream._ depth = 32
-
+  // 9 so that line 18 and 19 can be scheduled in one cycle
+  tapa::stream<float, 9> intermediate_stream("intermediate_stream");
   for (uint64_t i = 0; i < 8; ++i) {
     intermediate_stream << mmap[i];
   }
