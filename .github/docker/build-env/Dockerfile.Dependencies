@@ -76,6 +76,7 @@ RUN apt-get update && \
       rm -f /tmp/xrt.deb && \
       apt-get update && \
       apt-get upgrade -y && \
+      echo Update Bazel to 8.0.0 && \
       apt-get install --no-install-recommends -y bazel && \
       apt-get purge --auto-remove -y \
         gnupg \
@@ -93,7 +94,7 @@ RUN curl -sSL \
 
 # Install Pre-Commit
 RUN curl -sSL \
-        https://github.com/niess/python-appimage/releases/download/python3.12/python3.12.7-cp312-cp312-manylinux2014_x86_64.AppImage \
+        https://github.com/niess/python-appimage/releases/download/python3.12/python3.12.8-cp312-cp312-manylinux2014_x86_64.AppImage \
         -o /opt/python3.12 && \
     chmod +x /opt/python3.12 && \
     cd /opt && \
