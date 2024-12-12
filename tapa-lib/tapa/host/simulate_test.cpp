@@ -2,7 +2,7 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#include "tapa/host/compat.h"
+#include "tapa/host/simulate.h"
 
 #include <gtest/gtest.h>
 
@@ -15,37 +15,37 @@ namespace {
 constexpr int kN = 5000;
 constexpr int kDepth = 5;
 
-void DataSink(tapa::hls_compat::stream<int>& data_in_q, int n) {
+void DataSink(tapa::hls_simulate::stream<int>& data_in_q, int n) {
   for (int i = 0; i < n; ++i) {
     data_in_q.read();
   }
 }
 
-void DataSource(tapa::hls_compat::stream<int>& data_out_q, int n) {
+void DataSource(tapa::hls_simulate::stream<int>& data_out_q, int n) {
   for (int i = 0; i < n; ++i) {
     data_out_q.write(i);
   }
 }
 
-TEST(CompatTest, CompatHlsStreamHasInfiniteDepth) {
-  tapa::hls_compat::stream<int> data_q;
+TEST(SimulateTest, SimulateHlsStreamHasInfiniteDepth) {
+  tapa::hls_simulate::stream<int> data_q;
   DataSource(data_q, 10'000'000);
 }
 
-TEST(CompatTest, CompatHlsStreamCanBeNamed) {
-  tapa::hls_compat::stream<int> data_q("data");
+TEST(SimulateTest, SimulateHlsStreamCanBeNamed) {
+  tapa::hls_simulate::stream<int> data_q("data");
   DataSource(data_q, kN);
   DataSink(data_q, kN);
 }
 
-TEST(CompatTest, CompatHlsStreamCanBeInvoked) {
-  tapa::hls_compat::stream<int> data_q("data");
+TEST(SimulateTest, SimulateHlsStreamCanBeInvoked) {
+  tapa::hls_simulate::stream<int> data_q("data");
   tapa::task().invoke(DataSource, data_q, kN).invoke(DataSink, data_q, kN);
 }
 
 void DataSourceNonBlocking(
-    tapa::hls_compat::stream_interface<float>& data_out_q,
-    tapa::hls_compat::stream_interface<int>& count_out_q, int n) {
+    tapa::hls_simulate::stream_interface<float>& data_out_q,
+    tapa::hls_simulate::stream_interface<int>& count_out_q, int n) {
   int write_count = 0;
   for (int i = 0; i < n; ++i) {
     if (data_out_q.try_write(i)) {
@@ -55,8 +55,8 @@ void DataSourceNonBlocking(
   count_out_q.write(write_count);
 }
 
-void DataSinkNonBlocking(tapa::hls_compat::stream_interface<float>& data_in_q,
-                         tapa::hls_compat::stream_interface<int>& count_in_q,
+void DataSinkNonBlocking(tapa::hls_simulate::stream_interface<float>& data_in_q,
+                         tapa::hls_simulate::stream_interface<int>& count_in_q,
                          int n) {
   int read_count = 0;
   for (int i = 0; i < n; ++i) {
@@ -66,7 +66,7 @@ void DataSinkNonBlocking(tapa::hls_compat::stream_interface<float>& data_in_q,
     }
   }
 
-  // Since `tapa::hls_compat:task()` schedules tasks sequentially, we should
+  // Since `tapa::hls_simulate:task()` schedules tasks sequentially, we should
   // only be able to read `kDepth` elements.
   EXPECT_EQ(read_count, kDepth);
 
@@ -79,10 +79,10 @@ void DataSinkNonBlocking(tapa::hls_compat::stream_interface<float>& data_in_q,
   EXPECT_EQ(write_count, read_count);
 }
 
-TEST(CompatTest, CompatHlsTasksAreScheduledSequentially) {
+TEST(SimulateTest, SimulateHlsTasksAreScheduledSequentially) {
   tapa::stream<float, kDepth> data_q;
-  tapa::hls_compat::stream<int> count_q;
-  tapa::hls_compat::task()
+  tapa::hls_simulate::stream<int> count_q;
+  tapa::hls_simulate::task()
       .invoke(DataSourceNonBlocking, data_q, count_q, kN)
       .invoke(DataSinkNonBlocking, data_q, count_q, kN);
 }
