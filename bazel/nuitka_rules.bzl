@@ -154,7 +154,7 @@ _nuitka_binary = rule(
         ),
     },
     toolchains = [
-        "@@rules_python~//python:toolchain_type",
+        "@@rules_python//python:toolchain_type",
     ],
     fragments = ["cpp"],
 )
