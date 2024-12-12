@@ -76,30 +76,30 @@ Utility Library
 .. doxygenfunction:: tapa::widthof()
 .. doxygenfunction:: tapa::widthof(T)
 
-HLS-Compat Library
+HLS-Simulate Library
 ::::::::::::::::::
 
-The HLS-compat library provides a set of APIs compatible with Vitis HLS stream
-behavior to ease migration from Vitis HLS.
+The HLS-simulate library provides a set of APIs compatible with Vitis HLS stream
+behavior for simulation to ease migration from Vitis HLS.
 
 .. warning::
 
-  ``tapa::hls_compat`` APIs are software simulation only and are NOT
+  ``tapa::hls_simulate`` APIs are software simulation only and are NOT
   synthesizable.
-  Before synthesis, remove ``#include <tapa/host/compat.h>`` and replace any
-  ``tapa::hls_compat`` API with their synthesizable equivalent.
+  Before synthesis, remove ``#include <tapa/host/simulate.h>`` and replace any
+  ``tapa::hls_simulate`` API with their synthesizable equivalent.
 
-.. _api hls_compat_stream:
+.. _api hls_simulate_stream:
 
-.. doxygentypedef:: tapa::hls_compat::stream
+.. doxygentypedef:: tapa::hls_simulate::stream
 
-.. _api hls_compat_stream_interface:
+.. _api hls_simulate_stream_interface:
 
-.. doxygentypedef:: tapa::hls_compat::stream_interface
+.. doxygentypedef:: tapa::hls_simulate::stream_interface
 
-.. _api hls_compat_task:
+.. _api hls_simulate_task:
 
-.. doxygenstruct:: tapa::hls_compat::task
+.. doxygenstruct:: tapa::hls_simulate::task
 
 TAPA Compiler (tapa)
 --------------------
