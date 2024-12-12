@@ -41,8 +41,7 @@ void Add(tapa::istream<float>& a, tapa::istream<float>& b,
 void Add2Mmap(tapa::istream<float>& a, tapa::istream<float>& b,
               tapa::mmap<float> c, uint64_t n) {
 #pragma HLS dataflow
-  // TODO: Simulating leaf tasks should be in compat mode
-  tapa::stream<float, 1024> c_q("c");
+  tapa::stream<float, 2, tapa::kStreamInfiniteDepth> c_q("c");
   Add(a, b, c_q, n);
   Stream2Mmap(c_q, c, n);
 }

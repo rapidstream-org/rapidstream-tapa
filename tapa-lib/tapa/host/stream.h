@@ -14,7 +14,6 @@
 #include <deque>
 #include <fstream>
 #include <iomanip>
-#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -312,12 +311,10 @@ std::ostream& operator<<(std::ostream& os, const elem_t<T>& elem) {
   return os;
 }
 
-constexpr uint64_t kInfiniteDepth = std::numeric_limits<uint64_t>::max();
-
 template <typename T>
 std::shared_ptr<base_queue<T>> make_queue(uint64_t depth,
                                           const std::string& name = "") {
-  if (depth == kInfiniteDepth) {
+  if (depth == ::tapa::kStreamInfiniteDepth) {
     // It's too expensive to make the lock-free queue have infinite depth.
     return std::make_shared<locked_queue<T>>(depth, name);
   } else {
@@ -593,7 +590,7 @@ class istream : virtual public internal::basic_stream<T> {
   // allow istreams and streams to return istream
   template <typename U, uint64_t S>
   friend class istreams;
-  template <typename U, uint64_t S, uint64_t N>
+  template <typename U, uint64_t S, uint64_t N, uint64_t SimulationDepth>
   friend class streams;
   istream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
@@ -684,14 +681,15 @@ class ostream : virtual public internal::basic_stream<T> {
   // allow ostreams and streams to return ostream
   template <typename U, uint64_t S>
   friend class ostreams;
-  template <typename U, uint64_t S, uint64_t N>
+  template <typename U, uint64_t S, uint64_t N, uint64_t SimulationDepth>
   friend class streams;
   ostream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
 };
 
 /// Defines a communication channel between two task instances.
-template <typename T, uint64_t N = kStreamDefaultDepth>
+template <typename T, uint64_t N = kStreamDefaultDepth,
+          uint64_t SimulationDepth = N>
 class stream : public internal::unbound_stream<T> {
  public:
   /// Depth of the communication channel.
@@ -700,7 +698,7 @@ class stream : public internal::unbound_stream<T> {
   /// Constructs a @c tapa::stream.
   stream()
       : internal::basic_stream<T>(
-            internal::make_queue<internal::elem_t<T>>(N)) {}
+            internal::make_queue<internal::elem_t<T>>(SimulationDepth)) {}
 
   /// Constructs a @c tapa::stream with the given name for debugging.
   ///
@@ -708,12 +706,13 @@ class stream : public internal::unbound_stream<T> {
   template <size_t S>
   stream(const char (&name)[S])
       : internal::basic_stream<T>(
-            internal::make_queue<internal::elem_t<T>>(N, name)) {}
+            internal::make_queue<internal::elem_t<T>>(SimulationDepth, name)) {}
 
  private:
   template <typename Param, typename Arg>
   friend struct internal::accessor;
-  template <typename U, uint64_t friend_length, uint64_t friend_depth>
+  template <typename U, uint64_t friend_length, uint64_t friend_depth,
+            uint64_t friend_simulation_depth>
   friend class streams;
   stream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
@@ -840,7 +839,8 @@ class ostreams : virtual public internal::basic_streams<T> {
 };
 
 /// Defines an array of @c tapa::stream.
-template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth>
+template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth,
+          uint64_t SimulationDepth = N>
 class streams : public internal::unbound_streams<T, S> {
  public:
   /// Count of @c tapa::stream in the array.
@@ -856,7 +856,7 @@ class streams : public internal::unbound_streams<T, S> {
                 "", 0)) {
     for (int i = 0; i < S; ++i) {
       this->ptr->refs.emplace_back(
-          internal::make_queue<internal::elem_t<T>>(N));
+          internal::make_queue<internal::elem_t<T>>(SimulationDepth));
     }
   }
 
@@ -873,7 +873,7 @@ class streams : public internal::unbound_streams<T, S> {
                 name, 0)) {
     for (int i = 0; i < S; ++i) {
       this->ptr->refs.emplace_back(internal::make_queue<internal::elem_t<T>>(
-          N, this->ptr->name + "[" + std::to_string(i) + "]"));
+          SimulationDepth, this->ptr->name + "[" + std::to_string(i) + "]"));
     }
   }
 
