@@ -742,7 +742,8 @@ class istreams : virtual public internal::basic_streams<T> {
   istreams() : internal::basic_streams<T>(nullptr) {}
 
   // allow streams of any length to return istreams
-  template <typename U, uint64_t friend_length, uint64_t friend_depth>
+  template <typename U, uint64_t friend_length, uint64_t friend_depth,
+            uint64_t friend_simulation_depth>
   friend class streams;
 
   // allow istreams of any length to return istreams
@@ -802,7 +803,8 @@ class ostreams : virtual public internal::basic_streams<T> {
   ostreams() : internal::basic_streams<T>(nullptr) {}
 
   // allow streams of any length to return ostreams
-  template <typename U, uint64_t friend_length, uint64_t friend_depth>
+  template <typename U, uint64_t friend_length, uint64_t friend_depth,
+            uint64_t friend_simulation_depth>
   friend class streams;
 
   // allow ostreams of any length to return istreams
