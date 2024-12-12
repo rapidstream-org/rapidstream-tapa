@@ -14,9 +14,9 @@ module VecAdd_tb();
   reg a_s_empty_n = 0, a_s_dout_eot = 0, b_s_empty_n = 0, b_s_dout_eot = 0;
   wire a_s_read, b_s_read;
 
-  wire [31:0] c_din;
-  reg c_full_n = 0;
-  wire c_write, c_din_eot;
+  wire [31:0] c_s_din, c_peek;
+  reg c_s_full_n = 0;
+  wire c_s_write, c_s_din_eot;
 
   reg [63:0] n = 5;
 
@@ -111,29 +111,29 @@ module VecAdd_tb();
     begin
       for (int i = 0; i < 5; i++) begin
         // Indicate that we are ready to read
-        c_full_n <= 1;
+        c_s_full_n <= 1;
 
         // If the data is already available in the previous cycle, read it.
         // Otherwise, wait for the cycle where data is available.
-        while (!c_write) @(posedge ap_clk);
+        while (!c_s_write) @(posedge ap_clk);
 
         // Clock in data to the testbench
-        real_data <= $bitstoshortreal(c_din);
+        real_data <= $bitstoshortreal(c_s_din);
         @(posedge ap_clk);
 
         // Check the data
-        $display("c_din[%0d] = %f", i, real_data);
+        $display("c_s_din[%0d] = %f", i, real_data);
         if (real_data != 1.0 + 2 * i)
-          $fatal(1, "Error: c_din[%0d] = %f, expected %f", i, real_data, 1.0 + 2 * i);
+          $fatal(1, "Error: c_s_din[%0d] = %f, expected %f", i, real_data, 1.0 + 2 * i);
       end
 
-      c_full_n <= 1;
-      while (!c_write) @(posedge ap_clk);
-      if (c_din_eot !== 1'b1)
+      c_s_full_n <= 1;
+      while (!c_s_write) @(posedge ap_clk);
+      if (c_s_din_eot !== 1'b1)
         $fatal(1, "Error: close token not set on last data");
       @(posedge ap_clk);
 
-      c_full_n <= 0;
+      c_s_full_n <= 0;
       @(posedge ap_clk);
     end
   endtask
