@@ -5,9 +5,16 @@
 #ifndef TAPA_BASE_STREAM_H_
 #define TAPA_BASE_STREAM_H_
 
+#include <cstddef>
+#include <cstdint>
+
+#include <limits>
+
 namespace tapa {
 
-inline constexpr int kStreamDefaultDepth = 2;
+inline constexpr uint64_t kStreamDefaultDepth = 2;
+inline constexpr uint64_t kStreamInfiniteDepth =
+    std::numeric_limits<uint64_t>::max();
 
 namespace internal {
 

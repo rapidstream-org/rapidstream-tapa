@@ -34,7 +34,7 @@ namespace hls_compat {
 /// Software simulation only; NOT synthesizable.
 /// Replace with @c tapa::stream for synthesis.
 template <typename T>
-using stream = ::tapa::stream<T, ::tapa::internal::kInfiniteDepth>;
+using stream = ::tapa::stream<T, ::tapa::kStreamInfiniteDepth>;
 
 /// I/O direction agnostic interface that accepts both @c tapa::stream and
 /// @c tapa::hls_compat::stream.

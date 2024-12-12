@@ -43,7 +43,8 @@ class ostream {
   void close();
 };
 
-template <typename T, uint64_t N = kStreamDefaultDepth>
+template <typename T, uint64_t N = kStreamDefaultDepth,
+          uint64_t SimulationDepth = N>
 class stream : public istream<T>, public ostream<T> {
  public:
   constexpr static int depth = N;
@@ -66,7 +67,8 @@ class ostreams {
   ostream<T> operator[](int pos) const;
 };
 
-template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth>
+template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth,
+          uint64_t SimulationDepth = N>
 class streams : public istreams<T, S>, public ostreams<T, S> {
  public:
   constexpr static int length = S;

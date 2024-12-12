@@ -185,7 +185,7 @@ using istream = tapa_stream<T>;
 template <typename T>
 using ostream = tapa_stream<T>;
 
-template <typename T, uint64_t S>
+template <typename T, uint64_t N, uint64_t SimulationDepth = N>
 using stream = tapa_stream<T>;
 
 template <typename T, uint64_t S>
@@ -194,7 +194,8 @@ using istreams = istream<T>[S];
 template <typename T, uint64_t S>
 using ostreams = ostream<T>[S];
 
-template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth>
+template <typename T, uint64_t S, uint64_t N = kStreamDefaultDepth,
+          uint64_t SimulationDepth = N>
 using streams = stream<T, N>[S];
 
 }  // namespace tapa
