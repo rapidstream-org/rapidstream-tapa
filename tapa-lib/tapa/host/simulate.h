@@ -2,15 +2,17 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
+#pragma once
+
 #include "tapa/host/stream.h"
 #include "tapa/host/task.h"
 
 #ifdef __SYNTHESIS__
-#error hls_compat::stream is not synthesizable
+#error hls_simulate::stream is not synthesizable
 #endif
 
 namespace tapa {
-namespace hls_compat {
+namespace hls_simulate {
 
 /// An infinite-depth stream that has the same behavior as @c hls::stream.
 ///
@@ -18,10 +20,10 @@ namespace hls_compat {
 /// @code{.cpp}
 ///  ...
 ///  #include <tapa.h>
-///  #include <tapa/host/compat.h>
+///  #include <tapa/host/simulate.h>
 ///  ...
 ///  void Top() {
-///    tapa::hls_compat::stream<int> data_q("data");
+///    tapa::hls_simulate::stream<int> data_q("data");
 ///    ...
 ///    tapa::task()
 ///      .invoke(...)
@@ -37,15 +39,15 @@ template <typename T>
 using stream = ::tapa::stream<T, ::tapa::kStreamInfiniteDepth>;
 
 /// I/O direction agnostic interface that accepts both @c tapa::stream and
-/// @c tapa::hls_compat::stream.
+/// @c tapa::hls_simulate::stream.
 ///
 /// Intended for declaring parameters without knowing the I/O direction:
 /// @code{.cpp}
 ///  ...
 ///  #include <tapa.h>
-///  #include <tapa/host/compat.h>
+///  #include <tapa/host/simulate.h>
 ///  ...
-///  void Compute(tapa::hls_compat::stream_interface<int>& data_in_q) {
+///  void Compute(tapa::hls_simulate::stream_interface<int>& data_in_q) {
 ///    int data = data_in_q.read();
 ///    ...
 ///  }
@@ -62,11 +64,11 @@ using stream_interface = ::tapa::internal::unbound_stream<T>;
 /// @code{.cpp}
 ///  ...
 ///  #include <tapa.h>
-///  #include <tapa/host/compat.h>
+///  #include <tapa/host/simulate.h>
 ///  ...
 ///  void Top() {
 ///    ...
-///    tapa::hls_compat::task()
+///    tapa::hls_simulate::task()
 ///      .invoke(...)
 ///      .invoke(...)
 ///      ...
@@ -80,5 +82,5 @@ struct task : public ::tapa::task {
   explicit task();
 };
 
-}  // namespace hls_compat
+}  // namespace hls_simulate
 }  // namespace tapa
