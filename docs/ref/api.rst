@@ -77,7 +77,7 @@ Utility Library
 .. doxygenfunction:: tapa::widthof(T)
 
 HLS-Simulate Library
-::::::::::::::::::
+::::::::::::::::::::
 
 The HLS-simulate library provides a set of APIs compatible with Vitis HLS stream
 behavior for simulation to ease migration from Vitis HLS.
