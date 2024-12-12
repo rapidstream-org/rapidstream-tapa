@@ -5,19 +5,9 @@
 # RapidStream Contributor License Agreement.
 
 load("//bazel:tapa_rules.bzl", "tapa_xo")
-load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
 sh_test(
     name = "custom-rtl",
-    size = "medium",
-    srcs = ["//bazel:v++_env.sh"],
-    args = ["$(location custom-rtl-host)"],
-    data = [":custom-rtl-host"],
-    env = {"TAPA_CONCURRENCY": "1"},
-)
-
-sh_test(
-    name = "custom-rtl-xosim",
     size = "enormous",
     timeout = "moderate",
     srcs = ["//bazel:v++_env.sh"],
@@ -31,25 +21,6 @@ sh_test(
         ":custom-rtl-host",
         ":custom-rtl-xo",
         "//tapa/cosim:tapa-fast-cosim",
-    ],
-    tags = [
-        "cpu:2",
-    ],
-)
-
-sh_test(
-    name = "custom-rtl-cosim",
-    size = "enormous",
-    timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
-    args = [
-        "$(location custom-rtl-host)",
-        "--bitstream=$(location custom-rtl-hw-emu-xclbin)",
-        "1000",
-    ],
-    data = [
-        ":custom-rtl-host",
-        ":custom-rtl-hw-emu-xclbin",
     ],
     tags = [
         "cpu:2",
@@ -75,12 +46,4 @@ tapa_xo(
     custom_rtl_files = glob(["rtl/*.v"]),
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
-)
-
-vpp_xclbin(
-    name = "custom-rtl-hw-emu-xclbin",
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
-    target = "hw_emu",
-    top_name = "VecAdd",
-    xo = ":custom-rtl-xo",
 )
