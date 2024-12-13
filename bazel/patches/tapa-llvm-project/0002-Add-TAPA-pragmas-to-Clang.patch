@@ -1,21 +1,21 @@
-From 7aa4be76e84fc5857bfc51307d1624803e2baae7 Mon Sep 17 00:00:00 2001
+From 81ad17c3750c0f42cc5d420e8b7cc3be32208672 Mon Sep 17 00:00:00 2001
 From: Jason Lau <lau@rapidstream-da.com>
 Date: Tue, 3 Sep 2024 14:01:19 -0700
 Subject: [PATCH] Add TAPA pragmas to Clang
 
 ---
- clang/include/clang/Basic/Attr.td | 33 ++++++++++++
- clang/lib/Sema/SemaDeclAttr.cpp   | 62 +++++++++++++++++++++
- clang/lib/Sema/SemaStmtAttr.cpp   | 89 +++++++++++++++++++++++++++++++
- 3 files changed, 184 insertions(+)
+ clang/include/clang/Basic/Attr.td | 33 ++++++++++++++++
+ clang/lib/Sema/SemaDeclAttr.cpp   | 62 +++++++++++++++++++++++++++++++
+ clang/lib/Sema/SemaStmtAttr.cpp   | 48 ++++++++++++++++++++++++
+ 3 files changed, 143 insertions(+)
 
 diff --git a/clang/include/clang/Basic/Attr.td b/clang/include/clang/Basic/Attr.td
-index dbf2dd2120fb..abc0f89eaa3d 100644
+index 46d0a66d59c3..4e4c52ced4f8 100644
 --- a/clang/include/clang/Basic/Attr.td
 +++ b/clang/include/clang/Basic/Attr.td
-@@ -4460,3 +4460,36 @@ def CountedBy : InheritableAttr {
-       void setCountedByFieldLoc(SourceRange Loc) { CountedByFieldLoc = Loc; }
-   }];
+@@ -4719,3 +4719,36 @@ def ClspvLibclcBuiltin: InheritableAttr {
+   let Documentation = [ClspvLibclcBuiltinDoc];
+   let SimpleHandler = 1;
  }
 +
 +// Begin TAPA
@@ -40,10 +40,10 @@ index dbf2dd2120fb..abc0f89eaa3d 100644
 +  let Spellings = [GNU<"tapa_target">,
 +                   CXX11<"tapa","target">,
 +                   C23<"tapa", "target">];
-+  let Args = [EnumArgument<"Target", "TargetType",
++  let Args = [EnumArgument<"Target", "TargetType", /*is_string=*/true,
 +                           ["hls", "aie"],
 +                           ["HLS", "AIE"]>,
-+              EnumArgument<"Vendor", "VendorType",
++              EnumArgument<"Vendor", "VendorType", /*is_string=*/true,
 +                           ["xilinx"],
 +                           ["Xilinx"], /* optional */1>];
 +  let Documentation = [Undocumented];
@@ -51,11 +51,11 @@ index dbf2dd2120fb..abc0f89eaa3d 100644
 +
 +// End TAPA
 diff --git a/clang/lib/Sema/SemaDeclAttr.cpp b/clang/lib/Sema/SemaDeclAttr.cpp
-index 6f462de4be78..790690111c82 100644
+index e2eada24f9fc..8f5c69a759d2 100644
 --- a/clang/lib/Sema/SemaDeclAttr.cpp
 +++ b/clang/lib/Sema/SemaDeclAttr.cpp
-@@ -417,6 +417,55 @@ appendDiagnostics(const Sema::SemaDiagnosticBuilder &Bldr, T &&ExtraArg,
-                            std::forward<DiagnosticArgs>(ExtraArgs)...);
+@@ -159,6 +159,55 @@ bool Sema::checkStringLiteralArgumentAttr(const ParsedAttr &AL, unsigned ArgNum,
+   return checkStringLiteralArgumentAttr(AL, ArgExpr, Str, ArgLocation);
  }
  
 +// Begin TAPA
@@ -63,7 +63,7 @@ index 6f462de4be78..790690111c82 100644
 +static void handleTapaPipelineAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
 +  uint32_t ii = 0;
 +  if (AL.getNumArgs()) {
-+    if (!checkUInt32Argument(S, AL, AL.getArgAsExpr(0), ii)) return;
++    if (!S.checkUInt32Argument(AL, AL.getArgAsExpr(0), ii)) return;
 +  }
 +
 +  D->addAttr(::new (S.Context) TapaPipelineAttr(S.Context, AL, ii));
@@ -107,12 +107,12 @@ index 6f462de4be78..790690111c82 100644
 +
 +// End TAPA
 +
- /// Add an attribute @c AttrType to declaration @c D, provided that
- /// @c PassesCheck is true.
- /// Otherwise, emit diagnostic @c DiagID, passing in all parameters
-@@ -9851,6 +9900,19 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
-   case ParsedAttr::AT_UsingIfExists:
-     handleSimpleAttribute<UsingIfExistsAttr>(S, D, AL);
+ /// Check if the passed-in expression is of type int or bool.
+ static bool isIntOrBool(Expr *Exp) {
+   QualType QT = Exp->getType();
+@@ -7100,6 +7149,19 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
+   case ParsedAttr::AT_VTablePointerAuthentication:
+     handleVTablePointerAuthentication(S, D, AL);
      break;
 +
 +  // Tapa attributes.
@@ -131,58 +131,10 @@ index 6f462de4be78..790690111c82 100644
  }
  
 diff --git a/clang/lib/Sema/SemaStmtAttr.cpp b/clang/lib/Sema/SemaStmtAttr.cpp
-index e6a4d3e63e4a..cf852f5d57b6 100644
+index 7f452d177c16..63955cce53d7 100644
 --- a/clang/lib/Sema/SemaStmtAttr.cpp
 +++ b/clang/lib/Sema/SemaStmtAttr.cpp
-@@ -24,6 +24,47 @@
- using namespace clang;
- using namespace sema;
- 
-+/// If Expr is a valid integer constant, get the value of the integer
-+/// expression and return success or failure. May output an error.
-+///
-+/// Negative argument is implicitly converted to unsigned, unless
-+/// \p StrictlyUnsigned is true.
-+template <typename AttrInfo>
-+static bool checkUInt32Argument(Sema &S, const AttrInfo &AI, const Expr *Expr,
-+                                uint32_t &Val, unsigned Idx = UINT_MAX,
-+                                bool StrictlyUnsigned = false) {
-+  if (Expr->isTypeDependent() || Expr->isValueDependent() ||
-+      !Expr->isIntegerConstantExpr(S.Context)) {
-+    if (Idx != UINT_MAX)
-+      S.Diag(AI.getLoc(), diag::err_attribute_argument_type)
-+          << AI << AANT_ArgumentIntegerConstant << Expr->getSourceRange();
-+    else
-+      S.Diag(AI.getLoc(), diag::err_attribute_argument_type)
-+          << AI << AANT_ArgumentIntegerConstant << Expr->getSourceRange();
-+    return false;
-+  }
-+
-+  auto I = Expr->getIntegerConstantExpr(S.Context);
-+  if (!I.has_value())
-+    return false;
-+  auto &IVal = I.value();
-+
-+  if (!IVal.isIntN(32)) {
-+    S.Diag(AI.getLoc(), diag::err_attribute_argument_type)
-+        << AI << AANT_ArgumentIntegerConstant << Expr->getSourceRange();
-+    return false;
-+  }
-+
-+  if (StrictlyUnsigned && IVal.isSigned() && IVal.isNegative()) {
-+    S.Diag(AI.getLoc(), diag::err_attribute_requires_positive_integer)
-+        << AI << /*non-negative*/ 1;
-+    return false;
-+  }
-+
-+  Val = (uint32_t)IVal.getZExtValue();
-+  return true;
-+}
-+
- static Attr *handleFallThroughAttr(Sema &S, Stmt *St, const ParsedAttr &A,
-                                    SourceRange Range) {
-   FallThroughAttr Attr(S.Context, A);
-@@ -179,6 +220,50 @@ static Attr *handleLoopHintAttr(Sema &S, Stmt *St, const ParsedAttr &A,
+@@ -189,6 +189,50 @@ static Attr *handleLoopHintAttr(Sema &S, Stmt *St, const ParsedAttr &A,
    return LoopHintAttr::CreateImplicit(S.Context, Option, State, ValueExpr, A);
  }
  
@@ -192,7 +144,7 @@ index e6a4d3e63e4a..cf852f5d57b6 100644
 +                                    SourceRange) {
 +  uint32_t ii = 0;
 +  if (A.getNumArgs()) {
-+    if (!checkUInt32Argument(S, A, A.getArgAsExpr(0), ii))
++    if (!S.checkUInt32Argument(A, A.getArgAsExpr(0), ii))
 +      return nullptr;
 +  }
 +
@@ -212,7 +164,7 @@ index e6a4d3e63e4a..cf852f5d57b6 100644
 +                                  SourceRange) {
 +  uint32_t factor = 0;
 +  if (A.getNumArgs()) {
-+    if (!checkUInt32Argument(S, A, A.getArgAsExpr(0), factor))
++    if (!S.checkUInt32Argument(A, A.getArgAsExpr(0), factor))
 +      return nullptr;
 +  }
 +
@@ -233,7 +185,7 @@ index e6a4d3e63e4a..cf852f5d57b6 100644
  namespace {
  class CallExprFinder : public ConstEvaluatedExprVisitor<CallExprFinder> {
    bool FoundAsmStmt = false;
-@@ -616,6 +701,10 @@ static Attr *ProcessStmtAttribute(Sema &S, Stmt *St, const ParsedAttr &A,
+@@ -672,6 +716,10 @@ static Attr *ProcessStmtAttribute(Sema &S, Stmt *St, const ParsedAttr &A,
      return handleCodeAlignAttr(S, St, A);
    case ParsedAttr::AT_MSConstexpr:
      return handleMSConstexprAttr(S, St, A, Range);

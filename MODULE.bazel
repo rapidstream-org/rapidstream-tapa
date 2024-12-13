@@ -180,11 +180,11 @@ EOF
 )
 
 # Build LLVM from source
-LLVM_VERSION_MAJOR = 18
+LLVM_VERSION_MAJOR = 19
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 8
+LLVM_VERSION_PATCH = 5
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
@@ -225,6 +225,7 @@ LLVM_VERSION = "{0}.{1}.{2}"
 LLVM_VERSION_MAJOR = {0}
 LLVM_VERSION_MINOR = {1}
 LLVM_VERSION_PATCH = {2}
+PACKAGE_VERSION = "{0}.{1}.{2}"
 EOF
         """.format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH),
     ],
@@ -233,7 +234,7 @@ EOF
         "//bazel:patches/tapa-llvm-project/0002-Add-TAPA-pragmas-to-Clang.patch",
         "//bazel:patches/tapa-llvm-project/0003-Wno-error-deprecated-declarations.patch",
     ],
-    sha256 = "0b58557a6d32ceee97c8d533a59b9212d87e0fc4d2833924eb6c611247db2f2a",
+    sha256 = "bd8445f554aae33d50d3212a15e993a667c0ad1b694ac1977f3463db3338e542",
     strip_prefix = "llvm-project-{}.src".format(LLVM_VERSION),
     urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/llvm-project-{0}.src.tar.xz".format(LLVM_VERSION)],
 )
