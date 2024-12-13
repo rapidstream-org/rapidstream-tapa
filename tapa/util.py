@@ -19,11 +19,52 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import coloredlogs
+from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
+from pyverilog.vparser.ast import (
+    Decl,
+    Inout,
+    Input,
+    Ioport,
+    ModuleDef,
+    Output,
+    Port,
+    Width,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 _logger = logging.getLogger().getChild(__name__)
+
+AST_IOPort = Input | Output | Inout
+
+
+class PortInfo:
+    """Port information extracted from a Verilog module definition."""
+
+    def __init__(self, name: str, direction: str | None, width: Width | None) -> None:
+        self.name = name
+        self.direction = direction
+        self.width = width
+
+    def __str__(self) -> str:
+        codegen = ASTCodeGenerator()
+        if self.width:
+            return f"{self.direction} {codegen.visit(self.width)} {self.name}"
+        return f"{self.direction} {self.name}"
+
+    def __eq__(self, other: PortInfo) -> bool:
+        codegen = ASTCodeGenerator()
+        width1 = codegen.visit(self.width) if self.width else None
+        width2 = codegen.visit(other.width) if other.width else None
+        return (
+            self.name == other.name
+            and self.direction == other.direction
+            and width1 == width2
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.name, self.direction, self.width))
 
 
 def clang_format(code: str, *args: str) -> str:
@@ -176,3 +217,101 @@ def setup_logging(
     logging.getLogger().addHandler(handler)
 
     _logger.info("logging level set to %s", logging.getLevelName(logging_level))
+
+
+def extract_ports_from_module_header(module_def: ModuleDef) -> dict[str, PortInfo]:
+    """Extract ports direction and width from a given Verilog module header."""
+    port_infos = {}
+    for port in module_def.portlist.ports:
+        if isinstance(port, Port):
+            # When header contains only port names
+            # the port is an instance of Port
+            port_infos[port.name] = PortInfo(
+                name=port.name,
+                direction=None,
+                width=None,
+            )
+        else:
+            # When header contains port direction and/or width
+            # the port is an instance of Ioport
+            assert isinstance(port, Ioport)
+
+            if port.first.children():
+                width = port.first.children()[0]
+                assert isinstance(width, Width)
+            else:
+                width = None
+
+            if isinstance(port.first, Port):
+                direction = None
+            else:
+                direction = port.first.__class__.__name__
+
+            port_infos[port.first.name] = PortInfo(
+                name=port.first.name,
+                direction=direction,
+                width=width,
+            )
+    return port_infos
+
+
+def extract_ports_from_module_body(module_def: ModuleDef) -> dict[str, PortInfo]:
+    """Extract ports direction and width from a given Verilog module body."""
+    port_infos = {}
+    for decl in module_def.children():
+        if not isinstance(decl, Decl):
+            continue
+        port = decl.children()[0]
+        if not isinstance(port, AST_IOPort):
+            continue
+
+        if port.children():
+            width = port.children()[0]
+            assert isinstance(width, Width)
+        else:
+            width = None
+
+        direction = port.__class__.__name__
+
+        port_infos[port.name] = PortInfo(
+            name=port.name,
+            direction=direction,
+            width=width,
+        )
+    return port_infos
+
+
+def extract_ports_from_module(module_def: ModuleDef) -> dict[str, PortInfo]:
+    """Extract ports direction and width from a given Verilog module."""
+    # get port info from header and body separately
+    port_infos_1 = extract_ports_from_module_header(module_def)
+    port_infos_2 = extract_ports_from_module_body(module_def)
+
+    # merge the two dictionaries
+    merged_dict = {}
+
+    # Get all unique port names
+    all_ports = set(port_infos_1.keys()).union(port_infos_2.keys())
+
+    for port_name in all_ports:
+        port1 = port_infos_1.get(port_name)
+        port2 = port_infos_2.get(port_name)
+
+        # Merge the port information
+        if port1 and port2:
+            if port1.direction and port2.direction:
+                assert port1.direction == port2.direction
+            if port1.width and port2.width:
+                assert port1.width == port2.width
+            merged_port = PortInfo(
+                name=port1.name,  # Assuming name is always the same
+                direction=port1.direction or port2.direction,
+                width=port1.width if port1.width is not None else port2.width,
+            )
+        else:
+            # If the port exists in only one dictionary, use it as is
+            merged_port = port1 or port2
+
+        merged_dict[port_name] = merged_port
+
+    return merged_dict

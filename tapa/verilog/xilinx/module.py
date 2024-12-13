@@ -210,6 +210,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             raise ValueError(msg)
         return _module_defs[0]
 
+    def get_module_def(self) -> ModuleDef:
+        return self._module_def
+
     @property
     def name(self) -> str:
         return self._module_def.name
