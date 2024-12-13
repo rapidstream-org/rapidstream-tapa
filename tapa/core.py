@@ -63,6 +63,7 @@ from tapa.safety_check import check_mmap_arg_name
 from tapa.task import Task
 from tapa.util import (
     clang_format,
+    extract_ports_from_module,
     get_instance_name,
     get_module_name,
     get_vendor_include_paths,
@@ -77,12 +78,7 @@ from tapa.verilog.ast_utils import (
     make_port_arg,
     make_width,
 )
-from tapa.verilog.util import (
-    Pipeline,
-    get_ports_from_module,
-    match_array_name,
-    wire_name,
-)
+from tapa.verilog.util import Pipeline, match_array_name, wire_name
 from tapa.verilog.xilinx import ctrl_instance_name, generate_handshake_ports, pack
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,
@@ -1363,13 +1359,24 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             for task_name, task in self._tasks.items():
                 if task_name != module_def.name:
                     continue
-                _logger.info("Checking custom RTL file for task %s.", task_name)
-                task_ports = set(task.module.ports.keys())
-                custom_rtl_ports = get_ports_from_module(module_def)
-                if task_ports != custom_rtl_ports:
+                _logger.info("Checking custom RTL file format for task %s.", task_name)
+                task_port_infos = extract_ports_from_module(
+                    task.module.get_module_def()
+                )
+                custom_rtl_port_infos = extract_ports_from_module(module_def)
+                if task_port_infos != custom_rtl_port_infos:
+                    assert set(task_port_infos.keys()) == set(
+                        custom_rtl_port_infos.keys()
+                    )
+                    task_port_infos_str = "\n".join(
+                        f"  {port}" for port in task_port_infos.values()
+                    )
+                    custom_rtl_port_infos_str = "\n".join(
+                        f"  {port}" for port in custom_rtl_port_infos.values()
+                    )
                     msg = (
                         f"Custom RTL file for task {task_name} does not match the "
-                        f"expected ports. Task ports: {task_ports}, Custom RTL ports: "
-                        f"{custom_rtl_ports}"
+                        f"expected ports. \nTask ports: \n{task_port_infos_str}\n"
+                        f"Custom RTL ports:\n{custom_rtl_port_infos_str}"
                     )
                     raise ValueError(msg)
