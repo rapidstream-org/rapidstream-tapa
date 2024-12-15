@@ -84,7 +84,6 @@ cc_binary(
     name = "graph-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
         "*.hpp",
     ]),
     deps = [

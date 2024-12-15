@@ -58,7 +58,6 @@ cc_binary(
     name = "cannon-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",

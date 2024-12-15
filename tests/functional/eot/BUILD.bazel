@@ -40,7 +40,6 @@ cc_binary(
     name = "eot-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",

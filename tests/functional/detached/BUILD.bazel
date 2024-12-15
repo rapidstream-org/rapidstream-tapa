@@ -35,7 +35,6 @@ cc_binary(
     name = "detached-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",

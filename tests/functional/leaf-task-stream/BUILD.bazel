@@ -43,7 +43,6 @@ cc_binary(
     name = "leaf-task-stream-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",

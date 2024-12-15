@@ -46,7 +46,6 @@ cc_binary(
     name = "stream-top-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",

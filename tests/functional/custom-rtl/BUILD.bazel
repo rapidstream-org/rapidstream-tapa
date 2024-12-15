@@ -31,7 +31,6 @@ cc_binary(
     name = "custom-rtl-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",

@@ -3,7 +3,6 @@ build --copt=-Wno-unknown-pragmas
 build --copt=-Wno-unused-label
 build --copt=-Werror
 build --incompatible_autoload_externally=+@rules_python,+@rules_shell
-build --incompatible_disallow_empty_glob=False
 build --incompatible_strict_action_env
 
 build:asan --compilation_mode=dbg

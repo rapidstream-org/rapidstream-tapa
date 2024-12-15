@@ -58,7 +58,6 @@ cc_binary(
     name = "network-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",

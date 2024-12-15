@@ -60,7 +60,6 @@ cc_binary(
     name = "vadd-host",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",
