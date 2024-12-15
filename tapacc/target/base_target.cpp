@@ -162,6 +162,39 @@ std::vector<std::string> BaseTarget::GenerateCodeForOtherFunc(
   return lines;
 }
 
+clang::SourceRange BaseTarget::ExtendAttrRemovalRange(
+    clang::Rewriter& rewriter, clang::SourceRange range) {
+  auto begin = range.getBegin();
+  auto end = range.getEnd();
+
+#define BEGIN(OFF) (begin.getLocWithOffset(OFF))
+#define END(OFF) (end.getLocWithOffset(OFF))
+#define STR_AT(BEGIN, END) \
+  (rewriter.getRewrittenText(clang::SourceRange((BEGIN), (END))))
+#define IS_IGNORE(STR) ((STR) == "" || std::isspace((STR)[0]))
+
+  // Find the true end of the token
+  for (; std::isalpha(STR_AT(END(1), END(1))[0]); end = END(1));
+
+  // Remove all whitespaces around the attribute
+  for (; IS_IGNORE(STR_AT(BEGIN(-1), BEGIN(-1))); begin = BEGIN(-1));
+  for (; IS_IGNORE(STR_AT(END(1), END(1))); end = END(1));
+
+  // Remove comma if around the attribute
+  if (STR_AT(BEGIN(-1), BEGIN(-1)) == ",") {
+    begin = BEGIN(-1);
+  } else if (STR_AT(END(1), END(1)) == ",") {
+    end = END(1);
+  } else if (STR_AT(BEGIN(-2), BEGIN(-1)) == "[[" &&
+             STR_AT(END(1), END(2)) == "]]") {
+    // Check if the attribute is completely removed
+    begin = BEGIN(-2);
+    end = END(2);
+  }
+
+  return clang::SourceRange(begin, end);
+}
+
 void BaseTarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   auto lines = GenerateCodeForTopLevelFunc(func);
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),

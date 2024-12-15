@@ -131,6 +131,8 @@ class BaseTarget : public Target {
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF);
+  virtual clang::SourceRange ExtendAttrRemovalRange(clang::Rewriter& rewriter,
+                                                    clang::SourceRange range);
 
   virtual void RewriteTopLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
