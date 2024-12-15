@@ -358,7 +358,14 @@ void XilinxHLSTarget::RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {
     }
   }
 }
-
+void XilinxHLSTarget::ProcessNonCurrentTask(const clang::FunctionDecl* func,
+                                            clang::Rewriter& rewriter) {
+  // Remove the function body.
+  if (func->hasBody()) {
+    auto range = func->getBody()->getSourceRange();
+    rewriter.ReplaceText(range, ";");
+  }
+}
 void XilinxHLSTarget::RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF) {}
 
 void XilinxHLSTarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,

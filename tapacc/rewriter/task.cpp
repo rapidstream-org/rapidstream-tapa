@@ -191,11 +191,10 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       if ((is_upper_level_task || is_lower_level_task) &&
           func != current_task) {
         // If the function is a tapa task but not the current task,
-        // remove the function body.
-        if (func->hasBody()) {
-          auto range = func->getBody()->getSourceRange();
-          GetRewriter().ReplaceText(range, ";");
-        }
+        // We deal with AIE and HLS differently.
+        // For HLS, we reserve the function signature and remove the body.
+        // For AIE, we remove the function signature and body.
+        current_target->ProcessNonCurrentTask(func, GetRewriter());
 
       } else if (is_upper_level_task) {
         auto task = GetTapaTask(func->getBody());

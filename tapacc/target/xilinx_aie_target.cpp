@@ -11,6 +11,7 @@
 #include <cctype>
 #include <fstream>
 #include <string>
+using clang::TapaTargetAttr;
 using llvm::StringRef;
 
 void aie_log_out(std::string path, std::string str, bool append) {
@@ -70,10 +71,16 @@ void XilinxAIETarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {}
 void XilinxAIETarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
 
 void XilinxAIETarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
+void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF) {
+  // Remove the TapaTargetAttr defintion.
+  auto attr = func->getAttr<TapaTargetAttr>();
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
 
-void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
-                                           clang::Rewriter& rewriter,
-                                           bool top) {
+  // Remove the function directly.
+  rewriter.RemoveText(func->getSourceRange());
+}
+
+void XilinxAIETarget::RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF) {
   bool adf_header_inserted = false;
 
   ::aie_log_out("aielog.txt", func->getNameAsString(), true);
@@ -120,6 +127,10 @@ void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
       }
     }
   }
+  // Remove the TapaTargetAttr defintion.
+  auto attr = func->getAttr<TapaTargetAttr>();
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
+
   ::aie_log_out("aielog.txt", "\n", true);
 }
 
