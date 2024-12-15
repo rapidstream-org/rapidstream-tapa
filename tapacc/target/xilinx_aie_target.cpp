@@ -72,7 +72,55 @@ void XilinxAIETarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
 
 void XilinxAIETarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
 
+static void RewriteReadWriteCalls(const clang::Stmt* stmt,
+                                  clang::Rewriter& rewriter) {
+  if (stmt == nullptr) return;
+  for (const auto* child : stmt->children()) {
+    // Recursively traverse the children
+    RewriteReadWriteCalls(child, rewriter);
+  }
+  //::task_log_out("write_calls.txt", name, true);
+  if (const auto* callExpr = llvm::dyn_cast<clang::CXXMemberCallExpr>(stmt)) {
+    if (const auto* methodDecl = callExpr->getMethodDecl()) {
+      if (methodDecl->getNameAsString() == "write") {
+        // This statement is to replace XXX.write(YYY) with writeincr(XXX, YYY)
+        if (const auto* memberExpr =
+                llvm::dyn_cast<clang::MemberExpr>(callExpr->getCallee())) {
+          const clang::Expr* base = memberExpr->getBase();  // `<yyy>`
+          const clang::Expr* arg = callExpr->getArg(0);     // `<xxx>`
+          // Get rewritten text for the base and argument
+          std::string baseText =
+              rewriter.getRewrittenText(base->getSourceRange());
+          std::string argText =
+              rewriter.getRewrittenText(arg->getSourceRange());
+          // Construct the replacement text
+          std::string replacement =
+              "writeincr(" + baseText + ", " + argText + ")";
+          // Replace the original call with the new expression
+          rewriter.ReplaceText(callExpr->getSourceRange(), replacement);
+        }
+      }
+      if (methodDecl->getNameAsString() == "read") {
+        // This statement is to replace XXX.read() with readincr(XXX)
+        if (const auto* memberExpr =
+                llvm::dyn_cast<clang::MemberExpr>(callExpr->getCallee())) {
+          const clang::Expr* base = memberExpr->getBase();  // `<yyy>`
+          // Get rewritten text for the base and argument
+          std::string baseText =
+              rewriter.getRewrittenText(base->getSourceRange());
+          // Construct the replacement text
+          std::string replacement = "readincr(" + baseText + ")";
+          // Replace the original call with the new expression
+          rewriter.ReplaceText(callExpr->getSourceRange(), replacement);
+        }
+      }
+    }
+  }
+}
+
 void XilinxAIETarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
+  RewriteReadWriteCalls(func->getBody(), rewriter);
+
   // Remove the TapaTargetAttr defintion.
   auto attr = func->getAttr<TapaTargetAttr>();
   rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
