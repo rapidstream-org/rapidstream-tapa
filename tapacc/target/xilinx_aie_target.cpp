@@ -77,6 +77,9 @@ void XilinxAIETarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   auto attr = func->getAttr<TapaTargetAttr>();
   rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
 
+  // Rewrite the function arguments for AIE target.
+  RewriteFuncArguments(func, rewriter, false);
+
   auto lines = GenerateCodeForLowerLevelFunc(func);
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
                                 llvm::join(lines, "\n"));
@@ -138,9 +141,6 @@ void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
       }
     }
   }
-  // Remove the TapaTargetAttr defintion.
-  auto attr = func->getAttr<TapaTargetAttr>();
-  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
 
   ::aie_log_out("aielog.txt", "\n", true);
 }
