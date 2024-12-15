@@ -46,6 +46,7 @@ those contributing to or extending the TAPA framework itself.
   tutorial/migrate_from_vitis_hls
   tutorial/debug_tips
   tutorial/example
+  tutorial/getting_started_vadd
 
 .. toctree::
   :caption: Reference
