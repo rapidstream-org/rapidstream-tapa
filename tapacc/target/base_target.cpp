@@ -205,11 +205,7 @@ void BaseTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
                                 llvm::join(lines, "\n"));
 }
-void BaseTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
-  auto lines = GenerateCodeForLowerLevelFunc(func);
-  rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
-                                llvm::join(lines, "\n"));
-}
+void BaseTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
 void BaseTarget::RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF) {
   auto lines = GenerateCodeForOtherFunc(func);
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),

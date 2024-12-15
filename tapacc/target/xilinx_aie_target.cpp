@@ -71,6 +71,16 @@ void XilinxAIETarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {}
 void XilinxAIETarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
 
 void XilinxAIETarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
+
+void XilinxAIETarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
+  // Remove the TapaTargetAttr defintion.
+  auto attr = func->getAttr<TapaTargetAttr>();
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
+
+  auto lines = GenerateCodeForLowerLevelFunc(func);
+  rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
+                                llvm::join(lines, "\n"));
+}
 void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF) {
   // Remove the TapaTargetAttr defintion.
   auto attr = func->getAttr<TapaTargetAttr>();
@@ -79,8 +89,9 @@ void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF) {
   // Remove the function directly.
   rewriter.RemoveText(func->getSourceRange());
 }
-
-void XilinxAIETarget::RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF) {
+void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
+                                           clang::Rewriter& rewriter,
+                                           bool top) {
   bool adf_header_inserted = false;
 
   ::aie_log_out("aielog.txt", func->getNameAsString(), true);
@@ -134,11 +145,34 @@ void XilinxAIETarget::RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF) {
   ::aie_log_out("aielog.txt", "\n", true);
 }
 
+static void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
+                            std::string pragma) {
+  if (auto compound = llvm::dyn_cast<clang::CompoundStmt>(body)) {
+    rewriter.InsertText(compound->getLBracLoc(), std::string(pragma + "\n"));
+  }
+}
+
+static void AddPipelinePragma(clang::Rewriter& rewriter,
+                              const clang::Stmt* body) {
+  std::string pragma = "chess_prepare_for_pipelininge";
+  AddPragmaToBody(rewriter, body, pragma);
+}
+
 void XilinxAIETarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
-                                           const clang::Stmt* body) {}
+                                           const clang::Stmt* body) {
+  if (auto pipeline = llvm::dyn_cast<clang::TapaPipelineAttr>(attr)) {
+    if (body) AddPipelinePragma(rewriter, body);
+  }
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
+}
 
 void XilinxAIETarget::RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
-                                           const clang::Stmt* body) {}
+                                           const clang::Stmt* body) {
+  if (auto pipeline = llvm::dyn_cast<clang::TapaPipelineAttr>(attr)) {
+    if (body) AddPipelinePragma(rewriter, body);
+  }
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
+}
 
 void XilinxAIETarget::RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
                                           const clang::Stmt* body) {}

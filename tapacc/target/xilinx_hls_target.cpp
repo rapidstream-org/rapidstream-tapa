@@ -304,7 +304,9 @@ static void RewriteStreamDefinitions(REWRITE_FUNC_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
-  BaseTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS);
+  auto lines = GenerateCodeForLowerLevelFunc(func);
+  rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
+                                llvm::join(lines, "\n"));
   RewriteStreamDefinitions(REWRITE_FUNC_ARGS);
 }
 
