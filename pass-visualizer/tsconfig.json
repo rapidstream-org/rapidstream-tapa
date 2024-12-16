@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "incremental": true,
+        "isolatedModules": true,
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "esnext"
+        ],
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "noEmit": true,
+        "strict": true
+    },
+    "include": [
+        "js/*.js",
+        "global.d.ts",
+        "eslint.config.mjs"
+    ]
+}
