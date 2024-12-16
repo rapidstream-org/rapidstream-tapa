@@ -68,7 +68,17 @@ void XilinxAIETarget::AddCodeForLowerLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {}
 
 void XilinxAIETarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {}
 
-void XilinxAIETarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
+void XilinxAIETarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {
+  // Remove the TapaTargetAttr defintion.
+  auto attr = func->getAttr<TapaTargetAttr>();
+  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
+
+  // Rewrite the function arguments for AIE target.
+  // RewriteFuncArguments(func, rewriter, true);
+
+  // Remove the function directly.
+  rewriter.ReplaceText(func->getSourceRange(), ";\n");
+}
 
 void XilinxAIETarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {}
 
@@ -132,25 +142,31 @@ void XilinxAIETarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
                                 llvm::join(lines, "\n"));
 }
-void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF) {
+void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
+                                            bool IsTapaTopLevel) {
   // Remove the TapaTargetAttr defintion.
   auto attr = func->getAttr<TapaTargetAttr>();
   rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
 
   // Remove the function directly.
-  rewriter.RemoveText(func->getSourceRange());
+  if (IsTapaTopLevel == true) {
+    rewriter.ReplaceText(func->getBody()->getSourceRange(), ";\n");
+    RewriteFuncArguments(func, rewriter, false);
+    ::aie_log_out("aielog.txt", func->getNameAsString() + " is top task", true);
+  } else {
+    rewriter.RemoveText(func->getSourceRange());
+    ::aie_log_out("aielog.txt", func->getNameAsString() + " is not top task",
+                  true);
+  }
 }
 void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
                                            clang::Rewriter& rewriter,
                                            bool top) {
-  bool adf_header_inserted = false;
+  // bool adf_header_inserted = false;
 
-  ::aie_log_out("aielog.txt", func->getNameAsString(), true);
-  ::aie_log_out("aielog.txt", "vitis_mode=" + std::to_string(vitis_mode), true);
   // Replace mmaps arguments with 64-bit base addresses.
   for (const auto param : func->parameters()) {
     const std::string param_name = param->getNameAsString();
-    ::aie_log_out("aielog.txt", param_name, true);
     if (IsTapaType(param, "immap")) {
       int width =
           param->getASTContext()
@@ -158,7 +174,7 @@ void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
               .Width;
       rewriter.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "input_window<uint_" + std::to_string(width) + ">* restrict");
+          "input_window<uint" + std::to_string(width) + ">* restrict");
     } else if (IsTapaType(param, "ommap")) {
       int width =
           param->getASTContext()
@@ -166,7 +182,7 @@ void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
               .Width;
       rewriter.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "output_window<uint_" + std::to_string(width) + ">* restrict");
+          "output_window<uint" + std::to_string(width) + ">* restrict");
     } else if (IsTapaType(param, "(async_)?mmap")) {
       int width =
           param->getASTContext()
@@ -174,39 +190,35 @@ void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
               .Width;
       rewriter.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "input_window<uint_" + std::to_string(width) + ">* restrict");
+          "input_window<uint" + std::to_string(width) + ">* restrict");
     } else if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
       ;
     } else if (IsTapaType(param, "istream")) {
-      ::aie_log_out("aielog.txt", "3Rewriting arguments", true);
       int width =
           param->getASTContext()
               .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
               .Width;
       rewriter.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "input_stream<uint_" + std::to_string(width) + ">* ");
-      if (!adf_header_inserted) {
-        rewriter.InsertText(func->getBeginLoc(), "#include <adf.h>\n", true);
-        adf_header_inserted = true;
-      }
+          "input_stream<uint" + std::to_string(width) + ">* ");
+      // if (!adf_header_inserted) {
+      //   rewriter.InsertText(func->getBeginLoc(), "#include <adf.h>\n", true);
+      //   adf_header_inserted = true;
+      // }
     } else if (IsTapaType(param, "ostream")) {
-      ::aie_log_out("aielog.txt", "3Rewriting arguments", true);
       int width =
           param->getASTContext()
               .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
               .Width;
       rewriter.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
-          "output_stream<uint_" + std::to_string(width) + ">* ");
-      if (!adf_header_inserted) {
-        rewriter.InsertText(func->getBeginLoc(), "#include <adf.h>\n", true);
-        adf_header_inserted = true;
-      }
+          "output_stream<uint" + std::to_string(width) + ">* ");
+      // if (!adf_header_inserted) {
+      //   rewriter.InsertText(func->getBeginLoc(), "#include <adf.h>\n", true);
+      //   adf_header_inserted = true;
+      // }
     }
   }
-
-  ::aie_log_out("aielog.txt", "\n", true);
 }
 
 static void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
@@ -218,7 +230,7 @@ static void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
 
 static void AddPipelinePragma(clang::Rewriter& rewriter,
                               const clang::Stmt* body) {
-  std::string pragma = "chess_prepare_for_pipelininge";
+  std::string pragma = "chess_prepare_for_pipelining";
   AddPragmaToBody(rewriter, body, pragma);
 }
 

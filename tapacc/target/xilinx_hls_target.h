@@ -31,7 +31,8 @@ class XilinxHLSTarget : public BaseTarget {
   virtual void RewriteTopLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF);
-  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF);
+  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
+                                     bool IsTopTapaTopLevel);
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                     const clang::Stmt* body);
   virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,

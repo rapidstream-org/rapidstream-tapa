@@ -216,7 +216,8 @@ void BaseTarget::RewriteTopLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {}
 void BaseTarget::RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {}
 void BaseTarget::RewriteLowerLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {}
 void BaseTarget::RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF) {}
-void BaseTarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF) {}
+void BaseTarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
+                                       bool IsTopTapaTopLevel) {}
 void BaseTarget::RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                       const clang::Stmt* body) {}
 void BaseTarget::RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,

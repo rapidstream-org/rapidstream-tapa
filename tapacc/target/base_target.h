@@ -73,7 +73,8 @@ class Target {
   virtual void RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteLowerLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF) = 0;
-  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF) = 0;
+  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
+                                     bool IsTopTapaTopLevel) = 0;
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                     const clang::Stmt* body) = 0;
   virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
@@ -139,7 +140,8 @@ class BaseTarget : public Target {
   virtual void RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteLowerLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF);
-  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF);
+  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
+                                     bool IsTopTapaTopLevel);
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                     const clang::Stmt* body);
   virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,

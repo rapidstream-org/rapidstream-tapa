@@ -106,12 +106,13 @@ def synth(  # noqa: PLR0913,PLR0917
         flow_type=flow_type,
         platform=platform,
     )
-    program.generate_task_rtl(print_fifo_ops)
+    if flow_type != "aie":
+        program.generate_task_rtl(print_fifo_ops)
 
-    settings["synthed"] = True
-    store_persistent_context("settings")
+        settings["synthed"] = True
+        store_persistent_context("settings")
 
-    is_pipelined("synth", True)
+        is_pipelined("synth", True)
 
 
 def get_device_info(
