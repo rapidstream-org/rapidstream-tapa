@@ -151,7 +151,23 @@ void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
   for (const auto param : func->parameters()) {
     const std::string param_name = param->getNameAsString();
     ::aie_log_out("aielog.txt", param_name, true);
-    if (IsTapaType(param, "(async_)?mmap")) {
+    if (IsTapaType(param, "immap")) {
+      int width =
+          param->getASTContext()
+              .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
+              .Width;
+      rewriter.ReplaceText(
+          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+          "input_window<uint_" + std::to_string(width) + ">* restrict");
+    } else if (IsTapaType(param, "ommap")) {
+      int width =
+          param->getASTContext()
+              .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
+              .Width;
+      rewriter.ReplaceText(
+          param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
+          "output_window<uint_" + std::to_string(width) + ">* restrict");
+    } else if (IsTapaType(param, "(async_)?mmap")) {
       int width =
           param->getASTContext()
               .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
