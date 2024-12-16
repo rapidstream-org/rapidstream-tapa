@@ -361,7 +361,8 @@ void XilinxHLSTarget::RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {
   }
 }
 void XilinxHLSTarget::ProcessNonCurrentTask(const clang::FunctionDecl* func,
-                                            clang::Rewriter& rewriter) {
+                                            clang::Rewriter& rewriter,
+                                            bool IsTopTapaTopLevel) {
   // Remove the function body.
   if (func->hasBody()) {
     auto range = func->getBody()->getSourceRange();

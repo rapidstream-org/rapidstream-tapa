@@ -65,6 +65,8 @@ class Instance:
             ASYNC_MMAP = (1 << 4) | (1 << 5)
             ISTREAM = (1 << 3) | (1 << 0)
             OSTREAM = (1 << 3) | (1 << 1)
+            IMMAP = (1 << 4) | (1 << 0)
+            OMMAP = (1 << 4) | (1 << 1)
 
             @property
             def is_scalar(self) -> bool:
@@ -93,6 +95,14 @@ class Instance:
             @property
             def is_mmap(self) -> bool:
                 return bool(self.value & self.MMAP.value)
+
+            @property
+            def is_immap(self) -> bool:
+                return self == self.IMMAP
+
+            @property
+            def is_ommap(self) -> bool:
+                return self == self.OMMAP
 
         def __init__(
             self,
@@ -389,6 +399,8 @@ class Port:
             "ostream": Instance.Arg.Cat.OSTREAM,
             "scalar": Instance.Arg.Cat.SCALAR,
             "mmap": Instance.Arg.Cat.MMAP,
+            "immap": Instance.Arg.Cat.IMMAP,
+            "ommap": Instance.Arg.Cat.OMMAP,
             "async_mmap": Instance.Arg.Cat.ASYNC_MMAP,
             "hmap": Instance.Arg.Cat.MMAP,
         }[obj["cat"]]
@@ -415,3 +427,13 @@ class Port:
     def is_streams(self) -> bool:
         """If port is streams."""
         return self.is_istreams or self.is_ostreams
+
+    @property
+    def is_immap(self) -> bool:
+        """If port is immap."""
+        return self.cat.is_immap
+
+    @property
+    def is_ommap(self) -> bool:
+        """If port is ommap."""
+        return self.cat.is_ommap

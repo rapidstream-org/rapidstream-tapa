@@ -194,7 +194,8 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
         // We deal with AIE and HLS differently.
         // For HLS, we reserve the function signature and remove the body.
         // For AIE, we remove the function signature and body.
-        current_target->ProcessNonCurrentTask(func, GetRewriter());
+        current_target->ProcessNonCurrentTask(func, GetRewriter(),
+                                              IsTapaTopLevel(current_task));
 
       } else if (is_upper_level_task) {
         auto task = GetTapaTask(func->getBody());
@@ -230,9 +231,19 @@ void Visitor::ProcessTaskPorts(const FunctionDecl* func,
   for (const auto param : func->parameters()) {
     const auto param_name = param->getNameAsString();
     auto add_mmap_meta = [&](const string& name) {
+      std::string cat;
+      if (IsTapaType(param, "immap")) {
+        cat = "immap";
+      } else if (IsTapaType(param, "ommap")) {
+        cat = "ommap";
+      } else if (IsTapaType(param, "async_mmap")) {
+        cat = "async_mmap";
+      } else {
+        cat = "mmap";
+      }
       metadata["ports"].push_back(
           {{"name", name},
-           {"cat", IsTapaType(param, "async_mmap") ? "async_mmap" : "mmap"},
+           {"cat", cat},
            {"width",
             GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
            {"type", GetMmapElemType(param) + "*"}});
@@ -246,7 +257,8 @@ void Visitor::ProcessTaskPorts(const FunctionDecl* func,
             GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
            {"type", GetStreamElemType(param)}});
     };
-    if (IsTapaType(param, "(async_)?mmap")) {
+    if (IsTapaType(param, "(async_)?mmap") || IsTapaType(param, "immap") ||
+        IsTapaType(param, "ommap")) {
       add_mmap_meta(param_name);
     } else if (IsTapaType(param, "mmaps")) {
       for (int i = 0; i < GetArraySize(param); ++i) {
@@ -483,6 +495,18 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
             };
             if (IsTapaType(param, "mmap")) {
               param_cat = "mmap";
+              // vector invocation can map mmaps to mmap
+              register_arg(
+                  get_name(arg_name, mmaps_access_pos[arg_name]++, decl_ref));
+
+            } else if (IsTapaType(param, "immap")) {
+              param_cat = "immap";
+              // vector invocation can map mmaps to mmap
+              register_arg(
+                  get_name(arg_name, mmaps_access_pos[arg_name]++, decl_ref));
+
+            } else if (IsTapaType(param, "ommap")) {
+              param_cat = "ommap";
               // vector invocation can map mmaps to mmap
               register_arg(
                   get_name(arg_name, mmaps_access_pos[arg_name]++, decl_ref));

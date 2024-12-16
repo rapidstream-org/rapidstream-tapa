@@ -15,7 +15,7 @@ using std::string;
 using clang::ParmVarDecl;
 
 string GetMmapElemType(const ParmVarDecl* param) {
-  if (IsTapaType(param, "((async_)?mmaps?|hmap)")) {
+  if (IsTapaType(param, "((async_)?mmaps?|hmap|immap|ommap)")) {
     if (auto arg = GetTemplateArg(param->getType(), 0)) {
       return GetTemplateArgName(*arg);
     }

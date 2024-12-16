@@ -27,7 +27,8 @@ class XilinxAIETarget : public BaseTarget {
   virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF);
-  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF);
+  virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
+                                     bool IsTopTapaTopLevel);
   virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                     const clang::Stmt* body);
