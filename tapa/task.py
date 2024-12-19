@@ -116,6 +116,7 @@ class Task:  # noqa: PLR0904
         self.code: str = code
         self.tasks = collections.OrderedDict()
         self.fifos = collections.OrderedDict()
+        port_dict = {i.name: i for i in map(Port, ports or [])}
         if self.is_upper:
             self.tasks = collections.OrderedDict(
                 sorted(
@@ -129,8 +130,11 @@ class Task:  # noqa: PLR0904
                     key=operator.itemgetter(0),
                 ),
             )
-            self.ports = {i.name: i for i in map(Port, ports or [])}
+            self.ports = port_dict
             self.fsm_module = Module(name=f"{self.name}_fsm")
+        elif ports:
+            # Nonsynthesizable tasks need ports to generate template
+            self.ports = port_dict
         self.module = Module(name=self.name)
         self._instances: tuple[Instance, ...] | None = None
         self._args: dict[str, list[Instance.Arg]] | None = None

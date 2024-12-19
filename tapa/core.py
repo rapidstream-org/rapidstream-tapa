@@ -496,9 +496,10 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         _logger.info("instrumenting upper-level RTL")
         for task in self._tasks.values():
             if task.is_upper and task.name != self.top:
-                self._instrument_upper_task(task, print_fifo_ops)
+                self._instrument_upper_and_template_task(task, print_fifo_ops)
             elif not task.is_upper and task.name in self.gen_templates:
-                self.gen_leaf_rtl_template(task)
+                assert task.ports
+                self._instrument_upper_and_template_task(task, print_fifo_ops)
 
         return self
 
@@ -520,7 +521,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
 
         # instrument the top-level RTL
         _logger.info("instrumenting top-level RTL")
-        self._instrument_upper_task(
+        self._instrument_upper_and_template_task(
             self.top_task,
             print_fifo_ops,
         )
@@ -1117,17 +1118,18 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         module.add_pipeline(self.start_q, init=START)
         module.add_pipeline(self.done_q, init=is_state(STATE10))
 
-    def _instrument_upper_task(  # noqa: C901,PLR0912, PLR0915 # TODO: refactor this method
+    def _instrument_upper_and_template_task(  # noqa: C901,PLR0912, PLR0915 # TODO: refactor this method
         self,
         task: Task,
         print_fifo_ops: bool,
     ) -> None:
         """Codegen for the top task."""
-        assert task.is_upper
+        # assert task.is_upper
         task.module.cleanup()
         if task.name == self.top and self.vitis_mode:
             task.module.add_rs_pragmas()
-        task.add_rs_pragmas_to_fsm()
+        if task.name not in self.gen_templates:
+            task.add_rs_pragmas_to_fsm()
 
         # remove top level peek ports
         top_fifos = set()
@@ -1221,6 +1223,11 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
 
         if task.name in self.gen_templates:
             _logger.info("skip instrumenting template task %s", task.name)
+            if task.name in self.gen_templates:
+                with open(
+                    self.get_rtl_template(task.name), "w", encoding="utf-8"
+                ) as rtl_code:
+                    rtl_code.write(task.module.code)
         else:
             self._instantiate_fifos(task, print_fifo_ops)
             self._connect_fifos(task)
@@ -1242,12 +1249,6 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         # generate the top-level task
         with open(self.get_rtl(task.name), "w", encoding="utf-8") as rtl_code:
             rtl_code.write(task.module.code)
-
-        if task.name in self.gen_templates:
-            with open(
-                self.get_rtl_template(task.name), "w", encoding="utf-8"
-            ) as rtl_code:
-                rtl_code.write(task.module.code)
 
     def _get_fifo_width(self, task: Task, fifo: str) -> Node:
         producer_task, _, fifo_port = task.get_connection_to(fifo, "produced_by")
