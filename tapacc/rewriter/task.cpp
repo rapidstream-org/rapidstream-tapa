@@ -225,22 +225,8 @@ bool Visitor::VisitAttributedStmt(clang::AttributedStmt* stmt) {
   return clang::RecursiveASTVisitor<Visitor>::VisitAttributedStmt(stmt);
 }
 
-// Apply tapa s2s transformations on a upper-level task.
-void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
-                                    const FunctionDecl* func) {
-  if (IsTapaTopLevel(func)) {
-    current_target->RewriteTopLevelFunc(func, GetRewriter());
-  } else {
-    current_target->RewriteMiddleLevelFunc(func, GetRewriter());
-  }
-
-  // Obtain the connection schema from the task.
-  // metadata: {tasks, fifos}
-  // tasks: {task_name: [{step, {args: port_name: {var_type, var_name}}}]}
-  // fifos: {fifo_name: {depth, produced_by, consumed_by}}
-  auto& metadata = GetMetadata();
-  metadata["fifos"] = json::object();
-
+void Visitor::ProcessTaskPorts(const FunctionDecl* func,
+                               nlohmann::json& metadata) {
   for (const auto param : func->parameters()) {
     const auto param_name = param->getNameAsString();
     auto add_mmap_meta = [&](const string& name) {
@@ -285,6 +271,24 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                                    {"type", param->getType().getAsString()}});
     }
   }
+}
+
+// Apply tapa s2s transformations on a upper-level task.
+void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
+                                    const FunctionDecl* func) {
+  if (IsTapaTopLevel(func)) {
+    current_target->RewriteTopLevelFunc(func, GetRewriter());
+  } else {
+    current_target->RewriteMiddleLevelFunc(func, GetRewriter());
+  }
+
+  // Obtain the connection schema from the task.
+  // metadata: {tasks, fifos}
+  // tasks: {task_name: [{step, {args: port_name: {var_type, var_name}}}]}
+  // fifos: {fifo_name: {depth, produced_by, consumed_by}}
+  auto& metadata = GetMetadata();
+  metadata["fifos"] = json::object();
+  ProcessTaskPorts(func, metadata);
 
   // Process stream declarations.
   unordered_map<string, const VarDecl*> fifo_decls;
@@ -584,6 +588,8 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 // Apply tapa s2s transformations on a lower-level task.
 void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   current_target->RewriteLowerLevelFunc(func, GetRewriter());
+  auto& metadata = GetMetadata();
+  ProcessTaskPorts(func, metadata);
 }
 
 void Visitor::ProcessOtherFunc(const FunctionDecl* func) {

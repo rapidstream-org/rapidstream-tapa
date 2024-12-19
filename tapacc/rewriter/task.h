@@ -74,7 +74,8 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
 
   void ProcessUpperLevelTask(const clang::ExprWithCleanups* task,
                              const clang::FunctionDecl* func);
-
+  void ProcessTaskPorts(const clang::FunctionDecl* func,
+                        nlohmann::json& metadata);
   void ProcessLowerLevelTask(const clang::FunctionDecl* func);
   void ProcessOtherFunc(const clang::FunctionDecl* func);
 #ifdef TAPA_ENABLE_LEGACY_FRT_INTERFACE
