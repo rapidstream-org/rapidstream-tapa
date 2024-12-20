@@ -5,6 +5,7 @@
 # Tapa Rapidstream running script
 WORK_DIR=../tapa/generated/
 XO_FILE=serpens32_256.xo
+RS_RUN_DIR=run
 
 # Generate configuration files
 python ./gen_config.py
@@ -22,7 +23,7 @@ tapa \
 
 # Optimizing the design with RapidStream
 rapidstream-tapaopt \
-    --work-dir run \
+    --work-dir ${RS_RUN_DIR} \
     --tapa-xo-path ${WORK_DIR}/${XO_FILE} \
     --device-config ./device_config.json \
     --floorplan-config ./floorplan_config.json \
@@ -37,3 +38,6 @@ rapidstream-tapaopt \
     # --setup-single-slot-eval \
     # --single-reg \
     # --pp-scheme single_h_double_v \
+
+# Report QoRs
+python ../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR} --log-file serpens-32ch-qor.rpt
