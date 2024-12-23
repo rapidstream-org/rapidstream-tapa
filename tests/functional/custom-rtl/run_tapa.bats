@@ -32,7 +32,7 @@ compile_xo() {
   cd "${BATS_TEST_DIRNAME}"
 
   ${RAPIDSTREAM_TAPA_HOME}/usr/bin/tapa \
-    -w ${BATS_TMPDIR}/custom-rtl-workdir \
+    -w ${BATS_TMPDIR}/custom-rtl-workdir-1 \
     compile \
     --jobs 2 \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
@@ -46,7 +46,7 @@ compile_xo() {
   cd "${BATS_TEST_DIRNAME}"
 
   ${RAPIDSTREAM_TAPA_HOME}/usr/bin/tapa \
-    -w ${BATS_TMPDIR}/custom-rtl-workdir \
+    -w ${BATS_TMPDIR}/custom-rtl-workdir-2 \
     compile \
     --jobs 2 \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
