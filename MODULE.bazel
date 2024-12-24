@@ -47,14 +47,14 @@ register_toolchains(
 python.toolchain(
     configure_coverage_tool = True,
     is_default = True,
-    python_version = "3.10.12",
+    python_version = "3.10.15",
 )
-use_repo(python, python_3_10 = "python_3_10_12")
+use_repo(python, python_3_10 = "python_3_10_15")
 
 # Required by tapa Python libraries
 pip.parse(
     hub_name = "tapa_deps",
-    python_version = "3.10.12",
+    python_version = "3.10.15",
     requirements_lock = "//tapa:requirements_lock.txt",
 )
 use_repo(pip, "tapa_deps")
@@ -66,7 +66,7 @@ bazel_dep(name = "nlohmann_json", version = "3.11.3")
 bazel_dep(name = "rules_boost", repo_name = "com_github_nelhage_rules_boost")
 git_override(
     module_name = "rules_boost",
-    commit = "40ce3bdc3d2f947aa3421b38ae4d3e8bd3ace7fc",
+    commit = "e3adfd8d6733c914d2b91a65fb7175af09602281",
     patch_cmds = [
         # Enable BOOST_USE_ASAN, which requires BOOST_USE_UCONTEXT.
         """sed '/name = "context",/a defines=["BOOST_USE_ASAN","BOOST_USE_UCONTEXT"],' -i boost.BUILD""",
@@ -144,7 +144,7 @@ bazel_dep(name = "patchelf", version = "0.18.0")
 # Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/4f4bad8f463685498cf9e0a4ba45ffe9e290a853/modules/patchelf/0.18.0/patches
 git_override(
     module_name = "patchelf",
-    commit = "a0f54334df36770b335c051e540ba40afcbf8378",
+    commit = "769337c227799aa60911562b6940530f4a86eb3c",
     patch_cmds = [
         # 0001-Add-MODULE.bazel.patch
         """
@@ -184,7 +184,7 @@ LLVM_VERSION_MAJOR = 19
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 5
+LLVM_VERSION_PATCH = 6
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
@@ -206,7 +206,7 @@ module(
     version = "{}",
 )
 
-# Skylark depedndencies
+# Skylark dependencies
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
 # Library dependencies
@@ -234,7 +234,7 @@ EOF
         "//bazel:patches/tapa-llvm-project/0002-Add-TAPA-pragmas-to-Clang.patch",
         "//bazel:patches/tapa-llvm-project/0003-Wno-error-deprecated-declarations.patch",
     ],
-    sha256 = "bd8445f554aae33d50d3212a15e993a667c0ad1b694ac1977f3463db3338e542",
+    sha256 = "e3f79317adaa9196d2cfffe1c869d7c100b7540832bc44fe0d3f44a12861fa34",
     strip_prefix = "llvm-project-{}.src".format(LLVM_VERSION),
     urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/llvm-project-{0}.src.tar.xz".format(LLVM_VERSION)],
 )
