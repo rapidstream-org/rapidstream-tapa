@@ -55,6 +55,7 @@ tapa_xo(
     name = "custom-rtl-xo-template-lower",
     src = "vadd.cpp",
     gen_template = "Add",
+    output_file = "lower-template.xo",
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
 )
@@ -63,6 +64,7 @@ tapa_xo(
     name = "custom-rtl-xo-template-upper",
     src = "vadd.cpp",
     gen_template = "Add_Upper",
+    output_file = "upper-template.xo",
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
 )
