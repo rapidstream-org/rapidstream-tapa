@@ -1,0 +1,14 @@
+{
+    "dependencies": {
+        "@antv/g6": "^5.0.35"
+    },
+    "devDependencies": {
+        "eslint": "^9.17.0",
+        "globals": "^15.13.0",
+        "typescript": "^5.7.2",
+        "typescript-eslint": "^8.18.0"
+    },
+    "private": true,
+    "type": "module",
+    "version": "0.1.0"
+}
