@@ -38,7 +38,7 @@ compile_xo() {
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f vadd.cpp \
     -t VecAdd \
-    -o ${BATS_TMPDIR}/custom-rtl.xo \
+    -o ${BATS_TMPDIR}/custom-rtl-1.xo \
     --gen-template Add
 }
 
@@ -52,7 +52,7 @@ compile_xo() {
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f vadd.cpp \
     -t VecAdd \
-    -o ${BATS_TMPDIR}/custom-rtl.xo \
+    -o ${BATS_TMPDIR}/custom-rtl-2.xo \
     --gen-template Add_Upper
 }
 
