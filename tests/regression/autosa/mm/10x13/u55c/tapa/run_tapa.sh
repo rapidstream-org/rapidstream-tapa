@@ -3,7 +3,7 @@
 # RapidStream Contributor License Agreement.
 
 tapa \
-    --work-dir generated \
+    --work-dir generated.out \
     compile \
     --top kernel0 \
     --part-num xcu55c-fsvh2892-2L-e \

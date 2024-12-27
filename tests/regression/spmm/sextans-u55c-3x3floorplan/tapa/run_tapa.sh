@@ -2,7 +2,7 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-WORK_DIR=../rapidstream
+WORK_DIR=generated.out
 
 tapa \
   --work-dir ${WORK_DIR} \

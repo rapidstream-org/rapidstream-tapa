@@ -3,7 +3,7 @@
 # RapidStream Contributor License Agreement.
 
 # Tapa Rapidstream running script
-WORK_DIR=../tapa/generated/
+WORK_DIR=../tapa/generated.out/
 XO_FILE=sextans1613-u55c-333MHz.xo
 RS_RUN_DIR=run
 

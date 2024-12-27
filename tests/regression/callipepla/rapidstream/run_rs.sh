@@ -3,7 +3,7 @@
 # RapidStream Contributor License Agreement.
 
 # Tapa Rapidstream running script
-WORK_DIR=../tapa/generated/
+WORK_DIR=../tapa/generated.out/
 XO_FILE=callipepla-u55c.xo
 RS_RUN_DIR=run
 
