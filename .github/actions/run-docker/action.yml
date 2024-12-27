@@ -13,6 +13,9 @@ inputs:
   run:
     description: "Command to run in the docker container"
     required: true
+  dockerOptions:
+    description: "Additional options to pass to the docker run command"
+    required: false
 
 runs:
   using: "composite"
