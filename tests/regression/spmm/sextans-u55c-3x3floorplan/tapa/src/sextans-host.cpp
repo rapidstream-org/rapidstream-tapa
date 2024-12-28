@@ -27,6 +27,12 @@ using std::vector;
 template <typename T>
 using aligned_vector = std::vector<T, tapa::aligned_allocator<T>>;
 
+void Sextans(tapa::mmap<int> edge_list_ptr,
+             tapa::mmaps<ap_uint<512>, NUM_CH_SPARSE> edge_list_ch,
+             tapa::mmaps<float_v16, NUM_CH_B> mat_B_ch,
+             tapa::mmaps<float_v16, NUM_CH_C> mat_C_ch_in,
+             tapa::mmaps<float_v16, NUM_CH_C> mat_C_ch);
+
 int main(int argc, char** argv) {
   printf("start host\n");
 

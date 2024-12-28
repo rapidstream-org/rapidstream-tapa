@@ -15,7 +15,6 @@ typedef tapa::vec_t<float, 16> C_t16;
 typedef tapa::vec_t<float, 4> C_t4;
 /* Data Type */
 
-void kernel0(tapa::mmap<A_t16> A, tapa::mmap<B_t16> B, tapa::mmap<C_t16> C);
 void A_IO_L2_in_intra_trans(int idx, A_t16 local_A[8][4],
                             tapa::ostream<A_t16>& fifo_A_local_out,
                             bool intra_trans_en);

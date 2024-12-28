@@ -13,6 +13,8 @@
 #define LAYOUT2
 // #define LAYOUT3
 
+void kernel0(tapa::mmap<A_t16> A, tapa::mmap<B_t16> B, tapa::mmap<C_t16> C);
+
 int main(int argc, char** argv) {
 //  data_t A[I][K], B[K][J], C[I][J], C_golden[I][J];
 #ifdef LAYOUT2
