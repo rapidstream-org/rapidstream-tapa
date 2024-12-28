@@ -13,5 +13,8 @@ a.out
 artifacts.out/
 node_modules
 run/
-work.out
+*.out
 work.xo
+device_config.json
+floorplan_config.json
+impl_config.json
