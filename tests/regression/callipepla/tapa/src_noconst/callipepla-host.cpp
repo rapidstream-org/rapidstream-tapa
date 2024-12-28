@@ -29,6 +29,13 @@ using std::vector;
 template <typename T>
 using aligned_vector = std::vector<T, tapa::aligned_allocator<T>>;
 
+void Callipepla(tapa::mmap<int> edge_list_ptr,
+                tapa::mmaps<ap_uint<512>, NUM_CH_SPARSE> edge_list_ch,
+                tapa::mmaps<double_v8, 2> vec_x,
+                tapa::mmaps<double_v8, 2> vec_p, tapa::mmap<double_v8> vec_Ap,
+                tapa::mmaps<double_v8, 2> vec_r, tapa::mmap<double_v8> vec_digA,
+                tapa::mmap<double> vec_res);
+
 void spmv_CSR_FP64(const int M, const int K, const int NNZ,
                    const vector<int>& CSRRowPtr, const vector<int>& CSRColIndex,
                    const vector<float>& CSRVal, const vector<double>& vec_X,

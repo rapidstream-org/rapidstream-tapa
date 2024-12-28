@@ -19,11 +19,4 @@ constexpr int URAM_DEPTH = 3 * 4096;
 
 using double_v8 = tapa::vec_t<double, 8>;
 
-void Callipepla(tapa::mmap<int> edge_list_ptr,
-                tapa::mmaps<ap_uint<512>, NUM_CH_SPARSE> edge_list_ch,
-                tapa::mmaps<double_v8, 2> vec_x,
-                tapa::mmaps<double_v8, 2> vec_p, tapa::mmap<double_v8> vec_Ap,
-                tapa::mmaps<double_v8, 2> vec_r, tapa::mmap<double_v8> vec_digA,
-                tapa::mmap<double> vec_res);
-
 #endif  // CALLIPEPLA_H
