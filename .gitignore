@@ -1,5 +1,6 @@
 *.jou
 *.log
+*.out
 *.pyc
 .venv*
 /.cache/
@@ -11,10 +12,9 @@
 __pycache__
 a.out
 artifacts.out/
-node_modules
-run/
-*.out
-work.xo
 device_config.json
 floorplan_config.json
 impl_config.json
+node_modules
+run/
+work.xo
