@@ -2,13 +2,19 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+# Stop on error
+set -e
+
 # Tapa Rapidstream running script
 WORK_DIR=../tapa/generated.out/
 XO_FILE=callipepla-u55c.xo
 RS_RUN_DIR=run
 
+# Create the working directory
+mkdir -p ${WORK_DIR}
+
 # Generate configuration files
-python ./gen_config.py
+rapidstream ./gen_config.py
 
 # Synthesizing the app to generate the XO file
 tapa \
@@ -41,4 +47,4 @@ rapidstream-tapaopt \
     # --single-reg \
 
 # Report QoRs
-python ../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR} --log-file callipepla-qor.rpt
+rapidstream ../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR} --log-file callipepla-qor.rpt
