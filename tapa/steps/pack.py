@@ -81,7 +81,7 @@ def pack(
     program = load_tapa_program()
     settings = load_persistent_context("settings")
     if settings.get("has_template", False):
-        logging.info("skip packing for template program")
+        _logger.info("skip packing for template program")
 
     if flow_type == "aie":
         return
@@ -91,7 +91,7 @@ def pack(
         raise click.BadArgumentUsage(msg)
 
     if not settings.get("vitis-mode", True):
-        logging.warning(
+        _logger.warning(
             "you are not in Vitis mode, the generated RTL will not be packed."
         )
         return

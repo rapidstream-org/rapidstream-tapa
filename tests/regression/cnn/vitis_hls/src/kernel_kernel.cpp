@@ -618,7 +618,8 @@ void A_PE_dummy(int idx, int idy, hls::stream<A_t8>& fifo_A_in) {
 
   {
     // array
-    {}
+    {
+    }
     // array
     // pe
     for (ap_uint<6> c5 = 0; c5 <= 31; c5 += 1) {
@@ -642,7 +643,8 @@ void B_PE_dummy(int idx, int idy, hls::stream<B_t8>& fifo_B_in) {
 
   {
     // array
-    {}
+    {
+    }
     // array
     // pe
     for (ap_uint<6> c5 = 0; c5 <= 31; c5 += 1) {

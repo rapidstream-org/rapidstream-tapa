@@ -70,7 +70,7 @@ class PortInfo:
 def clang_format(code: str, *args: str) -> str:
     """Apply clang-format with given arguments, if possible."""
     for version in range(10, 4, -1):
-        clang_format_exe = shutil.which("clang-format-%d" % version)
+        clang_format_exe = shutil.which(f"clang-format-{version}")
         if clang_format_exe is not None:
             break
     else:

@@ -23,7 +23,7 @@ import tempfile
 import zipfile
 from concurrent import futures
 from pathlib import Path
-from xml.etree import ElementTree
+from xml.etree import ElementTree as ET
 
 import toposort
 import yaml
@@ -195,7 +195,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             if not task.is_upper or task.tasks:
                 self._tasks[name] = task
         self.files: dict[str, str] = {}
-        self._hls_report_xmls: dict[str, ElementTree.ElementTree] = {}
+        self._hls_report_xmls: dict[str, ET.ElementTree] = {}
 
         # Collect user custom RTL files
         self.custom_rtl: list[Path] = Program.get_custom_rtl_files(rtl_paths)
@@ -292,11 +292,11 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             name + RTL_SUFFIX,
         )
 
-    def _get_hls_report_xml(self, name: str) -> ElementTree.ElementTree:
+    def _get_hls_report_xml(self, name: str) -> ET.ElementTree:
         tree = self._hls_report_xmls.get(name)
         if tree is None:
             filename = os.path.join(self.report_dir, f"{name}_csynth.xml")
-            self._hls_report_xmls[name] = tree = ElementTree.parse(filename)
+            self._hls_report_xmls[name] = tree = ET.parse(filename)
         return tree
 
     def _get_part_num(self, name: str) -> str:

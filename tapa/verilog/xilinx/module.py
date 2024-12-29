@@ -202,13 +202,13 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     @property
     def _module_def(self) -> ModuleDef:
-        _module_defs = [
+        module_defs = [
             x for x in self.ast.description.definitions if isinstance(x, ModuleDef)
         ]
-        if len(_module_defs) != 1:
+        if len(module_defs) != 1:
             msg = "unexpected number of modules"
             raise ValueError(msg)
-        return _module_defs[0]
+        return module_defs[0]
 
     def get_module_def(self) -> ModuleDef:
         return self._module_def

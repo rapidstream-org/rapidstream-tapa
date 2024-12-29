@@ -20,7 +20,7 @@ import zipfile
 from collections.abc import Iterable
 from types import TracebackType
 from typing import BinaryIO, NamedTuple, TextIO
-from xml.etree import ElementTree
+from xml.etree import ElementTree as ET
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -505,7 +505,7 @@ def get_device_info(platform_path: str) -> dict[str, str]:
         zipfile.ZipFile(platform_file) as platform,
         platform.open(os.path.basename(platform_file)[:-4] + ".hpfm") as metadata,
     ):
-        platform_info = ElementTree.parse(metadata).find(
+        platform_info = ET.parse(metadata).find(
             "./xd:component/xd:platformInfo", XILINX_XML_NS
         )
         if platform_info is None:

@@ -435,7 +435,8 @@ void PE_wrapper(int idx, int idy, tapa::istream<A_t8>& fifo_A_in,
 void A_PE_dummy(int idx, int idy, tapa::istream<A_t8>& fifo_A_in) {
   int p0 = idx, p1 = idy;
   {
-    {}
+    {
+    }
     for (ap_uint<6> c5 = 0; c5 <= 31; c5 += 1) {
       for (ap_uint<7> c6 = 0; c6 <= 63; c6 += 1) {
         for (ap_uint<5> c7 = 0; c7 <= 15; c7 += 1) {
@@ -451,7 +452,8 @@ void A_PE_dummy(int idx, int idy, tapa::istream<A_t8>& fifo_A_in) {
 void B_PE_dummy(int idx, int idy, tapa::istream<B_t8>& fifo_B_in) {
   int p0 = idx, p1 = idy;
   {
-    {}
+    {
+    }
     for (ap_uint<6> c5 = 0; c5 <= 31; c5 += 1) {
       for (ap_uint<7> c6 = 0; c6 <= 63; c6 += 1) {
         for (ap_uint<5> c7 = 0; c7 <= 15; c7 += 1) {
