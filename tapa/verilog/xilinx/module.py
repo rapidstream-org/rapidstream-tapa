@@ -239,23 +239,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     def register_level(self, level: int) -> None:
         self._register_level = level
 
-    def partition_count_of(self, fifo_name: str) -> int:
-        """Get the partition count of each FIFO.
-
-        The minimum partition count is 1, which means the FIFO is implemented as a
-        whole, not many small FIFOs.
-
-        Args:
-        ----
-            fifo_name (str): Name of the FIFO.
-
-        Returns:
-        -------
-            int: N, where this FIFO is partitioned into N small FIFOs.
-
-        """
-        return getattr(self, "fifo_partition_count", {}).get(fifo_name, 1)
-
     @property
     def ports(self) -> dict[str, IOPort]:
         port_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
@@ -709,18 +692,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                     yield make_port_arg(port=port_name, arg=wire_name(name, arg_suffix))
             yield make_port_arg(port=FIFO_WRITE_PORTS[-1], arg=TRUE)
 
-        partition_count = self.partition_count_of(name)
-
         module_name = "fifo"
-        level = []
-        if partition_count > 1:
-            module_name = "relay_station"
-            level.append(
-                ParamArg(
-                    paramname="LEVEL",
-                    argname=Constant(partition_count),
-                ),
-            )
         return self.add_instance(
             module_name=module_name,
             instance_name=name,
@@ -732,7 +704,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                     argname=Constant(max(1, (depth - 1).bit_length())),
                 ),
                 ParamArg(paramname="DEPTH", argname=Constant(depth)),
-                *level,
             ),
         )
 
