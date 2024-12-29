@@ -4,6 +4,6 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM amazonlinux:2023
+FROM amazonlinux:2023.6.2024.12.12.0
 
 INCLUDE+ Dockerfile.rhel9-common

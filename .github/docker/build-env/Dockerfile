@@ -4,7 +4,7 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM ubuntu:bionic
+FROM ubuntu:bionic-20230530
 
 ARG DOCKER_USER_ID
 ARG DOCKER_GROUP_ID

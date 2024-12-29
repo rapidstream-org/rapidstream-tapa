@@ -4,6 +4,6 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM ubuntu:focal
+FROM ubuntu:focal-20241011
 
 INCLUDE+ Dockerfile.debian-common
