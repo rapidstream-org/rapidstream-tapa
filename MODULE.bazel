@@ -47,14 +47,14 @@ register_toolchains(
 python.toolchain(
     configure_coverage_tool = True,
     is_default = True,
-    python_version = "3.10.15",
+    python_version = "3.11.10",
 )
-use_repo(python, python_3_10 = "python_3_10_15")
+use_repo(python, python_3_11 = "python_3_11_10")
 
 # Required by tapa Python libraries
 pip.parse(
     hub_name = "tapa_deps",
-    python_version = "3.10.15",
+    python_version = "3.11.10",
     requirements_lock = "//tapa:requirements_lock.txt",
 )
 use_repo(pip, "tapa_deps")

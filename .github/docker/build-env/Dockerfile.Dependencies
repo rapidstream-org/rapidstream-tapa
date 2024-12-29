@@ -94,7 +94,7 @@ RUN curl -sSL \
 
 # Install Pre-Commit
 RUN curl -sSL \
-        https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-unknown-linux-gnu-install_only.tar.gz \
+        https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.11.10+20241016-x86_64-unknown-linux-gnu-install_only.tar.gz \
         | tar -xz -C /opt && \
     /opt/python/bin/python3 -m pip install pre-commit && \
     ln -s /opt/python/bin/pre-commit /usr/local/bin/pre-commit && \
