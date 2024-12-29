@@ -28,15 +28,12 @@ from xml.etree import ElementTree as ET
 import toposort
 import yaml
 from psutil import cpu_count
-from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
     Always,
     Assign,
-    Decl,
     Eq,
     Identifier,
     IfStatement,
-    Inout,
     Input,
     IntConst,
     Land,
@@ -45,7 +42,6 @@ from pyverilog.vparser.ast import (
     Node,
     NonblockingSubstitution,
     Output,
-    Parameter,
     Plus,
     PortArg,
     Reg,
@@ -55,7 +51,7 @@ from pyverilog.vparser.ast import (
     Width,
     Wire,
 )
-from pyverilog.vparser.parser import VerilogCodeParser, parse
+from pyverilog.vparser.parser import VerilogCodeParser
 
 from tapa.backend.xilinx import RunAie, RunHls
 from tapa.instance import Instance, Port
@@ -1262,51 +1258,6 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             return Plus(Minus(port.width.msb, port.width.lsb), IntConst(2))
         # TODO: err properly if not integer literals
         return Plus(Minus(port.width.msb, port.width.lsb), IntConst(1))
-
-    def gen_leaf_rtl_template(self, task: Task) -> None:
-        """Replace the RTL code with the template."""
-        # replace the RTL with the template
-        _logger.info("replacing %s's RTL with the template", task.name)
-        # Parse the Verilog code
-        with open(self.get_rtl(task.name), encoding="utf-8") as f:
-            rtl_code = f.read()
-            ast, _ = parse([rtl_code])
-
-        # Traverse the AST to locate the modules
-        def filter_module_io(module: ModuleDef) -> None:
-            # Create a new module structure with only I/O ports
-            new_items = []
-            for item in module.items:
-                if not isinstance(item, Decl):
-                    continue
-                # add io port width parameter declaration to template
-                if any(
-                    isinstance(item2, Parameter) and "WIDTH" in item2.name
-                    for item2 in item.children()
-                ):
-                    new_items.append(item)
-                # add io port declaration to template
-                if any(
-                    isinstance(item2, Input | Output | Inout)
-                    for item2 in item.children()
-                ):
-                    new_items.append(item)
-            module.items = new_items
-
-        # Visit module and strip internal logic
-        module_defs = []
-        for description in ast.description.definitions:
-            if isinstance(description, ModuleDef):
-                filter_module_io(description)
-                module_defs.append(description)
-        assert len(module_defs) == 1
-
-        rtl = ASTCodeGenerator().visit(ast)
-        # Generate the new Verilog code from the simplified AST
-        with open(self.get_rtl(task.name), "w", encoding="utf-8") as f:
-            f.write(rtl)
-        with open(self.get_rtl_template(task.name), "w", encoding="utf-8") as f:
-            f.write(rtl)
 
     def replace_custom_rtl(self) -> None:
         """Add custom RTL files to the project.
