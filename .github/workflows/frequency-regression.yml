@@ -23,6 +23,8 @@ jobs:
     timeout-minutes: 10080
 
     strategy:
+      # run all tests even if one fails
+      fail-fast: false
       matrix:
         test:
           - autosa/mm/10x13/u250
