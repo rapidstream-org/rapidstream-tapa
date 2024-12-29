@@ -129,3 +129,8 @@ This command will update the ``requirements_lock.txt`` file in the
 ``tapa/`` directory.
 
 For Bazel dependencies, update the ``MODULES.bzl`` file.
+
+To update the Python version and docker image, update the ``Dockerfile``
+under the ``.github/`` directory.
+
+To update the pre-commit hooks, run ``pre-commit autoupdate``.
