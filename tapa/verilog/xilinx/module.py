@@ -882,15 +882,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             ],
         )
 
-    def _get_nodes_of_type(self, node: object, *target_types: type) -> Iterator[object]:
-        if isinstance(node, target_types):
-            yield node
-        for c in node.children():
-            yield from self._get_nodes_of_type(c, *target_types)
-
-    def get_nodes_of_type(self, *target_types: type) -> Iterator:
-        yield from self._get_nodes_of_type(self.ast, *target_types)
-
 
 def get_streams_fifos(module: Module, streams_name: str) -> list[str]:
     """Get all FIFOs that are related to a streams."""
