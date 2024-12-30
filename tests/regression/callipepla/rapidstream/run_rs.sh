@@ -47,4 +47,4 @@ rapidstream-tapaopt \
     # --single-reg \
 
 # Report QoRs
-rapidstream ../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR} --log-file callipepla-qor.rpt
+rapidstream ../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR}

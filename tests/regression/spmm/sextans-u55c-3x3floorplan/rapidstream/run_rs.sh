@@ -46,4 +46,4 @@ rapidstream-tapaopt \
     # --single-reg \
 
 # Report QoRs
-rapidstream ../../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR} --log-file sextans-u55c-3x3floorplan-qor.rpt
+rapidstream ../../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR}

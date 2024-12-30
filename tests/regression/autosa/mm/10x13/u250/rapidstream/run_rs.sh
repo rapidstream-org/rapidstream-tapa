@@ -46,4 +46,4 @@ rapidstream-tapaopt \
     # --single-reg \
 
 # Report QoRs
-rapidstream ../../../../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR} --log-file autosa-mm10x13-u250-qor.rpt
+rapidstream ../../../../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR}

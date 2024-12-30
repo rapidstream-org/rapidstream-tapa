@@ -4,16 +4,15 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import datetime
 import logging
 from glob import glob
-from pathlib import Path
+from os import environ
 
 import click
 
 _logger = logging.getLogger(__name__)
 
-REG_METRIC_DIR = Path("/tmp/regression-metrics")
+GITHUB_JOB_SUMMARY = environ.get("GITHUB_STEP_SUMMARY", "/tmp/github-job-summary")
 
 
 @click.command()
@@ -23,36 +22,20 @@ REG_METRIC_DIR = Path("/tmp/regression-metrics")
     help="The path to a (set of) run(s).",
     required=True,
 )
-@click.option(
-    "--log-file",
-    type=str,
-    help="The name of the output file of QoR logs.",
-    required=True,
-)
-def report_qor(run_dir: str, log_file: str) -> None:
+def report_qor(run_dir: str) -> None:
     """Report the QoRs of an implemented design."""
-
-    # Check if the regression metric directory exists,
-    # if not, create it
-    if not REG_METRIC_DIR.exists():
-        REG_METRIC_DIR.mkdir(parents=True, exist_ok=True)
-
-    report_freq(run_dir, log_file)
+    report_freq(run_dir)
 
 
-def report_freq(run_dir: str, log_file: str) -> None:
+def report_freq(run_dir: str) -> None:
     """Report the Fmax of an implemented design."""
 
-    _logger.warning("Regression Metric Dir: %s", REG_METRIC_DIR / log_file)
+    _logger.warning("Regression metrics are stored in %s", GITHUB_JOB_SUMMARY)
 
-    with open(REG_METRIC_DIR / log_file, "a", encoding="utf-8") as log_f:
+    with open(GITHUB_JOB_SUMMARY, "w", encoding="utf-8") as log_f:
         for sol_dir in glob(f"{run_dir}/dse/solution_*"):
-            # Get the current timestamp
-            current_time = datetime.datetime.now(datetime.timezone.utc).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-            log_f.write(f"[{current_time}] Solution: {sol_dir}\n")
-            _logger.warning("[%s] Solution: %s", current_time, sol_dir)
+            log_f.write(f"\n\n## Solution: {sol_dir}\n\n")
+            _logger.warning("## Solution: %s", sol_dir)
 
             # Get the timing report:
             # Use the one in the Vivado project since v++ only copies it to the
@@ -63,9 +46,11 @@ def report_freq(run_dir: str, log_file: str) -> None:
                 recursive=True,
             )
             if len(timing_rpt_g) == 0:
+                log_f.write("No timing report found.\n")
                 _logger.critical("No timing report found for %s", sol_dir)
                 continue
             if len(timing_rpt_g) > 1:
+                log_f.write("Multiple timing reports found.\n")
                 _logger.critical("Multiple timing reports found for %s", sol_dir)
                 continue
             timing_rpt = timing_rpt_g[0]

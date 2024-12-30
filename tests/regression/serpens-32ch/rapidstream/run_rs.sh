@@ -46,4 +46,4 @@ rapidstream-tapaopt \
     # --pp-scheme single_h_double_v \
 
 # Report QoRs
-rapidstream ../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR} --log-file serpens-32ch-qor.rpt
+rapidstream ../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR}
