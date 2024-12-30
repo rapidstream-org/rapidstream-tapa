@@ -54,18 +54,20 @@ def report_freq(run_dir: str, log_file: str) -> None:
             log_f.write(f"[{current_time}] Solution: {sol_dir}\n")
             _logger.warning("[%s] Solution: %s", current_time, sol_dir)
 
-            # Get the path to all reports
-            path_report_g = glob(f"{sol_dir}/**/reports", recursive=True)
-            assert (
-                len(path_report_g) == 1
-            ), f"Expected one `reports` folder, now: {path_report_g}."
-            path_full = f"{path_report_g[0]}/link/imp"
-
-            # Get the timing report
-            timing_rpt_g = glob(f"{path_full}/*timing_summary_postroute_physopted.rpt")
-            assert (
-                len(timing_rpt_g) == 1
-            ), f"Expected one timing report, now: {timing_rpt_g}."
+            # Get the timing report:
+            # Use the one in the Vivado project since v++ only copies it to the
+            # report directory when the timing is met. The project directory,
+            # however, always has the timing report.
+            timing_rpt_g = glob(
+                f"{sol_dir}/**/link/vivado/vpl/**/*_timing_summary_postroute_physopted.rpt",
+                recursive=True,
+            )
+            if len(timing_rpt_g) == 0:
+                _logger.critical("No timing report found for %s", sol_dir)
+                continue
+            if len(timing_rpt_g) > 1:
+                _logger.critical("Multiple timing reports found for %s", sol_dir)
+                continue
             timing_rpt = timing_rpt_g[0]
 
             # Parse the Worst Negative Slack (WNS)
