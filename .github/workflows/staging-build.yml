@@ -58,6 +58,8 @@ jobs:
           # as Fedora 39+. Glibc has different identifier names than the
           # ones Xilinx expects.
           - os: ubuntu-22
+            xilinx_version: "2024.2"
+          - os: ubuntu-22
             xilinx_version: "2024.1"
           - os: ubuntu-22
             xilinx_version: "2023.2"
@@ -69,29 +71,29 @@ jobs:
             xilinx_version: "2022.1"
           # Test all OS versions with the latest Vitis version.
           - os: ubuntu-20
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: ubuntu-18
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: debian-10
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: debian-11
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: almalinux-9
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: rockylinux-9
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: fedora-38
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: fedora-37
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: fedora-36
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: fedora-35
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: fedora-34
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
           - os: amazonlinux-2023
-            xilinx_version: "2024.1"
+            xilinx_version: "2024.2"
 
     steps:
       - name: Checkout myself

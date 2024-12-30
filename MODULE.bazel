@@ -101,7 +101,7 @@ cc_library(
     visibility = ["//visibility:public"],
 )
     """,
-    path = "/opt/tools/xilinx/Vitis_HLS/2024.1",
+    path = "/opt/tools/xilinx/Vitis/2024.2",
 )
 
 new_local_repository(
