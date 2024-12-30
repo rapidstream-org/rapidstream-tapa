@@ -42,6 +42,7 @@ def gcc(executable: str, argv: Iterable[str]) -> None:
 
     args = [
         executable,
+        # Host libraries requires C++17 features, unlike the FPGA code.
         "-std=c++17",
         *get_tapa_cflags(),
         *(f"-isystem{p}" for p in vendor_include_paths),

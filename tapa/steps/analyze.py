@@ -114,7 +114,10 @@ def analyze(  # noqa: PLR0913,PLR0917
     tapa_cpp = find_clang_binary("tapa-cpp")
 
     work_dir = get_work_dir()
-    cflags += ("-std=c++17",)
+    # Vitis HLS only supports until C++14. If the flag sets to C++17, gcc's
+    # header files will use C++17 features, such as type inference in
+    # template argument deduction, which is not supported by Vitis HLS.
+    cflags += ("-std=c++14",)
 
     tapacc_cflags, system_cflags = find_tapacc_cflags(cflags)
     flatten_files = run_flatten(

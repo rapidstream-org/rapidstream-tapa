@@ -393,7 +393,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                         part_num=part_num,
                         auto_prefix=True,
                         hls="vitis_hls",
-                        std="c++17",
+                        std="c++14",
                         other_configs=other_configs,
                     ) as proc,
                 ):

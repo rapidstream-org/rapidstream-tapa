@@ -125,6 +125,11 @@ def get_xilinx_tool_path(tool_name: Literal["HLS", "VITIS"] = "HLS") -> str | No
         _logger.critical("not adding vendor include paths;")
         _logger.critical("please set XILINX_%s", tool_name)
         _logger.critical("you may run `source /path/to/Vitis/settings64.sh`")
+    elif not Path(xilinx_tool_path).exists():
+        _logger.critical(
+            "XILINX_%s path does not exist: %s", tool_name, xilinx_tool_path
+        )
+        xilinx_tool_path = None
     return xilinx_tool_path
 
 
@@ -146,10 +151,34 @@ def get_vendor_include_paths() -> Iterable[str]:
     """Yields include paths that are automatically available in vendor tools."""
     xilinx_hls = get_xilinx_tool_path("HLS")
     if xilinx_hls is not None:
-        cpp_include = "tps/lnx64/gcc-6.2.0/include/c++/6.2.0"
+        # include VITIS_HLS/include
         yield os.path.join(xilinx_hls, "include")
-        yield os.path.join(xilinx_hls, cpp_include)
-        yield os.path.join(xilinx_hls, cpp_include, "x86_64-pc-linux-gnu")
+
+        # there are multiple versions of gcc, such as 6.2.0, 9.3.0, 11.4.0,
+        # we choose the latest version based on numerical order
+        tps_lnx64 = Path(xilinx_hls) / "tps" / "lnx64"
+        gcc_paths = tps_lnx64.glob("gcc-*.*.*")
+        gcc_versions = [path.name.split("-")[1] for path in gcc_paths]
+        gcc_versions.sort(key=lambda x: tuple(map(int, x.split("."))))
+        latest_gcc = gcc_versions[-1]
+
+        # include VITIS_HLS/tps/lnx64/g++-<version>/include/c++/<version>
+        cpp_include = tps_lnx64 / f"gcc-{latest_gcc}" / "include" / "c++" / latest_gcc
+        if not cpp_include.exists():
+            _logger.critical("cannot find HLS vendor paths for C++")
+            _logger.critical("it should be at %s", cpp_include)
+            return
+        yield str(cpp_include)
+
+        # there might be a x86_64-pc-linux-gnu or x86_64-linux-gnu
+        if (cpp_include / "x86_64-pc-linux-gnu").exists():
+            yield os.path.join(cpp_include, "x86_64-pc-linux-gnu")
+        elif (cpp_include / "x86_64-linux-gnu").exists():
+            yield os.path.join(cpp_include, "x86_64-linux-gnu")
+        else:
+            _logger.critical("cannot find HLS vendor paths for C++ (x86_64)")
+            _logger.critical("it should be at %s", cpp_include)
+            return
 
 
 def get_installation_path() -> Path:
