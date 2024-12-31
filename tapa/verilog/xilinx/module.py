@@ -217,10 +217,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     def name(self) -> str:
         return self._module_def.name
 
-    @name.setter
-    def name(self, name: str) -> None:
-        self._module_def.name = name
-
     @property
     def ports(self) -> dict[str, IOPort]:
         port_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
