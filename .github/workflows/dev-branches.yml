@@ -130,7 +130,7 @@ jobs:
 
       - name: Trigger staging build
         uses: benc-uk/workflow-dispatch@v1
-        if: ${{ steps.merge.outputs.is-successful }}
+        if: ${{ steps.merge.outputs.is-successful == 'true' }}
         with:
           workflow: Staging Build
           ref: refs/heads/main
