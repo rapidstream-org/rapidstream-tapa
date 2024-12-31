@@ -54,8 +54,9 @@ repos:
       - id: clang-format
         files: \.(c|cc|cpp|h|hpp)$
 
-  - repo: https://github.com/keith/pre-commit-buildifier
-    rev: 7.3.1.1
+    # TODO: revert to upstream repo when https://github.com/keith/pre-commit-buildifier/pull/31 is merged.
+  - repo: https://github.com/Blaok/pre-commit-buildifier
+    rev: 7.3.1.2
     hooks:
       - id: buildifier
       - id: buildifier-lint
