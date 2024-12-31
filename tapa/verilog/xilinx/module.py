@@ -222,24 +222,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._module_def.name = name
 
     @property
-    def register_level(self) -> int:
-        """The register level of global control signals.
-
-        The minimum register level is 0, which means no additional registers are
-        inserted.
-
-        Returns
-        -------
-            int: N, where any global control signals are registered by N cycles.
-
-        """
-        return getattr(self, "_register_level", 0)
-
-    @register_level.setter
-    def register_level(self, level: int) -> None:
-        self._register_level = level
-
-    @property
     def ports(self) -> dict[str, IOPort]:
         port_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
         return collections.OrderedDict(

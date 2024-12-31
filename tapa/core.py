@@ -213,16 +213,12 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         return ctrl_instance_name(self.top)
 
     @property
-    def register_level(self) -> int:
-        return self.top_task.module.register_level
-
-    @property
     def start_q(self) -> Pipeline:
-        return Pipeline(START.name, level=self.register_level)
+        return Pipeline(START.name, level=0)
 
     @property
     def done_q(self) -> Pipeline:
-        return Pipeline(DONE.name, level=self.register_level)
+        return Pipeline(DONE.name, level=0)
 
     @property
     def rtl_dir(self) -> str:
@@ -765,7 +761,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                     # Instantiate a pipeline for the arg.
                     q = Pipeline(
                         name=instance.get_instance_arg(id_name),
-                        level=self.register_level,
+                        level=0,
                         width=width,
                     )
                     arg_table[arg.name] = q
@@ -830,7 +826,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             # add start registers
             start_q = Pipeline(
                 f"{instance.start.name}_global",
-                level=self.register_level,
+                level=0,
             )
             task.fsm_module.add_pipeline(start_q, self.start_q[0])
 
@@ -863,11 +859,11 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 # set up state
                 is_done_q = Pipeline(
                     f"{instance.is_done.name}",
-                    level=self.register_level,
+                    level=0,
                 )
                 done_q = Pipeline(
                     f"{instance.done.name}_global",
-                    level=self.register_level,
+                    level=0,
                 )
                 task.fsm_module.add_pipeline(is_done_q, instance.is_state(STATE10))
                 task.fsm_module.add_pipeline(done_q, self.done_q[0])
@@ -1033,7 +1029,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
             return NonblockingSubstitution(left=STATE, right=state)
 
         countdown = Identifier("countdown")
-        countdown_width = (self.register_level - 1).bit_length()
+        countdown_width = 1
 
         module.add_signals(
             [
@@ -1066,10 +1062,10 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 (
                     STATE10,
                     [
-                        set_state(STATE11 if self.register_level else STATE00),
+                        set_state(STATE00),
                         NonblockingSubstitution(
                             left=countdown,
-                            right=make_int(max(0, self.register_level - 1)),
+                            right=make_int(0),
                         ),
                     ],
                 ),
