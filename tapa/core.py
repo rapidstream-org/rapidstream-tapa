@@ -213,11 +213,11 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
 
     @property
     def start_q(self) -> Pipeline:
-        return Pipeline(START.name, level=0)
+        return Pipeline(START.name)
 
     @property
     def done_q(self) -> Pipeline:
-        return Pipeline(DONE.name, level=0)
+        return Pipeline(DONE.name)
 
     @property
     def rtl_dir(self) -> str:
@@ -760,7 +760,6 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                     # Instantiate a pipeline for the arg.
                     q = Pipeline(
                         name=instance.get_instance_arg(id_name),
-                        level=0,
                         width=width,
                     )
                     arg_table[arg.name] = q
@@ -823,10 +822,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                         )
 
             # add start registers
-            start_q = Pipeline(
-                f"{instance.start.name}_global",
-                level=0,
-            )
+            start_q = Pipeline(f"{instance.start.name}_global")
             task.fsm_module.add_pipeline(start_q, self.start_q[0])
 
             if instance.is_autorun:
@@ -856,14 +852,8 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                 )
             else:
                 # set up state
-                is_done_q = Pipeline(
-                    f"{instance.is_done.name}",
-                    level=0,
-                )
-                done_q = Pipeline(
-                    f"{instance.done.name}_global",
-                    level=0,
-                )
+                is_done_q = Pipeline(f"{instance.is_done.name}")
+                done_q = Pipeline(f"{instance.done.name}_global")
                 task.fsm_module.add_pipeline(is_done_q, instance.is_state(STATE10))
                 task.fsm_module.add_pipeline(done_q, self.done_q[0])
 
