@@ -11,7 +11,7 @@ from collections.abc import Iterator
 
 from pyverilog.vparser.ast import Identifier, Pragma, Reg, Width, Wire
 
-from tapa.verilog.ast_utils import make_pragma, make_width
+from tapa.verilog.ast_utils import make_width
 
 __all__ = [
     "Pipeline",
@@ -25,15 +25,11 @@ __all__ = [
 class Pipeline:
     """Pipeline signals and their widths."""
 
-    def __init__(self, name: str, level: int, width: int | None = None) -> None:
+    def __init__(self, name: str, width: int | None = None) -> None:
         self.name = name
-        self.level = level
-        self._ids = tuple(
-            # If `name` is a constant literal (like `32'd0`), identifiers at all
-            # levels are just the constant literal.
-            Identifier(name if "'d" in name else (f"{name}__q%d" % i))
-            for i in range(level + 1)
-        )
+        # If `name` is a constant literal (like `32'd0`), identifiers are just
+        # the constant literal.
+        self._ids = (Identifier(name if "'d" in name else (f"{name}__q0")),)
         self._width: Width | None = (width and make_width(width)) or None
 
     def __getitem__(self, idx: int) -> Identifier:
@@ -45,9 +41,6 @@ class Pipeline:
     @property
     def signals(self) -> Iterator[Reg | Wire | Pragma]:
         yield Wire(name=self[0].name, width=self._width)
-        for x in self[1:]:
-            yield make_pragma("keep", "true")
-            yield Reg(name=x.name, width=self._width)
 
 
 def match_array_name(name: str) -> tuple[str, int] | None:

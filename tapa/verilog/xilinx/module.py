@@ -30,7 +30,6 @@ from pyverilog.vparser.ast import (
     Lvalue,
     ModuleDef,
     Node,
-    NonblockingSubstitution,
     Output,
     ParamArg,
     Parameter,
@@ -47,7 +46,7 @@ from pyverilog.vparser.ast import (
 from pyverilog.vparser.parser import VerilogCodeParser
 
 from tapa.backend.xilinx import M_AXI_PREFIX
-from tapa.verilog.ast_utils import make_block, make_port_arg, make_pragma
+from tapa.verilog.ast_utils import make_port_arg, make_pragma
 from tapa.verilog.util import (
     Pipeline,
     async_mmap_instance_name,
@@ -60,7 +59,6 @@ from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_n
 from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import (
     CLK,
-    CLK_SENS_LIST,
     FIFO_READ_PORTS,
     FIFO_WRITE_PORTS,
     HANDSHAKE_CLK,
@@ -499,16 +497,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         """
         self.add_signals(q.signals)
         logics: list[Logic] = [Assign(left=q[0], right=init)]
-        if q.level > 0:
-            logics.append(
-                Always(
-                    sens_list=CLK_SENS_LIST,
-                    statement=make_block(
-                        NonblockingSubstitution(left=q[i + 1], right=q[i])
-                        for i in range(q.level)
-                    ),
-                ),
-            )
         self.add_logics(logics)
 
     def del_signals(self, prefix: str = "", suffix: str = "") -> None:
