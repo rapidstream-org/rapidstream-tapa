@@ -69,7 +69,6 @@ from tapa.verilog.ast_utils import (
     make_block,
     make_case_with_block,
     make_if_with_block,
-    make_int,
     make_operation,
     make_port_arg,
     make_width,
@@ -1028,13 +1027,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         def set_state(state: IntConst) -> NonblockingSubstitution:
             return NonblockingSubstitution(left=STATE, right=state)
 
-        countdown = Identifier("countdown")
-        countdown_width = 1
-
         module.add_signals(
             [
                 Reg(STATE.name, width=make_width(2)),
-                Reg(countdown.name, width=make_width(countdown_width)),
             ],
         )
 
@@ -1063,28 +1058,7 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
                     STATE10,
                     [
                         set_state(STATE00),
-                        NonblockingSubstitution(
-                            left=countdown,
-                            right=make_int(0),
-                        ),
                     ],
-                ),
-                (
-                    STATE11,
-                    make_if_with_block(
-                        cond=Eq(
-                            left=countdown,
-                            right=make_int(0, width=countdown_width),
-                        ),
-                        true=set_state(STATE00),
-                        false=NonblockingSubstitution(
-                            left=countdown,
-                            right=Minus(
-                                left=countdown,
-                                right=make_int(1, width=countdown_width),
-                            ),
-                        ),
-                    ),
                 ),
             ],
         )

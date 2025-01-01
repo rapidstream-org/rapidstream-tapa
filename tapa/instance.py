@@ -232,9 +232,6 @@ class Instance:
     # + 10: sending done
     #   + done: 1
     #   + idle: 0
-    # + 11: register delay for sending done signal
-    #   + done: 1
-    #   + idle: 0
     #
     # | done <- state[1]
     # | idle <- state == 00
@@ -245,9 +242,7 @@ class Instance:
     # + 00 -> 01: if start == 1
     # + 01 -> 01: if all(*is_done) == 0
     # + 01 -> 10: if all(*is_done) == 1
-    # + 10 -> 00: countdown <- 0
-    # + 11 -> 11: if countdown > 1; countdown <- countdown - 1
-    # + 11 -> 00: if countdown == 1
+    # + 10 -> 00:
 
     @property
     def state(self) -> Identifier:
