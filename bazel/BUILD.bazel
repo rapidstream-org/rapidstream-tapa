@@ -30,6 +30,11 @@ sh_binary(
 exports_files(srcs = ["vitis_hls_env.sh"])
 
 sh_binary(
-    name = "xsc",
-    srcs = ["xsc.sh"],
+    name = "xsc_xv",
+    srcs = ["xsc_xv.sh"],
+)
+
+sh_binary(
+    name = "xsc_legacy_rdi",
+    srcs = ["xsc_legacy_rdi.sh"],
 )

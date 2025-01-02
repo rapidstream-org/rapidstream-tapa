@@ -105,7 +105,21 @@ cc_library(
 )
 
 new_local_repository(
-    name = "xsim",
+    name = "xsim_xv",
+    build_file_content = """
+cc_library(
+    name = "svdpi",
+    hdrs = glob(["include/svdpi.h"]),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+    """,
+    # Starting from 2024.2, Vivado has renamed rdi to xv
+    path = "/opt/tools/xilinx/Vivado/2024.2/data/xsim",
+)
+
+new_local_repository(
+    name = "xsim_legacy_rdi",
     build_file_content = """
 cc_library(
     name = "svdpi",

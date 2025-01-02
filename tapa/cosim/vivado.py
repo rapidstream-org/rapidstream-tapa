@@ -7,10 +7,36 @@ RapidStream Contributor License Agreement.
 """
 
 import logging
+import re
+import subprocess
 
 from tapa.common import paths
 
 _logger = logging.getLogger().getChild(__name__)
+
+
+def get_vivado_version() -> str:
+    """Return the Vivado version."""
+    command = ["vivado", "-version"]
+    try:
+        output = subprocess.check_output(command, stderr=subprocess.STDOUT)
+        version_lines = output.decode("utf-8")
+        # vivado v2024.2
+        match = re.search(r"vivado v(\d+\.\d+)", version_lines)
+        if match is None:
+            error = f"Failed to parse Vivado version from:\n{version_lines}"
+            raise ValueError(error)
+        version = match.group(1)
+        _logger.info("Vivado version: %s", version)
+        return version
+
+    except FileNotFoundError:
+        error = "Vivado not found. Please add Vivado to PATH."
+        raise FileNotFoundError(error)
+
+    except subprocess.CalledProcessError as e:
+        error = f"Failed to get Vivado version: {e.output.decode('utf-8')}"
+        raise ValueError(error) from e
 
 
 def get_vivado_tcl(
@@ -19,6 +45,12 @@ def get_vivado_tcl(
     save_waveform: bool,
 ) -> list[str]:
     """Generate a Vivado TCL script for cosimulation."""
+    dpi_version = (
+        "tapa_fast_cosim_dpi_xv"
+        if get_vivado_version() >= "2024.2"
+        else "tapa_fast_cosim_dpi_legacy_rdi"
+    )
+
     tapa_hdl_path = config["verilog_path"]
 
     script = []
@@ -80,7 +112,7 @@ def get_vivado_tcl(
         _logger.info("DPI directory: %s", dpi_library_dir)
         script.append(
             "set_property -name {xelab.more_options} "
-            f"-value {{-sv_root {dpi_library_dir} -sv_lib tapa_fast_cosim_dpi}} "
+            f"-value {{-sv_root {dpi_library_dir} -sv_lib {dpi_version}}} "
             "-objects [get_filesets sim_1]"
         )
 
