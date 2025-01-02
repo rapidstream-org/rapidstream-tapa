@@ -9,9 +9,12 @@ RapidStream Contributor License Agreement.
 import os
 from pathlib import Path
 
+import click
+
 from rapidstream import get_u250_vitis_device_factory
 from rapidstream.assets.floorplan.floorplan_config import FloorplanConfig
 from rapidstream.assets.utilities.impl import ImplConfig
+from rapidstream.utilities.click import command
 
 VITIS_PLATFORM = "xilinx_u250_gen3x16_xdma_4_1_202210_1"
 TEMP_DIR = Path(".")
@@ -66,24 +69,40 @@ def gen_floorplan_config() -> None:
     floorplan_config.save_to_file(FLOOR_PLAN_CONFIG)
 
 
-def gen_impl_config() -> None:
+def gen_impl_config(max_workers: int, max_synth_jobs: int) -> None:
     """Generate implementation configuration."""
     impl_config = ImplConfig(
-        max_workers=1,  # to avoid too many active jobs in parallel during tests
+        max_workers=max_workers,  # to avoid too many parallel active jobs during tests
         placement_strategy="EarlyBlockPlacement",
         port_to_clock_period={"ap_clk": 2.8},
         vitis_platform="xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        max_synth_jobs=max_synth_jobs,
     )
     impl_config.save_to_file(IMPL_CONFIG)
 
 
-def gen_config() -> None:
+@command
+@click.option(
+    "--max-workers",
+    type=int,
+    default=1,
+    help="Number of parallel workers for Vivado implementation. Default is 1.",
+    show_default=True,
+)
+@click.option(
+    "--max-synth-jobs",
+    type=int,
+    default=1,
+    help="Number of synthesis jobs for each Vivado implementation. Default is 1.",
+    show_default=True,
+)
+def gen_config(max_workers: int, max_synth_jobs: int) -> None:
     """Generate configuration files."""
     if not os.path.exists(TEMP_DIR):
         os.makedirs(TEMP_DIR)
     gen_device_config()
     gen_floorplan_config()
-    gen_impl_config()
+    gen_impl_config(max_workers, max_synth_jobs)
 
 
 if __name__ == "__main__":
