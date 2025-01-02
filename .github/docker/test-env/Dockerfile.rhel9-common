@@ -12,6 +12,7 @@ ARG DOCKER_GROUP_ID
 #   - util-linux
 
 # Required by Vivado:
+#   - hostname
 #   - libX11
 
 # Required by us:
@@ -30,6 +31,7 @@ RUN yum update -y && \
         git \
         glibc-langpack-en \
         gperf \
+        hostname \
         libX11 \
         libxcrypt-compat \
         ocl-icd \
