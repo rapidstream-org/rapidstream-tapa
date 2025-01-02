@@ -14,7 +14,7 @@ RS_RUN_DIR=run
 mkdir -p ${WORK_DIR}
 
 # Generate configuration files
-rapidstream ./gen_config.py
+rapidstream ./gen_config.py --max-workers 1 --max-synth-jobs 1
 
 # Synthesizing the app to generate the XO file
 tapa \
