@@ -1,0 +1,82 @@
+/*
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+*/
+
+@import url("./button.css");
+
+/* reset */
+header ul,
+aside ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+
+
+/* body */
+body {
+	display: grid;
+	grid-template: auto 1fr / auto 1fr;
+}
+
+/* header */
+header {
+	grid-column: 1 / -1;
+	box-sizing: border-box;
+	min-height: 2rem;
+	padding: .1rem 1rem;
+	border-bottom: 1px solid gray;
+}
+
+header,
+header .flex {
+	display: flex;
+	align-items: center;
+	gap: .5rem;
+}
+
+header .tools { margin-left: auto; }
+header .tools hr { height: 1rem; margin: 0; }
+
+header .grouping > li > label:hover {
+	background-color: #EEE;
+}
+header .grouping > li > label:has(:checked) {
+	background-color: #CCC;
+}
+
+/* main */
+
+main {
+	width: 75vw;
+	min-width: 40vw;
+	max-width: 85vw;
+	overflow: auto;
+	resize: horizontal;
+}
+
+main > .graph-container > .tooltip {
+	overflow-wrap: anywhere;
+}
+
+/* aside */
+
+aside {
+	display: flex;
+}
+
+aside > .tabs {
+	display: flex;
+	flex-direction: column;
+	gap: .5rem;
+	padding: .5rem;
+	border-left: 1px solid gray;
+	border-right: 1px solid gray;
+}
+
+
+aside > .contents {
+	flex: 1;
+}

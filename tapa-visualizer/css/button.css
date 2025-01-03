@@ -1,0 +1,76 @@
+/*
+# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+*/
+
+.btn {
+	position: relative;
+	padding: 2px;
+	border: 1px solid #CCC;
+	border-radius: 2px;
+	font-size: smaller; /* for non-<button> .btn element like <label> */
+}
+
+/* button text tooltip
+	set top / right / bottom / left to position the text tooltip;
+	Center .btn-text in the parent element, instead of translate(-50%) */
+.btn > .btn-text {
+	position: absolute;
+	padding: .5rem;
+	border: 1px solid;
+	border-radius: 4px;
+	background-color: white;
+	line-height: 1;
+}
+
+/* triangle of the tooltip
+	set top / right / bottom / left to position triangle of the tooltip;
+	set transform: rotate(xxxdeg) to rotate the triangle. */
+.btn > .btn-text::before {
+	content: "";
+	position: absolute;
+	box-sizing: border-box;
+	display: block;
+	width: 8px;
+	height: 8px;
+	border: 1px solid;
+	border-color: currentColor transparent transparent currentColor;
+	background: linear-gradient(-45deg, transparent 33%, white 33%);
+}
+.btn:not(:hover):not(:focus) > .btn-text {
+	display: none;
+}
+
+header .btn {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+}
+header .btn > .btn-text {
+	top: 1.9rem;
+}
+header .btn > .btn-text::before {
+	top: -4px;
+	left: calc(50% - 4px);
+	transform: rotate(45deg);
+}
+
+/* Don't wrap "Toggle Sidebar" on wide screen */
+@media (min-width: 75em) { /* 75em * 16px = 1200px = xl in Bootstrap */
+	header { padding: .1rem 2.5rem; }
+	header .btn > .btn-text { white-space: pre; }
+}
+
+aside > .tabs .btn {
+	display: flex;
+	align-items: center;
+}
+aside > .tabs .btn > .btn-text {
+	right: 1.5rem;
+}
+aside > .tabs .btn > .btn-text::before {
+	top: calc(50% - 4px);
+	right: -4px;
+	transform: rotate(135deg);
+}
