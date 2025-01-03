@@ -367,6 +367,6 @@ def run_tapacc(
     )
     tapacc_cmd = (tapacc, *files, *tapacc_args)
     quoted_cmd = " ".join(f'"{arg}"' if " " in arg else arg for arg in tapacc_cmd)
-    _logger.info("Running tapacc command: %s", quoted_cmd)
+    _logger.info("running tapacc command: %s", quoted_cmd)
 
     return json.loads(run_and_check(tapacc_cmd))
