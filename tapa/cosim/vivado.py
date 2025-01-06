@@ -21,8 +21,8 @@ def get_vivado_version() -> str:
     try:
         output = subprocess.check_output(command, stderr=subprocess.STDOUT)
         version_lines = output.decode("utf-8")
-        # vivado v2024.2
-        match = re.search(r"vivado v(\d+\.\d+)", version_lines)
+        # e.g., vivado v2024.2  Vivado v2022.2
+        match = re.search(r"vivado v(\d+\.\d+)", version_lines, re.IGNORECASE)
         if match is None:
             error = f"Failed to parse Vivado version from:\n{version_lines}"
             raise ValueError(error)
