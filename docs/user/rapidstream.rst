@@ -335,9 +335,13 @@ generate U-shaped detours to help alleviate congestion in direct paths.
 RapidStream typically inserts two flip-flops (FFs) per slot crossing for
 pipelining. However, in cases of high FF usage, this approach may cause
 additional resource congestion. Users can opt for a single FF per crossing by
-using the ``--single-reg`` option in the ``rapidstream-tapaopt`` command.
+setting the ``pp_scheme`` attribute to ``single`` in a pipeline configuration
+json file, and pass the file to RapidStream using the ``--pipeline-config``
+option in the ``rapidstream-tapaopt`` command. ``pp_scheme`` can also be set
+to ``single_h_double_v`` to use a single FF for horizontal crossings and two
+FFs for vertical crossings. Its default value is ``double``.
 
 .. note::
 
    ``set_slot_capacity`` can be used for rerouting stream connections. And
-   ``--single-reg`` can be used to reduce FF usage.
+   ``pp_scheme`` can be used to control FF usage for inter-slot pipelining.

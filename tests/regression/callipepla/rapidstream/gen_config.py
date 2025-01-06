@@ -14,12 +14,14 @@ import click
 from rapidstream import get_u55c_vitis_3x3_device_factory
 from rapidstream.assets.floorplan.floorplan_config import FloorplanConfig
 from rapidstream.assets.utilities.impl import ImplConfig
+from rapidstream.assets.utilities.pipeline_config import PipelineConfig
 from rapidstream.utilities.click import command
 
 VITIS_PLATFORM = "xilinx_u55c_gen3x16_xdma_3_202210_1"
 TEMP_DIR = Path(".")
-FLOOR_PLAN_CONFIG = TEMP_DIR / "floorplan_config.json"
 DEVICE_CONFIG = TEMP_DIR / "device_config.json"
+FLOORPLAN_CONFIG = TEMP_DIR / "floorplan_config.json"
+PIPELINE_CONFIG = TEMP_DIR / "pipeline_config.json"
 IMPL_CONFIG = TEMP_DIR / "impl_config.json"
 
 
@@ -84,7 +86,15 @@ def gen_floorplan_config() -> None:
             "SLOT_X2Y2:SLOT_X2Y2": {"LUT": 0.4},
         },
     )
-    floorplan_config.save_to_file(FLOOR_PLAN_CONFIG)
+    floorplan_config.save_to_file(FLOORPLAN_CONFIG)
+
+
+def gen_pipeline_config() -> None:
+    """Generate pipeline configuration."""
+    pipeline_config = PipelineConfig(
+        pipeline_data_of_intra_slot_fifo=True,
+    )
+    pipeline_config.save_to_file(PIPELINE_CONFIG)
 
 
 def gen_impl_config(max_workers: int, max_synth_jobs: int) -> None:
@@ -120,6 +130,7 @@ def gen_config(max_workers: int, max_synth_jobs: int) -> None:
         os.makedirs(TEMP_DIR)
     gen_device_config()
     gen_floorplan_config()
+    gen_pipeline_config()
     gen_impl_config(max_workers, max_synth_jobs)
 
 
