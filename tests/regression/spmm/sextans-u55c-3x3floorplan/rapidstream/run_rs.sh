@@ -33,9 +33,9 @@ rapidstream-tapaopt \
     --tapa-xo-path ${WORK_DIR}/${XO_FILE} \
     --device-config ./device_config.json \
     --floorplan-config ./floorplan_config.json \
+    --pipeline-config ./pipeline_config.json \
     --connectivity-ini ./link_config.ini \
     --implementation-config ./impl_config.json \
-    --pp-scheme single_h_double_v \
     --run-impl \
     # --extract-metrics \
     # --skip-preprocess \
@@ -43,7 +43,6 @@ rapidstream-tapaopt \
     # --skip-add-pipeline \
     # --skip-export \
     # --setup-single-slot-eval \
-    # --single-reg \
 
 # Report QoRs
 rapidstream ../../../../utilities/report_qor.py --run-dir ${RS_RUN_DIR}
