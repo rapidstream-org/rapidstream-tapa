@@ -45,7 +45,8 @@ those contributing to or extending the TAPA framework itself.
   tutorial/async_mmap
   tutorial/migrate_from_vitis_hls
   tutorial/debug_tips
-  tutorial/example
+  tutorial/mini_example
+  tutorial/realworld_example
   tutorial/getting_started_vadd
 
 .. toctree::
