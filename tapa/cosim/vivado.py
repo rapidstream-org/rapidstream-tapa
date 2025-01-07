@@ -43,6 +43,7 @@ def get_vivado_tcl(
     config: dict,
     tb_rtl_path: str,
     save_waveform: bool,
+    start_gui: bool,
 ) -> list[str]:
     """Generate a Vivado TCL script for cosimulation."""
     dpi_version = (
@@ -117,11 +118,12 @@ def get_vivado_tcl(
         )
 
     # log all signals
-    if save_waveform:
+    if save_waveform or start_gui:
         script.append(
             r"set_property -name {xsim.simulate.log_all_signals} "
             r"-value {true} -objects [get_filesets sim_1]"
         )
+    if save_waveform:
         script.append(
             r"set_property -name {xsim.simulate.wdb} "
             r"-value {wave.wdb} -objects [get_filesets sim_1]"

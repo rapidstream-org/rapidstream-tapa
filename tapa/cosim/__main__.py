@@ -207,7 +207,12 @@ def main() -> None:  # pylint: disable=too-many-locals
             "Use --save_waveform to save the simulation waveform."
         )
 
-    vivado_script = get_vivado_tcl(config, args.tb_output_dir, args.save_waveform)
+    vivado_script = get_vivado_tcl(
+        config,
+        args.tb_output_dir,
+        args.save_waveform,
+        args.start_gui,
+    )
 
     with open(f"{args.tb_output_dir}/run/run_cosim.tcl", "w", encoding="utf-8") as fp:
         fp.write("\n".join(vivado_script))
