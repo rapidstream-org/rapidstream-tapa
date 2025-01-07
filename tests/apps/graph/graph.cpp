@@ -9,6 +9,11 @@
 
 #include <tapa.h>
 
+// TODO: remove `__has_include` guards when we drop support for 2022.1.
+#if __has_include(<hls_fence.h>)
+#include <hls_fence.h>
+#endif
+
 using Vid = uint32_t;
 using Eid = uint32_t;
 using Pid = uint16_t;
@@ -179,6 +184,12 @@ void Control(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
       }
     }
 
+    // Make sure both ostreams has been written before reading responses.
+#if __has_include(<hls_fence.h>)
+    // TODO: use half-fence once we drop support for 2023.2.
+    hls::fence(update_config_q, req_q, resp_q);
+#endif
+
     // Wait until all partitions are done with the scatter phase.
     for (Pid pid = 0; pid < num_partitions;) {
       if (!done[pid]) {
@@ -201,6 +212,12 @@ void Control(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
                   eid_offsets[pid]};
       req_q.write(req);
     }
+
+    // Make sure requests has been written before reading responses.
+#if __has_include(<hls_fence.h>)
+    // TODO: use half-fence once we drop support for 2023.2.
+    hls::fence(req_q, resp_q);
+#endif
 
     // Wait until all partitions are done with the gather phase.
     for (Pid pid = 0; pid < num_partitions;) {
