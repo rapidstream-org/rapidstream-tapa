@@ -230,13 +230,6 @@ void UpdateHandler(Pid num_partitions,
                    tapa::istream<Update>& update_in_q,
                    tapa::ostream<Update>& update_out_q,
                    tapa::mmap<Update> updates) {
-  // HLS crashes without this...
-  update_out_q.close();
-#ifdef __SYNTHESIS__
-  ap_wait();
-#endif  // __SYNTEHSIS__
-  update_in_q.open();
-
   // Base vid of all vertices; used to determine dst partition id.
   Vid base_vid = 0;
   // Used to determine dst partition id.
@@ -308,13 +301,6 @@ void ProcElem(tapa::istream<TaskReq>& req_q, tapa::ostream<TaskResp>& resp_q,
               tapa::istream<Update>& update_in_q,
               tapa::ostream<Update>& update_out_q,
               tapa::mmap<VertexAttr> vertices, tapa::mmap<const Edge> edges) {
-  // HLS crashes without this...
-  update_in_q.open();
-#ifdef __SYNTHESIS__
-  ap_wait();
-#endif  // __SYNTEHSIS__
-  update_out_q.close();
-
   VertexAttr vertices_local[kMaxPartitionSize];
 #pragma HLS bind_storage variable = vertices_local type = RAM_T2P impl = URAM
 
