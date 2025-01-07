@@ -149,11 +149,17 @@ def get_xpfm_path(platform: str) -> str | None:
 
 def get_vendor_include_paths() -> Iterable[str]:
     """Yields include paths that are automatically available in vendor tools."""
-    xilinx_hls = get_xilinx_tool_path("HLS")
-    if xilinx_hls is not None:
-        # include VITIS_HLS/include
-        yield os.path.join(xilinx_hls, "include")
+    xilinx_hls: str | None = None
+    for tool_name in "HLS", "VITIS":
+        # 2024.2 moved the HLS include path from Vitis_HLS to Vitis
+        xilinx_hls = get_xilinx_tool_path(tool_name)
+        if xilinx_hls is not None:
+            include = os.path.join(xilinx_hls, "include")
+            if os.path.exists(include):
+                yield include
+                break
 
+    if xilinx_hls is not None:
         # there are multiple versions of gcc, such as 6.2.0, 9.3.0, 11.4.0,
         # we choose the latest version based on numerical order
         tps_lnx64 = Path(xilinx_hls) / "tps" / "lnx64"
