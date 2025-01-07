@@ -281,6 +281,7 @@ init:
         break;
     }
   }
+  update_config_q.open();
 
   TAPA_WHILE_NOT_EOT(update_req_q) {
     // Each UpdateReq either requests forwarding all Updates from ProcElem to
@@ -319,6 +320,7 @@ init:
       update_out_q.close();
     }
   }
+  update_req_q.open();
   VLOG(3) << "info@UpdateHandler: done";
 }
 
@@ -369,6 +371,7 @@ void ProcElem(tapa::istream<TaskReq>& req_q, tapa::ostream<TaskResp>& resp_q,
     TaskResp resp{req.phase, req.pid, active};
     resp_q.write(resp);
   }
+  req_q.open();
 
   // Terminates the UpdateHandler.
   update_req_q.close();
