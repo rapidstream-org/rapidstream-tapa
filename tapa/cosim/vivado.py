@@ -131,6 +131,5 @@ def get_vivado_tcl(
 
     script.append(r"launch_simulation")
     script.append(r"run all")
-    script.append(r"exit")
 
     return script
