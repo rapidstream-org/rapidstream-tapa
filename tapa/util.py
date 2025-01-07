@@ -159,6 +159,10 @@ def get_vendor_include_paths() -> Iterable[str]:
         tps_lnx64 = Path(xilinx_hls) / "tps" / "lnx64"
         gcc_paths = tps_lnx64.glob("gcc-*.*.*")
         gcc_versions = [path.name.split("-")[1] for path in gcc_paths]
+        if not gcc_versions:
+            _logger.critical("cannot find HLS vendor GCC")
+            _logger.critical("it should be at %s", tps_lnx64)
+            return
         gcc_versions.sort(key=lambda x: tuple(map(int, x.split("."))))
         latest_gcc = gcc_versions[-1]
 
