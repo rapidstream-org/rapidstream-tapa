@@ -51,10 +51,10 @@ Save this code to a file named ``gen_device.py`` and run it using the
    Please install RapidStream and a valid license before running the
    ``rapidstream`` executable.
 
-Step 2: Configure the Floorplan Process
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 2: Configure the Floorplanning Process
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Next, create a configuration file for the floorplan process. Here's a
+Next, create a configuration file for the floorplanning process. Here's a
 simple example that assigns all ports to ``SLOT_X0Y0``:
 
 .. code-block:: python
@@ -72,7 +72,29 @@ Save this code to a file named ``gen_floorplan_config.py`` and run it:
 
    rapidstream gen_floorplan_config.py
 
-Step 3: Run Partition-and-Pipeline Optimization
+Step 3: Configure the Pipelining Process
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Then, create another configuration file for the pipelining process. Here's an
+example that sets the pipeline scheme to using a single flip-flop per slot
+crossing:
+
+.. code-block:: python
+
+   from rapidstream import PipelineConfig
+
+   config = PipelineConfig(
+       pp_scheme="single",
+   )
+   config.save_to_file("pipeline_config.json")
+
+Save this code to a file named ``gen_pipeline_config.py`` and run it:
+
+.. code-block:: bash
+
+   rapidstream gen_pipeline_config.py
+
+Step 4: Run Partition-and-Pipeline Optimization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Finally, use the ``rapidstream-tapaopt`` executable to perform the
@@ -84,7 +106,8 @@ partition-and-pipeline optimization:
        --work-dir ./build \
        --tapa-xo-path [path-to-xo-file] \
        --device-config u55c_device.json \
-       --floorplan-config floorplan_config.json
+       --floorplan-config floorplan_config.json \
+       --pipeline-config pipeline_config.json
 
 This command generates a new XO file with the optimized design.
 
@@ -181,8 +204,8 @@ This line creates a JSON file named ``u55c_device.json`` that contains the
 configuration details for the virtual device. You can use this file in the
 floorplan process as an argument to the ``--device-config`` option.
 
-Controlling the Floorplan
--------------------------
+Controlling the Floorplanning
+-----------------------------
 
 Constrain IO Locations
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -212,6 +235,88 @@ At the same time, you can use the ``cell_pre_assignments`` setting to put
 specific parts of your design in specific slots. Its usage is similar to
 ``port_pre_assignments`` except that it applies to cells instead of ports,
 and the pattern is matched against the cell's hierarchical name.
+
+Reproducing the Floorplan of Previous Runs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since the ILP-based floorplanning is non-deterministic, you may want to
+reproduce your previous floorplan and tune other stages. RapidStream
+generates a floorplan checkpoint ``floorplan.json`` for each solution
+under the ``<--work-dir>/dse/solution_*`` directory. You can copy the
+dictionary in it, e.g.,
+
+.. code-block:: json
+
+   {
+      "FloatvAddFloatv_0": "SLOT_X2Y0:SLOT_X2Y0",
+      "FloatvAddFloatv_1": "SLOT_X1Y1:SLOT_X1Y1",
+      "...": "..."
+   }
+
+and paste it into the floorplan configuration python script or json file,
+as the value of the ``cell_pre_assignments`` attribute, e.g.,
+
+.. code-block:: json
+
+   {
+      "...": "...",
+      "cell_pre_assignments": {
+         "FloatvAddFloatv_0": "SLOT_X2Y0:SLOT_X2Y0",
+         "FloatvAddFloatv_1": "SLOT_X1Y1:SLOT_X1Y1",
+         "...": "..."
+      },
+      "...": "..."
+   }
+
+Then, you can start the next run by giving ``--floorplan-config`` the
+updated floorplan configuration ``floorplan_config.json`` above.
+
+
+Controlling the Pipelining
+--------------------------
+
+Reproducing the Pipelining Result of Previous Runs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Similar to floorplanning, the pipelining result is also non-deterministic.
+RapidStream generates a pipeline checkpoint ``pipeline.json`` for each solution
+under the ``<--work-dir>/dse/solution_*`` directory. You can copy the
+dictionary in it, e.g.,
+
+.. code-block:: json
+
+   {
+      "1000_fifo_aBvec_12_reset": [
+         [0, 2], [0, 1], [0, 0]
+      ],
+      "1001_fifo_aBvec_13_reset": [
+         [0, 2], [0, 1], [0, 0]
+      ],
+      "...": "..."
+   }
+
+and paste it into the pipeline configuration python script or json file,
+as the value of the ``nets_pre_assigned`` attribute, e.g.,
+
+.. code-block:: json
+
+   {
+      "...": "...",
+      "nets_pre_assigned": {
+         "1000_fifo_aBvec_12_reset": [
+            [0, 2], [0, 1], [0, 0]
+         ],
+         "1001_fifo_aBvec_13_reset": [
+            [0, 2], [0, 1], [0, 0]
+         ],
+         "...": "..."
+      },
+      "...": "..."
+   }
+
+Then, you can start the next run by giving ``--pipeline-config`` the
+updated pipeline configuration ``pipeline_config.json`` above.
+
 
 Design Space Exploration
 ------------------------
