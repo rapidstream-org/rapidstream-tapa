@@ -176,6 +176,20 @@ class mmap {
   uint64_t size_;
 };
 
+template <typename T>
+class immap : public mmap<T> {
+ public:
+  // Inherit all constructors from mmap
+  using mmap<T>::mmap;
+};
+
+template <typename T>
+class ommap : public mmap<T> {
+ public:
+  // Inherit all constructors from mmap
+  using mmap<T>::mmap;
+};
+
 /// Defines a view of a piece of consecutive memory with asynchronous random
 /// accesses.
 template <typename T>
@@ -475,6 +489,57 @@ TAPA_DEFINE_MMAP(read_only);
 TAPA_DEFINE_MMAP(write_only);
 TAPA_DEFINE_MMAP(read_write);
 #undef TAPA_DEFINE_MMAP
+
+// Host-only immap types that must have correct size.
+#define TAPA_DEFINE_IMMAP(tag)                            \
+  template <typename T>                                   \
+  class tag##_immap : public immap<T> {                   \
+    tag##_immap(T* ptr) : immap<T>(ptr) {}                \
+                                                          \
+   public:                                                \
+    using immap<T>::immap;                                \
+    tag##_immap(const immap<T>& base) : immap<T>(base) {} \
+                                                          \
+    template <uint64_t N>                                 \
+    tag##_immap<vec_t<T, N>> vectorized() const {         \
+      return immap<T>::template vectorized<N>();          \
+    }                                                     \
+    template <typename U>                                 \
+    tag##_immap<U> reinterpret() const {                  \
+      return immap<T>::template reinterpret<U>();         \
+    }                                                     \
+  }
+TAPA_DEFINE_IMMAP(placeholder);
+TAPA_DEFINE_IMMAP(read_only);
+TAPA_DEFINE_IMMAP(write_only);
+TAPA_DEFINE_IMMAP(read_write);
+#undef TAPA_DEFINE_IMMAP
+
+// Host-only ommap types that must have correct size.
+#define TAPA_DEFINE_OMMAP(tag)                            \
+  template <typename T>                                   \
+  class tag##_ommap : public ommap<T> {                   \
+    tag##_ommap(T* ptr) : ommap<T>(ptr) {}                \
+                                                          \
+   public:                                                \
+    using ommap<T>::ommap;                                \
+    tag##_ommap(const ommap<T>& base) : ommap<T>(base) {} \
+                                                          \
+    template <uint64_t N>                                 \
+    tag##_ommap<vec_t<T, N>> vectorized() const {         \
+      return ommap<T>::template vectorized<N>();          \
+    }                                                     \
+    template <typename U>                                 \
+    tag##_ommap<U> reinterpret() const {                  \
+      return ommap<T>::template reinterpret<U>();         \
+    }                                                     \
+  }
+TAPA_DEFINE_OMMAP(placeholder);
+TAPA_DEFINE_OMMAP(read_only);
+TAPA_DEFINE_OMMAP(write_only);
+TAPA_DEFINE_OMMAP(read_write);
+#undef TAPA_DEFINE_OMMAP
+
 #define TAPA_DEFINE_MMAPS(tag)                                        \
   template <typename T, uint64_t S>                                   \
   class tag##_mmaps : public mmaps<T, S> {                            \
@@ -604,5 +669,20 @@ struct accessor<mmaps<T, S>, mmaps<T, S>> {
 }  // namespace internal
 
 }  // namespace tapa
+
+// Generalized window_readincr for AIE
+template <typename T>
+T window_readincr(tapa::immap<const T>& mem) {
+  T res = *mem;
+  mem++;
+  return res;
+}
+
+// Generalized window_writeincr for AIE
+template <typename T>
+void window_writeincr(tapa::ommap<T>& mem, const T& val) {
+  *mem = val;
+  mem++;
+}
 
 #endif  // TAPA_HOST_MMAP_H_
