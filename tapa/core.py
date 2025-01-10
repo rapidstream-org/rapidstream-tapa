@@ -23,6 +23,7 @@ import tempfile
 import zipfile
 from concurrent import futures
 from pathlib import Path
+from typing import NamedTuple
 from xml.etree import ElementTree as ET
 
 import toposort
@@ -236,6 +237,20 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
         cpp_dir = os.path.join(self.work_dir, "cpp")
         os.makedirs(cpp_dir, exist_ok=True)
         return cpp_dir
+
+    @property
+    def report(self):
+        # ruff: noqa: ANN201
+        """Returns all formats of TAPA report as a namedtuple."""
+
+        class Report(NamedTuple):
+            json: str
+            yaml: str
+
+        return Report(
+            json=os.path.join(self.report_dir, "report.json"),
+            yaml=os.path.join(self.report_dir, "report.yaml"),
+        )
 
     @staticmethod
     def get_custom_rtl_files(rtl_paths: tuple[Path, ...]) -> list[Path]:
@@ -519,17 +534,9 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
 
         _logger.info("generating report")
         task_report = self.top_task.report
-        with open(
-            os.path.join(self.work_dir, "report.yaml"),
-            "w",
-            encoding="utf-8",
-        ) as fp:
+        with open(self.report.yaml, "w", encoding="utf-8") as fp:
             yaml.dump(task_report, fp, default_flow_style=False, sort_keys=False)
-        with open(
-            os.path.join(self.work_dir, "report.json"),
-            "w",
-            encoding="utf-8",
-        ) as fp:
+        with open(self.report.json, "w", encoding="utf-8") as fp:
             json.dump(task_report, fp, indent=2)
 
         # self.files won't be populated until all tasks are instrumented
@@ -553,6 +560,11 @@ class Program:  # noqa: PLR0904  # TODO: refactor this class
 
         _logger.info("packaging HLS report")
         with zipfile.ZipFile(output_file, "a", zipfile.ZIP_DEFLATED) as packed_obj:
+            for filename in self.report:
+                arcname = os.path.basename(filename)
+                _logger.debug("  packing %s", arcname)
+                packed_obj.write(filename, arcname)
+
             report_glob = os.path.join(glob.escape(self.report_dir), "*_csynth.xml")
             for filename in glob.iglob(report_glob):
                 arcname = os.path.join("report", os.path.basename(filename))
