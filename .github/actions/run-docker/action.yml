@@ -28,11 +28,6 @@ runs:
 
     - name: Run commands in the Docker container with the build environment setup
       run: |
-        # TODO: remove once all runners are labeled.
-        containers=($(docker ps --filter=health=none --format={{.ID}}))
-        if (( ${#containers[@]} )); then
-          docker stop "${containers[@]}"
-        fi
         label=tapa-github-runner
         containers=($(docker ps --filter=label="${label}" --format={{.ID}}))
         if (( ${#containers[@]} )); then
