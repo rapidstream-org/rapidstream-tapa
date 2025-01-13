@@ -3,6 +3,7 @@ build --copt=-Wno-unknown-pragmas
 build --copt=-Wno-unused-label
 build --copt=-Werror
 build --incompatible_autoload_externally=+@rules_python,+@rules_shell
+build --incompatible_default_to_explicit_init_py # Don't overwrite __init__.py files
 build --incompatible_strict_action_env
 
 build:asan --compilation_mode=dbg

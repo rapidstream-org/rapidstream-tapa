@@ -94,6 +94,7 @@ py_library(
         ":util",
         "//tapa/backend",
         "//tapa/verilog",
+        "//tapa/verilog/xilinx:module",
         requirement("psutil"),
         requirement("pyverilog"),
         requirement("pyyaml"),

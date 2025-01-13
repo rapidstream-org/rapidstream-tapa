@@ -11,6 +11,7 @@ py_library(
     srcs = glob(["*.py"]),
     visibility = ["//tapa:__subpackages__"],
     deps = [
+        "//tapa:util",
         "//tapa/backend",
         "//tapa/verilog/xilinx",
         requirement("jinja2"),

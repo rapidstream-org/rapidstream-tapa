@@ -5,6 +5,7 @@
 # RapidStream Contributor License Agreement.
 
 load("@tapa_deps//:requirements.bzl", "requirement")
+load("//bazel:pytest_rules.bzl", "py_test")
 
 package(
     default_visibility = ["//tapa:__subpackages__"],
@@ -14,10 +15,33 @@ py_library(
     name = "xilinx",
     srcs = glob(
         ["*.py"],
+        exclude = [
+            "module.py",
+            "*_test.py",
+        ],
     ),
     deps = [
         "//tapa/backend",
         requirement("jinja2"),
         requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "module",
+    srcs = ["module.py"],
+    deps = [
+        "//tapa/backend",
+        "//tapa/verilog",
+        requirement("jinja2"),
+        requirement("pyverilog"),
+    ],
+)
+
+py_test(
+    name = "module_test",
+    srcs = ["module_test.py"],
+    deps = [
+        ":module",
     ],
 )

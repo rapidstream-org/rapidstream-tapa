@@ -27,7 +27,10 @@ string_flag(
     ],
 )
 
-exports_files(["nuitka_wrapper.py"])
+exports_files([
+    "nuitka_wrapper.py",
+    "pytest_wrapper.py",
+])
 
 xilinx_wrapper(
     name = "v++",
