@@ -20,33 +20,58 @@ export const getGraphData = (json) => {
     combos: [],
   };
 
-  /** @type {Map<string, Set<number>>} */
-  const nodes = new Map();
-
   for (const taskName in json.tasks) {
 
     const task = json.tasks[taskName];
 
-    // skip lower tasks
+    // Skip lower tasks
     if (task.level !== "upper") continue;
+
+    // Add upper task as combo
+    graphData.combos.push({
+      id: taskName,
+      data: task,
+      type: taskName === json.top ? "rect" : "circle"
+    });
+
+    // Add sub task as node
+    for (const subTaskName in task.tasks) {
+      const subTasks = task.tasks[subTaskName];
+      subTasks.forEach(
+        (subTask, i) => graphData.nodes.push({
+          id: `${subTaskName}/${i}`,
+          combo: taskName,
+          data: subTask
+        })
+      );
+    }
 
     /** fifo groups for fifos like fifo_x_xx[0], fifo_x_xx[1]...
      * @type {Map<string, Set<number> & {source: string, target: string}>} */
     const fifoGroups = new Map();
 
     for (const fifoName in task.fifos) {
-      const [source, sourceId] = task.fifos[fifoName].produced_by;
-      const [target, targetId] = task.fifos[fifoName].consumed_by;
-      // console.log(taskName, fifoName, source, target);
+      const fifo = task.fifos[fifoName];
+      if (!fifo.produced_by || !fifo.consumed_by) {
+        console.warn(
+          `Missing produced_by / consumed_by in ${taskName}'s ${fifoName}:`,
+          fifo,
+        );
+        continue;
+      }
 
-      addToMappedSet(nodes, source, sourceId);
-      addToMappedSet(nodes, target, targetId);
+      const source = fifo.produced_by.join("/");
+      const target = fifo.consumed_by.join("/");
+
+      // console.log(taskName, fifoName, source, target);
 
       /** Match fifo groups */
       const matchResult = fifoName.match(/^(.*)\[(\d+)\]$/);
       if (matchResult === null) {
         // Not fifo groups, add edge
-        graphData.edges.push({ source, target, id: fifoName });
+        graphData.edges.push(
+          { source, target, id: `${taskName}/${fifoName}`, data: fifo }
+        );
       } else {
         // add fifo group index
         const name = matchResult[1];
@@ -60,19 +85,26 @@ export const getGraphData = (json) => {
       const [name, source, target] = key.split("\n");
       const indexArr = [...indexs.values()].sort((a, b) => a - b);
       if (indexArr.some((index, i) => index !== i)) {
-        console.warn(`fifo group: indexes are not continuous at ${taskName}'s ${name}`);
+        console.warn(
+          `fifo group: indexes are not continuous at ${taskName}'s ${name}`
+        );
       }
       const idWithIndexRange = `${name}[${indexArr[0]}~${indexArr.at(-1)}]`;
-      graphData.edges.push({ source, target, id: idWithIndexRange });
+      graphData.edges.push(
+        { source, target, id: `${taskName}/${idWithIndexRange}` }
+      );
     })
 
   }
 
-  nodes.forEach(
-    (_ids, name) => graphData.nodes.push(
-      { id: name },
-    ),
-  );
+  graphData.combos.forEach(combo => {
+    if (combo.type === "circle") {
+      const node = graphData.nodes.find(
+        ({id}) => id.split("/")[0] === combo.id
+      );
+      if (node) graphData.edges.push({ source: combo.id, target: node.id });
+    }
+  })
 
   return graphData;
 
