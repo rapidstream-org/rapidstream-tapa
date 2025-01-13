@@ -88,21 +88,18 @@ const setupGraphButtons = (graph) => {
       }
     },
     combo: {
-      type: "rect",
+      // type: "rect",
       style: {
         labelText: combo => combo.id,
         labelFill: "gray",
-        labelFontSize: 9,
+        labelFontSize: 10,
         labelPlacement: "top",
+        strokeWidth: 2,
       }
     },
 
     layout: {
-      type: "d3-force",
-      nodeSize: 150,
-      collide: {
-        strength: 0.5,
-      },
+      type: "force",
     },
     behaviors: ["drag-canvas", "zoom-canvas", "drag-element"],
     transforms: ["process-parallel-edges"],
