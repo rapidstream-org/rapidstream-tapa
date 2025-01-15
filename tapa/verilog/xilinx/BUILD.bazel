@@ -41,6 +41,10 @@ py_library(
 py_test(
     name = "module_test",
     srcs = ["module_test.py"],
+    data = [
+        "//tapa/verilog/xilinx/testdata:LowerLevelTask.v",
+        "//tapa/verilog/xilinx/testdata:UpperLevelTask.v",
+    ],
     deps = [
         ":module",
     ],
