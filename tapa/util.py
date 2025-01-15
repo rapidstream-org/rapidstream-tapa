@@ -26,6 +26,12 @@ if TYPE_CHECKING:
 _logger = logging.getLogger().getChild(__name__)
 
 
+class Options:
+    """Global configuration options."""
+
+    enable_pyslang: bool = False
+
+
 def clang_format(code: str, *args: str) -> str:
     """Apply clang-format with given arguments, if possible."""
     for version in range(10, 4, -1):

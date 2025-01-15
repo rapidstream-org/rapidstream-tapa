@@ -21,7 +21,7 @@ from tapa.steps.meta import compile_entry
 from tapa.steps.pack import pack
 from tapa.steps.synth import synth
 from tapa.steps.version import version
-from tapa.util import setup_logging
+from tapa.util import Options, setup_logging
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -62,6 +62,12 @@ _logger = logging.getLogger().getChild(__name__)
     metavar="limit",
     help="Override Python recursion limit.",
 )
+@click.option(
+    "--enable-pyslang / --disable-pyslang",
+    type=bool,
+    default=False,
+    help="Enable or disable pyslang (experimental).",
+)
 @click.version_option(__version__, prog_name="tapa")
 @click.pass_context
 def entry_point(  # noqa: PLR0913,PLR0917
@@ -71,9 +77,12 @@ def entry_point(  # noqa: PLR0913,PLR0917
     work_dir: str,
     temp_dir: str | None,
     recursion_limit: int,
+    enable_pyslang: bool,
 ) -> None:
     """The TAPA compiler."""
     setup_logging(verbose, quiet, work_dir)
+
+    Options.enable_pyslang = enable_pyslang
 
     # Setup execution context
     ctx.ensure_object(dict)
