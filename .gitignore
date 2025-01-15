@@ -5,6 +5,7 @@
 .venv*
 /.cache/
 /.cmake-format
+/.coverage
 /.vscode
 /bazel-*
 /build/
