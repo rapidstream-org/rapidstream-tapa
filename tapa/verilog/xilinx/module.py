@@ -85,6 +85,9 @@ __all__ = [
     "generate_m_axi_ports",
 ]
 
+# vitis hls generated port infixes
+FIFO_INFIXES = ("_V", "_r", "_s", "")
+
 
 class Module:  # noqa: PLR0904  # TODO: refactor this class
     """AST and helpers for a verilog module.
@@ -243,8 +246,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         """
         ports = self.ports
         sanitized_fifo = sanitize_array_name(fifo)
-        infixes = ("_V", "_r", "_s", "")
-        for infix in infixes:
+        for infix in FIFO_INFIXES:
             port = ports.get(f"{sanitized_fifo}{infix}{suffix}")
             if port is not None:
                 return port
@@ -252,7 +254,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         match = match_array_name(fifo)
         if match is not None and match[1] == 0:
             singleton_fifo = match[0]
-            for infix in infixes:
+            for infix in FIFO_INFIXES:
                 port = ports.get(f"{singleton_fifo}{infix}{suffix}")
                 if port is not None:
                     _logger.warning("assuming %s is a singleton array", singleton_fifo)
@@ -831,6 +833,22 @@ def get_streams_fifos(module: Module, streams_name: str) -> list[str]:
             number = match.group(1)
             fifos.add(f"{streams_name}_{number}")
 
+    # singleton array without number
+    # when a stream array has length 1,
+    # the generated port name may not have the number
+    # in it.
+    # e.g., in tests/functional/singleton/vadd.cpp,
+    # "tapa::istreams<float, M>& a" where M = 1 resulted in
+    # stream data port a_s_dout rather than a_0_dout.
+    if not fifos:
+        for s in module.ports:
+            for infix in FIFO_INFIXES:
+                if s.startswith(f"{streams_name}{infix}"):
+                    return [streams_name]
+
+    if not fifos:
+        msg = f"no fifo found for {streams_name}"
+        raise ValueError(msg)
     return list(fifos)
 
 
