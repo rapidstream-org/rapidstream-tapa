@@ -6,20 +6,32 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
+from tapa.util import Options
 from tapa.verilog.xilinx.module import Module
 
 _TESTDATA_PATH = (Path(__file__).parent / "testdata").resolve()
 
 
+@pytest.fixture(params=["pyslang", "pyverilog"])
+def options(request: pytest.FixtureRequest) -> Iterator[None]:
+    enable_pyslang_saved = Options.enable_pyslang
+    Options.enable_pyslang = request.param == "pyslang"
+    yield
+    Options.enable_pyslang = enable_pyslang_saved
+
+
+@pytest.mark.usefixtures("options")
 def test_invalid_module() -> None:
     with pytest.raises(ValueError, match="`files` and `name` cannot both be empty"):
         Module()
 
 
+@pytest.mark.usefixtures("options")
 def test_empty_module() -> None:
     """An empty module can be constructed from a name.
 
@@ -32,6 +44,7 @@ def test_empty_module() -> None:
     assert not module.ports
 
 
+@pytest.mark.usefixtures("options")
 def test_lower_level_task_module() -> None:
     module = Module(
         files=[str(_TESTDATA_PATH / "LowerLevelTask.v")],
@@ -92,6 +105,7 @@ def test_lower_level_task_module() -> None:
     assert module.find_port(prefix="istream", suffix="_dout") == "istream_s_dout"
 
 
+@pytest.mark.usefixtures("options")
 def test_upper_level_task_module() -> None:
     module = Module(
         files=[str(_TESTDATA_PATH / "UpperLevelTask.v")],
@@ -106,6 +120,7 @@ def test_upper_level_task_module() -> None:
     assert module.params == {}
 
 
+@pytest.mark.usefixtures("options")
 def test_add_m_axi() -> None:
     module = Module(name="foo")
 

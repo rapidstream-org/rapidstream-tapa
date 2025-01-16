@@ -79,5 +79,6 @@ py_test(
     ],
     deps = [
         ":module",
+        "//tapa:util",
     ],
 )
