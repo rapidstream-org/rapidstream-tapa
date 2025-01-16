@@ -340,7 +340,7 @@
         "bzlTransitiveDigest": "zLixScyyVHxSlH0VorA1HZX6FBbSVGfUi7TbEOU2KFI=",
         "usagesDigest": "ph58vVLwhgX9qBdeiUYYic6feVD1awVmplWxE4KokQY=",
         "recordedFileInputs": {
-          "@@//tapa/requirements_lock.txt": "35f0a019463e327910e8ba708dcd9843b64d853795a92f2456740c0b8283b16f",
+          "@@//tapa/requirements_lock.txt": "5b0a0dca1020057877a5719fa381740e19fa9d3fc708306c3d95c2ad5bd36890",
           "@@protobuf+//python/requirements.txt": "983be60d3cec4b319dcab6d48aeb3f5b2f7c3350f26b3a9e97486c37967c73c5",
           "@@rules_fuzzing+//fuzzing/requirements.txt": "ab04664be026b632a0d2a2446c4f65982b7654f5b6851d2f9d399a19b7242a5b",
           "@@rules_python+//tools/publish/requirements_darwin.txt": "095d4a4f3d639dce831cd493367631cd51b53665292ab20194bac2c0c6458fa8",
@@ -2949,6 +2949,15 @@
               "requirement": "psutil==7.0.0 --hash=sha256:101d71dc322e3cffd7cea0650b09b3d08b8e7c4109dd6809fe452dfd00e58b25 --hash=sha256:1e744154a6580bc968a0195fd25e80432d3afec619daf145b9e5ba16cc1d688e --hash=sha256:1fcee592b4c6f146991ca55919ea3d1f8926497a713ed7faaf8225e174581e91 --hash=sha256:39db632f6bb862eeccf56660871433e111b6ea58f2caea825571951d4b6aa3da --hash=sha256:4b1388a4f6875d7e2aff5c4ca1cc16c545ed41dd8bb596cefea80111db353a34 --hash=sha256:4cf3d4eb1aa9b348dec30105c55cd9b7d4629285735a102beb4441e38db90553 --hash=sha256:7be9c3eba38beccb6495ea33afd982a44074b78f28c434a1f51cc07fd315c456 --hash=sha256:84df4eb63e16849689f76b1ffcb36db7b8de703d1bc1fe41773db487621b6c17 --hash=sha256:a5f098451abc2828f7dc6b58d44b532b22f2088f4999a937557b603ce72b1993 --hash=sha256:ba3fcef7523064a6c9da440fc4d6bd07da93ac726b5733c29027d7dc95b39d99"
             }
           },
+          "tapa_deps_313_pyslang": {
+            "repoRuleId": "@@rules_python+//python/private/pypi:whl_library.bzl%whl_library",
+            "attributes": {
+              "dep_template": "@tapa_deps//{name}:{target}",
+              "python_interpreter_target": "@@rules_python++python+python_3_13_1_host//:python",
+              "repo": "tapa_deps_313",
+              "requirement": "pyslang==7.0.1 --hash=sha256:0bfaaa92ab340e4b3c9d23be6163ad0c846cd3a09074cee1959f0d8f90615819 --hash=sha256:1054dfdfab1fc168d00e55119aa7067f27a5de902c765d7f19647cdea5edaeda --hash=sha256:1be46adee98acb4109530ccfbac09917f269e3a008c850acc44fe8f35add0b4d --hash=sha256:240955d68c4f56b2438cc79380f3d480e51ed2c8e788d5be3a74485061e8355a --hash=sha256:24e95b7c5f1f94f0b60bf4d8c0a7358dbf8ce7ffcf14747d5f6e035b0fb33f4e --hash=sha256:25092f82c0658721eabffa3dee49218fd2a30ed3d412c01f03dbdee041d848f3 --hash=sha256:2ac0af33c675baa5efb11d34e4b62a09d744ec2aa83de12c18cf4a0f05c8de27 --hash=sha256:30e1f0dc21eba815e113deb67e34b8c36c36e538976c6f8e2a77132408d4fe06 --hash=sha256:358e8eb431ec3a196099853a18a71a01f2237e04e7e2ba6babcb90f1f6bb0bd8 --hash=sha256:3e83d8a3cd74836db684a3cd36cf0c844adc1c07e620e8accb93b0bd28b0e5c5 --hash=sha256:4daa947d1c4b4b5921fef1a0f143b4ef062fff45a3d32913057af418c8f20034 --hash=sha256:529b149f94a4e450e1fc2d610f7f6ffb4ba941037a1dceaaf20a00ba0c8d4522 --hash=sha256:66e7e76a511c1b8d1ddce58210cf33488607ed21e75af8d3a1d2ab42429ca1a0 --hash=sha256:6ff160252acccd9036915ee644d90acf13ec53c1a80275a6aa6975b5acc05692 --hash=sha256:7b9d724ff00a72fc55e632ad0a1ebdefa56e3e8b680e0d279940fa34f24e854d --hash=sha256:836055bff8fa8103b7cf65179df4a1eae03bda07e19380e8ec2110ab9070a143 --hash=sha256:94ab0c7bb22d3e558b73f973ea72a9d45be29fee58f59fbb1a773e85e5e1b3cd --hash=sha256:9a9da4a9e9008ffe4ee182fbf483d53f08e0f8a14d18b5019617dbc7db146fd3 --hash=sha256:a081c875a079327050fc65a49b12d4882e0c45932472b3e756e7f5b24eba5de3 --hash=sha256:ad24c46091615fcbf5ec743049633395d39e80e27d4200bc9a79e25193e95a37 --hash=sha256:c311000d7225960d88fd7bfb0cb4315b9ad97460605f9564b3ca228cdc87c00b --hash=sha256:c38d2dacb61b63d6232e3be9953b9f0c67fe3fd3c9d0c1e61c06701602a667f8 --hash=sha256:e6d1083e7c3d2694480884d51b5b7bbcf087c064ba9c5a248c3f9e7d1fd29ac2 --hash=sha256:f31180ceb1dd955e2111183e1f68ef9838b8d16fc16388bfac92e07e4d599607 --hash=sha256:f4d7b74b6378a6ea64788ad49ff175fdc43e5bce867908b98138d60da33728fd --hash=sha256:f6ac4e36c860206e37778024a495e6c7a82fa253036e62225b0b9287fc2f3f5b --hash=sha256:fe142d56e1d58d9285689d93690adf24961b2d4957d985b053356b330ad7b81b"
+            }
+          },
           "tapa_deps_313_pytest": {
             "repoRuleId": "@@rules_python+//python/private/pypi:whl_library.bzl%whl_library",
             "attributes": {
@@ -3110,6 +3119,7 @@
                 "pluggy": "{\"tapa_deps_313_pluggy\":[{\"version\":\"3.13\"}]}",
                 "ply": "{\"tapa_deps_313_ply\":[{\"version\":\"3.13\"}]}",
                 "psutil": "{\"tapa_deps_313_psutil\":[{\"version\":\"3.13\"}]}",
+                "pyslang": "{\"tapa_deps_313_pyslang\":[{\"version\":\"3.13\"}]}",
                 "pytest": "{\"tapa_deps_313_pytest\":[{\"version\":\"3.13\"}]}",
                 "pyverilog": "{\"tapa_deps_313_pyverilog\":[{\"version\":\"3.13\"}]}",
                 "pyyaml": "{\"tapa_deps_313_pyyaml\":[{\"version\":\"3.13\"}]}",
@@ -3129,6 +3139,7 @@
                 "pluggy",
                 "ply",
                 "psutil",
+                "pyslang",
                 "pytest",
                 "pyverilog",
                 "pyyaml",

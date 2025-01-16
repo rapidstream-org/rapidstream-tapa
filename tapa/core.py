@@ -57,6 +57,7 @@ from tapa.safety_check import check_mmap_arg_name
 from tapa.synthesis import ProgramSynthesisMixin
 from tapa.task import Task
 from tapa.util import (
+    Options,
     clang_format,
     get_instance_name,
     get_module_name,
@@ -727,7 +728,7 @@ int main(int argc, char ** argv)
         _logger.info("parsing RTL files and populating tasks")
         for task, module in zip(
             self._tasks.values(),
-            futures.ProcessPoolExecutor().map(
+            (map if Options.enable_pyslang else futures.ProcessPoolExecutor().map)(
                 Module,
                 ([self.get_rtl(x.name)] for x in self._tasks.values()),
                 (not x.is_upper for x in self._tasks.values()),

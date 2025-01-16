@@ -65,6 +65,7 @@ py_library(
         "//tapa/backend",
         "//tapa/verilog",
         requirement("jinja2"),
+        requirement("pyslang"),
         requirement("pyverilog"),
     ],
 )

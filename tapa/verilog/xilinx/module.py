@@ -12,6 +12,7 @@ import tempfile
 from collections.abc import Callable, Iterable, Iterator
 from typing import get_args
 
+import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
     Always,
@@ -45,6 +46,7 @@ from pyverilog.vparser.ast import (
 from pyverilog.vparser.parser import VerilogCodeParser
 
 from tapa.backend.xilinx import M_AXI_PREFIX
+from tapa.util import Options
 from tapa.verilog.ast_utils import make_port_arg, make_pragma
 from tapa.verilog.util import (
     Pipeline,
@@ -121,6 +123,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             if not name:
                 msg = "`files` and `name` cannot both be empty"
                 raise ValueError(msg)
+            if Options.enable_pyslang:
+                self._syntax_tree = pyslang.SyntaxTree.fromText(
+                    f"module {name}(); endmodule",
+                )
             self.ast = Source(
                 name,
                 Description([ModuleDef(name, Paramlist(()), Portlist(()), items=())]),
@@ -161,6 +167,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 outputdir=output_dir,
                 debug=False,
             )
+            if Options.enable_pyslang:
+                self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
             self.ast: Source = codeparser.parse()
             self.directives: tuple[Directive, ...] = codeparser.get_directives()
         self._handshake_output_ports = {}
