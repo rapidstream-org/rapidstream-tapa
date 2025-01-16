@@ -119,8 +119,6 @@ STATE01 = IntConst("2'b01")
 STATE11 = IntConst("2'b11")
 STATE10 = IntConst("2'b10")
 
-MOD_DEF_IOS = []
-
 
 def gen_declarations(task: Task) -> tuple[list[str], list[str], list[str]]:
     """Generates kernel and port declarations."""
