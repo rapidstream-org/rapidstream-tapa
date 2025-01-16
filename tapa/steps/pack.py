@@ -35,20 +35,8 @@ VITIS_COMMAND_BASIC = [
     "  --vivado.prop=run.impl_1.STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE=$STRATEGY \\",
     "  --vivado.prop=run.impl_1.STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE=$STRATEGY \\",
 ]
-FLOORPLAN_OPTION = [
-    "  --vivado.prop=run.impl_1.STEPS.OPT_DESIGN.TCL.PRE=$CONSTRAINT \\",
-]
 CONFIG_OPTION = ['  --config "${CONFIG_FILE}" \\']
 CLOCK_OPTION = ["  --kernel_frequency ${TARGET_FREQUENCY} \\"]
-
-CHECK_CONSTRAINT = """
-# check that the floorplan tcl exists
-if [ ! -f "$CONSTRAINT" ]; then
-    echo "no constraint file found"
-    exit
-fi
-"""
-
 NEWLINE = [""]
 
 
