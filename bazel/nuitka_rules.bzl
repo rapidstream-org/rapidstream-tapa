@@ -77,6 +77,7 @@ def _nuitka_binary_impl(ctx):
         "LIBRARY_PATH": py_lib_dir,
         "LD_LIBRARY_PATH": py_lib_dir,
         "CC": ctx.executable._clang.path,
+        "CCACHE_TEMPDIR": "/tmp/.nuitka_cache/ccache_tmp",
     }
 
     # Define a custom action to run the Nuitka command.
