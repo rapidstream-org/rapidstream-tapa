@@ -185,15 +185,6 @@ def get_vendor_include_paths() -> Iterable[str]:
             return
 
 
-def get_installation_path() -> Path:
-    """Returns the directory where TAPA pre-built binary is installed."""
-    home = os.environ.get("RAPIDSTREAM_TAPA_HOME")
-    if home is not None:
-        return Path(home)
-    # `__file__` is like `/path/to/usr/share/tapa/runtime/tapa/util.py`
-    return Path(__file__).parent.parent.parent.parent.parent.parent
-
-
 def setup_logging(
     verbose: int | None,
     quiet: int | None,
