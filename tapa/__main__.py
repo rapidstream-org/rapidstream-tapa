@@ -54,6 +54,7 @@ _logger = logging.getLogger().getChild(__name__)
     metavar="limit",
     help="Override Python recursion limit.",
 )
+@click.version_option(__version__, prog_name="tapa")
 @click.pass_context
 def entry_point(
     ctx: click.Context,
