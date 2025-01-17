@@ -8,6 +8,7 @@ RapidStream Contributor License Agreement.
 
 import logging
 import sys
+import tempfile
 
 import click
 
@@ -49,6 +50,13 @@ _logger = logging.getLogger().getChild(__name__)
     help="Specify working directory.",
 )
 @click.option(
+    "--temp-dir",
+    metavar="DIR",
+    required=False,
+    type=click.Path(file_okay=False),
+    help="Specify temporary directory, which will be cleaned up after the execution",
+)
+@click.option(
     "--recursion-limit",
     default=3000,
     metavar="limit",
@@ -56,11 +64,12 @@ _logger = logging.getLogger().getChild(__name__)
 )
 @click.version_option(__version__, prog_name="tapa")
 @click.pass_context
-def entry_point(
+def entry_point(  # noqa: PLR0913,PLR0917
     ctx: click.Context,
     verbose: bool,
     quiet: bool,
     work_dir: str,
+    temp_dir: str | None,
     recursion_limit: int,
 ) -> None:
     """The TAPA compiler."""
@@ -69,6 +78,8 @@ def entry_point(
     # Setup execution context
     ctx.ensure_object(dict)
     switch_work_dir(work_dir)
+    if temp_dir is not None:
+        tempfile.tempdir = temp_dir
 
     # Print version information
     _logger.info("tapa version: %s", __version__)
