@@ -110,12 +110,16 @@ def get_tapa_cflags() -> tuple[str, ...]:
     The CFLAGS include the TAPA include and system include paths
     when applicable.
     """
+    tapa_lib_include = find_resource("tapa-lib-include")
     includes = {
         find_resource("fpga-runtime-include"),
-        find_resource("tapa-lib-include"),
         find_resource("tapa-extra-runtime-include"),
     }
-    include_flags = [f"-isystem{include}" for include in includes]
+
+    # WORKAROUND: tapa-lib-include must be included first to make Vitis happy
+    include_flags = ["-isystem", str(tapa_lib_include)]
+    for include in includes - {tapa_lib_include}:
+        include_flags.extend(["-isystem", str(include)])
 
     return (
         *include_flags,
