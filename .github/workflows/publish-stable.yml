@@ -33,3 +33,22 @@ jobs:
         with:
           channel: stable
           cloudflareToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Checkout rapidstream-da/rapidstream
+        uses: actions/checkout@v4
+        with:
+          path: rapidstream
+          ref: main
+          repository: rapidstream-da/rapidstream
+          token: ${{ secrets.GH_RAPIDSTREAM_PAT }}
+
+      - name: Bump TAPA version in RapidStream
+        run: |
+          cd rapidstream
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b ci-bump-tapa-version/next
+          sed -i "s/--version=.* /--version=$(cat ../VERSION) /" buildutils/Dockerfile.ci-env
+          git add buildutils/Dockerfile.ci-env
+          git commit -m "ci: bump TAPA version to $(cat ../VERSION)"
+          git push --force origin ci-bump-tapa-version/next
