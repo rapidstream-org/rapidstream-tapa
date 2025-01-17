@@ -72,6 +72,7 @@ pkg_files(
     srcs = [":tapa"],
     prefix = "usr/lib",
     strip_prefix = strip_prefix.files_only(),
+    visibility = ["//visibility:public"],
 )
 
 pkg_files(
@@ -79,6 +80,7 @@ pkg_files(
     srcs = [":include"],
     prefix = "usr/include",
     strip_prefix = strip_prefix.from_pkg(),
+    visibility = ["//visibility:public"],
 )
 
 pkg_files(

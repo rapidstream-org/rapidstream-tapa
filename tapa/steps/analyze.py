@@ -110,8 +110,8 @@ def analyze(  # noqa: PLR0913,PLR0917
     add_rtl: tuple[Path, ...],
 ) -> None:
     """Analyze TAPA program and store the program description."""
-    tapacc = find_clang_binary("tapacc")
-    tapa_cpp = find_clang_binary("tapa-cpp")
+    tapacc = find_clang_binary("tapacc-binary")
+    tapa_cpp = find_clang_binary("tapa-cpp-binary")
 
     work_dir = get_work_dir()
     # Vitis HLS only supports until C++14. If the flag sets to C++17, gcc's

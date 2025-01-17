@@ -7,7 +7,6 @@ RapidStream Contributor License Agreement.
 """
 
 import logging
-import sys
 from functools import cache
 from pathlib import Path
 
@@ -20,23 +19,31 @@ _logger = logging.getLogger().getChild(__name__)
 # match will be used, and the nearest parent directory will be used to
 # resolve relative paths.
 POTENTIAL_PATHS: dict[str, tuple[str, ...]] = {
-    "tapa-cpp": (
-        "tapa-cpp/tapa-cpp",
-        "usr/bin/tapa-cpp",
+    "fpga-runtime-include": (
+        "fpga-runtime/src",
+        "usr/include",
     ),
-    "tapa-fast-cosim-dpi": (
+    "fpga-runtime-lib": (
         "fpga-runtime",
         "usr/lib",
+    ),
+    "tapa-cpp-binary": (
+        "tapa-cpp/tapa-cpp",
+        "usr/bin/tapa-cpp",
     ),
     "tapa-extra-runtime-include": (
         "tapa-system-include/tapa-extra-runtime-include",
         "usr/include",
     ),
-    "tapa-lib": (
+    "tapa-fast-cosim-dpi-lib": (
+        "fpga-runtime",
+        "usr/lib",
+    ),
+    "tapa-lib-include": (
         "tapa-lib",
         "usr/include",
     ),
-    "tapa-lib-link": (
+    "tapa-lib-lib": (
         "tapa-lib",
         "usr/lib",
     ),
@@ -44,7 +51,7 @@ POTENTIAL_PATHS: dict[str, tuple[str, ...]] = {
         "tapa-system-include/tapa-system-include",
         "usr/share/tapa/system-include",
     ),
-    "tapacc": (
+    "tapacc-binary": (
         "tapacc/tapacc",
         "usr/bin/tapacc",
     ),
@@ -52,7 +59,7 @@ POTENTIAL_PATHS: dict[str, tuple[str, ...]] = {
 
 
 @cache
-def find_resource(file: str) -> Path | None:
+def find_resource(file: str) -> Path:
     """Find the resource path in the potential paths.
 
     Args:
@@ -69,7 +76,31 @@ def find_resource(file: str) -> Path | None:
             if potential_path.exists():
                 return potential_path
 
-    return None
+    error = f"Unable to find {file} in the potential paths"
+    raise FileNotFoundError(error)
+
+
+@cache
+def find_external_lib_in_runfiles() -> set[Path]:
+    """Find the external libraries in the runfiles.
+
+    Returns:
+        The set of external libraries' directories in the Bazel runfiles.
+        If the execution is not in a Bazel runfiles, an empty set is returned.
+    """
+    for parent in Path(__file__).absolute().parents:
+        potential_path = parent / "tapa.runfiles"
+
+        # if the execution is in a Bazel runfiles
+        if potential_path.exists():
+            return {
+                potential_path / "gflags+",
+                potential_path / "glog+",
+                potential_path / "tinyxml2+",
+                potential_path / "rules_boost++non_module_dependencies+boost",
+            }
+
+    return set()
 
 
 @cache
@@ -79,21 +110,15 @@ def get_tapa_cflags() -> tuple[str, ...]:
     The CFLAGS include the TAPA include and system include paths
     when applicable.
     """
-    # Add TAPA include files to tapacc cflags
-    tapa_include = find_resource("tapa-lib")
-    if tapa_include is None:
-        _logger.error("unable to find tapa include folder")
-        sys.exit(-1)
-    tapa_extra_runtime_include = find_resource("tapa-extra-runtime-include")
-    if tapa_extra_runtime_include is None:
-        _logger.error("unable to find tapa runtime include folder")
-        sys.exit(-1)
+    includes = {
+        find_resource("fpga-runtime-include"),
+        find_resource("tapa-lib-include"),
+        find_resource("tapa-extra-runtime-include"),
+    }
+    include_flags = [f"-isystem{include}" for include in includes]
 
     return (
-        "-isystem",
-        str(tapa_include),
-        "-isystem",
-        str(tapa_extra_runtime_include),
+        *include_flags,
         # Suppress warnings that does not recognize TAPA attributes
         "-Wno-attributes",
         # Suppress warnings that does not recognize HLS pragmas
@@ -110,14 +135,16 @@ def get_tapa_ldflags() -> tuple[str, ...]:
     The LDFLAGS include the TAPA library path when applicable,
     and adds the -l flags for the TAPA libraries.
     """
-    tapa_lib_link = find_resource("tapa-lib-link")
-    if tapa_lib_link is None:
-        _logger.error("unable to find tapa library folder")
-        sys.exit(-1)
+    libraries = {
+        find_resource("fpga-runtime-lib"),
+        find_resource("tapa-lib-lib"),
+    } | find_external_lib_in_runfiles()
+    rpath_flags = [f"-Wl,-rpath,{library}" for library in libraries]
+    lib_flags = [f"-L{library}" for library in libraries]
 
     return (
-        f"-Wl,-rpath,{tapa_lib_link}",
-        f"-L{tapa_lib_link}",
+        *rpath_flags,
+        *lib_flags,
         "-ltapa",
         "-lcontext",
         "-lthread",

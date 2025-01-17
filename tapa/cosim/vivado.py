@@ -106,7 +106,7 @@ def get_vivado_tcl(
     script.append("set_property top test [get_filesets sim_1]")
     script.append("set_property top_lib xil_defaultlib [get_filesets sim_1]")
 
-    dpi_library_dir = paths.find_resource("tapa-fast-cosim-dpi")
+    dpi_library_dir = paths.find_resource("tapa-fast-cosim-dpi-lib")
     if dpi_library_dir is None:
         _logger.fatal("DPI directory not found")
     else:
