@@ -20,8 +20,6 @@ sh_test(
     data = [
         ":custom-rtl-host",
         ":custom-rtl-xo",
-        ":custom-rtl-xo-template-lower",
-        ":custom-rtl-xo-template-upper",
         "//tapa/cosim:tapa-fast-cosim",
     ],
     tags = [
