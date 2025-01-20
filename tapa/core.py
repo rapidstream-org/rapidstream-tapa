@@ -327,7 +327,6 @@ int main(int argc, char ** argv)
         vitis_mode: bool,
         work_dir: str | None = None,
         gen_templates: tuple[str, ...] = (),
-        rtl_paths: tuple[Path, ...] = (),
     ) -> None:
         """Construct Program object from a json file.
 
@@ -378,9 +377,6 @@ int main(int argc, char ** argv)
                 self._tasks[name] = task
         self.files: dict[str, str] = {}
         self._hls_report_xmls: dict[str, ET.ElementTree] = {}
-
-        # Collect user custom RTL files
-        self.custom_rtl: list[Path] = Program.get_custom_rtl_files(rtl_paths)
 
     def __del__(self) -> None:
         if self.is_temp:
@@ -439,7 +435,7 @@ int main(int argc, char ** argv)
         )
 
     @staticmethod
-    def get_custom_rtl_files(rtl_paths: tuple[Path, ...]) -> list[Path]:
+    def _get_custom_rtl_files(rtl_paths: tuple[Path, ...]) -> list[Path]:
         custom_rtl: list[Path] = []
         for path in rtl_paths:
             if path.is_file():
@@ -1472,7 +1468,7 @@ int main(int argc, char ** argv)
         # TODO: err properly if not integer literals
         return Plus(Minus(port.width.msb, port.width.lsb), IntConst(1))
 
-    def replace_custom_rtl(self) -> None:
+    def replace_custom_rtl(self, rtl_paths: tuple[Path, ...]) -> None:
         """Add custom RTL files to the project.
 
         It will replace all files that originally exist in the project.
@@ -1484,9 +1480,10 @@ int main(int argc, char ** argv)
         rtl_path = Path(self.rtl_dir)
         assert Path.exists(rtl_path)
 
-        self.check_custom_rtl_format(self.custom_rtl)
+        custom_rtl = self._get_custom_rtl_files(rtl_paths)
+        self._check_custom_rtl_format(custom_rtl)
 
-        for file_path in self.custom_rtl:
+        for file_path in custom_rtl:
             assert file_path.is_file()
 
             # Determine destination path
@@ -1500,7 +1497,7 @@ int main(int argc, char ** argv)
             # Copy file to destination, replacing if necessary
             shutil.copy2(file_path, dest_path)
 
-    def check_custom_rtl_format(self, rtl_paths: list[Path]) -> None:
+    def _check_custom_rtl_format(self, rtl_paths: list[Path]) -> None:
         """Check if the custom RTL files are in the correct format."""
         if not rtl_paths:
             return
