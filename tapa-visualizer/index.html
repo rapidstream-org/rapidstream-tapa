@@ -18,88 +18,147 @@ file directly through file:// URI on Firefox. -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TAPA Visualizer</title>
+
 <style>
+/* basic layout & reset */
 html, body, .graph-container { height: 100%; }
-body { margin: 0; }
+body {
+	margin: 0;
+	display: grid;
+	grid-template: auto 1fr / minmax(min(42em, 100%), auto) 1fr;
+}
+header, header .flex, aside { display: flex; }
+header {
+	grid-column: 1 / -1;
+	border-bottom: 1px solid #BEBEBE;
+}
+.aside-tabs {
+	border-left: 1px solid #BEBEBE;
+	border-right: 1px solid #BEBEBE;
+}
+
+:root { line-height: 1.368; }
 .lucide { width: 1rem; height: 1rem; }
 </style>
+
 <link rel="stylesheet" href="./css/style.css">
 
 <header>
 
 	<div class="file flex">
 		<input class="fileInput" type="file" accept=".json,application/json">
-		<button class="btn btn-clearGraph" disabled>
+		<button class="btn btn-clearGraph" disabled="">
 			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 			<span class="btn-text">Clear Graph</span>
 		</button>
 	</div>
 
 	<div class="tools flex">
-		<ul class="grouping flex">
-			<li><label class="btn" tabindex="0">
+
+		<form class="grouping flex">
+			<label class="btn" tabindex="0">
 				<input type="radio" name="grouping" value="default" hidden checked>
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-square-square"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>
 				<span class="btn-text">Default Grouping</span>
-			</label></li>
-			<li><label class="btn" tabindex="0">
+			</label>
+			<label class="btn" tabindex="0">
 				<input type="radio" name="grouping" value="flat" hidden>
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-network"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>
 				<span class="btn-text">No Grouping</span>
-			</label></li>
-		</ul>
+			</label>
+		</form>
 
 		<hr>
 
-		<button class="btn btn-refreshGraph" disabled>
+		<button class="btn btn-refreshGraph" disabled="">
 			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
 			<span class="btn-text">Refresh Graph</span>
 		</button>
-		<button class="btn btn-fitCenter" disabled>
+		<button class="btn btn-fitCenter" disabled="">
 			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-fullscreen"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect width="10" height="8" x="7" y="8" rx="1"/></svg>
 			<span class="btn-text">Fit Center</span>
 		</button>
-		<button class="btn btn-fitView" disabled>
+		<button class="btn btn-fitView" disabled="">
 			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-expand"><path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"/><path d="M3 16.2V21m0 0h4.8M3 21l6-6"/><path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"/><path d="M3 7.8V3m0 0h4.8M3 3l6 6"/></svg>
 			<span class="btn-text">Fit View</span>
 		</button>
 
+		<button class="btn btn-saveImage" disabled="">
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image-down"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21"/><path d="m14 19 3 3v-5.5"/><path d="m17 22 3-3"/><circle cx="9" cy="9" r="2"/></svg>
+			<span class="btn-text">Save Image</span>
+		</button>
 		<hr>
 
-		<button class="btn btn-toggleSidebar" disabled>
+		<button class="btn btn-toggleSidebar" disabled="">
 			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
 			<span class="btn-text">Toggle Sidebar</span>
 		</button>
+
 	</div>
 
 </header>
 
 <main>
 	<div class="graph-container"></div>
-
 </main>
 
 <aside>
-	<!-- <ul class="tooltips">
-		<li class="details">Details</li>
-		<li class="connections">Connections</li>
-	</ul> -->
-	<ul class="tabs">
-		<li class="details"><label class="btn btn-details" tabindex="0">
-			<input type="radio" name="sidebar" value="details" hidden checked>
-			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-			<span class="btn-text">Details</span>
-		</label></li>
-		<li class="connections"><label class="btn btn-connections" tabindex="0">
-			<input type="radio" name="sidebar" value="connections" hidden>
-			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waypoints"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>
-			<span class="btn-text">Connections</span>
-		</label></li>
-	</ul>
-	<ul class="contents">
-		<li class="details">TODO</li>
-		<li class="connections"></li>
-	</ul>
+
+<div class="aside-tabs">
+	<label class="btn btn-details" tabindex="0">
+		<input type="radio" name="sidebar" value="details" hidden checked>
+		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+		<span class="btn-text">Details</span>
+	</label>
+	<label class="btn btn-connections" tabindex="0">
+		<input type="radio" name="sidebar" value="connections" hidden>
+		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waypoints"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>
+		<span class="btn-text">Connections</span>
+	</label>
+	<label class="btn btn-source" tabindex="0">
+		<input type="radio" name="sidebar" value="source" hidden>
+		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+		<span class="btn-text">Source Code</span>
+	</label>
+</div>
+
+<div class="aside-contents">
+
+	<section class="details">
+		<details class="instance" open="">
+			<summary>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-todo"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+				Instance
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+			</summary>
+			<div class="instance-content">
+				<p>Loading...</p>
+			</div>
+		</details>
+	</section>
+
+	<section class="connections">
+		<details class="neighbors" open="">
+			<summary>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-workflow"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>
+				Neighbors
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+			</summary>
+			<div class="neighbors-content">
+				<p>TODO</p>
+			</div>
+		</details>
+	</section>
+
+	<section class="source">
+		<div class="source-summary">Source Code</div>
+		<div class="source-content">
+			<p>TODO</p>
+		</div>
+	</section>
+
+</div>
+
 </aside>
 
 <script>
@@ -119,7 +178,7 @@ body { margin: 0; }
 })();
 </script>
 
-<script src="https://unpkg.com/@antv/g6@5.0/dist/g6.min.js"></script>
+<script defer src="https://unpkg.com/@antv/g6@5.0.42/dist/g6.min.js"></script>
 
 <script type="module" src="./js/graph.js"></script>
 

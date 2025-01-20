@@ -6,26 +6,72 @@
 
 "use strict";
 
+import { getDetailsFromNode } from "./sidebar.js";
 import { getGraphData } from "./praser.js";
+
+/** @type {<T = HTMLElement>(tagName: string, ...props: Record<string, unknown>[] ) => T} */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+export const $ = (tagName, ...props) => Object.assign(
+	document.createElement(tagName), ...props
+);
+
+/** @type {(comboId: string) => string} */
+export const getComboName = comboId => comboId.replace(/^combo:/, "");
+
+
+/** @type {GraphJSON} */
+let graphJson;
+
+/** Data for G6.Graph()
+ * @type {Required<import("@antv/g6").GraphData>} */
+let graphData = {
+  nodes: [],
+  edges: [],
+  combos: [],
+};
+
+// Grouping radios in header
+
+/** @type { HTMLFormElement & { elements: { grouping: { value: string; } } } | null } } */
+const grouping = document.querySelector(".grouping");
+
+// Details sidebar
+
+/** @type {HTMLLIElement | null} */
+const details = document.querySelector(".instance-content");
+if (details === null) {
+  throw new TypeError("Element .instance-content not found!");
+}
+
+const resetDetails = () => details.replaceChildren(
+  $("p", { textContent: "Please select a node." })
+);
+
+// File Input
+
+/** @type {HTMLInputElement & { files: FileList } | null} */
+const fileInput = document.querySelector("input.fileInput");
+if (fileInput === null) {
+  throw new TypeError("Element input.fileInput not found!");
+}
 
 /** @type {(graph: import("@antv/g6").Graph) => void} */
 const setupFileInput = (graph) => {
-
-  /** @type {HTMLInputElement & { files: FileList } | null} */
-  const fileInput = document.querySelector("input.fileInput");
-  if (fileInput === null) {
-    throw new TypeError("fileInput is null!");
-  }
-
   const reader = new FileReader();
   reader.addEventListener("load", e => {
     const result = e.target?.result;
     if (typeof result !== "string") return;
 
-    /** @type {GraphJSON} */
+    const flat = grouping?.elements.grouping.value === "flat";
+
+    /** @satisfies {GraphJSON} */
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const json = JSON.parse(result);
-    const graphData = getGraphData(json);
+    graphJson = JSON.parse(result);
+    graphData = getGraphData(graphJson, flat);
+
+    console.debug("graph.json\n", graphJson);
+    console.debug("graphData\n", graphData);
+
     graph.setData(graphData);
     void graph.render();
   });
@@ -38,13 +84,15 @@ const setupFileInput = (graph) => {
   fileInput.addEventListener("change", readFile);
 };
 
+// Buttons
+
 /** @type {(graph: import("@antv/g6").Graph) => void} */
 const setupGraphButtons = (graph) => {
   /**
    * @typedef {EventListenerOrEventListenerObject} Listener
    * @type {(selector: string, listener: Listener) => void} */
   const setButton = (selector, callback) => {
-    /** @type { HTMLButtonElement | null } */
+    /** @satisfies { HTMLButtonElement | null } */
     const button = document.querySelector(selector);
     if (button) {
       button.addEventListener("click", callback);
@@ -83,14 +131,14 @@ const setupGraphButtons = (graph) => {
     edge: {
       style: {
         endArrow: true,
-        labelText: ({id}) => id,
+        labelText: ({id}) => id?.split("/").at(-1),
         labelFontFamily: "monospace",
       }
     },
     combo: {
       // type: "rect",
       style: {
-        labelText: combo => combo.id,
+        labelText: ({id}) => getComboName(id),
         labelFill: "gray",
         labelFontSize: 10,
         labelPlacement: "top",
@@ -101,7 +149,28 @@ const setupGraphButtons = (graph) => {
     layout: {
       type: "force",
     },
-    behaviors: ["drag-canvas", "zoom-canvas", "drag-element"],
+    behaviors: [
+      "drag-canvas",
+      "zoom-canvas",
+      "drag-element",
+      /** @type {import("@antv/g6").ClickSelectOptions} */
+      ({
+        type: "click-select",
+        onClick: ({ target }) => {
+          if (target.type !== "node") {
+            resetDetails();
+            return;
+          }
+
+          const node = graph.getNodeData(target.id);
+          details.replaceChildren(
+            node
+            ? getDetailsFromNode(node)
+            : $("p", { textContent: `node ${target.id} not found!` })
+          );
+        }
+      })
+    ],
     transforms: ["process-parallel-edges"],
     plugins: [
       /** @type {import("@antv/g6").TooltipOptions} */
@@ -116,7 +185,25 @@ const setupGraphButtons = (graph) => {
     ],
   });
 
+  if (grouping) {
+    for (let i = 0; i < grouping.elements.length; i++) {
+      grouping.elements[i].addEventListener("change", ({target}) => {
+        if (!(target instanceof HTMLInputElement)) return;
+        if (graphJson) {
+          const flat = target.value === "flat";
+          graphData = getGraphData(graphJson, flat);
+          graph.setData(graphData);
+          void graph.render();
+        }
+      })
+    }
+  }
+
+  // Override the default "Loading..."
+  resetDetails();
+
   setupFileInput(graph);
   setupGraphButtons(graph);
-  console.debug(graph);
+
+  console.debug("graph object\n", graph);
 })();
