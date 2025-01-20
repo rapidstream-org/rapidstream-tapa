@@ -9,7 +9,7 @@ load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
 exports_files(
     ["vadd.cpp"],
-    visibility = ["//tests/functional/reproducible-xo:__pkg__"],
+    visibility = ["//tests/functional:__subpackages__"],
 )
 
 sh_test(
@@ -78,7 +78,7 @@ tapa_xo(
     src = "vadd.cpp",
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
-    visibility = ["//tests/functional/reproducible-xo:__pkg__"],
+    visibility = ["//tests/functional:__subpackages__"],
 )
 
 vpp_xclbin(

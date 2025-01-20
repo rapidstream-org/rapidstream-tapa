@@ -90,7 +90,8 @@ def load_tapa_program() -> Program:
     if "tapa-program" not in local_ctx:
         local_ctx["tapa-program"] = Program(
             load_persistent_context("graph"),
-            local_ctx["work-dir"],
+            vitis_mode=load_persistent_context("settings")["vitis-mode"],
+            work_dir=local_ctx["work-dir"],
         )
 
     return local_ctx["tapa-program"]
