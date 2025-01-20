@@ -16,13 +16,42 @@ py_library(
     srcs = glob(
         ["*.py"],
         exclude = [
+            "ast_types.py",
+            "ioport.py",
             "module.py",
             "*_test.py",
         ],
     ),
     deps = [
+        ":ast_types",
         "//tapa/backend",
         requirement("jinja2"),
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "ast_types",
+    srcs = ["ast_types.py"],
+    deps = [
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "ioport",
+    srcs = ["ioport.py"],
+    deps = [
+        ":ast_types",
+        requirement("pyverilog"),
+    ],
+)
+
+py_test(
+    name = "ioport_test",
+    srcs = ["ioport_test.py"],
+    deps = [
+        ":ioport",
         requirement("pyverilog"),
     ],
 )
@@ -31,6 +60,7 @@ py_library(
     name = "module",
     srcs = ["module.py"],
     deps = [
+        ":ioport",
         "//tapa/backend",
         "//tapa/verilog",
         requirement("jinja2"),
