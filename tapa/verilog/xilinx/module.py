@@ -27,6 +27,7 @@ from pyverilog.vparser.ast import (
     Input,
     Instance,
     InstanceList,
+    Ioport,
     Lvalue,
     ModuleDef,
     Node,
@@ -212,16 +213,18 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             raise ValueError(msg)
         return module_defs[0]
 
-    def get_module_def(self) -> ModuleDef:
-        return self._module_def
-
     @property
     def name(self) -> str:
         return self._module_def.name
 
     @property
     def ports(self) -> dict[str, ioport.IOPort]:
-        port_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
+        port_lists = [
+            # ANSI style: ports declared in header
+            (x.first for x in self._module_def.portlist.ports if isinstance(x, Ioport)),
+            # Non-ANSI style: ports declared in body
+            *(x.list for x in self._module_def.items if isinstance(x, Decl)),
+        ]
         return collections.OrderedDict(
             (x.name, ioport.IOPort.create(x))
             for x in itertools.chain.from_iterable(port_lists)

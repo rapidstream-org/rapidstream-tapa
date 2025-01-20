@@ -41,7 +41,6 @@ from pyverilog.vparser.ast import (
     IntConst,
     Land,
     Minus,
-    ModuleDef,
     Node,
     NonblockingSubstitution,
     Output,
@@ -54,7 +53,6 @@ from pyverilog.vparser.ast import (
     Width,
     Wire,
 )
-from pyverilog.vparser.parser import VerilogCodeParser
 
 from tapa.backend.xilinx import RunAie, RunHls
 from tapa.instance import Instance, Port
@@ -62,7 +60,6 @@ from tapa.safety_check import check_mmap_arg_name
 from tapa.task import Task
 from tapa.util import (
     clang_format,
-    extract_ports_from_module,
     get_instance_name,
     get_module_name,
     get_vendor_include_paths,
@@ -1499,49 +1496,23 @@ int main(int argc, char ** argv)
 
     def _check_custom_rtl_format(self, rtl_paths: list[Path]) -> None:
         """Check if the custom RTL files are in the correct format."""
-        if not rtl_paths:
-            return
-        _logger.info("Checking custom RTL files format.")
-        with tempfile.TemporaryDirectory(prefix="pyverilog-") as output_dir:
-            codeparser = VerilogCodeParser(
-                rtl_paths,
-                preprocess_output=os.path.join(output_dir, "preprocess.output"),
-                outputdir=output_dir,
-                debug=False,
-            )
-            ast = codeparser.parse()
-        # Traverse the AST to find module definitions
-        module_defs: list[ModuleDef] = [
-            mod_def
-            for mod_def in ast.description.definitions
-            if isinstance(mod_def, ModuleDef)
-        ]
-
-        for module_def in module_defs:
-            for task_name, task in self._tasks.items():
-                if task_name != module_def.name:
-                    continue
-                _logger.info("Checking custom RTL file format for task %s.", task_name)
-                task_port_infos = extract_ports_from_module(
-                    task.module.get_module_def()
-                )
-                custom_rtl_port_infos = extract_ports_from_module(module_def)
-                if task_port_infos != custom_rtl_port_infos:
-                    assert set(task_port_infos.keys()) == set(
-                        custom_rtl_port_infos.keys()
-                    )
-                    task_port_infos_str = "\n".join(
-                        f"  {port}" for port in task_port_infos.values()
-                    )
-                    custom_rtl_port_infos_str = "\n".join(
-                        f"  {port}" for port in custom_rtl_port_infos.values()
-                    )
-                    msg = (
-                        f"Custom RTL file for task {task_name} does not match the "
-                        f"expected ports. \nTask ports: \n{task_port_infos_str}\n"
-                        f"Custom RTL ports:\n{custom_rtl_port_infos_str}"
-                    )
-                    raise ValueError(msg)
+        if rtl_paths:
+            _logger.info("checking custom RTL files format")
+        for rtl_path in rtl_paths:
+            rtl_module = Module([str(rtl_path)])
+            if (task := self._tasks.get(rtl_module.name)) is None:
+                continue  # ignore RTL modules that are not tasks
+            if rtl_module.ports == task.module.ports:
+                continue  # ports match exactly
+            msg = [
+                f"Custom RTL file {rtl_path} for task {task.name}"
+                " does not match the expected ports.",
+                "Task ports:",
+                *(f"  {port}" for port in task.module.ports.values()),
+                "Custom RTL ports:",
+                *(f"  {port}" for port in rtl_module.ports.values()),
+            ]
+            raise ValueError("\n".join(msg))
 
     def get_aie_graph(self, task: Task) -> str:
         """Generates the complete AIE graph code."""
