@@ -597,12 +597,12 @@ int main(int argc, char ** argv)
             try:
                 if skip_based_on_mtime and os.path.getmtime(
                     self.get_tar(task.name),
-                ) > os.path.getmtime(self.get_cpp(task.name)):
+                ) > os.path.getmtime(self.get_cpp_path(task.name)):
                     _logger.info(
                         "skipping HLS for %s since %s is newer than %s",
                         task.name,
                         self.get_tar(task.name),
-                        self.get_cpp(task.name),
+                        self.get_cpp_path(task.name),
                     )
                     return
             except OSError:
