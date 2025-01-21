@@ -10,7 +10,6 @@ function patch {
   pushd "$1"
   git clean --force -- . :^rapidstream/
   git checkout --force HEAD -- . :^rapidstream/
-  git rev-list --count --grep='^rapidstream:' --invert-grep HEAD >VERSION
   sed -i -e's/"tapa"/"rpd."/g' \
     fpga-runtime/src/frt/devices/shared_memory_queue.cpp
   local old_file
