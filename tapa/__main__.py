@@ -98,4 +98,4 @@ entry_point.add_command(version)
 entry_point.add_command(gcc)
 
 if __name__ == "__main__":
-    entry_point()
+    entry_point(prog_name="tapa")
