@@ -1352,7 +1352,17 @@ int main(int argc, char ** argv)
                         else:
                             peek_port = f"{match[0]}_peek[{match[1]}]"
 
-                        if not task.module.find_port(peek_port, suffix):
+                        # Cannot use find_ports instead of get_port_of
+                        # since find port only check if the port name start with
+                        # the given fifo name and end with the suffix. This causes
+                        # wrong port being matched.
+                        # e.g. fifo = "a_fifo", suffix = "dout", find_ports will
+                        # match both "a_fifo_dout" and "a_fifo_ack_dout" even
+                        # though the latter has fifo name "a_fifo_ack" instead of
+                        # "a_fifo".
+                        try:
+                            task.module.get_port_of(peek_port, suffix)
+                        except Module.NoMatchingPortError:
                             continue
 
                         _logger.debug(
@@ -1395,7 +1405,17 @@ int main(int argc, char ** argv)
                         fifos.extend(get_streams_fifos(task.module, peek_port))
 
                 for subport_name in fifos:
-                    if not task.module.find_port(subport_name, suffix):
+                    # cannot use find_ports instead of get_port_of
+                    # since find port only check if the port name start with
+                    # the given fifo name and end with the suffix. This causes
+                    # wrong port being matched.
+                    # e.g. fifo = "a_fifo", suffix = "dout", find_ports will
+                    # match both "a_fifo_dout" and "a_fifo_ack_dout" even
+                    # though the latter has fifo name "a_fifo_ack" instead of
+                    # "a_fifo".
+                    try:
+                        task.module.get_port_of(subport_name, suffix)
+                    except Module.NoMatchingPortError:
                         continue
 
                     _logger.info("  split %s.%s", subport_name, suffix)
