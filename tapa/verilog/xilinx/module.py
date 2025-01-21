@@ -231,7 +231,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             if isinstance(x, Input | Output | Inout)
         )
 
-    def get_port_of(self, fifo: str, suffix: str) -> ioport.IOPort:
+    class NoMatchingPortError(ValueError):
+        """No matching port being found exception."""
+
+    def get_port_of(self, fifo: str, suffix: str) -> IOPort:
         """Return the IOPort of the given fifo with the given suffix.
 
         Args:
@@ -263,8 +266,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 if port is not None:
                     _logger.warning("assuming %s is a singleton array", singleton_fifo)
                     return port
+
         msg = f"module {self.name} does not have port {fifo}.{suffix}"
-        raise ValueError(msg)
+        raise Module.NoMatchingPortError(msg)
 
     def generate_istream_ports(  # noqa: PLR0912
         self,
