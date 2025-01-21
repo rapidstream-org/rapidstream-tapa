@@ -569,7 +569,7 @@ int main(int argc, char ** argv)
                 header_fp.write(content)
         return self
 
-    def run_hls_or_aie(  # noqa: PLR0913,PLR0917  # TODO: refactor this method
+    def run_hls_or_aie(  # noqa: PLR0913,PLR0917,C901  # TODO: refactor this method
         self,
         clock_period: float | str,
         part_num: str,
@@ -667,8 +667,16 @@ int main(int argc, char ** argv)
         _logger.info(
             "spawn %d workers for parallel %s synthesis of the tasks", jobs, flow_type
         )
-        with futures.ThreadPoolExecutor(max_workers=jobs) as executor:
-            any(executor.map(worker, self._tasks.values(), itertools.count(0)))
+
+        try:
+            with futures.ThreadPoolExecutor(max_workers=jobs) as executor:
+                any(executor.map(worker, self._tasks.values(), itertools.count(0)))
+        except RuntimeError:
+            _logger.error(
+                "HLS failed, see above for details. You may use `--keep-hls-work-dir` "
+                "to keep the HLS work directory for debugging."
+            )
+            sys.exit(1)
 
         return self
 
