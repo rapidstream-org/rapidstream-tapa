@@ -8,8 +8,11 @@ RapidStream Contributor License Agreement.
 ## Rebase
 
 ```bash
-git fetch
+git remote rename origin rapidstream
+git remote add origin https://github.com/rapidstream-org/rapidstream-tapa.git
+git fetch origin
 git rebase origin/main
+git push -f rapidstream rapidstream
 ```
 
 ## Build
