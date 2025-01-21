@@ -29,8 +29,8 @@ Verify the installation by running:
 
 .. code-block:: bash
 
-  tapa version
-  rapidstream-tapaopt --help
+  tapa --version
+  rapidstream-tapaopt --version
 
 System Prerequisites
 ~~~~~~~~~~~~~~~~~~~~
