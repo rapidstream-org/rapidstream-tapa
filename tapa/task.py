@@ -390,9 +390,9 @@ class Task:  # noqa: PLR0904
             self.module.add_logics([Assign(left=b, right=a)])
 
     def convert_axis_to_fifo(self, axis_name: str) -> str:
-        assert (
-            len(self.get_fifo_directions(axis_name)) == 1
-        ), "axis interfaces should have one direction"
+        assert len(self.get_fifo_directions(axis_name)) == 1, (
+            "axis interfaces should have one direction"
+        )
         direction_axis = {
             "consumed_by": "produced_by",
             "produced_by": "consumed_by",
@@ -448,9 +448,9 @@ class Task:  # noqa: PLR0904
         return fifo_name
 
     def connect_fifo_externally(self, internal_name: str, axis: bool) -> None:
-        assert (
-            len(self.get_fifo_directions(internal_name)) == 1
-        ), "externally connected fifos should have one direction"
+        assert len(self.get_fifo_directions(internal_name)) == 1, (
+            "externally connected fifos should have one direction"
+        )
         direction = self.get_fifo_directions(internal_name)[0]
         external_name = (
             self.convert_axis_to_fifo(internal_name) if axis else internal_name
@@ -641,7 +641,7 @@ class Task:  # noqa: PLR0904
             if all(arg.cat.is_stream or "'d" in arg.name for arg in instance.args):
                 scalar_pragma = ""
             else:
-                scalar_pragma = f' scalar={instance.get_instance_arg(".*")}'
+                scalar_pragma = f" scalar={instance.get_instance_arg('.*')}"
             pragma_list.append(f"ap-ctrl {port_map_str}{scalar_pragma}")
         self.fsm_module.add_ports(
             [Decl([Identifier(f"// pragma RS {pragma}\n") for pragma in pragma_list])]

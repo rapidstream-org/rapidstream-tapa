@@ -75,9 +75,9 @@ def report_freq(run_dir: str) -> None:
 
             # Get the target clock period from Vitis script
             run_vitis_sh_g = glob(f"{sol_dir}/run_vitis.sh")
-            assert (
-                len(run_vitis_sh_g) == 1
-            ), f"Expected one run_vitis.sh, now: {run_vitis_sh_g}."
+            assert len(run_vitis_sh_g) == 1, (
+                f"Expected one run_vitis.sh, now: {run_vitis_sh_g}."
+            )
             run_vitis_sh = run_vitis_sh_g[0]
 
             with open(run_vitis_sh, encoding="utf-8") as vitis_script:

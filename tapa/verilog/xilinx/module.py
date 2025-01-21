@@ -924,12 +924,12 @@ def get_rs_pragma(node: Input | Output) -> Pragma | None:
                 if node.name.endswith(f"_{channel}{port}"):
                     return make_pragma(
                         "RS_HS",
-                        f"{node.name[:-len(port)]}.{get_rs_port(port)}",
+                        f"{node.name[: -len(port)]}.{get_rs_port(port)}",
                     )
 
         for suffix, role in AXIS_PORTS.items():
             if node.name.endswith(suffix):
-                return make_pragma("RS_HS", f"{node.name[:-len(suffix)]}.{role}")
+                return make_pragma("RS_HS", f"{node.name[: -len(suffix)]}.{role}")
 
         _logger.error("not adding pragma for unknown port '%s'", node.name)
         return None

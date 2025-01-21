@@ -4,6 +4,6 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM debian:bookworm-20241223
+FROM debian:bookworm-20250113
 
 INCLUDE+ Dockerfile.debian-common

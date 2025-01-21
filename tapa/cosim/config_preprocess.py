@@ -155,9 +155,9 @@ def _check_scalar_val_format(config: dict) -> None:
             "with the suffix 'h according to Verilog syntax. "
             f"Violation: {scalar}: {val}"
         )
-        assert (
-            len(val) <= 2 + 16
-        ), f"scalar value should be at most 64 bit. Violation: {scalar}: {val}"
+        assert len(val) <= 2 + 16, (
+            f"scalar value should be at most 64 bit. Violation: {scalar}: {val}"
+        )
 
 
 def preprocess_config(

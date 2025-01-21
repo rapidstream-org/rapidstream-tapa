@@ -11,10 +11,10 @@ module(name = "rapidstream-tapa")
 
 # Bazel dependencies
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "rules_cc", version = "0.1.0")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
-bazel_dep(name = "rules_python", version = "1.0.0")
+bazel_dep(name = "rules_python", version = "1.1.0")
 
 bazel_dep(name = "toolchains_llvm", version = "1.2.0", dev_dependency = True)
 
@@ -47,14 +47,14 @@ register_toolchains(
 python.toolchain(
     configure_coverage_tool = True,
     is_default = True,
-    python_version = "3.11.10",
+    python_version = "3.11.11",
 )
-use_repo(python, python_3_11 = "python_3_11_10")
+use_repo(python, python_3_11 = "python_3_11_11")
 
 # Required by tapa Python libraries
 pip.parse(
     hub_name = "tapa_deps",
-    python_version = "3.11.10",
+    python_version = "3.11.11",
     requirements_lock = "//tapa:requirements_lock.txt",
 )
 use_repo(pip, "tapa_deps")
@@ -198,9 +198,11 @@ LLVM_VERSION_MAJOR = 19
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 6
+LLVM_VERSION_PATCH = 7
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
+
+LLVM_SHA256 = "82401fea7b79d0078043f7598b835284d6650a75b93e64b6f761ea7b63097501"
 
 # Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/707c0f939d1a801370aeb3a795e1a253a880f4f7/modules/llvm-project/17.0.3/patches
 http_archive(
@@ -224,7 +226,7 @@ module(
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
 # Library dependencies
-bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "rules_cc", version = "0.1.0")
 EOF
         """.format(LLVM_VERSION),
@@ -248,7 +250,7 @@ EOF
         "//bazel:patches/tapa-llvm-project/0002-Add-TAPA-pragmas-to-Clang.patch",
         "//bazel:patches/tapa-llvm-project/0003-Wno-error-deprecated-declarations.patch",
     ],
-    sha256 = "e3f79317adaa9196d2cfffe1c869d7c100b7540832bc44fe0d3f44a12861fa34",
+    sha256 = LLVM_SHA256,
     strip_prefix = "llvm-project-{}.src".format(LLVM_VERSION),
     urls = ["https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/llvm-project-{0}.src.tar.xz".format(LLVM_VERSION)],
 )

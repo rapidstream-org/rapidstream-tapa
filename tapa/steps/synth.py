@@ -23,15 +23,13 @@ from tapa.steps.common import (
 @click.option(
     "--part-num",
     type=str,
-    help="Target FPGA part number.  Must be specified if "
-    "`--platform` is not provided.",
+    help="Target FPGA part number.  Must be specified if `--platform` is not provided.",
 )
 @click.option(
     "--platform",
     "-p",
     type=str,
-    help="Target Vitis platform.  Must be specified if "
-    "`--part-num` is not provided.",
+    help="Target Vitis platform.  Must be specified if `--part-num` is not provided.",
 )
 @click.option("--clock-period", type=float, help="Target clock period in nanoseconds.")
 @click.option("--jobs", "-j", type=int, help="Number of parallel jobs for HLS.")

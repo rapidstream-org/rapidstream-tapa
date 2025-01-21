@@ -124,7 +124,7 @@ def get_vitis_script(
     if connectivity:
         orig_config_path = os.path.abspath(connectivity)
         _logger.info(
-            "use the original connectivity configuration at " "%s in the v++ script",
+            "use the original connectivity configuration at %s in the v++ script",
             orig_config_path,
         )
         script.append(f"CONFIG_FILE='{orig_config_path}'")

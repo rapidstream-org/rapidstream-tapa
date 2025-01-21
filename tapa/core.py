@@ -233,9 +233,9 @@ def gen_connections(task: Task) -> list[str]:  # noqa: C901  # TODO: refactor th
         name = port.name
         width = port.width
         if name in link_from_src:
-            assert (
-                link_from_src[name][1] == "io"
-            ), "Ports should be connected to/from io"
+            assert link_from_src[name][1] == "io", (
+                "Ports should be connected to/from io"
+            )
             connect_def.append(
                 f"connect<window<{width}>> {name}_link"
                 f" (k_{link_from_src[name][0]}, p_{name}.in[0]);"
@@ -358,9 +358,9 @@ int main(int argc, char ** argv)
             {k: set(v.get("tasks", ())) for k, v in obj["tasks"].items()},
         )
         for template in gen_templates:
-            assert (
-                template in task_names
-            ), f"template task {template} not found in design"
+            assert template in task_names, (
+                f"template task {template} not found in design"
+            )
         self.gen_templates = gen_templates
 
         for name in task_names:
@@ -522,9 +522,9 @@ int main(int argc, char ** argv)
         top_aie_task_is_done = False
         for task in self._tasks.values():
             if task.name == self.top and target == "aie":
-                assert (
-                    top_aie_task_is_done is False
-                ), "There should be exactly one top-level task"
+                assert top_aie_task_is_done is False, (
+                    "There should be exactly one top-level task"
+                )
                 top_aie_task_is_done = True
                 code_content = self.get_aie_graph(task)
                 with open(
