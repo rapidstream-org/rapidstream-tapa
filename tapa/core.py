@@ -1414,14 +1414,14 @@ int main(int argc, char ** argv)
                     assert removed_ports[0] == dout_port.name
 
                     # add new data and eot ports
-                    new_data_port = type(dout_port)(
+                    new_data_port = type(dout_port.ast_port)(
                         name=dout_port.name,
                         width=Width(
                             msb=Minus(dout_width.msb, IntConst(1)),
                             lsb=dout_width.lsb,
                         ),
                     )
-                    new_eot_port = type(dout_port)(
+                    new_eot_port = type(dout_port.ast_port)(
                         name=f"{dout_port.name}{STREAM_EOT_SUFFIX}"
                     )
                     task.module.add_ports([new_data_port, new_eot_port])

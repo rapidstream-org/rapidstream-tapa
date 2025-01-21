@@ -54,6 +54,7 @@ from tapa.verilog.util import (
     sanitize_array_name,
     wire_name,
 )
+from tapa.verilog.xilinx import ioport
 from tapa.verilog.xilinx.ast_types import Directive, IOPort, Logic, Signal
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
 from tapa.verilog.xilinx.axis import AXIS_PORTS
@@ -219,15 +220,15 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self._module_def.name
 
     @property
-    def ports(self) -> dict[str, IOPort]:
+    def ports(self) -> dict[str, ioport.IOPort]:
         port_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
         return collections.OrderedDict(
-            (x.name, x)
+            (x.name, ioport.IOPort.create(x))
             for x in itertools.chain.from_iterable(port_lists)
             if isinstance(x, Input | Output | Inout)
         )
 
-    def get_port_of(self, fifo: str, suffix: str) -> IOPort:
+    def get_port_of(self, fifo: str, suffix: str) -> ioport.IOPort:
         """Return the IOPort of the given fifo with the given suffix.
 
         Args:
