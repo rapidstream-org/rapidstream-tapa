@@ -11,6 +11,9 @@
 #include <cctype>
 #include <string>
 
+#include <clang/Lex/Lexer.h>
+
+using clang::Lexer;
 using llvm::StringRef;
 
 namespace tapa {
@@ -265,15 +268,28 @@ void XilinxHLSTarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 
 void XilinxHLSTarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   if (vitis_mode) {
-    // We need a empty shell.
-    auto lines = GenerateCodeForTopLevelFunc(func);
-    rewriter.ReplaceText(func->getBody()->getSourceRange(),
-                         "{\n" + llvm::join(lines, "\n") + "}\n");
+    // We need a empty shell for the top-level function body so that TAPA
+    // can use the shell to connect the subtasks.
+    if (func->isThisDeclarationADefinition()) {
+      auto lines = GenerateCodeForTopLevelFunc(func);
+      rewriter.ReplaceText(func->getBody()->getSourceRange(),
+                           "{\n" + llvm::join(lines, "\n") + "}\n");
+    }
 
-    // Vitis only works with extern C kernels.
-    rewriter.InsertText(func->getBeginLoc(), "extern \"C\" {\n\n");
-    rewriter.InsertTextAfterToken(func->getEndLoc(),
-                                  "\n\n}  // extern \"C\"\n");
+    // Vitis only works with extern C kernels. We need to wrap the kernel
+    // with extern C.
+    auto beginLoc = func->getBeginLoc();
+    auto endLoc = func->getEndLoc();
+
+    // If the function is a signature, we need to insert after the semicolon.
+    if (!func->isThisDeclarationADefinition()) {
+      endLoc = Lexer::findLocationAfterToken(endLoc, clang::tok::semi,
+                                             rewriter.getSourceMgr(),
+                                             rewriter.getLangOpts(), true);
+    }
+
+    rewriter.InsertText(beginLoc, "extern \"C\" {\n\n");
+    rewriter.InsertTextAfterToken(endLoc, "\n\n}  // extern \"C\"\n");
   } else {
     // Otherwise, treat it as a normal HLS kernel.
     RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS);

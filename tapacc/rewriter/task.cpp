@@ -73,6 +73,7 @@ extern const string* top_name;
 
 // Given a Stmt, find the first tapa::task in its children.
 const ExprWithCleanups* GetTapaTask(const Stmt* stmt) {
+  if (!stmt) return nullptr;
   for (auto child : stmt->children()) {
     if (auto expr = dyn_cast<ExprWithCleanups>(child)) {
       if (expr->getType().getCanonicalType().getAsString() ==
@@ -151,31 +152,37 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
 bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
   rewriting_func = nullptr;
 
-  // If the visited function is a global function with a body, and it is in the
+  // If the visited function is a global function, and it is in the
   // main file, then it is a candidate for transformation.
-  if (func->hasBody() && func->isGlobal() &&
-      context_.getSourceManager().isWrittenInMainFile(func->getBeginLoc())) {
+  if (func->isGlobal() &&
+      context_.getSourceManager().isWrittenInMainFile(func->getLocation())) {
     if (is_first_traversal) {
-      // For the first traversal, collect all functions.
-      funcs_.push_back(func);
+      // For the first traversal, collect all functions with body.
+      if (func->hasBody()) funcs_.push_back(func);
     } else {
       // For the second traversal, process tapa task functions.
       assert(rewriters_.count(func) > 0);
       rewriting_func = func;
 
       // Run this before the function body is purged
-      if (func->hasAttrs()) {
+      if (func->hasAttrs() && func->hasBody()) {
         HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
       }
 
       bool is_top_level_task = IsTapaTopLevel(func);
       // If the first tapa::task is obtained in the function body, this is a
       // upper-level tapa task.
-      bool is_upper_level_task = GetTapaTask(func->getBody()) != nullptr;
+      // FIXME: This is not a perfect way to determine the level of the task,
+      // especially when visiting the function signature.
+      bool is_upper_level_task =
+          is_top_level_task || GetTapaTask(func->getBody()) != nullptr;
       // If the task is in the task invocation graph from the top-level task,
       // it is a lower-level tapa task.
       bool is_lower_level_task =
           !is_upper_level_task && tapa_tasks_.count(func) > 0;
+      // If the decl is the one being visited or its signature.
+      bool is_current_task =
+          func->getNameAsString() == current_task->getNameAsString();
 
       // Rewrite the function arguments.
       if (is_top_level_task) {
@@ -188,8 +195,7 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
         current_target->RewriteOtherFuncArguments(func, GetRewriter());
       }
 
-      if ((is_upper_level_task || is_lower_level_task) &&
-          func != current_task) {
+      if ((is_upper_level_task || is_lower_level_task) && !is_current_task) {
         // If the function is a tapa task but not the current task,
         // We deal with AIE and HLS differently.
         // For HLS, we reserve the function signature and remove the body.
@@ -293,6 +299,10 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   } else {
     current_target->RewriteMiddleLevelFunc(func, GetRewriter());
   }
+
+  // If the tapa::task cannot be obtained, we are handling a tapa task's
+  // signature, where the connection schema is not available. Return.
+  if (task == nullptr) return;
 
   // Obtain the connection schema from the task.
   // metadata: {tasks, fifos}
