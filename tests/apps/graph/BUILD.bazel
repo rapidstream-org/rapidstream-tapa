@@ -84,6 +84,7 @@ cc_binary(
     name = "graph-host",
     srcs = glob([
         "*.cpp",
+        "*.h",
         "*.hpp",
     ]),
     deps = [
@@ -96,7 +97,10 @@ cc_binary(
 tapa_xo(
     name = "graph-xo",
     src = "graph.cpp",
-    hdrs = glob(["*.hpp"]),
+    hdrs = glob([
+        "*.hpp",
+        "*.h",
+    ]),
     include = ["."],
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "Graph",

@@ -13,6 +13,7 @@
 #include <gflags/gflags.h>
 #include <tapa.h>
 
+#include "graph.h"
 #include "nxgraph.hpp"
 
 using std::clog;
@@ -23,27 +24,7 @@ using std::vector;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
-using Vid = uint32_t;
-using Eid = uint32_t;
-using Pid = uint16_t;
-
-using VertexAttr = Vid;
-
-struct Edge {
-  Vid src;
-  Vid dst;
-};
-
-struct Update {
-  Vid dst;
-  Vid value;
-};
-
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
-
-void Graph(Pid num_partitions, tapa::mmap<const Vid> num_vertices,
-           tapa::mmap<const Eid> num_edges, tapa::mmap<VertexAttr> vertices,
-           tapa::mmap<const Edge> edges, tapa::mmap<Update> updates);
 
 void GraphBaseline(Vid base_vid, vector<VertexAttr>& vertices,
                    const vector<Edge>& edges) {

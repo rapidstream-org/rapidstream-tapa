@@ -7,14 +7,11 @@
 #include <vector>
 
 #include <gflags/gflags.h>
-#include <tapa.h>
 
 #include "bandwidth.h"
 
 template <typename T>
 using vector = std::vector<T, tapa::aligned_allocator<T>>;
-
-void Bandwidth(tapa::mmaps<Elem, kBankCount> chan, uint64_t n, uint64_t flags);
 
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 

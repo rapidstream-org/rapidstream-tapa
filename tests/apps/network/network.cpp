@@ -2,21 +2,7 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#include <tapa.h>
-
-using tapa::detach;
-using tapa::istream;
-using tapa::istreams;
-using tapa::mmap;
-using tapa::ostreams;
-using tapa::streams;
-using tapa::task;
-using tapa::vec_t;
-
-using pkt_t = uint64_t;
-constexpr int kN = 8;  // kN x kN network
-
-constexpr int kStageCount = 3;  // log2(kN)
+#include "network.h"
 
 void Switch2x2(int b, istream<pkt_t>& pkt_in_q0, istream<pkt_t>& pkt_in_q1,
                ostreams<pkt_t, 2>& pkt_out_q) {

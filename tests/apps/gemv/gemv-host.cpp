@@ -6,14 +6,10 @@
 #include <vector>
 
 #include <gflags/gflags.h>
-#include <tapa.h>
 
 #include "gemv.h"
 
 using std::vector;
-
-void Gemv(tapa::hmap<bits<DataVec>, kPcCount, kPcSize> mat_a,
-          tapa::mmap<bits<DataVec>> vec_x, tapa::mmap<bits<DataVec>> vec_y);
 
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 

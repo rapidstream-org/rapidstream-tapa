@@ -2,7 +2,7 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#include <tapa.h>
+#include "jacobi.h"
 
 void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
                  tapa::ostream<tapa::vec_t<float, 2>>& stream) {

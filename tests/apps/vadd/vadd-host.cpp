@@ -6,14 +6,12 @@
 #include <vector>
 
 #include <gflags/gflags.h>
-#include <tapa.h>
+
+#include "vadd.h"
 
 using std::clog;
 using std::endl;
 using std::vector;
-
-void VecAdd(tapa::mmap<const float> a_array, tapa::mmap<const float> b_array,
-            tapa::mmap<float> c_array, uint64_t n);
 
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 

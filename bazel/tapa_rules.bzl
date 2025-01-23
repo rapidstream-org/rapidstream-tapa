@@ -33,7 +33,7 @@ def _tapa_xo_impl(ctx):
         tapa_cmd.extend(["--cflags", ctx.attr.cflags])
 
     # Add include directory, if specified.
-    if ctx.attr.include:
+    if ctx.files.include:
         for include in ctx.files.include:
             tapa_cmd.extend(["--cflags", "-I" + include.path])
 

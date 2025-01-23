@@ -8,7 +8,10 @@ load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 
 genrule(
     name = "vadd-xo",
-    srcs = ["//tests/apps/vadd:vadd.cpp"],
+    srcs = [
+        "//tests/apps/vadd:vadd.cpp",
+        "//tests/apps/vadd:vadd.h",
+    ],
     outs = ["vadd.xo"],
     cmd_bash = """
 set -ex
@@ -16,7 +19,8 @@ work_dir="work.out"
 platform="xilinx_u250_gen3x16_xdma_4_1_202210_1"
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
-    analyze --input $< --top VecAdd \
+    analyze -c -I$$(dirname $(location //tests/apps/vadd:vadd.h)) \
+    --input $(location //tests/apps/vadd:vadd.cpp) --top VecAdd \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
     synth --platform "$${platform}" \

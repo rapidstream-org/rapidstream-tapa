@@ -8,14 +8,12 @@
 #include <vector>
 
 #include <gflags/gflags.h>
-#include <tapa.h>
+
+#include "jacobi.h"
 
 using std::clog;
 using std::endl;
 using std::vector;
-
-void Jacobi(tapa::mmap<float> bank_0_t0, tapa::mmap<const float> bank_0_t1,
-            uint64_t coalesced_data_num);
 
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 

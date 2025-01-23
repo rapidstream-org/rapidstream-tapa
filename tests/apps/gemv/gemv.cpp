@@ -4,8 +4,6 @@
 
 #include "gemv.h"
 
-#include <tapa.h>
-
 void GemvCore(int pe_id, tapa::mmap<bits<DataVec>> a,
               tapa::mmap<bits<DataVec>> x, tapa::mmap<bits<DataVec>> y) {
   DataVec local_x[kMaxMatrixSize / kVecLen];

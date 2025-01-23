@@ -2,8 +2,7 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#ifndef TAPA_APPS_HMAP_HMAP_H
-#define TAPA_APPS_HMAP_HMAP_H
+#pragma once
 
 #include <cstdint>
 
@@ -27,4 +26,5 @@ constexpr int64_t kPcSize = 128 * 1024;
 template <typename T>
 using bits = ap_uint<tapa::widthof<T>()>;
 
-#endif  // TAPA_APPS_HMAP_HMAP_H
+void Gemv(tapa::hmap<bits<DataVec>, kPcCount, kPcSize> mat_a,
+          tapa::mmap<bits<DataVec>> vec_x, tapa::mmap<bits<DataVec>> vec_y);

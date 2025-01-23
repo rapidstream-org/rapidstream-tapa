@@ -9,15 +9,13 @@
 #include <vector>
 
 #include <gflags/gflags.h>
-#include <tapa.h>
+
+#include "cannon.h"
 
 using std::abs;
 using std::clog;
 using std::endl;
 using std::vector;
-
-void Cannon(tapa::mmap<const float> a, tapa::mmap<const float> b,
-            tapa::mmap<float> c, uint64_t n);
 
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 

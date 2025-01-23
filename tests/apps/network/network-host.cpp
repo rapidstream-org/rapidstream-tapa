@@ -12,18 +12,12 @@
 #include <vector>
 
 #include <gflags/gflags.h>
-#include <tapa.h>
+
+#include "network.h"
 
 using std::clog;
 using std::endl;
 using std::vector;
-
-using pkt_t = uint64_t;
-constexpr int kN = 8;  // kN x kN network
-using pkt_vec_t = tapa::vec_t<pkt_t, kN>;
-
-void Network(tapa::mmap<pkt_vec_t> input, tapa::mmap<pkt_vec_t> output,
-             uint64_t n);
 
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 

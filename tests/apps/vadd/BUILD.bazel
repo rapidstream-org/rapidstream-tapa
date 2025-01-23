@@ -8,7 +8,11 @@ load("//bazel:tapa_rules.bzl", "tapa_xo")
 load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
 exports_files(
-    ["vadd.cpp"],
+    [
+        ".",
+        "vadd.cpp",
+        "vadd.h",
+    ],
     visibility = ["//tests/functional:__subpackages__"],
 )
 
@@ -65,6 +69,7 @@ cc_binary(
     name = "vadd-host",
     srcs = glob([
         "*.cpp",
+        "*.h",
     ]),
     deps = [
         "//tapa-lib:tapa",
@@ -76,6 +81,8 @@ cc_binary(
 tapa_xo(
     name = "vadd-xo",
     src = "vadd.cpp",
+    hdrs = ["vadd.h"],
+    include = ["."],
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
     visibility = ["//tests/functional:__subpackages__"],
