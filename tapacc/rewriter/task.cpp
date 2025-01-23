@@ -127,22 +127,25 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
     vendor = TapaTargetAttr::VendorType::Xilinx;
   }
 
-  auto& metadata = GetMetadata();
-  metadata["target"] = TapaTargetAttr::ConvertTargetTypeToStr(target);
-  metadata["vendor"] = TapaTargetAttr::ConvertVendorTypeToStr(vendor);
+  // The task metadata should only be obtained from the function definition
+  if (func->isThisDeclarationADefinition()) {
+    auto& metadata = GetMetadata();
+    metadata["target"] = TapaTargetAttr::ConvertTargetTypeToStr(target);
+    metadata["vendor"] = TapaTargetAttr::ConvertVendorTypeToStr(vendor);
 
-  if (target_map.find(target) == target_map.end() ||
-      target_map[target].find(vendor) == target_map[target].end()) {
-    static const auto diagnostic_id =
-        this->context_.getDiagnostics().getCustomDiagID(
-            clang::DiagnosticsEngine::Error, "unsupported target: %0");
-    this->context_.getDiagnostics()
-        .Report(func->getLocation(), diagnostic_id)
-        .AddString(std::string(metadata["target"]) + " by " +
-                   std::string(metadata["vendor"]));
-    current_target = XilinxHLSTarget::GetInstance();
-  } else {
-    current_target = target_map[target][vendor];
+    if (target_map.find(target) == target_map.end() ||
+        target_map[target].find(vendor) == target_map[target].end()) {
+      static const auto diagnostic_id =
+          this->context_.getDiagnostics().getCustomDiagID(
+              clang::DiagnosticsEngine::Error, "unsupported target: %0");
+      this->context_.getDiagnostics()
+          .Report(func->getLocation(), diagnostic_id)
+          .AddString(std::string(metadata["target"]) + " by " +
+                     std::string(metadata["vendor"]));
+      current_target = XilinxHLSTarget::GetInstance();
+    } else {
+      current_target = target_map[target][vendor];
+    }
   }
 
   TraverseDecl(func->getASTContext().getTranslationUnitDecl());
@@ -300,9 +303,9 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
     current_target->RewriteMiddleLevelFunc(func, GetRewriter());
   }
 
-  // If the tapa::task cannot be obtained, we are handling a tapa task's
-  // signature, where the connection schema is not available. Return.
-  if (task == nullptr) return;
+  // The task metadata should only be obtained from the function definition
+  if (!func->isThisDeclarationADefinition()) return;
+  assert(task != nullptr);
 
   // Obtain the connection schema from the task.
   // metadata: {tasks, fifos}
@@ -622,6 +625,10 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 // Apply tapa s2s transformations on a lower-level task.
 void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
   current_target->RewriteLowerLevelFunc(func, GetRewriter());
+
+  // The task metadata should only be obtained from the function definition
+  if (!func->isThisDeclarationADefinition()) return;
+
   auto& metadata = GetMetadata();
   ProcessTaskPorts(func, metadata);
 }
