@@ -370,6 +370,7 @@ int main(int argc, char ** argv)
                 tasks=task_properties.get("tasks", {}),
                 fifos=task_properties.get("fifos", {}),
                 ports=task_properties.get("ports", []),
+                target_type=task_properties["target"],
             )
             if not task.is_upper or task.tasks:
                 self._tasks[name] = task
@@ -591,6 +592,9 @@ int main(int argc, char ** argv)
         _logger.info("running %s", flow_type)
 
         def worker(task: Task, idx: int) -> None:
+            _logger.info(
+                "start worker for %s. Task type: %s", task.name, task.target_type
+            )
             os.nice(idx % 19)
             try:
                 if skip_based_on_mtime and os.path.getmtime(
@@ -1538,7 +1542,7 @@ int main(int argc, char ** argv)
                 "Skip checking custom rtl format for non-verilog files: %s",
                 ", ".join(str(path) for path in non_vlg_paths),
             )
-        for rtl_path in rtl_paths:
+        for rtl_path in vlg_paths:
             rtl_module = Module([str(rtl_path)])
             if (task := self._tasks.get(rtl_module.name)) is None:
                 continue  # ignore RTL modules that are not tasks
