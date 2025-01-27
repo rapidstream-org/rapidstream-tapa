@@ -67,6 +67,11 @@ static std::map<TapaTargetAttr::TargetType,
              {TapaTargetAttr::VendorType::Xilinx,
               XilinxAIETarget::GetInstance()},
          }},
+        {TapaTargetAttr::TargetType::NON_SYNTHESIZABLE,
+         {
+             {TapaTargetAttr::VendorType::Xilinx,
+              XilinxNonSynthesizableTarget::GetInstance()},
+         }},
     };
 
 extern const string* top_name;
@@ -179,6 +184,18 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       // especially when visiting the function signature.
       bool is_upper_level_task =
           is_top_level_task || GetTapaTask(func->getBody()) != nullptr;
+      // if the task is non-synthesizable, it is a lower-level tapa task.
+      if (IsTaskNonSynthesizable(func)) {
+        is_upper_level_task = false;
+        if (is_top_level_task) {
+          static const auto diagnostic_id =
+              this->context_.getDiagnostics().getCustomDiagID(
+                  clang::DiagnosticsEngine::Error,
+                  "tapa top-level task cannot be non-synthesizable");
+          this->context_.getDiagnostics().Report(func->getLocation(),
+                                                 diagnostic_id);
+        }
+      }
       // If the task is in the task invocation graph from the top-level task,
       // it is a lower-level tapa task.
       bool is_lower_level_task =

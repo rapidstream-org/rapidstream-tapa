@@ -41,8 +41,8 @@ index 46d0a66d59c3..4e4c52ced4f8 100644
 +                   CXX11<"tapa","target">,
 +                   C23<"tapa", "target">];
 +  let Args = [EnumArgument<"Target", "TargetType", /*is_string=*/true,
-+                           ["hls", "aie"],
-+                           ["HLS", "AIE"]>,
++                           ["hls", "aie", "non_synthesizable"],
++                           ["HLS", "AIE", "NON_SYNTHESIZABLE"]>,
 +              EnumArgument<"Vendor", "VendorType", /*is_string=*/true,
 +                           ["xilinx"],
 +                           ["Xilinx"], /* optional */1>];

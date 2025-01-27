@@ -140,7 +140,9 @@ class Consumer : public ASTConsumer {
           .write(oss);
       oss.flush();
       code["tasks"][task_name]["code"] = code_table[task];
-      bool is_upper = GetTapaTask(task->getBody()) != nullptr;
+      // if a task is non-synthesizable, it is a lower-level task.
+      bool is_upper = GetTapaTask(task->getBody()) != nullptr &&
+                      !IsTaskNonSynthesizable(task);
       code["tasks"][task_name]["level"] = is_upper ? "upper" : "lower";
       code["tasks"][task_name].update(metadata_[task]);
     }
