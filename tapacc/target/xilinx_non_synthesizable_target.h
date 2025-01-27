@@ -2,15 +2,15 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#ifndef TAPA_XILINX_AIE_TARGET_H_
-#define TAPA_XILINX_AIE_TARGET_H_
+#ifndef TAPA_XILINX_NON_SYNTHESIZABLE_TARGET_H_
+#define TAPA_XILINX_NON_SYNTHESIZABLE_TARGET_H_
 
 #include "base_target.h"
 
 namespace tapa {
 namespace internal {
 
-class XilinxAIETarget : public BaseTarget {
+class XilinxNonSynthesizableTarget : public BaseTarget {
  public:
   virtual void AddCodeForTopLevelFunc(ADD_FOR_FUNC_ARGS_DEF);
   virtual void AddCodeForTopLevelStream(ADD_FOR_PARAMS_ARGS_DEF);
@@ -27,29 +27,32 @@ class XilinxAIETarget : public BaseTarget {
   virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF);
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF);
-  virtual void PreprocessCurrentTask(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteTopLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF);
+  virtual void RewriteOtherFuncArguments(REWRITE_FUNC_ARGS_DEF);
   virtual void ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
                                      bool IsTopTapaTopLevel);
-  virtual void RewriteFuncArguments(REWRITE_FUNC_ARGS_DEF, bool top);
   virtual void RewritePipelinedDecl(REWRITE_DECL_ARGS_DEF,
                                     const clang::Stmt* body);
   virtual void RewritePipelinedStmt(REWRITE_STMT_ARGS_DEF,
                                     const clang::Stmt* body);
   virtual void RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
                                    const clang::Stmt* body);
+
   static tapa::internal::Target* GetInstance() {
-    static XilinxAIETarget instance;
+    static XilinxNonSynthesizableTarget instance;
     return &instance;
   }
 
-  XilinxAIETarget(XilinxAIETarget const&) = delete;
-  void operator=(XilinxAIETarget const&) = delete;
+  XilinxNonSynthesizableTarget(XilinxNonSynthesizableTarget const&) = delete;
+  void operator=(XilinxNonSynthesizableTarget const&) = delete;
 
  protected:
-  XilinxAIETarget() {}
+  XilinxNonSynthesizableTarget() {}
 };
 
 }  // namespace internal
 }  // namespace tapa
 
-#endif  // TAPA_XILINX_AIE_TARGET_H_
+#endif  // TAPA_XILINX_NON_SYNTHESIZABLE_TARGET_H_

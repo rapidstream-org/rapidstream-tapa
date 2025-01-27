@@ -13,8 +13,9 @@ void Add(tapa::istream<float>& a, tapa::istream<float>& b,
   }
 }
 
-void Add_Upper(tapa::istream<float>& a, tapa::istream<float>& b,
-               tapa::ostream<float>& c, uint64_t n) {
+[[tapa::target("non_synthesizable", "xilinx")]] void Add_Upper(
+    tapa::istream<float>& a, tapa::istream<float>& b, tapa::ostream<float>& c,
+    uint64_t n) {
   tapa::task().invoke(Add, a, b, c, n);
 }
 

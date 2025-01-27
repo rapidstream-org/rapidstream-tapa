@@ -5,3 +5,4 @@
 #include "base_target.h"
 #include "xilinx_aie_target.h"
 #include "xilinx_hls_target.h"
+#include "xilinx_non_synthesizable_target.h"

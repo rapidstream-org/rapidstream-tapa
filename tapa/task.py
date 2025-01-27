@@ -102,6 +102,7 @@ class Task:  # noqa: PLR0904
         tasks: dict[str, object] | None = None,
         fifos: dict[str, dict[str, dict[str, object]]] | None = None,
         ports: list[dict[str, str]] | None = None,
+        target_type: str | None = None,
     ) -> None:
         if isinstance(level, str):
             if level == "lower":
@@ -115,6 +116,7 @@ class Task:  # noqa: PLR0904
         self.code: str = code
         self.tasks = {}
         self.fifos = {}
+        self.target_type = target_type
         port_dict = {i.name: i for i in map(Port, ports or [])}
         if self.is_upper:
             self.tasks = dict(
