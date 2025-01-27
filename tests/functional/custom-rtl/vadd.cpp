@@ -8,9 +8,14 @@
 
 void Add(tapa::istream<float>& a, tapa::istream<float>& b,
          tapa::ostream<float>& c, uint64_t n) {
+  int* c_dyn = new int[n];
   for (uint64_t i = 0; i < n; ++i) {
-    c << (a.read() + b.read());
+    c_dyn[i] = a.read() + b.read();
   }
+  for (uint64_t i = 0; i < n; ++i) {
+    c << c_dyn[i];
+  }
+  delete[] c_dyn;
 }
 
 [[tapa::target("non_synthesizable", "xilinx")]] void Add_Upper(

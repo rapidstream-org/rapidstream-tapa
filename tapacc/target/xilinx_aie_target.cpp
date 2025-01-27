@@ -143,8 +143,6 @@ void XilinxAIETarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
                                 llvm::join(lines, "\n"));
 }
 
-void XilinxAIETarget::PreprocessCurrentTask(REWRITE_FUNC_ARGS_DEF) {}
-
 void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
                                             bool IsTapaTopLevel) {
   // Remove the TapaTargetAttr defintion.
