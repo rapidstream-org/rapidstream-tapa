@@ -234,7 +234,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     class NoMatchingPortError(ValueError):
         """No matching port being found exception."""
 
-    def get_port_of(self, fifo: str, suffix: str) -> IOPort:
+    def get_port_of(self, fifo: str, suffix: str) -> ioport.IOPort:
         """Return the IOPort of the given fifo with the given suffix.
 
         Args:
