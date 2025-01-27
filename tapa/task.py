@@ -282,7 +282,8 @@ class Task:  # noqa: PLR0904
         if self._clock_period:
             return self._clock_period
         msg = f"clock period of task {self.name} not populated"
-        raise ValueError(msg)
+        _logger.warning(msg)
+        return decimal.Decimal(0)
 
     @clock_period.setter
     def clock_period(self, clock_period: decimal.Decimal) -> None:
