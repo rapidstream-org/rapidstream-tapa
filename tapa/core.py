@@ -115,6 +115,8 @@ STATE01 = IntConst("2'b01")
 STATE11 = IntConst("2'b11")
 STATE10 = IntConst("2'b10")
 
+CUSTOM_RTL_FILE_TYPES = (".v", ".tcl")
+
 
 def gen_declarations(task: Task) -> tuple[list[str], list[str], list[str]]:
     """Generates kernel and port declarations."""
@@ -435,12 +437,16 @@ int main(int argc, char ** argv)
         custom_rtl: list[Path] = []
         for path in rtl_paths:
             if path.is_file():
-                if path.suffix != ".v":
+                if path.suffix not in CUSTOM_RTL_FILE_TYPES:
                     msg = f"unsupported file type: {path}"
                     raise ValueError(msg)
                 custom_rtl.append(path)
             elif path.is_dir():
-                vlg_files = list(path.rglob("*.v"))
+                vlg_files = [
+                    file
+                    for file_type in CUSTOM_RTL_FILE_TYPES
+                    for file in path.rglob(f"*{file_type}")
+                ]
                 if not vlg_files:
                     msg = f"no verilog files found in {path}"
                     raise ValueError(msg)
@@ -1525,6 +1531,13 @@ int main(int argc, char ** argv)
         """Check if the custom RTL files are in the correct format."""
         if rtl_paths:
             _logger.info("checking custom RTL files format")
+        vlg_paths = [path for path in rtl_paths if path.suffix == ".v"]
+        non_vlg_paths = set(rtl_paths) - set(vlg_paths)
+        if non_vlg_paths:
+            _logger.warning(
+                "Skip checking custom rtl format for non-verilog files: %s",
+                ", ".join(str(path) for path in non_vlg_paths),
+            )
         for rtl_path in rtl_paths:
             rtl_module = Module([str(rtl_path)])
             if (task := self._tasks.get(rtl_module.name)) is None:
