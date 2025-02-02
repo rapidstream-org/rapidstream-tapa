@@ -281,9 +281,9 @@ void TapaFastCosimDevice::Exec() {
     argv.push_back("--part_num=" + FLAGS_xosim_part_num);
   }
 
-  // skip launch the simulation if resume from post sim
+  // launch simulation as a noop if resume from post sim
   if (FLAGS_xosim_resume_from_post_sim) {
-    return;
+    argv = {"/bin/sh", "-c", ":"};
   }
 
   context_ = std::make_unique<Context>(Context{
