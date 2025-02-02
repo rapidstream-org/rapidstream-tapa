@@ -4,6 +4,6 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM rockylinux:9.3.20231119
+FROM rockylinux:9.5.20241118
 
 INCLUDE+ Dockerfile.rhel9-common

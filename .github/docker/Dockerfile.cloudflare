@@ -4,7 +4,7 @@
 
 # This file is used to deploy distributions to Cloudflare Pages and R2.
 
-FROM node:23.6.0-bookworm
+FROM node:23.7.0-bookworm
 
 # Setup environment
 ENV HOME=/tmp

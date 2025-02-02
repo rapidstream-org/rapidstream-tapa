@@ -4,6 +4,8 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
 def _dpi_library_impl(ctx):
     compile_options = [
         "-Wall",
@@ -111,8 +113,8 @@ _dpi_legacy_rdi_library = rule(
 
 def dpi_library(name, **kwargs):
     _dpi_library(name = name, **kwargs)
-    native.cc_library(name = name + "_cc", **kwargs)
+    cc_library(name = name + "_cc", **kwargs)
 
 def dpi_legacy_rdi_library(name, **kwargs):
     _dpi_legacy_rdi_library(name = name, **kwargs)
-    native.cc_library(name = name + "_cc", **kwargs)
+    cc_library(name = name + "_cc", **kwargs)
