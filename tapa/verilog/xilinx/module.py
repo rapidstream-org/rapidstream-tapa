@@ -46,6 +46,7 @@ from pyverilog.vparser.ast import (
 from pyverilog.vparser.parser import VerilogCodeParser
 
 from tapa.backend.xilinx import M_AXI_PREFIX
+from tapa.common.unique_attrs import UniqueAttrs
 from tapa.util import Options
 from tapa.verilog.ast_utils import make_port_arg, make_pragma
 from tapa.verilog.util import (
@@ -219,7 +220,21 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     @property
     def name(self) -> str:
+        if Options.enable_pyslang:
+            return self._name_pyslang
         return self._module_def.name
+
+    @property
+    def _name_pyslang(self) -> str:
+        attrs = UniqueAttrs()
+
+        def visitor(node: object) -> None:
+            if isinstance(node, pyslang.ModuleDeclarationSyntax):
+                attrs.module_def = node
+
+        self._syntax_tree.root.visit(visitor)
+        assert isinstance(attrs.module_def, pyslang.ModuleDeclarationSyntax)
+        return attrs.module_def.header.name.valueText
 
     @property
     def ports(self) -> dict[str, ioport.IOPort]:

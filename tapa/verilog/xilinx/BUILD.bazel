@@ -63,6 +63,7 @@ py_library(
     deps = [
         ":ioport",
         "//tapa/backend",
+        "//tapa/common:unique_attrs",
         "//tapa/verilog",
         requirement("jinja2"),
         requirement("pyslang"),
