@@ -48,6 +48,7 @@ those contributing to or extending the TAPA framework itself.
   tutorial/mini_example
   tutorial/realworld_example
   tutorial/getting_started_vadd
+  tutorial/custom_rtl
 
 .. toctree::
   :caption: Reference

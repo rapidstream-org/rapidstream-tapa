@@ -103,6 +103,7 @@ class Task:  # noqa: PLR0904
         tasks: dict[str, object] | None = None,
         fifos: dict[str, dict[str, dict[str, object]]] | None = None,
         ports: list[dict[str, str]] | None = None,
+        target_type: str | None = None,
     ) -> None:
         if isinstance(level, str):
             if level == "lower":
@@ -116,6 +117,7 @@ class Task:  # noqa: PLR0904
         self.code: str = code
         self.tasks = {}
         self.fifos = {}
+        self.target_type = target_type
         port_dict = {i.name: i for i in map(Port, ports or [])}
         if self.is_upper:
             self.tasks = dict(
@@ -283,7 +285,8 @@ class Task:  # noqa: PLR0904
         if self._clock_period:
             return self._clock_period
         msg = f"clock period of task {self.name} not populated"
-        raise ValueError(msg)
+        _logger.warning(msg)
+        return decimal.Decimal(0)
 
     @clock_period.setter
     def clock_period(self, clock_period: decimal.Decimal) -> None:

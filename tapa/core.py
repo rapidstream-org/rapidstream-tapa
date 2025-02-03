@@ -115,6 +115,8 @@ STATE01 = IntConst("2'b01")
 STATE11 = IntConst("2'b11")
 STATE10 = IntConst("2'b10")
 
+CUSTOM_RTL_FILE_TYPES = (".v", ".tcl")
+
 
 def gen_declarations(task: Task) -> tuple[list[str], list[str], list[str]]:
     """Generates kernel and port declarations."""
@@ -368,9 +370,18 @@ int main(int argc, char ** argv)
                 tasks=task_properties.get("tasks", {}),
                 fifos=task_properties.get("fifos", {}),
                 ports=task_properties.get("ports", []),
+                target_type=task_properties["target"],
             )
             if not task.is_upper or task.tasks:
                 self._tasks[name] = task
+
+            # add non-synthetic tasks to gen_templates
+            if (
+                task_properties["target"] == "non_synthetic"
+                and name not in self.gen_templates
+            ):
+                self.gen_templates += (name,)
+
         self.files: dict[str, str] = {}
         self._hls_report_xmls: dict[str, ET.ElementTree] = {}
 
@@ -435,12 +446,16 @@ int main(int argc, char ** argv)
         custom_rtl: list[Path] = []
         for path in rtl_paths:
             if path.is_file():
-                if path.suffix != ".v":
+                if path.suffix not in CUSTOM_RTL_FILE_TYPES:
                     msg = f"unsupported file type: {path}"
                     raise ValueError(msg)
                 custom_rtl.append(path)
             elif path.is_dir():
-                vlg_files = list(path.rglob("*.v"))
+                vlg_files = [
+                    file
+                    for file_type in CUSTOM_RTL_FILE_TYPES
+                    for file in path.rglob(f"*{file_type}")
+                ]
                 if not vlg_files:
                     msg = f"no verilog files found in {path}"
                     raise ValueError(msg)
@@ -585,6 +600,9 @@ int main(int argc, char ** argv)
         _logger.info("running %s", flow_type)
 
         def worker(task: Task, idx: int) -> None:
+            _logger.info(
+                "start worker for %s. Task type: %s", task.name, task.target_type
+            )
             os.nice(idx % 19)
             try:
                 if skip_based_on_mtime and os.path.getmtime(
@@ -1492,7 +1510,9 @@ int main(int argc, char ** argv)
         # TODO: err properly if not integer literals
         return Plus(Minus(port.width.msb, port.width.lsb), IntConst(1))
 
-    def replace_custom_rtl(self, rtl_paths: tuple[Path, ...]) -> None:
+    def replace_custom_rtl(
+        self, rtl_paths: tuple[Path, ...], templates_info: dict[str, list[str]]
+    ) -> None:
         """Add custom RTL files to the project.
 
         It will replace all files that originally exist in the project.
@@ -1505,7 +1525,7 @@ int main(int argc, char ** argv)
         assert Path.exists(rtl_path)
 
         custom_rtl = self._get_custom_rtl_files(rtl_paths)
-        self._check_custom_rtl_format(custom_rtl)
+        self._check_custom_rtl_format(custom_rtl, templates_info)
 
         for file_path in custom_rtl:
             assert file_path.is_file()
@@ -1521,21 +1541,39 @@ int main(int argc, char ** argv)
             # Copy file to destination, replacing if necessary
             shutil.copy2(file_path, dest_path)
 
-    def _check_custom_rtl_format(self, rtl_paths: list[Path]) -> None:
+    def get_rtl_templates_info(self) -> dict[str, list[str]]:
+        """Get the template information for each task."""
+        return {
+            task: [str(port) for port in self._tasks[task].module.ports.values()]
+            for task in self.gen_templates
+        }
+
+    def _check_custom_rtl_format(
+        self, rtl_paths: list[Path], templates_info: dict[str, list[str]]
+    ) -> None:
         """Check if the custom RTL files are in the correct format."""
         if rtl_paths:
             _logger.info("checking custom RTL files format")
-        for rtl_path in rtl_paths:
+        vlg_paths = [path for path in rtl_paths if path.suffix == ".v"]
+        non_vlg_paths = set(rtl_paths) - set(vlg_paths)
+        if non_vlg_paths:
+            _logger.warning(
+                "Skip checking custom rtl format for non-verilog files: %s",
+                ", ".join(str(path) for path in non_vlg_paths),
+            )
+        for rtl_path in vlg_paths:
             rtl_module = Module([str(rtl_path)])
             if (task := self._tasks.get(rtl_module.name)) is None:
                 continue  # ignore RTL modules that are not tasks
-            if rtl_module.ports == task.module.ports:
+            if {str(port) for port in rtl_module.ports.values()} == set(
+                templates_info[task.name]
+            ):
                 continue  # ports match exactly
             msg = [
                 f"Custom RTL file {rtl_path} for task {task.name}"
                 " does not match the expected ports.",
                 "Task ports:",
-                *(f"  {port}" for port in task.module.ports.values()),
+                *(f"  {port}" for port in templates_info[task.name]),
                 "Custom RTL ports:",
                 *(f"  {port}" for port in rtl_module.ports.values()),
             ]

@@ -18,10 +18,6 @@ def _tapa_xo_impl(ctx):
     # Start building the command to run tapa-cli analyze.
     tapa_cmd = [tapa_cli.path, "analyze", "-f", src.path, "--top", top_name]
 
-    # Add gen_template, if specified.
-    if ctx.attr.gen_template:
-        tapa_cmd.extend(["--gen-template", ctx.attr.gen_template])
-
     # Add tapacc and tapa-clang executables.
     if ctx.file.tapacc:
         tapa_cmd.extend(["--tapacc", ctx.file.tapacc])
@@ -53,12 +49,12 @@ def _tapa_xo_impl(ctx):
     # Build the command for tapa-cli link.
     tapa_cmd.extend(["link"])
 
-    # Add custom rtl
-    for rtl_file in ctx.files.custom_rtl_files:
-        tapa_cmd.extend(["--add-rtl", rtl_file.path])
-
     # Complete the command sequence with the pack command.
     tapa_cmd.extend(["pack", "--output", output_file.path])
+
+    # Add custom rtl
+    for rtl_file in ctx.files.custom_rtl_files:
+        tapa_cmd.extend(["--custom-rtl", rtl_file.path])
 
     # Define a custom action to run the synthesized command.
     ctx.actions.run(
@@ -82,7 +78,6 @@ tapa_xo = rule(
         "include": attr.label_list(allow_files = True),
         "top_name": attr.string(mandatory = True),
         "custom_rtl_files": attr.label_list(allow_files = True),
-        "gen_template": attr.string(),
         "platform_name": attr.string(mandatory = True),
         "output_file": attr.string(),
         "tapa_cli": attr.label(
