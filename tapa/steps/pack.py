@@ -95,7 +95,8 @@ def pack(
         )
         return
     if custom_rtl:
-        program.replace_custom_rtl(custom_rtl)
+        templates_info = load_persistent_context("templates_info")
+        program.replace_custom_rtl(custom_rtl, templates_info)
     program.pack_rtl(output)
 
     if bitstream_script is not None:

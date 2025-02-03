@@ -1404,7 +1404,9 @@ int main(int argc, char ** argv)
         # TODO: err properly if not integer literals
         return Plus(Minus(port.width.msb, port.width.lsb), IntConst(1))
 
-    def replace_custom_rtl(self, rtl_paths: tuple[Path, ...]) -> None:
+    def replace_custom_rtl(
+        self, rtl_paths: tuple[Path, ...], templates_info: dict[str, list[str]]
+    ) -> None:
         """Add custom RTL files to the project.
 
         It will replace all files that originally exist in the project.
@@ -1417,7 +1419,7 @@ int main(int argc, char ** argv)
         assert Path.exists(rtl_path)
 
         custom_rtl = self._get_custom_rtl_files(rtl_paths)
-        self._check_custom_rtl_format(custom_rtl)
+        self._check_custom_rtl_format(custom_rtl, templates_info)
 
         for file_path in custom_rtl:
             assert file_path.is_file()
@@ -1433,7 +1435,21 @@ int main(int argc, char ** argv)
             # Copy file to destination, replacing if necessary
             shutil.copy2(file_path, dest_path)
 
-    def _check_custom_rtl_format(self, rtl_paths: list[Path]) -> None:
+    def get_rtl_templates_info(self) -> dict[str, list[str]]:
+        """Get the template information for each task.
+
+        Return:
+            dict[str, list[str]]: A dictionary where the key is the task
+            name and the value is the list of ports of the task.
+        """
+        return {
+            task: [str(port) for port in self._tasks[task].module.ports.values()]
+            for task in self.gen_templates
+        }
+
+    def _check_custom_rtl_format(
+        self, rtl_paths: list[Path], templates_info: dict[str, list[str]]
+    ) -> None:
         """Check if the custom RTL files are in the correct format."""
         if rtl_paths:
             _logger.info("checking custom RTL files format")
@@ -1447,13 +1463,15 @@ int main(int argc, char ** argv)
             rtl_module = Module([str(rtl_path)])
             if (task := self._tasks.get(rtl_module.name)) is None:
                 continue  # ignore RTL modules that are not tasks
-            if set(rtl_module.ports.values()) == set(task.module.ports.values()):
+            if {str(port) for port in rtl_module.ports.values()} == set(
+                templates_info[task.name]
+            ):
                 continue  # ports match exactly
             msg = [
                 f"Custom RTL file {rtl_path} for task {task.name}"
                 " does not match the expected ports.",
                 "Task ports:",
-                *(f"  {port}" for port in task.module.ports.values()),
+                *(f"  {port}" for port in templates_info[task.name]),
                 "Custom RTL ports:",
                 *(f"  {port}" for port in rtl_module.ports.values()),
             ]
