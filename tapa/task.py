@@ -114,17 +114,17 @@ class Task:  # noqa: PLR0904
         self.level = level
         self.name: str = name
         self.code: str = code
-        self.tasks = collections.OrderedDict()
-        self.fifos = collections.OrderedDict()
+        self.tasks = {}
+        self.fifos = {}
         port_dict = {i.name: i for i in map(Port, ports or [])}
         if self.is_upper:
-            self.tasks = collections.OrderedDict(
+            self.tasks = dict(
                 sorted(
                     (item for item in (tasks or {}).items()),
                     key=operator.itemgetter(0),
                 ),
             )
-            self.fifos = collections.OrderedDict(
+            self.fifos = dict(
                 sorted(
                     (item for item in (fifos or {}).items()),
                     key=operator.itemgetter(0),

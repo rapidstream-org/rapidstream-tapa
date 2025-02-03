@@ -4,7 +4,6 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import collections
 import itertools
 import logging
 import os.path
@@ -225,11 +224,11 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             # Non-ANSI style: ports declared in body
             *(x.list for x in self._module_def.items if isinstance(x, Decl)),
         ]
-        return collections.OrderedDict(
-            (x.name, ioport.IOPort.create(x))
+        return {
+            x.name: ioport.IOPort.create(x)
             for x in itertools.chain.from_iterable(port_lists)
             if isinstance(x, Input | Output | Inout)
-        )
+        }
 
     class NoMatchingPortError(ValueError):
         """No matching port being found exception."""
@@ -384,20 +383,20 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     @property
     def signals(self) -> dict[str, Wire | Reg]:
         signal_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
-        return collections.OrderedDict(
-            (x.name, x)
+        return {
+            x.name: x
             for x in itertools.chain.from_iterable(signal_lists)
             if isinstance(x, Wire | Reg)
-        )
+        }
 
     @property
     def params(self) -> dict[str, Parameter]:
         param_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
-        return collections.OrderedDict(
-            (x.name, x)
+        return {
+            x.name: x
             for x in itertools.chain.from_iterable(param_lists)
             if isinstance(x, Parameter)
-        )
+        }
 
     @property
     def code(self) -> str:

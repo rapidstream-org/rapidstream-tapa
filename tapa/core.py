@@ -8,7 +8,6 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import collections
 import contextlib
 import decimal
 import glob
@@ -349,7 +348,7 @@ int main(int argc, char ** argv)
             os.makedirs(self.work_dir, exist_ok=True)
             self.is_temp = False
         self.toplevel_ports = tuple(map(Port, obj["tasks"][self.top]["ports"]))
-        self._tasks: dict[str, Task] = collections.OrderedDict()
+        self._tasks: dict[str, Task] = {}
 
         task_names = toposort.toposort_flatten(
             {k: set(v.get("tasks", ())) for k, v in obj["tasks"].items()},
@@ -967,7 +966,7 @@ int main(int argc, char ** argv)
         _logger.debug("  instantiating children tasks in %s", task.name)
         is_done_signals: list[Pipeline] = []
         arg_table: dict[str, Pipeline] = {}
-        async_mmap_args: dict[Instance.Arg, list[str]] = collections.OrderedDict()
+        async_mmap_args: dict[Instance.Arg, list[str]] = {}
 
         task.add_m_axi(width_table, self.files)
 

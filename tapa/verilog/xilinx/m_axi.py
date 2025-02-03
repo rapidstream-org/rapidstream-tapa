@@ -6,7 +6,6 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import collections
 import copy
 from collections.abc import Iterable
 
@@ -68,16 +67,16 @@ M_AXI_ADDR_PORTS = (
 )
 
 # => {channel: [(name, direction), ...]}
-M_AXI_PORTS: dict[str, tuple[tuple[str, str], ...]] = collections.OrderedDict(
-    AR=M_AXI_ADDR_PORTS,
-    AW=M_AXI_ADDR_PORTS,
-    B=(
+M_AXI_PORTS: dict[str, tuple[tuple[str, str], ...]] = {
+    "AR": M_AXI_ADDR_PORTS,
+    "AW": M_AXI_ADDR_PORTS,
+    "B": (
         ("ID", "input"),
         ("READY", "output"),
         ("RESP", "input"),
         ("VALID", "input"),
     ),
-    R=(
+    "R": (
         ("DATA", "input"),
         ("ID", "input"),
         ("LAST", "input"),
@@ -85,14 +84,14 @@ M_AXI_PORTS: dict[str, tuple[tuple[str, str], ...]] = collections.OrderedDict(
         ("RESP", "input"),
         ("VALID", "input"),
     ),
-    W=(
+    "W": (
         ("DATA", "output"),
         ("LAST", "output"),
         ("READY", "input"),
         ("STRB", "output"),
         ("VALID", "output"),
     ),
-)
+}
 
 M_AXI_SUFFIXES_COMPACT = (
     "_ARADDR",
