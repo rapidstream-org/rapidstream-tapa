@@ -109,6 +109,7 @@ def synth(  # noqa: PLR0913,PLR0917
 
         settings["synthed"] = True
         store_persistent_context("settings")
+        store_persistent_context("templates_info", program.get_rtl_templates_info())
 
         is_pipelined("synth", True)
 
