@@ -1439,7 +1439,7 @@ int main(int argc, char ** argv)
             rtl_module = Module([str(rtl_path)])
             if (task := self._tasks.get(rtl_module.name)) is None:
                 continue  # ignore RTL modules that are not tasks
-            if rtl_module.ports == task.module.ports:
+            if set(rtl_module.ports.values()) == set(task.module.ports.values()):
                 continue  # ports match exactly
             msg = [
                 f"Custom RTL file {rtl_path} for task {task.name}"
