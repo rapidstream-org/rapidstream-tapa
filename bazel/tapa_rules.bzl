@@ -53,12 +53,12 @@ def _tapa_xo_impl(ctx):
     # Build the command for tapa-cli link.
     tapa_cmd.extend(["link"])
 
-    # Add custom rtl
-    for rtl_file in ctx.files.custom_rtl_files:
-        tapa_cmd.extend(["--add-rtl", rtl_file.path])
-
     # Complete the command sequence with the pack command.
     tapa_cmd.extend(["pack", "--output", output_file.path])
+
+    # Add custom rtl
+    for rtl_file in ctx.files.custom_rtl_files:
+        tapa_cmd.extend(["--custom-rtl", rtl_file.path])
 
     # Define a custom action to run the synthesized command.
     ctx.actions.run(
