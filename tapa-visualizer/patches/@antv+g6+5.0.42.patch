@@ -1,0 +1,33 @@
+diff --git a/node_modules/@antv/g6/lib/types/element.d.ts b/node_modules/@antv/g6/lib/types/element.d.ts
+index 391930d..c26c2fa 100644
+--- a/node_modules/@antv/g6/lib/types/element.d.ts
++++ b/node_modules/@antv/g6/lib/types/element.d.ts
+@@ -7,6 +7,8 @@ import type { Point, Port } from '../types';
+  * <en/> Node type
+  */
+ export interface Node extends DisplayObject, ElementHooks, ElementMethods {
++    type: ElementType,
++    id: string,
+     /**
+      * <zh/> 获取连接桩
+      *
+@@ -39,6 +41,8 @@ export interface Node extends DisplayObject, ElementHooks, ElementMethods {
+  * <en/> Edge type
+  */
+ export interface Edge extends DisplayObject, ElementHooks, ElementMethods {
++    type: "edge",
++    id: string,
+ }
+ /**
+  * <zh/> 组合类型
+diff --git a/node_modules/@antv/g6/lib/types/event.d.ts b/node_modules/@antv/g6/lib/types/event.d.ts
+index d2ee921..079085c 100644
+--- a/node_modules/@antv/g6/lib/types/event.d.ts
++++ b/node_modules/@antv/g6/lib/types/event.d.ts
+@@ -51,5 +51,5 @@ type TargetedEvent<E extends FederatedEvent, T extends Target = Target> = Omit<E
+     target: T;
+     targetType: 'canvas' | 'node' | 'edge' | 'combo';
+ };
+-export type Target = Document | Element;
++export type Target = Element;
+ export {};

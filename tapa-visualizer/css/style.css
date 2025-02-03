@@ -6,28 +6,47 @@
 
 @import url("./button.css");
 
-/* reset */
-header ul,
-aside ul {
-	list-style-type: none;
-	margin: 0;
-	padding: 0;
+/* Ref: light theme of egui
+https://github.com/emilk/egui/blob/cf965aaa/crates/egui/src/style.rs#L1339 */
+:root {
+	--fg1: #3C3C3C; /* rgb(60, 60, 60) */
+	--fg2: #505050; /* rgb(80, 80, 80) */
+	--bg1: #FCFCFC; /* rgb(252, 252, 252) ≈ from_additive_luminance(5) */
+	--bg2: #F8F8F8; /* rgb(248, 248, 248) */
+	--border: #BEBEBE; /* rgb(190, 190, 190) */
+	--select: #90D1FF; /* rgb(144, 209, 255) */
+	--warn:   #FF6400; /* rgb(255, 100, 0) */
+	--error:  #FF0000; /* rgb(255, 0, 0) */
+
+	color: var(--fg1);
+	background-color: var(--bg1);
 }
 
+:link {
+	color: #009BFF; /* rgb(0, 155, 255) */
+}
+::selection {
+	background-color: #90D1FF;
+}
 
-/* body */
-body {
-	display: grid;
-	grid-template: auto 1fr / auto 1fr;
+header,
+.aside-tabs,
+.aside-contents details > summary {
+	color: var(--fg2);
+	background-color: var(--bg2);
 }
 
 /* header */
 header {
-	grid-column: 1 / -1;
 	box-sizing: border-box;
 	min-height: 2rem;
-	padding: .1rem 1rem;
-	border-bottom: 1px solid gray;
+	padding: .1rem 1.5rem;
+}
+
+/* Don't wrap btn tooltip like "Toggle Sidebar" on wide screen */
+@media (min-width: 75rem) { /* 75rem * 16px = 1200px = xl in Bootstrap */
+	header { padding: .1rem 2.75rem; }
+	header .btn > .btn-text { white-space: pre; }
 }
 
 header,
@@ -40,20 +59,13 @@ header .flex {
 header .tools { margin-left: auto; }
 header .tools hr { height: 1rem; margin: 0; }
 
-header .grouping > li > label:hover {
-	background-color: #EEE;
-}
-header .grouping > li > label:has(:checked) {
-	background-color: #CCC;
-}
 
 /* main */
-
 main {
 	width: 75vw;
 	min-width: 40vw;
 	max-width: 85vw;
-	overflow: auto;
+	overflow: hidden;
 	resize: horizontal;
 }
 
@@ -62,21 +74,77 @@ main > .graph-container > .tooltip {
 }
 
 /* aside */
-
-aside {
-	display: flex;
-}
-
-aside > .tabs {
+.aside-tabs {
 	display: flex;
 	flex-direction: column;
 	gap: .5rem;
-	padding: .5rem;
-	border-left: 1px solid gray;
-	border-right: 1px solid gray;
+	padding: .5rem .25rem;
 }
 
-
-aside > .contents {
+.aside-contents {
 	flex: 1;
+	font-size: .9rem;
+}
+
+.aside-contents section {
+	display: none;
+}
+.aside-tabs:has(.btn-details     > input:checked) + .aside-contents > .details,
+.aside-tabs:has(.btn-connections > input:checked) + .aside-contents > .connections,
+.aside-tabs:has(.btn-source      > input:checked) + .aside-contents > .source {
+	display: block;
+}
+
+.aside-contents details > summary,
+.aside-contents details > div {
+	contain: content;
+	box-sizing: border-box;
+	border-bottom: 1px solid var(--border);
+}
+
+/* aside contents - summary */
+.aside-contents .source-summary,
+.aside-contents details > summary {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: .5rem;
+	line-height: 1;
+}
+
+.aside-contents details > summary {
+	list-style: none;
+}
+.aside-contents details > summary > .lucide-chevron-down {
+	transition: transform .1s linear;
+}
+.aside-contents details[open] > summary > .lucide-chevron-down {
+	transform: rotate(180deg);
+}
+
+.aside-contents details > div > p:only-child {
+	text-align: center;
+}
+
+/* aside contents - ol ul dl */
+.aside-contents ol, ul {
+	padding-inline-start: 1em;
+}
+.aside-contents ul {
+	list-style-type: "• ";
+}
+.aside-contents dl {
+	margin: 0;
+	padding: .3rem .5rem;
+}
+.aside-contents dl > dt {
+	color: var(--fg2);
+	font-weight: bold;
+	font-size: .85rem;
+}
+.aside-contents dl > dd {
+	margin: 0;
+	margin-top: .1rem;
+	margin-bottom: .25rem;
+	font-family: monospace;
 }

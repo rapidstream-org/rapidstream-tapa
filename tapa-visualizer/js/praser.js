@@ -4,14 +4,16 @@
  * RapidStream Contributor License Agreement.
  */
 
+import { getComboName } from "./graph.js";
+
 /** @type {<K, V>(map: Map<K, Set<V>>, key: K, value: V) => void} */
 const addToMappedSet = (map, key, value) => {
   const set = map.get(key);
   set ? set.add(value) : map.set(key, new Set([value]));
 };
 
-/** @type {(json: GraphJSON) => Required<import("@antv/g6").GraphData>} */
-export const getGraphData = (json) => {
+/** @type {(json: GraphJSON, flat: boolean) => Required<import("@antv/g6").GraphData>} */
+export const getGraphData = (json, flat = false) => {
 
   /** @type {Required<import("@antv/g6").GraphData>} */
   const graphData = {
@@ -28,8 +30,9 @@ export const getGraphData = (json) => {
     if (task.level !== "upper") continue;
 
     // Add upper task as combo
+    const combo = `combo:${taskName}`;
     graphData.combos.push({
-      id: taskName,
+      id: combo,
       data: task,
       type: taskName === json.top ? "rect" : "circle"
     });
@@ -37,13 +40,21 @@ export const getGraphData = (json) => {
     // Add sub task as node
     for (const subTaskName in task.tasks) {
       const subTasks = task.tasks[subTaskName];
-      subTasks.forEach(
-        (subTask, i) => graphData.nodes.push({
-          id: `${subTaskName}/${i}`,
-          combo: taskName,
-          data: subTask
-        })
-      );
+      if (flat) {
+        subTasks.forEach(
+          (subTask, i) => graphData.nodes.push({
+            id: `${subTaskName}/${i}`,
+            combo,
+            data: subTask,
+          })
+        );
+      } else {
+        graphData.nodes.push({
+          id: subTaskName,
+          combo,
+          data: { subTasks },
+        });
+      }
     }
 
     /** fifo groups for fifos like fifo_x_xx[0], fifo_x_xx[1]...
@@ -60,8 +71,15 @@ export const getGraphData = (json) => {
         continue;
       }
 
-      const source = fifo.produced_by.join("/");
-      const target = fifo.consumed_by.join("/");
+      /** @type {(by: [string, number]) => string} */
+      const getSubTask = (
+        flat
+        ? by => by.join("/")
+        : by => by[0]
+      );
+
+      const source = getSubTask(fifo.produced_by);
+      const target = getSubTask(fifo.consumed_by);
 
       // console.log(taskName, fifoName, source, target);
 
@@ -100,9 +118,11 @@ export const getGraphData = (json) => {
   graphData.combos.forEach(combo => {
     if (combo.type === "circle") {
       const node = graphData.nodes.find(
-        ({id}) => id.split("/")[0] === combo.id
+        ({id}) => id.split("/")[0] === getComboName(combo.id)
       );
-      if (node) graphData.edges.push({ source: combo.id, target: node.id });
+      if (node) graphData.edges.push(
+        { source: combo.id, target: node.id, id: `combo-to-node/${node.id}` }
+      );
     }
   })
 

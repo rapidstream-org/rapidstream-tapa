@@ -5,11 +5,36 @@
 */
 
 .btn {
+	/* https://github.com/emilk/egui/blob/cf965aaa/crates/egui/src/style.rs#L1453 */
+	--btn-txt: #3C3C3C; /* rgb(60, 60, 60) */
+	--btn-bg: #E6E6E6; /* rgb(230, 230, 230) */
+	--btn-bg-hover: #DCDCDC; /* rgb(220, 220, 220) */
+	--btn-bg-active: #A5A5A5; /* rgb(165, 165, 165) */
+	--btn-bg-select: #90D1FF; /* rgb(144, 209, 255) */
+
 	position: relative;
+	box-sizing: border-box;
 	padding: 2px;
-	border: 1px solid #CCC;
-	border-radius: 2px;
+	border: none;
+	border-radius: 3px;
+	color: var(--btn-txt);
+	background-color: var(--btn-bg);
 	font-size: smaller; /* for non-<button> .btn element like <label> */
+	cursor: pointer;
+}
+
+.btn:hover, .btn:focus {
+	background-color: var(--btn-bg-hover);
+}
+.btn:active {
+	background-color: var(--btn-bg-active);
+}
+.btn:has(:checked) {
+	background-color: var(--btn-bg-select);
+}
+.btn:disabled {
+	color: gray;
+	background-color: transparent;
 }
 
 /* button text tooltip
@@ -17,7 +42,8 @@
 	Center .btn-text in the parent element, instead of translate(-50%) */
 .btn > .btn-text {
 	position: absolute;
-	padding: .5rem;
+	z-index: 10;
+	padding: .5rem .4rem;
 	border: 1px solid;
 	border-radius: 4px;
 	background-color: white;
@@ -42,13 +68,14 @@
 	display: none;
 }
 
+/* btn in header */
 header .btn {
 	display: inline-flex;
 	flex-direction: column;
 	align-items: center;
 }
 header .btn > .btn-text {
-	top: 1.9rem;
+	top: 2rem;
 }
 header .btn > .btn-text::before {
 	top: -4px;
@@ -56,20 +83,15 @@ header .btn > .btn-text::before {
 	transform: rotate(45deg);
 }
 
-/* Don't wrap "Toggle Sidebar" on wide screen */
-@media (min-width: 75em) { /* 75em * 16px = 1200px = xl in Bootstrap */
-	header { padding: .1rem 2.5rem; }
-	header .btn > .btn-text { white-space: pre; }
-}
-
-aside > .tabs .btn {
+/* btn in .aside-tabs */
+.aside-tabs .btn {
 	display: flex;
 	align-items: center;
 }
-aside > .tabs .btn > .btn-text {
-	right: 1.5rem;
+.aside-tabs .btn > .btn-text {
+	right: 2rem;
 }
-aside > .tabs .btn > .btn-text::before {
+.aside-tabs .btn > .btn-text::before {
 	top: calc(50% - 4px);
 	right: -4px;
 	transform: rotate(135deg);
