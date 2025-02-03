@@ -370,6 +370,14 @@ int main(int argc, char ** argv)
             )
             if not task.is_upper or task.tasks:
                 self._tasks[name] = task
+
+            # add non-synthesizable tasks to gen_templates
+            if (
+                task_properties["target"] == "non_synthesizable"
+                and name not in self.gen_templates
+            ):
+                self.gen_templates += (name,)
+
         self.files: dict[str, str] = {}
         self._hls_report_xmls: dict[str, ET.ElementTree] = {}
 
