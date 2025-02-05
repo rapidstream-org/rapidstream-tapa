@@ -30,15 +30,10 @@ module Add_Upper
   c_peek,
   n,
   a_s_dout,
-  a_s_dout_eot,
   a_peek_dout,
-  a_peek_dout_eot,
   b_s_dout,
-  b_s_dout_eot,
   b_peek_dout,
-  b_peek_dout_eot,
-  c_s_din,
-  c_s_din_eot
+  c_s_din
 );
 
   input ap_clk;
@@ -59,16 +54,11 @@ module Add_Upper
   output c_s_write;
   input [32:0] c_peek;
   input [63:0] n;
-  input [32-1:0] a_s_dout;
-  input a_s_dout_eot;
-  input [32-1:0] a_peek_dout;
-  input a_peek_dout_eot;
-  input [32-1:0] b_s_dout;
-  input b_s_dout_eot;
-  input [32-1:0] b_peek_dout;
-  input b_peek_dout_eot;
-  output [32-1:0] c_s_din;
-  output c_s_din_eot;
+  input [32:0] a_s_dout;
+  input [32:0] a_peek_dout;
+  input [32:0] b_s_dout;
+  input [32:0] b_peek_dout;
+  output [32:0] c_s_din;
   reg ap_block_state2;
   reg ap_block_state1;
   reg c_s_write_local;
@@ -77,16 +67,13 @@ module Add_Upper
   reg ap_ST_fsm_state1_blk;
   reg ap_ST_fsm_state2_blk;
   wire ap_ce_reg;
-  wire [32-1:0] a__dout;
-  wire a__dout_eot;
+  wire [32:0] a__dout;
   wire a__empty_n;
   wire a__read;
-  wire [32-1:0] b__dout;
-  wire b__dout_eot;
+  wire [32:0] b__dout;
   wire b__empty_n;
   wire b__read;
-  wire [32-1:0] c__din;
-  wire c__din_eot;
+  wire [32:0] c__din;
   wire c__full_n;
   wire c__write;
   wire [63:0] Add_0___n__q0;
@@ -102,15 +89,12 @@ module Add_Upper
   assign a__dout = a_s_dout;
   assign a__empty_n = a_s_empty_n;
   assign a_s_read = a__read;
-  assign a__dout_eot = a_s_dout_eot;
   assign b__dout = b_s_dout;
   assign b__empty_n = b_s_empty_n;
   assign b_s_read = b__read;
-  assign b__dout_eot = b_s_dout_eot;
   assign c_s_din = c__din;
   assign c__full_n = c_s_full_n;
   assign c_s_write = c__write;
-  assign c_s_din_eot = c__din_eot;
 
   Add
   Add_0
@@ -121,17 +105,17 @@ module Add_Upper
     .ap_done(Add_0__ap_done),
     .ap_idle(Add_0__ap_idle),
     .ap_ready(Add_0__ap_ready),
-    .a_s_dout({ a__dout_eot, a__dout }),
-    .a_peek_dout({ a__dout_eot, a__dout }),
+    .a_s_dout(a__dout ),
+    .a_peek_dout( a__dout ),
     .a_s_empty_n(a__empty_n),
     .a_peek_empty_n(a__empty_n),
     .a_s_read(a__read),
-    .b_s_dout({ b__dout_eot, b__dout }),
-    .b_peek_dout({ b__dout_eot, b__dout }),
+    .b_s_dout(b__dout ),
+    .b_peek_dout(b__dout),
     .b_s_empty_n(b__empty_n),
     .b_peek_empty_n(b__empty_n),
     .b_s_read(b__read),
-    .c_s_din({ c__din_eot, c__din }),
+    .c_s_din(c__din ),
     .c_s_full_n(c__full_n),
     .c_s_write(c__write),
     .n(Add_0___n__q0)
