@@ -10,13 +10,13 @@ module VecAdd_tb();
   reg ap_clk = 0, ap_rst_n = 1, ap_start = 0;
   wire ap_done, ap_idle, ap_ready;
 
-  reg [31:0] a_s_dout = 0, b_s_dout = 0;
-  reg a_s_empty_n = 0, a_s_dout_eot = 0, b_s_empty_n = 0, b_s_dout_eot = 0;
+  reg [32:0] a_s_dout = 0, b_s_dout = 0;
+  reg a_s_empty_n = 0, b_s_empty_n = 0;
   wire a_s_read, b_s_read;
 
-  wire [31:0] c_s_din, c_peek;
+  wire [32:0] c_s_din, c_peek;
   reg c_s_full_n = 0;
-  wire c_s_write, c_s_din_eot;
+  wire c_s_write;
 
   reg [63:0] n = 5;
 
@@ -60,8 +60,7 @@ module VecAdd_tb();
       for (i = 0; i < 5; i = i + 1) begin
         // Clock in data
         a_s_empty_n <= 1;
-        a_s_dout_eot <= 1'b0;
-        a_s_dout <= $shortrealtobits(0.0 + i);
+        a_s_dout <= {1'b0, $shortrealtobits(1.0 + i)};;
         @(posedge ap_clk);
 
         // Wait for the cycle that the data is read
@@ -70,8 +69,7 @@ module VecAdd_tb();
 
       // Write a close token
       a_s_empty_n <= 1;
-      a_s_dout_eot <= 1'b1;
-      a_s_dout <= 0;
+      a_s_dout <= {1'b1, 0};
       @(posedge ap_clk);
 
       // Wait for the cycle that the close token is consumed
@@ -88,16 +86,14 @@ module VecAdd_tb();
     begin
       for (i = 0; i < 5; i = i + 1) begin
         b_s_empty_n <= 1;
-        b_s_dout_eot <= 1'b0;
-        b_s_dout <= $shortrealtobits(1.0 + i);
+        b_s_dout <= {1'b0, $shortrealtobits(1.0 + i)};
         @(posedge ap_clk);
         while (!b_s_read) @(posedge ap_clk);
       end
 
       // Write a close token
       b_s_empty_n <= 1;
-      b_s_dout_eot <= 1'b1;
-      b_s_dout <= 0;
+      b_s_dout <= {1'b1, 0};
       @(posedge ap_clk);
       while (!b_s_read) @(posedge ap_clk);
 
@@ -118,7 +114,7 @@ module VecAdd_tb();
         while (!c_s_write) @(posedge ap_clk);
 
         // Clock in data to the testbench
-        real_data <= $bitstoshortreal(c_s_din);
+        real_data <= $bitstoshortreal(c_s_din[31:0]);
         @(posedge ap_clk);
 
         // Check the data
@@ -129,7 +125,7 @@ module VecAdd_tb();
 
       c_s_full_n <= 1;
       while (!c_s_write) @(posedge ap_clk);
-      if (c_s_din_eot !== 1'b1)
+      if (c_s_din[32] !== 1'b1)
         $fatal(1, "Error: close token not set on last data");
       @(posedge ap_clk);
 

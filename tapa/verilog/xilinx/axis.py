@@ -24,12 +24,10 @@ AXIS_PORT_WIDTHS = {
 
 # => {port_suffix: [axis_port_suffixes in order]}
 STREAM_TO_AXIS = {
-    "_dout": ["TDATA"],
-    "_dout_eot": ["TLAST"],
+    "_dout": ["TDATA", "TLAST"],
     "_empty_n": ["TVALID"],
     "_read": ["TREADY"],
-    "_din": ["TDATA"],
-    "_din_eot": ["TLAST"],
+    "_din": ["TDATA", "TLAST"],
     "_full_n": ["TREADY"],
     "_write": ["TVALID"],
 }
