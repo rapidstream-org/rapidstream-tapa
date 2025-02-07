@@ -60,7 +60,7 @@ module VecAdd_tb();
       for (i = 0; i < 5; i = i + 1) begin
         // Clock in data
         a_s_empty_n <= 1;
-        a_s_dout <= {1'b0, $shortrealtobits(1.0 + i)};;
+        a_s_dout <= {1'b0, $shortrealtobits(0.0 + i)};;
         @(posedge ap_clk);
 
         // Wait for the cycle that the data is read
