@@ -28,6 +28,7 @@ Given a TAPA design with the following tasks:
         for (uint64_t i = 0; i < n; ++i) {
             c << c_dyn[i];
         }
+        delete[] c_dyn;
     }
 
     [[tapa::target("non_synthesizable", "xilinx")]] void Add_Upper(
