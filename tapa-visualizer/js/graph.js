@@ -6,13 +6,12 @@
 
 "use strict";
 
-import { getDetailsFromNode } from "./sidebar.js";
+import { sidebarContainers, updateSidebar } from "./sidebar.js";
 import { getGraphData } from "./praser.js";
 
-/** @type {<T = HTMLElement>(tagName: string, ...props: Record<string, unknown>[] ) => T} */
-// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-export const $ = (tagName, ...props) => Object.assign(
-	document.createElement(tagName), ...props
+/** @type {$} */
+export const $ = (tagName, props) => Object.assign(
+	document.createElement(tagName), props
 );
 
 /** @type {(comboId: string) => string} */
@@ -23,7 +22,7 @@ export const getComboName = comboId => comboId.replace(/^combo:/, "");
 let graphJson;
 
 /** Data for G6.Graph()
- * @type {Required<import("@antv/g6").GraphData>} */
+ * @type {GraphData} */
 let graphData = {
   nodes: [],
   edges: [],
@@ -32,30 +31,18 @@ let graphData = {
 
 // Grouping radios in header
 
-/** @type { HTMLFormElement & { elements: { grouping: { value: string; } } } | null } } */
+/** @satisfies { HTMLFormElement & { elements: { grouping: { value: string; } } } | null } } */
 const grouping = document.querySelector(".grouping");
-
-// Details sidebar
-
-/** @type {HTMLLIElement | null} */
-const details = document.querySelector(".instance-content");
-if (details === null) {
-  throw new TypeError("Element .instance-content not found!");
-}
-
-const resetDetails = () => details.replaceChildren(
-  $("p", { textContent: "Please select a node." })
-);
 
 // File Input
 
-/** @type {HTMLInputElement & { files: FileList } | null} */
+/** @satisfies {HTMLInputElement & { files: FileList } | null} */
 const fileInput = document.querySelector("input.fileInput");
 if (fileInput === null) {
   throw new TypeError("Element input.fileInput not found!");
 }
 
-/** @type {(graph: import("@antv/g6").Graph) => void} */
+/** @param {import("@antv/g6").Graph} graph */
 const setupFileInput = (graph) => {
   const reader = new FileReader();
   reader.addEventListener("load", e => {
@@ -74,6 +61,12 @@ const setupFileInput = (graph) => {
 
     graph.setData(graphData);
     void graph.render();
+
+    // render twice for medium-sized graphs
+    // (large enough for a better 2nd render, small enough for performance)
+    graphData.nodes.length > 50 &&
+    graphData.nodes.length < 1000 &&
+    void graph.render();
   });
 
   const readFile = () => {
@@ -86,7 +79,7 @@ const setupFileInput = (graph) => {
 
 // Buttons
 
-/** @type {(graph: import("@antv/g6").Graph) => void} */
+/** @param {import("@antv/g6").Graph} graph */
 const setupGraphButtons = (graph) => {
   /**
    * @typedef {EventListenerOrEventListenerObject} Listener
@@ -103,9 +96,12 @@ const setupGraphButtons = (graph) => {
   };
 
   setButton(".btn-clearGraph", () => void graph.clear());
+  setButton(".btn-refreshGraph", () => void graph.render());
   setButton(".btn-fitCenter", () => void graph.fitCenter());
   setButton(".btn-fitView", () => void graph.fitView());
 }
+
+// G6.Graph()
 
 (() => {
 
@@ -122,6 +118,10 @@ const setupGraphButtons = (graph) => {
     padding: 10,
     theme: "light",
 
+    animation: {
+      duration: 250, // ms
+    },
+
     // https://g6.antv.antgroup.com/api/elements/nodes/base-node
     node: {
       style: {
@@ -131,24 +131,46 @@ const setupGraphButtons = (graph) => {
     edge: {
       style: {
         endArrow: true,
-        labelText: ({id}) => id?.split("/").at(-1),
         labelFontFamily: "monospace",
+        labelText: ({ id }) => {
+          // Trim the prefix part
+          id = id?.slice(id.indexOf("/") + 1);
+          // If still very long, then cap each part's length to 15
+          if (id && id.length > 20) {
+            id = id.split("/").map(
+              part => part.length <= 15 ? part : `${part.slice(1, 12)}...`
+            ).join("/");
+          }
+          return id;
+        },
       }
     },
     combo: {
       // type: "rect",
       style: {
-        labelText: ({id}) => getComboName(id),
         labelFill: "gray",
         labelFontSize: 10,
         labelPlacement: "top",
         strokeWidth: 2,
+        labelText: ({id}) => getComboName(id),
       }
     },
 
+    /** @type {BuiltInLayoutOptions} */
     layout: {
-      type: "force",
+      type: "force-atlas2",
+      kr: 200,
+      kg: 20,
+      tao: 10,
+      nodeSize: [60, 40],
+      preventOverlap: true,
+      padding: 10,
+      // mode: "linlog",
+      // dissuadeHubs: true,
     },
+
+    transforms: ["process-parallel-edges"],
+
     behaviors: [
       "drag-canvas",
       "zoom-canvas",
@@ -157,22 +179,22 @@ const setupGraphButtons = (graph) => {
       ({
         type: "click-select",
         degree: 1,
-        onClick: ({ target }) => {
-          if (target.type !== "node") {
-            resetDetails();
+        // TODO: update sidebar for combo (UpperTask)
+        onClick: ({ target: item }) => {
+          if (item.type !== "node") {
+            const p = $("p", { textContent: "Please select a node." });
+            sidebarContainers.forEach(
+              element => element.replaceChildren(p.cloneNode(true)),
+            );
             return;
           }
 
-          const node = graph.getNodeData(target.id);
-          details.replaceChildren(
-            node
-            ? getDetailsFromNode(node)
-            : $("p", { textContent: `node ${target.id} not found!` })
-          );
+          const node = graph.getNodeData(item.id);
+          updateSidebar(item.id, node, graphData);
         }
       })
     ],
-    transforms: ["process-parallel-edges"],
+
     plugins: [
       /** @type {import("@antv/g6").TooltipOptions} */
       ({
@@ -201,7 +223,9 @@ const setupGraphButtons = (graph) => {
   }
 
   // Override the default "Loading..."
-  resetDetails();
+  sidebarContainers[0].replaceChildren(
+    $("p", { textContent: "Please select a node." }),
+  );
 
   setupFileInput(graph);
   setupGraphButtons(graph);
