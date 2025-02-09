@@ -156,6 +156,7 @@ const setupGraphButtons = (graph) => {
       /** @type {import("@antv/g6").ClickSelectOptions} */
       ({
         type: "click-select",
+        degree: 1,
         onClick: ({ target }) => {
           if (target.type !== "node") {
             resetDetails();

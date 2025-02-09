@@ -30,8 +30,8 @@ https://github.com/emilk/egui/blob/cf965aaa/crates/egui/src/style.rs#L1339 */
 }
 
 header,
-.aside-tabs,
-.aside-contents details > summary {
+.sidebar-tabs,
+.sidebar-contents details > summary {
 	color: var(--fg2);
 	background-color: var(--bg2);
 }
@@ -74,37 +74,37 @@ main > .graph-container > .tooltip {
 }
 
 /* aside */
-.aside-tabs {
+.sidebar-tabs {
 	display: flex;
 	flex-direction: column;
 	gap: .5rem;
 	padding: .5rem .25rem;
 }
 
-.aside-contents {
+.sidebar-contents {
 	flex: 1;
 	font-size: .9rem;
 }
 
-.aside-contents section {
+.sidebar-contents section {
 	display: none;
 }
-.aside-tabs:has(.btn-details     > input:checked) + .aside-contents > .details,
-.aside-tabs:has(.btn-connections > input:checked) + .aside-contents > .connections,
-.aside-tabs:has(.btn-source      > input:checked) + .aside-contents > .source {
+.sidebar-tabs:has(.btn-details     > input:checked) + .sidebar-contents > .details,
+.sidebar-tabs:has(.btn-connections > input:checked) + .sidebar-contents > .connections,
+.sidebar-tabs:has(.btn-source      > input:checked) + .sidebar-contents > .source {
 	display: block;
 }
 
-.aside-contents details > summary,
-.aside-contents details > div {
+.sidebar-contents details > summary,
+.sidebar-contents details > div {
 	contain: content;
 	box-sizing: border-box;
 	border-bottom: 1px solid var(--border);
 }
 
 /* aside contents - summary */
-.aside-contents .source-summary,
-.aside-contents details > summary {
+.sidebar-contents .source-summary,
+.sidebar-contents details > summary {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -112,37 +112,48 @@ main > .graph-container > .tooltip {
 	line-height: 1;
 }
 
-.aside-contents details > summary {
+.sidebar-contents details > summary {
 	list-style: none;
 }
-.aside-contents details > summary > .lucide-chevron-down {
+.sidebar-contents details > summary > .lucide-chevron-down {
 	transition: transform .1s linear;
 }
-.aside-contents details[open] > summary > .lucide-chevron-down {
+.sidebar-contents details[open] > summary > .lucide-chevron-down {
 	transform: rotate(180deg);
 }
 
-.aside-contents details > div > p:only-child {
+.sidebar-contents details > div > p:only-child {
 	text-align: center;
 }
 
+.sidebar-contents > .connections > details > div {
+	padding: 0 .5rem;
+}
+
 /* aside contents - ol ul dl */
-.aside-contents ol, ul {
+.sidebar-contents p,
+.sidebar-contents ol,
+.sidebar-contents ul {
+	margin-top: .5rem;
+	margin-bottom: .5rem;
+}
+.sidebar-contents ol,
+.sidebar-contents ul {
 	padding-inline-start: 1em;
 }
-.aside-contents ul {
+.sidebar-contents ul {
 	list-style-type: "• ";
 }
-.aside-contents dl {
+.sidebar-contents dl {
 	margin: 0;
-	padding: .3rem .5rem;
+	padding: .5rem;
 }
-.aside-contents dl > dt {
+.sidebar-contents dl > dt {
 	color: var(--fg2);
 	font-weight: bold;
 	font-size: .85rem;
 }
-.aside-contents dl > dd {
+.sidebar-contents dl > dd {
 	margin: 0;
 	margin-top: .1rem;
 	margin-bottom: .25rem;
