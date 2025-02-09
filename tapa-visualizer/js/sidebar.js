@@ -6,7 +6,27 @@
 
 import { $, getComboName } from "./graph.js";
 
-/** @type {<T extends HTMLElement>(parent: T, ...children: (Node | string)[] ) => T} */
+// sidebar content containers
+export const sidebarContainers = [
+  "instance",
+  "neighbors",
+  "connections",
+].map(name => {
+  const element = document.querySelector(`.sidebar-content-${name}`);
+  if (element) {
+    return element;
+  } else {
+    throw new TypeError(`Element .sidebar-content-${name} not found!`);
+  }
+});
+
+const [
+  instance,
+  neighbors,
+  connections,
+] = sidebarContainers;
+
+/** @type {<T extends HTMLElement>(parent: T, ...children: (Node | string)[]) => T} */
 const append = (parent, ...children) => {
   parent.append(...children);
   return parent;
@@ -22,8 +42,10 @@ const parseArgs = args => append(
   )
 );
 
-/** @type {(node: import("@antv/g6").NodeData ) => HTMLDListElement} */
-export const getDetailsFromNode = node => {
+// Details
+
+/** @type {(node: import("@antv/g6").NodeData) => HTMLDListElement} */
+const getDetailsFromNode = node => {
 
   /** @satisfies {HTMLDListElement} */
   const dl = append(
@@ -34,7 +56,10 @@ export const getDetailsFromNode = node => {
     $("dd", { textContent: getComboName(node.combo ?? "<none>") }),
   );
 
-  /** @type {(dl: HTMLDListElement, subTask: SubTask, i?: number) => void} */
+  /**
+   * @param {HTMLDListElement} dl
+   * @param {SubTask} subTask
+   * @param {number} [i] */
   const appendNodeData = (dl, { args, step }, i) => {
     const argsArr = Object.entries(args);
     if (typeof i === "number") {
@@ -72,5 +97,53 @@ export const getDetailsFromNode = node => {
   }
 
   return dl;
+
+};
+
+/** Update sidebar for selected node
+ *  @param {string} id
+ *  @param {import("@antv/g6").NodeData} node
+ *  @param {GraphData} graphData */
+ export const updateSidebar = (id, node, graphData) => {
+
+  instance.replaceChildren(
+    node
+    ? getDetailsFromNode(node)
+    : $("p", { textContent: `node ${id} not found!` })
+  );
+
+  /** @type {(elements: (Node | string)[]) => HTMLUListElement} */
+  const ul = elements => {
+    const ul = $("ul", { style: "font-family: monospace;" });
+    ul.append(...elements);
+    return ul;
+  };
+
+  /** @type {import("@antv/g6").EdgeData[]} */
+  const sources = [];
+  /** @type {import("@antv/g6").EdgeData[]} */
+  const targets = [];
+  graphData.edges.forEach(edge => {
+    edge.source === id && sources.push(edge);
+    edge.target === id && targets.push(edge);
+  });
+
+  connections.replaceChildren(
+    $("p", { textContent: "Sources" }),
+    ul(sources.map(edge => $("li", { textContent: `${edge.id} -> ${edge.target}` }))),
+    $("p", { textContent: "Targets" }),
+    ul(targets.map(edge => $("li", { textContent: `${edge.id} <- ${edge.source}` }))),
+  );
+
+  /** @type {Set<string>} */
+  const neighborIds = new Set();
+  sources.forEach(edge => neighborIds.add(edge.target));
+  targets.forEach(edge => neighborIds.add(edge.source));
+
+  neighbors.replaceChildren(
+    neighborIds.size > 0
+    ? ul([...neighborIds.values().map(id => $("li", { textContent: id }))])
+    : $("p", { textContent: `${id} has no neighbors.` }),
+  );
 
 };
