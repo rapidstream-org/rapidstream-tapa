@@ -1463,7 +1463,7 @@ int main(int argc, char ** argv)
                 "Custom RTL ports:",
                 *(f"  {port}" for port in rtl_module.ports.values()),
             ]
-            raise ValueError("\n".join(msg))
+            _logger.warning("\n".join(msg))
 
     def get_aie_graph(self, task: Task) -> str:
         """Generates the complete AIE graph code."""
