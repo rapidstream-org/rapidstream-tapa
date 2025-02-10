@@ -333,6 +333,42 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             directive for _, directive in self.directives
         ) + ASTCodeGenerator().visit(self.ast)
 
+    def get_template_code(self) -> str:
+        module = None
+        # Find the module definition
+        for description in self.ast.description.definitions:
+            if isinstance(description, ModuleDef):
+                module = description
+                break
+        assert module is not None
+
+        template_module_items = []
+        for item in module.items:
+            if isinstance(item, Decl):
+                for decl_item in item.list:
+                    if isinstance(decl_item, Input | Output | Inout | Parameter):
+                        template_module_items.append(item)
+                        continue
+
+        # Create the module definition
+        template_ast = Source(
+            self.ast.name,
+            Description(
+                [
+                    ModuleDef(
+                        name=module.name,
+                        paramlist=module.paramlist,
+                        portlist=module.portlist,
+                        items=template_module_items,
+                    )
+                ]
+            ),
+        )
+
+        return "\n".join(
+            directive for _, directive in self.directives
+        ) + ASTCodeGenerator().visit(template_ast)
+
     def _increment_idx(self, length: int, target: str) -> None:
         attr_map = {attr: priority for priority, attr in enumerate(self._ATTRS)}
         target_priority = attr_map.get(target)

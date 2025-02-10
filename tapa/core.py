@@ -1373,7 +1373,7 @@ int main(int argc, char ** argv)
                 with open(
                     self.get_rtl_template(task.name), "w", encoding="utf-8"
                 ) as rtl_code:
-                    rtl_code.write(task.module.code)
+                    rtl_code.write(task.module.get_template_code())
         else:
             self._instantiate_fifos(task, print_fifo_ops)
             self._connect_fifos(task)
