@@ -107,7 +107,6 @@ STATE01 = IntConst("2'b01")
 STATE11 = IntConst("2'b11")
 STATE10 = IntConst("2'b10")
 
-CUSTOM_RTL_FILE_EXTENSIONS = (".v", ".tcl")
 FIFO_DIRECTIONS = ["consumed_by", "produced_by"]
 
 
@@ -435,20 +434,13 @@ int main(int argc, char ** argv)
         custom_rtl: list[Path] = []
         for path in rtl_paths:
             if path.is_file():
-                if path.suffix not in CUSTOM_RTL_FILE_EXTENSIONS:
-                    msg = f"unsupported file type: {path}"
-                    raise ValueError(msg)
                 custom_rtl.append(path)
             elif path.is_dir():
-                vlg_files = [
-                    file
-                    for file_type in CUSTOM_RTL_FILE_EXTENSIONS
-                    for file in path.rglob(f"*{file_type}")
-                ]
-                if not vlg_files:
-                    msg = f"no verilog files found in {path}"
+                rtl_files = list(path.rglob("*"))
+                if not rtl_files:
+                    msg = f"no rtl files found in {path}"
                     raise ValueError(msg)
-                custom_rtl.extend(vlg_files)
+                custom_rtl.extend(rtl_files)
             elif path.exists():
                 msg = f"unsupported path: {path}"
                 raise ValueError(msg)
@@ -1398,6 +1390,9 @@ int main(int argc, char ** argv)
         assert Path.exists(rtl_path)
 
         custom_rtl = self._get_custom_rtl_files(rtl_paths)
+        _logger.info("Adding custom RTL files to the project:")
+        for file_path in custom_rtl:
+            _logger.info("  %s", file_path)
         self._check_custom_rtl_format(custom_rtl, templates_info)
 
         for file_path in custom_rtl:
