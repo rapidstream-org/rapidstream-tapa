@@ -113,6 +113,7 @@ STATE11 = IntConst("2'b11")
 STATE10 = IntConst("2'b10")
 
 CUSTOM_RTL_FILE_EXTENSIONS = (".v", ".tcl")
+FIFO_DIRECTIONS = ["consumed_by", "produced_by"]
 
 
 def gen_declarations(task: Task) -> tuple[list[str], list[str], list[str]]:
@@ -1512,6 +1513,80 @@ int main(int argc, char ** argv)
             port_def="\n\t\t".join(port_def),
             connect_def="\n\t\t".join(connect_def),
         )
+
+    def _visit_tasks(
+        self,
+        target_task: str,
+        current_task: str,
+        current_inst: str,
+        current_hierarchy: list[str],
+        found_hierarchies: list[tuple[str, ...]],
+    ) -> None:
+        if current_task == target_task:
+            found_hierarchies.append((*current_hierarchy, current_inst))
+            return
+        for inst in self._tasks[current_task].instances:
+            assert inst.name
+            self._visit_tasks(
+                target_task,
+                inst.task.name,
+                inst.name,
+                [*current_hierarchy, current_inst],
+                found_hierarchies,
+            )
+
+    @staticmethod
+    def get_inst_by_fifo(target_task: str, parent_task: Task, fifo_name: str) -> str:
+        """Get the instance of the target task that produces or consumes the FIFO."""
+        matched_inst = None
+        for inst in parent_task.instances:
+            if inst.task.name != target_task:
+                continue
+            for arg in inst.args:
+                if arg.cat.is_stream and arg.name == fifo_name:
+                    matched_inst = inst
+                    break
+        assert matched_inst is not None
+        return matched_inst.name
+
+    def get_grouping_constraints(
+        self, nonpipeline_fifos: list[str] | None = None
+    ) -> list[list[str]]:
+        """Generates the grouping constraints based on critical path."""
+        _logger.info("Resolving grouping constraints from non-pipeline FIFOs")
+        grouping_constraints = []
+
+        if not nonpipeline_fifos:
+            return grouping_constraints
+
+        for task_fifo_name in nonpipeline_fifos:
+            # dfs all tasks to find all task instances
+            task_name, fifo_name = tuple(task_fifo_name.split("."))
+            found_hierarchies = []
+            self._visit_tasks(task_name, self.top, self.top, [], found_hierarchies)
+            fifo = self._tasks[task_name].fifos[fifo_name]
+            assert all(direction in fifo for direction in FIFO_DIRECTIONS)
+            consumer_task: str = fifo["consumed_by"][0]
+            producer_task: str = fifo["produced_by"][0]
+            for hierarchy in found_hierarchies:
+                # find fifo producer and consumer instance names as fifo object only
+                # contains task names
+                producer_inst = self.get_inst_by_fifo(
+                    producer_task, self._tasks[task_name], fifo_name
+                )
+                consumer_inst = self.get_inst_by_fifo(
+                    consumer_task, self._tasks[task_name], fifo_name
+                )
+
+                grouping_constraints.append(
+                    [
+                        f"{'/'.join(hierarchy)}/{producer_inst}".strip("/"),
+                        f"{'/'.join(hierarchy)}/{fifo_name}".strip("/"),
+                        f"{'/'.join(hierarchy)}/{consumer_inst}".strip("/"),
+                    ]
+                )
+
+        return grouping_constraints
 
 
 def _redact(xo: zipfile.ZipFile, info: zipfile.ZipInfo) -> bytes:
