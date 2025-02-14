@@ -19,7 +19,6 @@ from pyverilog.vparser.ast import (
 
 __all__ = [
     "ALL_SENS_LIST",
-    "BUILTIN_INSTANCES",
     "CLK",
     "CLK_SENS_LIST",
     "DONE",
@@ -152,8 +151,6 @@ RST = Unot(RST_N)
 CLK_SENS_LIST = SensList((Sens(CLK, type=SENS_TYPE),))
 ALL_SENS_LIST = SensList((Sens(None, type="all"),))
 STATE = Identifier("tapa_state")
-
-BUILTIN_INSTANCES = {"hmss_0"}
 
 
 def get_stream_width(port: str, data_width: int) -> Width | None:
