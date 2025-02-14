@@ -15,7 +15,7 @@ nuitka_binary(
     flags = [
         "--deployment",
         "--include-package-data=tapa:VERSION",
-        "--python-flag=isolated,no_docstrings,no_site,no_warnings",
+        "--python-flag=isolated,no_docstrings,no_site",
     ],
     output_name = "tapa-fast-cosim",
 )

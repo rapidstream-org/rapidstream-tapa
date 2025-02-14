@@ -30,7 +30,7 @@ nuitka_binary(
         # -c is used by tapa but nuitka incorrectly marks it as self-execution
         "--no-deployment-flag=self-execution",
         # ply depends on docstrings so no_docstrings is not an option
-        "--python-flag=isolated,no_site,no_warnings",
+        "--python-flag=isolated,no_site",
     ],
     output_name = "tapa-bin",
 )
