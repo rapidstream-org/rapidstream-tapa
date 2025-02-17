@@ -10,8 +10,8 @@ RapidStream Contributor License Agreement.
 part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide
 Contributors 2022. -->
 
-<!-- Disable security.fileuri.strict_origin_policy if you need to open this
-file directly through file:// URI on Firefox. -->
+<!-- If you need to open this file directly through file:// URI on Firefox,
+You may have to disable security.fileuri.strict_origin_policy. -->
 
 <html lang="en">
 
@@ -19,6 +19,9 @@ file directly through file:// URI on Firefox. -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TAPA Visualizer</title>
 
+<script defer src="https://unpkg.com/@antv/g6@5.0.43/dist/g6.min.js"></script>
+
+<link rel="stylesheet" href="./css/style.css">
 <style>
 /* basic layout & reset */
 html, body, .graph-container { height: 100%; }
@@ -40,8 +43,6 @@ header {
 :root { line-height: 1.368; }
 .lucide { width: 1rem; height: 1rem; }
 </style>
-
-<link rel="stylesheet" href="./css/style.css">
 
 <header>
 
@@ -190,9 +191,6 @@ header {
 	}
 })();
 </script>
-
-<script defer src="https://unpkg.com/@antv/g6@5.0.42/dist/g6.min.js"></script>
-
 <script type="module" src="./js/graph.js"></script>
 
 </html>
