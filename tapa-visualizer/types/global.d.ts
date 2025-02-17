@@ -3,6 +3,7 @@
 // RapidStream Contributor License Agreement.
 
 type $ = <K extends keyof HTMLElementTagNameMap>(tagName: K, prop?: Record<string, unknown>) => HTMLElementTagNameMap[K];
+type $text = <K extends keyof HTMLElementTagNameMap>(tagName: K, textContent: string | number) => HTMLElementTagNameMap[K];
 
 type GraphData = Required<import("@antv/g6").GraphData>;
 
