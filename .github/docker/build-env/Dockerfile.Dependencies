@@ -45,6 +45,8 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
+      # Update the following line to the latest date for retriggering the docker build
+      echo "Installing system dependencies as of 20250217" && \
       apt-get upgrade -y && \
       apt-get install --no-install-recommends -y \
         apt-transport-https \
@@ -76,7 +78,6 @@ RUN apt-get update && \
       rm -f /tmp/xrt.deb && \
       apt-get update && \
       apt-get upgrade -y && \
-      echo Update Bazel to 8.0.0 && \
       apt-get install --no-install-recommends -y bazel && \
       apt-get purge --auto-remove -y \
         gnupg \
@@ -94,7 +95,7 @@ RUN curl -sSL \
 
 # Install Pre-Commit
 RUN curl -sSL \
-        https://github.com/astral-sh/python-build-standalone/releases/download/20250115/cpython-3.13.1+20250115-x86_64-unknown-linux-gnu-install_only.tar.gz \
+        https://github.com/astral-sh/python-build-standalone/releases/download/20250212/cpython-3.13.2+20250212-x86_64-unknown-linux-gnu-install_only.tar.gz \
         | tar -xz -C /opt && \
     /opt/python/bin/python3 -m pip install pre-commit && \
     ln -s /opt/python/bin/pre-commit /usr/local/bin/pre-commit && \

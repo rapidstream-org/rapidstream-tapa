@@ -12,9 +12,9 @@ module(name = "rapidstream-tapa")
 # Bazel dependencies
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "rules_cc", version = "0.1.0")
+bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
-bazel_dep(name = "rules_python", version = "1.1.0")
+bazel_dep(name = "rules_python", version = "1.2.0-rc0")
 
 bazel_dep(name = "toolchains_llvm", version = "1.3.0", dev_dependency = True)
 
@@ -60,13 +60,13 @@ pip.parse(
 use_repo(pip, "tapa_deps")
 
 # Required by tapacc
-bazel_dep(name = "nlohmann_json", version = "3.11.3")
+bazel_dep(name = "nlohmann_json", version = "3.11.3.bcr.1")
 
 # Required by tapa-lib
 bazel_dep(name = "rules_boost", repo_name = "com_github_nelhage_rules_boost")
 git_override(
     module_name = "rules_boost",
-    commit = "e3adfd8d6733c914d2b91a65fb7175af09602281",
+    commit = "c3edeeb93c47ee87d01fc96aec8e48ca9449d10c",
     patch_cmds = [
         # Enable BOOST_USE_ASAN, which requires BOOST_USE_UCONTEXT.
         """sed '/name = "context",/a defines=["BOOST_USE_ASAN","BOOST_USE_UCONTEXT"],' -i boost.BUILD""",
@@ -84,7 +84,7 @@ bazel_dep(name = "gflags", version = "2.2.2")
 # glog must be 0.5.0 as in later versions, bazel is strictly required for
 # including glog headers for the host code
 bazel_dep(name = "glog", version = "0.5.0")
-bazel_dep(name = "googletest", version = "1.15.2")
+bazel_dep(name = "googletest", version = "1.16.0")
 
 single_version_override(
     module_name = "glog",
@@ -227,7 +227,7 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
 # Library dependencies
 bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "rules_cc", version = "0.1.0")
+bazel_dep(name = "rules_cc", version = "0.1.1")
 EOF
         """.format(LLVM_VERSION),
         # 0004-Add-BUILD.bazel.patch

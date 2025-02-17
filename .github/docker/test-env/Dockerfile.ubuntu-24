@@ -4,7 +4,7 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM ubuntu:noble-20241118.1
+FROM ubuntu:noble-20250127
 
 ARG DOCKER_USER_ID
 ARG DOCKER_GROUP_ID
