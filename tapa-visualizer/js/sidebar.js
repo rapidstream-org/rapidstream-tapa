@@ -4,7 +4,8 @@
  * RapidStream Contributor License Agreement.
  */
 
-import { $, getComboName } from "./graph.js";
+"use strict";
+
 
 // sidebar content containers
 export const sidebarContainers = [

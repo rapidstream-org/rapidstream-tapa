@@ -1,15 +1,15 @@
 {
     "devDependencies": {
-        "@antv/g6": "^5.0.42",
-        "eslint": "^9.18.0",
-        "globals": "^15.14.0",
+        "@antv/g6": "^5.0.43",
+        "eslint": "^9.20.1",
+        "globals": "^15.15.0",
         "patch-package": "^8.0.0",
         "typescript": "^5.7.3",
-        "typescript-eslint": "^8.21.0"
+        "typescript-eslint": "^8.24.0"
     },
     "overrides": {
         "@antv/g6": {
-            "hull.js": "andriiheonia/hull"
+            "hull.js": "github:andriiheonia/hull#ffcf93dbd4df5a8c59f0541af5a9926d01528c5d"
         },
         "patch-package@^8.0.0": {
             "rimraf": "6.0.1"
@@ -17,6 +17,7 @@
     },
     "private": true,
     "scripts": {
+        "patch": "patch-package @antv/g6",
         "postinstall": "patch-package"
     },
     "type": "module",
