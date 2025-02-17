@@ -8,15 +8,18 @@ type GraphData = Required<import("@antv/g6").GraphData>;
 
 type GraphJSON = {
   top: string,
-  tasks: Record<string, LowerTask | UpperTask>;
+  /** A dict mapping task names to task object. */
+  tasks: Record<string, Task>;
   cflags: string[];
 };
 
+type Task = UpperTask | LowerTask;
+
 type UpperTask = {
   level: "upper", target: string, vendor: string;
-  /** A dict mapping child task names to json instance description objects. */
+  /** A dict mapping child task names to instance description objects. */
   tasks: Record<string, SubTask[]>;
-  /** A dict mapping child fifo names to json FIFO description objects. */
+  /** A dict mapping child fifo names to FIFO description objects. */
   fifos: Record<string, FIFO>;
   /** A dict mapping port names to Port objects for the current task. */
   ports: Port[],
@@ -36,13 +39,11 @@ type SubTask = {
 };
 
 type FIFO = {
-  /** [name, id] */
-  produced_by?: [string, number];
-  /** [name, id] */
-  consumed_by?: [string, number];
+  produced_by?: [name: string, id: number];
+  consumed_by?: [name: string, id: number];
   depth?: number;
 };
 
 type Port = {
-  cat: string, name: string, type: string, width: number;
+  name: string, cat: string, type: string, width: number;
 };
