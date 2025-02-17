@@ -5,6 +5,7 @@
 */
 
 @import url("./button.css");
+@import url("./sidebar.css");
 
 /* Ref: light theme of egui
 https://github.com/emilk/egui/blob/cf965aaa/crates/egui/src/style.rs#L1339 */
@@ -74,6 +75,14 @@ main > .graph-container > .tooltip {
 }
 
 /* aside */
+aside {
+	overflow: hidden;
+}
+.sidebar-tabs,
+.sidebar-contents {
+	overflow: auto;
+}
+
 .sidebar-tabs {
 	display: flex;
 	flex-direction: column;
@@ -84,78 +93,4 @@ main > .graph-container > .tooltip {
 .sidebar-contents {
 	flex: 1;
 	font-size: .9rem;
-}
-
-.sidebar-contents section {
-	display: none;
-}
-.sidebar-tabs:has(.btn-details     > input:checked) + .sidebar-contents > .details,
-.sidebar-tabs:has(.btn-connections > input:checked) + .sidebar-contents > .connections,
-.sidebar-tabs:has(.btn-source      > input:checked) + .sidebar-contents > .source {
-	display: block;
-}
-
-.sidebar-contents details > summary,
-.sidebar-contents details > div {
-	contain: content;
-	box-sizing: border-box;
-	border-bottom: 1px solid var(--border);
-}
-
-/* aside contents - summary */
-.sidebar-contents .source-summary,
-.sidebar-contents details > summary {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: .5rem;
-	line-height: 1;
-}
-
-.sidebar-contents details > summary {
-	list-style: none;
-}
-.sidebar-contents details > summary > .lucide-chevron-down {
-	transition: transform .1s linear;
-}
-.sidebar-contents details[open] > summary > .lucide-chevron-down {
-	transform: rotate(180deg);
-}
-
-.sidebar-contents details > div > p:only-child {
-	text-align: center;
-}
-
-.sidebar-contents > .connections > details > div {
-	padding: 0 .5rem;
-}
-
-/* aside contents - ol ul dl */
-.sidebar-contents p,
-.sidebar-contents ol,
-.sidebar-contents ul {
-	margin-top: .5rem;
-	margin-bottom: .5rem;
-}
-.sidebar-contents ol,
-.sidebar-contents ul {
-	padding-inline-start: 1em;
-}
-.sidebar-contents ul {
-	list-style-type: "• ";
-}
-.sidebar-contents dl {
-	margin: 0;
-	padding: .5rem;
-}
-.sidebar-contents dl > dt {
-	color: var(--fg2);
-	font-weight: bold;
-	font-size: .85rem;
-}
-.sidebar-contents dl > dd {
-	margin: 0;
-	margin-top: .1rem;
-	margin-bottom: .25rem;
-	font-family: monospace;
 }
