@@ -90,11 +90,17 @@ py_library(
 )
 
 py_library(
+    name = "abc",
+    srcs = ["abc.py"],
+)
+
+py_library(
     name = "core",
     srcs = ["core.py"],
     deps = [
         ":instance",
         ":safety_check",
+        ":synthesis",
         ":task",
         ":util",
         "//tapa/backend",
@@ -122,6 +128,16 @@ py_library(
     srcs = ["safety_check.py"],
     deps = [
         ":task",
+    ],
+)
+
+py_library(
+    name = "synthesis",
+    srcs = ["synthesis.py"],
+    deps = [
+        ":abc",
+        "//tapa/backend",
+        requirement("psutil"),
     ],
 )
 

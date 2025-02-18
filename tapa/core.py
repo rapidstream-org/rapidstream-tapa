@@ -1,7 +1,5 @@
 """Core logic of TAPA."""
 
-from __future__ import annotations
-
 __copyright__ = """
 Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
@@ -56,6 +54,7 @@ from pyverilog.vparser.parser import ParseError
 from tapa.backend.xilinx import RunAie, RunHls
 from tapa.instance import Instance, Port
 from tapa.safety_check import check_mmap_arg_name
+from tapa.synthesis import ProgramSynthesisMixin
 from tapa.task import Task
 from tapa.util import (
     clang_format,
@@ -246,7 +245,7 @@ def gen_connections(task: Task) -> list[str]:  # noqa: C901  # TODO: refactor th
     return connect_def
 
 
-class Program:  # noqa: PLR0904  # TODO: refactor this class
+class Program(ProgramSynthesisMixin):  # noqa: PLR0904  # TODO: refactor this class
     """Describes a TAPA program.
 
     Attributes
@@ -473,6 +472,9 @@ int main(int argc, char ** argv)
     def get_header_path(self, name: str) -> str:
         return os.path.join(self.cpp_dir, name + ".h")
 
+    def get_post_syn_rpt_path(self, module_name: str) -> str:
+        return os.path.join(self.report_dir, f"{module_name}.hier.util.rpt")
+
     def get_tar(self, name: str) -> str:
         os.makedirs(os.path.join(self.work_dir, "tar"), exist_ok=True)
         return os.path.join(self.work_dir, "tar", name + ".tar")
@@ -518,7 +520,7 @@ int main(int argc, char ** argv)
         assert period.text
         return decimal.Decimal(period.text)
 
-    def extract_cpp(self, target: str = "hls") -> Program:
+    def extract_cpp(self, target: str = "hls") -> "Program":
         """Extract HLS/AIE C++ files."""
         _logger.info("extracting %s C++ files", target)
         check_mmap_arg_name(list(self._tasks.values()))
@@ -586,7 +588,7 @@ int main(int argc, char ** argv)
         keep_hls_work_dir: bool = False,
         flow_type: str = "hls",
         platform: str | None = None,
-    ) -> Program:
+    ) -> "Program":
         """Run HLS with extracted HLS C++ files and generate tarballs."""
         self.extract_cpp(flow_type)
 
@@ -688,7 +690,7 @@ int main(int argc, char ** argv)
 
         return self
 
-    def generate_task_rtl(self, print_fifo_ops: bool) -> Program:
+    def generate_task_rtl(self, print_fifo_ops: bool) -> "Program":
         """Extract HDL files from tarballs generated from HLS."""
         _logger.info("extracting RTL files")
         for task in self._tasks.values():
@@ -749,7 +751,7 @@ int main(int argc, char ** argv)
 
         return self
 
-    def generate_top_rtl(self, print_fifo_ops: bool) -> Program:
+    def generate_top_rtl(self, print_fifo_ops: bool) -> "Program":
         """Instrument HDL files generated from HLS.
 
         Args:
@@ -787,7 +789,7 @@ int main(int argc, char ** argv)
 
         return self
 
-    def pack_rtl(self, output_file: str) -> Program:
+    def pack_rtl(self, output_file: str) -> "Program":
         _logger.info("packaging RTL code")
         with contextlib.ExitStack() as stack:  # avoid nested with statement
             tmp_fp = stack.enter_context(tempfile.TemporaryFile())
