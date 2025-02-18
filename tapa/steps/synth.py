@@ -106,6 +106,7 @@ def synth(  # noqa: PLR0913,PLR0917
     )
     if flow_type != "aie":
         program.generate_task_rtl(print_fifo_ops)
+        program.generate_top_rtl(print_fifo_ops)
 
         settings["synthed"] = True
         store_persistent_context("settings")
