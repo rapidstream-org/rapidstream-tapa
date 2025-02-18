@@ -45,6 +45,8 @@ def _tapa_xo_impl(ctx):
         tapa_cmd.extend(["--clock-period", ctx.attr.clock_period])
     if ctx.attr.part_num:
         tapa_cmd.extend(["--part-num", ctx.attr.part_num])
+    if ctx.attr.enable_synth_util:
+        tapa_cmd.extend(["--enable-synth-util"])
 
     # Build the command for tapa-cli link.
     tapa_cmd.extend(["link"])
@@ -90,6 +92,7 @@ tapa_xo = rule(
         "cflags": attr.string(),
         "clock_period": attr.string(),
         "part_num": attr.string(),
+        "enable_synth_util": attr.bool(),
         "vitis_hls_env": attr.label(
             cfg = "exec",
             default = Label("//bazel:vitis_hls_env"),
