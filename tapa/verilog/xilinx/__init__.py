@@ -40,10 +40,6 @@ if TYPE_CHECKING:
 _logger = logging.getLogger().getChild(__name__)
 
 
-def ctrl_instance_name(_top: str) -> str:
-    return "control_s_axi_U"
-
-
 def generate_handshake_ports(
     instance: "Instance",
     rst: Node,

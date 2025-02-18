@@ -73,7 +73,7 @@ from tapa.verilog.ast_utils import (
     make_width,
 )
 from tapa.verilog.util import Pipeline, match_array_name, wire_name
-from tapa.verilog.xilinx import ctrl_instance_name, generate_handshake_ports, pack
+from tapa.verilog.xilinx import generate_handshake_ports, pack
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,
     generate_async_mmap_ioports,
@@ -393,10 +393,6 @@ int main(int argc, char ** argv)
     @property
     def top_task(self) -> Task:
         return self._tasks[self.top]
-
-    @property
-    def ctrl_instance_name(self) -> str:
-        return ctrl_instance_name(self.top)
 
     @property
     def start_q(self) -> Pipeline:
