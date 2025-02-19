@@ -429,8 +429,8 @@ int main(int argc, char ** argv)
             yaml: str
 
         return Report(
-            json=os.path.join(self.report_dir, "report.json"),
-            yaml=os.path.join(self.report_dir, "report.yaml"),
+            json=os.path.join(self.work_dir, "report.json"),
+            yaml=os.path.join(self.work_dir, "report.yaml"),
         )
 
     @staticmethod
