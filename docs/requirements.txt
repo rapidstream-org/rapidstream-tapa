@@ -1,5 +1,5 @@
 breathe
 myst_parser
-sphinx
 sphinx-click
 sphinx-rtd-theme
+sphinx==8.1.3 # TODO: Remove once https://github.com/breathe-doc/breathe/commit/bff6839efadbc26c9c7082b36780961187090b21 is released
