@@ -64,8 +64,13 @@
 	border-color: currentColor transparent transparent currentColor;
 	background: linear-gradient(-45deg, transparent 33%, white 33%);
 }
+/* hide when not hover or focus */
 .btn:not(:hover):not(:focus) > .btn-text {
 	display: none;
+}
+/* opacity when not hover, only focus */
+.btn:focus:not(:hover) > .btn-text {
+	opacity: .75;
 }
 
 /* btn in header */
