@@ -15,26 +15,15 @@ type RemoveIndex<T> = {
 };
 
 declare global {
-  const G6: typeof g6; // { [K in keyof typeof g6]: typeof g6[K]; }
+  type g6 = typeof g6; // { [K in keyof typeof g6]: typeof g6[K]; }
+  const G6: g6;
 
   interface NodeData extends Omit<RemoveIndex<g6.NodeData>, "data"> {
     data:
-    | { task: UpperTask | LowerTask | undefined, subTask: SubTask; }
-    | { task: UpperTask | LowerTask | undefined, subTasks: SubTask[]; };
+    | { task: Task | undefined, subTask: SubTask; }
+    | { task: Task | undefined, subTasks: SubTask[]; };
   }
   interface ComboData extends Omit<RemoveIndex<g6.ComboData>, "data"> {
     data: UpperTask;
   }
-
-  // fix wrong `type` name in @antv/g6/lib/layouts/types.d.ts
-  type BuiltInLayoutOptions =
-    | Exclude<import("@antv/g6/lib/layouts/types").BuiltInLayoutOptions, ForceAtlas2>
-    | ForceAtlas2Fixed;
-}
-
-interface ForceAtlas2 extends g6.BaseLayoutOptions, g6.ForceAtlas2LayoutOptions {
-  type: "forceAtlas2";
-}
-interface ForceAtlas2Fixed extends Omit<g6.BaseLayoutOptions, "type">, g6.ForceAtlas2LayoutOptions {
-  type: "force-atlas2";
 }
