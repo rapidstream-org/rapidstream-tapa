@@ -5,6 +5,11 @@
 type $ = <K extends keyof HTMLElementTagNameMap>(tagName: K, prop?: Record<string, unknown>) => HTMLElementTagNameMap[K];
 type $text = <K extends keyof HTMLElementTagNameMap>(tagName: K, textContent: string | number) => HTMLElementTagNameMap[K];
 
+declare var graph: Graph;
+declare var graphData: GraphData;
+declare var graphJSON: GraphJSON;
+
+type Graph = import("@antv/g6").Graph;
 type GraphData = Required<import("@antv/g6").GraphData>;
 
 type GraphJSON = {
