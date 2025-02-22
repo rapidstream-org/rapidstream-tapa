@@ -15,7 +15,8 @@ import {
 } from "./sidebar.js";
 import { getGraphData } from "./praser.js";
 
-/** @type {string} */
+/** Used in "Save Image" button
+ * @type {string} */
 let filename;
 
 /** @type {GraphJSON} */
@@ -125,12 +126,34 @@ const setupFileInput = (graph) => {
 
 // Buttons
 
-/** @param {import("@antv/g6").Graph} graph */
-const setupGraphButtons = (graph) => {
-  /**
-   * @typedef {EventListenerOrEventListenerObject} Listener
-   * @type {(selector: string, listener: Listener) => void} */
-  const setButton = (selector, callback) => {
+/** Button selector and click event callback
+ * @param {Graph} graph
+ * @returns {[string, EventListenerOrEventListenerObject][]} */
+const getGraphButtons = (graph) => [[
+  ".btn-clearGraph",
+  () => void graph.clear().then(() => resetInstance("Please load a file."))
+], [
+  ".btn-rerenderGraph",
+  () => void graph.layout().then(() => graph.fitView())
+], [
+  ".btn-fitCenter",
+  () => void graph.fitCenter()
+], [
+  ".btn-fitView",
+  () => void graph.fitView()
+], [
+  ".btn-saveImage",
+  () => void graph.toDataURL().then(
+    href => Object.assign(
+      document.createElement("a"),
+      { href, download: filename, rel: "noopener" },
+    ).click(),
+  )
+]];
+
+/** @param {Graph} graph */
+const setupGraphButtons = graph => getGraphButtons(graph).forEach(
+  ([selector, callback]) => {
     /** @satisfies { HTMLButtonElement | null } */
     const button = document.querySelector(selector);
     if (button) {
@@ -139,19 +162,8 @@ const setupGraphButtons = (graph) => {
     } else {
       console.warn(`setButton(): "${selector}" don't match any element!`);
     }
-  };
-
-  setButton(".btn-clearGraph   ", () => void graph.clear());
-  setButton(".btn-rerenderGraph", () => void graph.layout().then(() => graph.fitView()));
-  setButton(".btn-fitCenter    ", () => void graph.fitCenter());
-  setButton(".btn-fitView      ", () => void graph.fitView());
-  setButton(".btn-saveImage    ", () => void graph.toDataURL().then(
-    href => Object.assign(
-      document.createElement("a"),
-      { href, download: filename, rel: "noopener" }
-    ).click()
-  ));
-}
+  }
+);
 
 // G6.Graph()
 
