@@ -82,8 +82,12 @@ const getCopyButton = (code) => {
 
 /** Get an `<dl>` element containing:
  * Instance Name, Upper Task, Sub-Task(s)
- * @type {(node: NodeData) => HTMLDListElement} */
+ * @type {(node: NodeData) => HTMLElement} */
 const getNodeInfo = node => {
+
+  if (node.id.startsWith("<unknown>")) {
+    return $text("p", "This node represents a missing fifo source or target.");
+  }
 
   const dl = append(
     $("dl"),
@@ -145,47 +149,49 @@ const getNodeInfo = node => {
 };
 
 /** Update sidebar for selected node
- *  @param {NodeData} node
- *  @param {GraphData} graphData */
-export const updateSidebarForNode = (node, graphData) => {
+ *  @param {string} id
+ *  @param {Graph} graph */
+export const updateSidebarForNode = (id, graph) => {
+
+  /** @ts-expect-error @type {NodeData | undefined} */
+  const node = graph.getNodeData(id);
+  if (!node) {
+    resetSidebar(`Node ${id} not found!`);
+    return;
+  }
 
   // Instance
   const nodeInfo = getNodeInfo(node);
   instance.replaceChildren(nodeInfo);
 
   // Neighbors & Connections
+  const sources = graph.getRelatedEdgesData(node.id, "out");
+  const targets = graph.getRelatedEdgesData(node.id, "in");
 
-  /** @type {import("@antv/g6").EdgeData[]} */
-  const sources = [];
-  /** @type {import("@antv/g6").EdgeData[]} */
-  const targets = [];
-  graphData.edges.forEach(edge => {
-    edge.source === node.id && sources.push(edge);
-    edge.target === node.id && targets.push(edge);
-  });
-
-  /** @type {Set<string>} */
+  /** `graph.getNeighborNodesData()` will call `graph.getRelatedEdgesData()`
+   * again, thus it'll be better to get neighbors ourselves.
+   * @type {Set<string>} */
   const neighborIds = new Set();
   sources.forEach(edge => neighborIds.add(edge.target));
   targets.forEach(edge => neighborIds.add(edge.source));
 
   /** @type {(elements: (Node | string)[]) => HTMLUListElement} */
-  const ul = elements => {
-    const ul = $("ul", { style: "font-family: monospace;" });
-    ul.append(...elements);
-    return ul;
-  };
+  const ul = elements => append(
+    $("ul", { style: "font-family: monospace;" }),
+    ...elements
+  );
 
   neighbors.replaceChildren(
     neighborIds.size > 0
     ? ul([...neighborIds.values().map(id => $("li", { textContent: id }))])
-    : $("p", { textContent: `${node.id} has no neighbors.` }),
+    : $("p", { textContent: `Node ${node.id} has no neighbors.` }),
   );
 
+  // TODO: replace innerHTML
   connections.replaceChildren(
-    $("p", { textContent: "Sources" }),
+    $("p", { innerHTML: "Sources<br><code style='font-size: .8rem;'>Format: connection name -> target task name</code>" }),
     ul(sources.map(edge => $("li", { textContent: `${edge.id} -> ${edge.target}` }))),
-    $("p", { textContent: "Targets" }),
+    $("p", { innerHTML: "Targets<br><code style='font-size: .8rem;'>Format: connection name <- source task name</code>" }),
     ul(targets.map(edge => $("li", { textContent: `${edge.id} <- ${edge.source}` }))),
   );
 
@@ -195,7 +201,7 @@ export const updateSidebarForNode = (node, graphData) => {
 
 /** Get an `<dl>` element containing:
  * Instance Name, Upper Task, Sub-Task(s)
- * @type {(node: ComboData) => HTMLDListElement} */
+ * @type {(node: ComboData) => HTMLElement} */
 const getComboInfo = (combo) => append(
   $("dl"),
   $text("dt", "Instance Name"),
@@ -223,8 +229,16 @@ const getComboInfo = (combo) => append(
 );
 
 /** Update sidebar for selected combo
- *  @param {ComboData} combo */
-export const updateSidebarForCombo = (combo) => {
+ *  @param {string} id */
+export const updateSidebarForCombo = (id) => {
+
+  /** @ts-expect-error @type {ComboData | undefined} */
+  const combo = graph.getComboData(id);
+  if (!combo) {
+    resetSidebar(`Combo ${id} not found!`);
+    return;
+  }
+
 
   // Instance
   const comboInfo = getComboInfo(combo);
