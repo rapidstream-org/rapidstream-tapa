@@ -2,6 +2,16 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
+interface JSON {
+  /**
+   * Converts a JavaScript Object Notation (JSON) string into an object.
+   * @param text A valid JSON string.
+   * @param reviver A function that transforms the results. This function is called for each member of the object.
+   * If a member contains nested objects, the nested objects are transformed before the parent object is.
+   */
+    parse<T>(text: string, reviver?: <This, X, Y>(this: This, key: string, value: X) => Y): T;
+}
+
 type $ = <K extends keyof HTMLElementTagNameMap>(tagName: K, prop?: Record<string, unknown>) => HTMLElementTagNameMap[K];
 type $text = <K extends keyof HTMLElementTagNameMap>(tagName: K, textContent: string | number) => HTMLElementTagNameMap[K];
 
@@ -11,6 +21,26 @@ declare var graphJSON: GraphJSON;
 
 type Graph = import("@antv/g6").Graph;
 type GraphData = Required<import("@antv/g6").GraphData>;
+
+/** Options of getGraphData() */
+type GetGraphDataOptions = {
+  /** Whether expand sub-task to sub-task/0, sub-task/1, ...
+   * @default false */
+  flat?: boolean;
+  /** Whether expand non-top upper task's combo by default
+   * @default false */
+  expand?: boolean;
+  /** Toggle ports
+   * @default false */
+  port?: boolean;
+  /** Set node fill color by:
+   * - connection count (`> 1`, `<= 1`), or
+   * - task level (`upper`, `lower`)
+   * @default "auto" */
+  // nodeFill?: "auto" | "connection" | "task-level";
+};
+
+// graph.json
 
 type GraphJSON = {
   top: string,

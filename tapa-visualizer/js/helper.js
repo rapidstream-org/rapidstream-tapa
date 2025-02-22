@@ -22,20 +22,13 @@ export const append = (parent, ...children) => {
   return parent;
 }
 
-// string manipulation
+// combo id prefix
+
+/** @type {(comboName: string) => boolean} */
+export const isCombo = id => id.startsWith("combo:");
+
+/** @type {(comboName: string) => string} */
+export const getComboId = comboName => `combo:${comboName}`;
 
 /** @type {(comboId: string) => string} */
 export const getComboName = comboId => comboId.replace(/^combo:/, "");
-
-/** @type {(id: string | undefined) => string | undefined} */
-export const trimEdgeId = id => {
-  // Trim the prefix part
-  id = id?.slice(id.indexOf("/") + 1);
-  // If still very long, then cap each part's length to 15
-  if (id && id.length > 20) {
-    id = id.split("/").map(
-      part => part.length <= 15 ? part : `${part.slice(1, 12)}...`
-    ).join("/");
-  }
-  return id;
-}
