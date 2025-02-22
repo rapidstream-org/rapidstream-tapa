@@ -85,7 +85,15 @@ const config = [
         },
       ],
     },
-  }
+
+  },
+  {
+    name: "tsdef",
+    files: ["types/*.d.ts"],
+    rules: {
+      "no-var": "off",
+    }
+  },
 
 ];
 

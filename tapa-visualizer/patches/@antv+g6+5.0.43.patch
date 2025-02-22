@@ -1,22 +1,42 @@
+diff --git a/node_modules/@antv/g6/lib/layouts/types.d.ts b/node_modules/@antv/g6/lib/layouts/types.d.ts
+index fb8b38b..2677f28 100644
+--- a/node_modules/@antv/g6/lib/layouts/types.d.ts
++++ b/node_modules/@antv/g6/lib/layouts/types.d.ts
+@@ -59,7 +59,7 @@ interface RadialLayout extends BaseLayoutOptions, RadialLayoutOptions {
+     type: 'radial';
+ }
+ interface FruchtermanLayout extends BaseLayoutOptions, FruchtermanLayoutOptions {
+-    type: 'fruchterman' | 'fruchtermanGPU';
++    type: 'fruchterman' | 'fruchterman-gpu';
+ }
+ interface D3ForceLayout extends BaseLayoutOptions, D3ForceLayoutOptions {
+     type: 'd3-force';
+@@ -71,7 +71,7 @@ interface ForceLayout extends BaseLayoutOptions, ForceLayoutOptions {
+     type: 'force' | 'gforce';
+ }
+ interface ForceAtlas2 extends BaseLayoutOptions, ForceAtlas2LayoutOptions {
+-    type: 'forceAtlas2';
++    type: 'force-atlas2';
+ }
+ interface AntVDagreLayout extends BaseLayoutOptions, AntVDagreLayoutOptions {
+     type: 'antv-dagre';
 diff --git a/node_modules/@antv/g6/lib/types/element.d.ts b/node_modules/@antv/g6/lib/types/element.d.ts
-index 391930d..f9a8772 100644
+index 391930d..049c914 100644
 --- a/node_modules/@antv/g6/lib/types/element.d.ts
 +++ b/node_modules/@antv/g6/lib/types/element.d.ts
-@@ -7,6 +7,8 @@ import type { Point, Port } from '../types';
+@@ -7,6 +7,7 @@ import type { Point, Port } from '../types';
   * <en/> Node type
   */
  export interface Node extends DisplayObject, ElementHooks, ElementMethods {
 +    type: "node",
-+    id: string,
      /**
       * <zh/> 获取连接桩
       *
-@@ -39,13 +41,16 @@ export interface Node extends DisplayObject, ElementHooks, ElementMethods {
+@@ -39,13 +40,15 @@ export interface Node extends DisplayObject, ElementHooks, ElementMethods {
   * <en/> Edge type
   */
  export interface Edge extends DisplayObject, ElementHooks, ElementMethods {
 +    type: "edge",
-+    id: string,
  }
  /**
   * <zh/> 组合类型
