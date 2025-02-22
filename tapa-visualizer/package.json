@@ -1,11 +1,11 @@
 {
     "devDependencies": {
         "@antv/g6": "^5.0.43",
-        "eslint": "^9.20.1",
-        "globals": "^15.15.0",
+        "eslint": "^9.21.0",
+        "globals": "^16.0.0",
         "patch-package": "^8.0.0",
         "typescript": "^5.7.3",
-        "typescript-eslint": "^8.24.0"
+        "typescript-eslint": "^8.24.1"
     },
     "overrides": {
         "@antv/g6": {
