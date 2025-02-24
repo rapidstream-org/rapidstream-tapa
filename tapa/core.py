@@ -869,7 +869,7 @@ int main(int argc, char ** argv)
             task.module.add_fifo_instance(
                 name=fifo_name,
                 rst=RST,
-                width=self._get_fifo_width(task, fifo_name),
+                width=self.get_fifo_width(task, fifo_name),
                 depth=fifo["depth"],
             )
 
@@ -1366,7 +1366,7 @@ int main(int argc, char ** argv)
         with open(self.get_rtl(task.name), "w", encoding="utf-8") as rtl_code:
             rtl_code.write(task.module.code)
 
-    def _get_fifo_width(self, task: Task, fifo: str) -> Node:
+    def get_fifo_width(self, task: Task, fifo: str) -> Node:
         producer_task, _, fifo_port = task.get_connection_to(fifo, "produced_by")
         port = self.get_task(producer_task).module.get_port_of(
             fifo_port,
