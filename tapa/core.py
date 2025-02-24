@@ -1506,18 +1506,25 @@ int main(int argc, char ** argv)
             )
 
     @staticmethod
-    def get_inst_by_fifo(target_task: str, parent_task: Task, fifo_name: str) -> str:
-        """Get the instance of the target task that produces or consumes the FIFO."""
+    def get_inst_by_port_arg_name(
+        target_task: str | None, parent_task: Task, port_arg_name: str
+    ) -> Instance:
+        """Get the instance of the target task that connect to the port arg name.
+
+        If target_task is None, return the first instance that connects to the port arg
+        name. If target_task is not None, return the instance that connects to the port
+        arg name and is of the target task.
+        """
         matched_inst = None
         for inst in parent_task.instances:
-            if inst.task.name != target_task:
+            if target_task and inst.task.name != target_task:
                 continue
             for arg in inst.args:
-                if arg.cat.is_stream and arg.name == fifo_name:
+                if arg.name == port_arg_name:
                     matched_inst = inst
                     break
         assert matched_inst is not None
-        return matched_inst.name
+        return matched_inst
 
     def get_grouping_constraints(
         self, nonpipeline_fifos: list[str] | None = None
@@ -1542,12 +1549,12 @@ int main(int argc, char ** argv)
             for hierarchy in found_hierarchies:
                 # find fifo producer and consumer instance names as fifo object only
                 # contains task names
-                producer_inst = self.get_inst_by_fifo(
+                producer_inst = self.get_inst_by_port_arg_name(
                     producer_task, self._tasks[task_name], fifo_name
-                )
-                consumer_inst = self.get_inst_by_fifo(
+                ).name
+                consumer_inst = self.get_inst_by_port_arg_name(
                     consumer_task, self._tasks[task_name], fifo_name
-                )
+                ).name
 
                 grouping_constraints.append(
                     [
