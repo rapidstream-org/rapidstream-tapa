@@ -14,6 +14,7 @@ py_library(
     deps = [
         "//tapa:core",
         "//tapa:util",
+        "//tapa/abgraph",
         "//tapa/backend",
         "//tapa/common",
         requirement("click"),
