@@ -5,9 +5,14 @@
 # RapidStream Contributor License Agreement.
 
 load("@rules_python//python:defs.bzl", "py_library")
+load("@tapa_deps//:requirements.bzl", "requirement")
 
 py_library(
     name = "abgraph",
     srcs = glob(["**/*.py"]),
     visibility = ["//tapa:__subpackages__"],
+    deps = [
+        requirement("networkx"),
+        requirement("pydantic"),
+    ],
 )
