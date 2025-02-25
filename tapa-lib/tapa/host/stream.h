@@ -119,9 +119,6 @@ class lock_free_queue : public base_queue<T> {
     this->buffer.resize(depth);
   }
 
-  // debug helpers
-  uint64_t get_depth() const { return this->buffer.size(); }
-
   // basic queue operations
   bool empty() const override { return this->head - this->tail <= 0; }
   bool full() const override {
@@ -152,9 +149,6 @@ class locked_queue : public base_queue<T> {
   // constructors
   locked_queue(size_t depth, const std::string& name)
       : base_queue<T>(name), depth(depth) {}
-
-  // debug helpers
-  uint64_t get_depth() const { return this->depth; }
 
   // basic queue operations
   bool empty() const override {
@@ -200,11 +194,59 @@ class frt_queue : public base_queue<T> {
 };
 
 template <typename T>
-#ifdef TAPA_USE_LOCKED_QUEUE
-using queue = locked_queue<T>;
-#else   // TAPA_USE_LOCKED_QUEUE
-using queue = lock_free_queue<T>;
-#endif  // TAPA_USE_LOCKED_QUEUE
+std::shared_ptr<base_queue<T>> make_queue(bool is_frt, uint64_t depth,
+                                          const std::string& name) {
+  if (is_frt) {
+    VLOG(1) << "channel '" << name << "' created as an FRT stream";
+    return std::make_shared<frt_queue<T>>(depth, name);
+  } else if (depth == ::tapa::kStreamInfiniteDepth) {
+    // It's too expensive to make the lock-free queue have infinite depth.
+    VLOG(1) << "channel '" << name << "' created as a locked queue";
+    return std::make_shared<locked_queue<T>>(depth, name);
+  } else {
+    VLOG(1) << "channel '" << name << "' created as a lock-free queue";
+    return std::make_shared<lock_free_queue<T>>(depth, name);
+  }
+}
+
+template <typename T>
+class queue_reference {
+ public:
+  queue_reference() : queue_ptr(nullptr) {}
+  queue_reference(const std::shared_ptr<base_queue<T>>& ptr) : queue_ptr(ptr) {}
+
+  // return the raw pointer for the queue
+  base_queue<T>* get() { return queue_ptr.get(); }
+
+  // basic queue operations
+  bool empty() const { return queue_ptr->empty(); }
+  bool full() const { return queue_ptr->full(); }
+  T front() const { return queue_ptr->front(); }
+  T pop() { return queue_ptr->pop(); }
+  void push(const T& val) {
+    ensure_queue();
+    queue_ptr->push(val);
+  }
+
+  bool is_initialized() const { return queue_ptr != nullptr; }
+  void ensure_queue(bool is_frt = false, uint64_t depth = 0,
+                    const std::string& name = "") {
+    // fast path: if the queue is already created, return
+    if (queue_ptr) return;
+
+    // slow path: if the queue is not created, obtain a lock and create it
+    std::lock_guard<std::mutex> lock(mtx);
+    // double check if the queue is created before obtaining the lock
+    if (queue_ptr) return;
+
+    // create the queue
+    queue_ptr = make_queue<T>(is_frt, depth, name);
+  }
+
+ private:
+  std::shared_ptr<base_queue<T>> queue_ptr;
+  std::mutex mtx;
+};
 
 // shared pointer of a queue
 template <typename T>
@@ -213,23 +255,35 @@ class basic_stream {
   // debug helpers
   const std::string& get_name() const { return name; }
   void set_name(const std::string& name) { this->name = name; }
-  uint64_t get_depth() const { return this->ptr->get_depth(); }
 
   // not protected since we'll use std::vector<basic_stream<T>>
-  basic_stream() : ptr(nullptr) {}
+  basic_stream()
+      : name(""),
+        depth(0),
+        simulation_depth(0),
+        queue(std::make_shared<queue_reference<elem_t<T>>>()) {}
+  basic_stream(const std::string& name, int depth, int simulation_depth)
+      : name(name),
+        depth(depth),
+        simulation_depth(simulation_depth),
+        queue(std::make_shared<queue_reference<elem_t<T>>>()) {}
+
   basic_stream(const basic_stream&) = default;
   basic_stream(basic_stream&&) = default;
-  basic_stream(const std::string& name) : name(name) {}
   basic_stream& operator=(const basic_stream&) = default;
   basic_stream& operator=(basic_stream&&) = delete;  // -Wvirtual-move-assign
 
  protected:
   std::string name;
-  std::shared_ptr<base_queue<elem_t<T>>> ptr;
+  int depth;
+  int simulation_depth;
 
-  // allow accessors to prepare the stream ptr
-  template <typename U, typename S>
-  friend void prepare_accessor_stream(bool, S&);
+  std::shared_ptr<queue_reference<elem_t<T>>> queue;
+  std::shared_ptr<queue_reference<elem_t<T>>> ensure_queue(
+      bool is_frt = false) {
+    queue->ensure_queue(is_frt, simulation_depth, name);
+    return queue;
+  }
 };
 
 // shared pointer of multiple queues
@@ -305,22 +359,6 @@ std::ostream& operator<<(std::ostream& os, const elem_t<T>& elem) {
   return os;
 }
 
-template <typename T>
-std::shared_ptr<base_queue<T>> make_queue(bool is_frt, uint64_t depth,
-                                          const std::string& name = "") {
-  if (is_frt) {
-    VLOG(1) << "channel '" << name << "' created as an FRT stream";
-    return std::make_shared<frt_queue<T>>(depth, name);
-  } else if (depth == ::tapa::kStreamInfiniteDepth) {
-    // It's too expensive to make the lock-free queue have infinite depth.
-    VLOG(1) << "channel '" << name << "' created as a locked queue";
-    return std::make_shared<locked_queue<T>>(depth, name);
-  } else {
-    VLOG(1) << "channel '" << name << "' created as a lock-free queue";
-    return std::make_shared<queue<T>>(depth, name);
-  }
-}
-
 }  // namespace internal
 
 /// Provides consumer-side operations to a @c tapa::stream where it is used as
@@ -337,7 +375,8 @@ class istream : virtual public internal::basic_stream<T> {
   ///
   /// @return Whether the stream is empty.
   bool empty() const {
-    bool is_empty = this->ptr->empty();
+    // if the stream has not been initialized, it is empty.
+    bool is_empty = !this->queue->is_initialized() || this->queue->empty();
     if (is_empty) {
       internal::yield("channel '" + this->get_name() + "' is empty");
     }
@@ -353,7 +392,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return            Whether @c is_eot is updated.
   bool try_eot(bool& is_eot) const {
     if (!empty()) {
-      is_eot = this->ptr->front().eot;
+      is_eot = this->queue->front().eot;
       return true;
     }
     return false;
@@ -393,7 +432,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return           Whether @c value is updated.
   bool try_peek(T& value) const {
     if (!empty()) {
-      auto elem = this->ptr->front();
+      auto elem = this->queue->front();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' peeked when closed";
       }
@@ -445,7 +484,7 @@ class istream : virtual public internal::basic_stream<T> {
   ///                        returned.
   T peek(bool& is_success, bool& is_eot) const {
     if (!empty()) {
-      auto elem = this->ptr->front();
+      auto elem = this->queue->front();
       is_success = true;
       is_eot = elem.eot;
       return elem.val;
@@ -466,7 +505,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return           Whether @c value is updated.
   bool try_read(T& value) {
     if (!empty()) {
-      auto elem = this->ptr->pop();
+      auto elem = this->ensure_queue()->pop();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' read when closed";
       }
@@ -561,7 +600,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return Whether an EoT token is consumed.
   bool try_open() {
     if (!empty()) {
-      auto elem = this->ptr->pop();
+      auto elem = this->ensure_queue()->pop();
       if (!elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name()
                    << "' opened when not closed";
@@ -609,7 +648,8 @@ class ostream : virtual public internal::basic_stream<T> {
   ///
   /// @return Whether the stream is full.
   bool full() const {
-    bool is_full = this->ptr->full();
+    // if a queue is not initialized, it is not full.
+    bool is_full = this->queue->is_initialized() && this->queue->full();
     if (is_full) {
       internal::yield("channel '" + this->get_name() + "' is full");
     }
@@ -624,7 +664,7 @@ class ostream : virtual public internal::basic_stream<T> {
   /// @return          Whether @c value has been written successfully.
   bool try_write(const T& value) {
     if (!full()) {
-      this->ptr->push({value, false});
+      this->ensure_queue()->push({value, false});
       return true;
     }
     return false;
@@ -658,7 +698,7 @@ class ostream : virtual public internal::basic_stream<T> {
   /// @return Whether the EoT token has been written successfully.
   bool try_close() {
     if (!full()) {
-      this->ptr->push({{}, true});
+      this->ensure_queue()->push({{}, true});
       return true;
     }
     return false;
@@ -693,16 +733,16 @@ class stream : public internal::unbound_stream<T> {
  public:
   /// Depth of the communication channel.
   constexpr static int depth = N;
-  constexpr static int simulation_depth = SimulationDepth;
 
   /// Constructs a @c tapa::stream.
-  stream() : internal::basic_stream<T>() {}
+  stream() : internal::basic_stream<T>("", N, SimulationDepth) {}
 
   /// Constructs a @c tapa::stream with the given name for debugging.
   ///
   /// @param[in] name Name of the communication channel (for debugging only).
   template <size_t S>
-  stream(const char (&name)[S]) : internal::basic_stream<T>(name) {}
+  stream(const char (&name)[S])
+      : internal::basic_stream<T>(name, N, SimulationDepth) {}
 
  private:
   template <typename Param, typename Arg>
@@ -712,10 +752,6 @@ class stream : public internal::unbound_stream<T> {
   friend class streams;
   stream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
-
-  // allow accessors to prepare the stream
-  template <typename U, typename S>
-  friend void prepare_accessor_stream(bool, S&);
 };
 
 /// Provides consumer-side operations to an array of @c tapa::stream where they
@@ -857,7 +893,7 @@ class streams : public internal::unbound_streams<T, S> {
             std::make_shared<typename internal::basic_streams<T>::metadata_t>(
                 "", 0)) {
     for (int i = 0; i < S; ++i) {
-      this->ptr->refs.emplace_back();
+      this->ptr->refs.emplace_back("", N, SimulationDepth);
     }
   }
 
@@ -873,7 +909,7 @@ class streams : public internal::unbound_streams<T, S> {
             std::make_shared<typename internal::basic_streams<T>::metadata_t>(
                 name, 0)) {
     for (int i = 0; i < S; ++i) {
-      this->ptr->refs.emplace_back(name);
+      this->ptr->refs.emplace_back(name, N, SimulationDepth);
     }
   }
 
@@ -936,41 +972,28 @@ class streams : public internal::unbound_streams<T, S> {
 
 namespace internal {
 
-template <typename T, typename S>
-void prepare_accessor_stream(bool is_frt, S& arg) {
-  VLOG(2) << "preparing channel '" << arg.name << "'";
-  if (arg.ptr) return;
-  arg.ptr = make_queue<elem_t<T>>(is_frt, arg.simulation_depth, arg.get_name());
-}
-
 template <typename T, uint64_t N, typename U>
 struct accessor<istream<T>&, stream<U, N>&> {
-  static istream<T> access(stream<U, N>& arg) {
-    internal::prepare_accessor_stream<T>(false, arg);
-    return arg;
-  }
+  static istream<T> access(stream<U, N>& arg) { return arg; }
 
   static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
-    internal::prepare_accessor_stream<T>(true, arg);
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.ptr.get());
+    auto ptr =
+        dynamic_cast<frt_queue<elem_t<T>>*>(arg.ensure_queue(true)->get());
     CHECK(ptr != nullptr) << "channel '" << arg.get_name()
-                          << "' is not an FRT stream";
+                          << "' is not an FRT stream, please report a bug";
     instance.SetArg(idx++, ptr->stream);
   }
 };
 
 template <typename T, uint64_t N, typename U>
 struct accessor<ostream<T>&, stream<U, N>&> {
-  static ostream<T> access(stream<U, N>& arg) {
-    internal::prepare_accessor_stream<T>(false, arg);
-    return arg;
-  }
+  static ostream<T> access(stream<U, N>& arg) { return arg; }
 
   static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
-    internal::prepare_accessor_stream<T>(true, arg);
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.ptr.get());
+    auto ptr =
+        dynamic_cast<frt_queue<elem_t<T>>*>(arg.ensure_queue(true)->get());
     CHECK(ptr != nullptr) << "channel '" << arg.get_name()
-                          << "' is not an FRT stream";
+                          << "' is not an FRT stream, please report a bug";
     instance.SetArg(idx++, ptr->stream);
   }
 };
