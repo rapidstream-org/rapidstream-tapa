@@ -39,22 +39,15 @@ template <typename T, Tag tag>
 class Stream;
 
 template <typename T>
-class Stream<T, Tag::kReadOnly> : public StreamBase<T> {
+class Stream<T, Tag::kReadWrite> : public StreamBase<T> {
  public:
   using StreamBase<T>::StreamBase;
 
   bool empty() const { return this->queue().empty(); }
-  T pop() { return FromBinaryString<T>(this->queue().pop()); };
-  T front() const { return FromBinaryString<T>(this->queue().front()); }
-};
-
-template <typename T>
-class Stream<T, Tag::kWriteOnly> : public StreamBase<T> {
- public:
-  using StreamBase<T>::StreamBase;
-
   bool full() const { return this->queue().full(); }
   void push(const T& val) { this->queue().push(ToBinaryString(val)); }
+  T pop() { return FromBinaryString<T>(this->queue().pop()); }
+  T front() const { return FromBinaryString<T>(this->queue().front()); }
 };
 
 }  // namespace internal

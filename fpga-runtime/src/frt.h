@@ -54,9 +54,7 @@ PlaceholderBuffer<T> Placeholder(T* ptr, size_t n) {
 }
 
 template <typename T>
-using ReadStream = internal::Stream<T, internal::Tag::kReadOnly>;
-template <typename T>
-using WriteStream = internal::Stream<T, internal::Tag::kWriteOnly>;
+using Stream = internal::Stream<T, internal::Tag::kReadWrite>;
 
 class Instance {
  public:

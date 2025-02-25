@@ -184,31 +184,19 @@ class locked_queue : public base_queue<T> {
   ~locked_queue() { this->check_leftover(); }
 };
 
-// Implementation of `base_queue` that is a wrapper of either `fpga::ReadStream`
-// or `fpga::WriteStream`.
+// Implementation of `base_queue` that is a wrapper of `fpga::Stream`
 template <typename T>
 class frt_queue : public base_queue<T> {
  public:
-  using ReadStream = fpga::ReadStream<T>;
-  using WriteStream = fpga::WriteStream<T>;
+  fpga::Stream<T> stream;
 
-  template <typename Stream>
-  explicit frt_queue(std::in_place_type_t<Stream> in_place_arg,
-                     const std::string& name, int64_t depth)
-      : base_queue<T>(name), stream_(in_place_arg, depth) {}
-  bool empty() const override { return GetReadStream().empty(); }
-  bool full() const override { return GetWriteStream().full(); }
-  void push(const T& val) override { GetWriteStream().push(val); }
-  T pop() override { return GetReadStream().pop(); };
-  T front() const override { return GetReadStream().front(); }
-
-  auto& GetReadStream() { return std::get<ReadStream>(stream_); }
-  auto& GetReadStream() const { return std::get<ReadStream>(stream_); }
-  auto& GetWriteStream() { return std::get<WriteStream>(stream_); }
-  auto& GetWriteStream() const { return std::get<WriteStream>(stream_); }
-
- private:
-  std::variant<fpga::ReadStream<T>, fpga::WriteStream<T>> stream_;
+  explicit frt_queue(int64_t depth, const std::string& name)
+      : base_queue<T>(name), stream(depth) {}
+  bool empty() const override { return stream.empty(); }
+  bool full() const override { return stream.full(); }
+  void push(const T& val) override { stream.push(val); }
+  T pop() override { return stream.pop(); };
+  T front() const override { return stream.front(); }
 };
 
 template <typename T>
@@ -223,19 +211,25 @@ template <typename T>
 class basic_stream {
  public:
   // debug helpers
-  const std::string& get_name() const { return this->ptr->get_name(); }
-  void set_name(const std::string& name) { ptr->set_name(name); }
+  const std::string& get_name() const { return name; }
+  void set_name(const std::string& name) { this->name = name; }
   uint64_t get_depth() const { return this->ptr->get_depth(); }
 
   // not protected since we'll use std::vector<basic_stream<T>>
-  basic_stream(const std::shared_ptr<base_queue<elem_t<T>>>& ptr) : ptr(ptr) {}
+  basic_stream() : ptr(nullptr) {}
   basic_stream(const basic_stream&) = default;
   basic_stream(basic_stream&&) = default;
+  basic_stream(const std::string& name) : name(name) {}
   basic_stream& operator=(const basic_stream&) = default;
   basic_stream& operator=(basic_stream&&) = delete;  // -Wvirtual-move-assign
 
  protected:
+  std::string name;
   std::shared_ptr<base_queue<elem_t<T>>> ptr;
+
+  // allow accessors to prepare the stream ptr
+  template <typename U, typename S>
+  friend void prepare_accessor_stream(bool, S&);
 };
 
 // shared pointer of multiple queues
@@ -274,7 +268,7 @@ class basic_streams {
 template <typename T>
 class unbound_stream : public istream<T>, public ostream<T> {
  protected:
-  unbound_stream() : basic_stream<T>(nullptr) {}
+  unbound_stream() : basic_stream<T>() {}
 };
 
 // streams without a bound depth; can be default-constructed by a derived class
@@ -312,12 +306,17 @@ std::ostream& operator<<(std::ostream& os, const elem_t<T>& elem) {
 }
 
 template <typename T>
-std::shared_ptr<base_queue<T>> make_queue(uint64_t depth,
+std::shared_ptr<base_queue<T>> make_queue(bool is_frt, uint64_t depth,
                                           const std::string& name = "") {
-  if (depth == ::tapa::kStreamInfiniteDepth) {
+  if (is_frt) {
+    VLOG(1) << "channel '" << name << "' created as an FRT stream";
+    return std::make_shared<frt_queue<T>>(depth, name);
+  } else if (depth == ::tapa::kStreamInfiniteDepth) {
     // It's too expensive to make the lock-free queue have infinite depth.
+    VLOG(1) << "channel '" << name << "' created as a locked queue";
     return std::make_shared<locked_queue<T>>(depth, name);
   } else {
+    VLOG(1) << "channel '" << name << "' created as a lock-free queue";
     return std::make_shared<queue<T>>(depth, name);
   }
 }
@@ -584,7 +583,7 @@ class istream : virtual public internal::basic_stream<T> {
 
  protected:
   // allow derived class to omit initialization
-  istream() : internal::basic_stream<T>(nullptr) {}
+  istream() : internal::basic_stream<T>() {}
 
  private:
   // allow istreams and streams to return istream
@@ -675,7 +674,7 @@ class ostream : virtual public internal::basic_stream<T> {
 
  protected:
   // allow derived class to omit initialization
-  ostream() : internal::basic_stream<T>(nullptr) {}
+  ostream() : internal::basic_stream<T>() {}
 
  private:
   // allow ostreams and streams to return ostream
@@ -694,19 +693,16 @@ class stream : public internal::unbound_stream<T> {
  public:
   /// Depth of the communication channel.
   constexpr static int depth = N;
+  constexpr static int simulation_depth = SimulationDepth;
 
   /// Constructs a @c tapa::stream.
-  stream()
-      : internal::basic_stream<T>(
-            internal::make_queue<internal::elem_t<T>>(SimulationDepth)) {}
+  stream() : internal::basic_stream<T>() {}
 
   /// Constructs a @c tapa::stream with the given name for debugging.
   ///
   /// @param[in] name Name of the communication channel (for debugging only).
   template <size_t S>
-  stream(const char (&name)[S])
-      : internal::basic_stream<T>(
-            internal::make_queue<internal::elem_t<T>>(SimulationDepth, name)) {}
+  stream(const char (&name)[S]) : internal::basic_stream<T>(name) {}
 
  private:
   template <typename Param, typename Arg>
@@ -716,6 +712,10 @@ class stream : public internal::unbound_stream<T> {
   friend class streams;
   stream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
+
+  // allow accessors to prepare the stream
+  template <typename U, typename S>
+  friend void prepare_accessor_stream(bool, S&);
 };
 
 /// Provides consumer-side operations to an array of @c tapa::stream where they
@@ -857,8 +857,7 @@ class streams : public internal::unbound_streams<T, S> {
             std::make_shared<typename internal::basic_streams<T>::metadata_t>(
                 "", 0)) {
     for (int i = 0; i < S; ++i) {
-      this->ptr->refs.emplace_back(
-          internal::make_queue<internal::elem_t<T>>(SimulationDepth));
+      this->ptr->refs.emplace_back();
     }
   }
 
@@ -874,8 +873,7 @@ class streams : public internal::unbound_streams<T, S> {
             std::make_shared<typename internal::basic_streams<T>::metadata_t>(
                 name, 0)) {
     for (int i = 0; i < S; ++i) {
-      this->ptr->refs.emplace_back(internal::make_queue<internal::elem_t<T>>(
-          SimulationDepth, this->ptr->name + "[" + std::to_string(i) + "]"));
+      this->ptr->refs.emplace_back(name);
     }
   }
 
@@ -938,27 +936,42 @@ class streams : public internal::unbound_streams<T, S> {
 
 namespace internal {
 
+template <typename T, typename S>
+void prepare_accessor_stream(bool is_frt, S& arg) {
+  VLOG(2) << "preparing channel '" << arg.name << "'";
+  if (arg.ptr) return;
+  arg.ptr = make_queue<elem_t<T>>(is_frt, arg.simulation_depth, arg.get_name());
+}
+
 template <typename T, uint64_t N, typename U>
 struct accessor<istream<T>&, stream<U, N>&> {
-  static istream<T> access(stream<U, N>& arg) { return arg; }
+  static istream<T> access(stream<U, N>& arg) {
+    internal::prepare_accessor_stream<T>(false, arg);
+    return arg;
+  }
+
   static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
-    auto ptr = std::make_shared<frt_queue<elem_t<T>>>(
-        std::in_place_type_t<fpga::WriteStream<elem_t<T>>>(), arg.get_name(),
-        arg.depth);
-    instance.SetArg(idx++, ptr->GetWriteStream());
-    arg.ptr = std::move(ptr);
+    internal::prepare_accessor_stream<T>(true, arg);
+    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.ptr.get());
+    CHECK(ptr != nullptr) << "channel '" << arg.get_name()
+                          << "' is not an FRT stream";
+    instance.SetArg(idx++, ptr->stream);
   }
 };
 
 template <typename T, uint64_t N, typename U>
 struct accessor<ostream<T>&, stream<U, N>&> {
-  static ostream<T> access(stream<U, N>& arg) { return arg; }
+  static ostream<T> access(stream<U, N>& arg) {
+    internal::prepare_accessor_stream<T>(false, arg);
+    return arg;
+  }
+
   static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
-    auto ptr = std::make_shared<frt_queue<elem_t<T>>>(
-        std::in_place_type_t<fpga::ReadStream<elem_t<T>>>(), arg.get_name(),
-        arg.depth);
-    instance.SetArg(idx++, ptr->GetReadStream());
-    arg.ptr = std::move(ptr);
+    internal::prepare_accessor_stream<T>(true, arg);
+    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.ptr.get());
+    CHECK(ptr != nullptr) << "channel '" << arg.get_name()
+                          << "' is not an FRT stream";
+    instance.SetArg(idx++, ptr->stream);
   }
 };
 
