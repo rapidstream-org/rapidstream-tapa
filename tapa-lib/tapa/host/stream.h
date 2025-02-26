@@ -219,60 +219,61 @@ class shared_queue {
   shared_queue(const shared_queue&) = delete;
   shared_queue(shared_queue&&) = delete;
 
+  // basic queue operations
+  bool empty() const { return queue_ptr->empty(); }
+  bool full() const { return queue_ptr->full(); }
+  T front() const { return queue_ptr->front(); }
+  T pop() { return queue_ptr->pop(); }
+  void push(const T& val) { queue_ptr->push(val); }
+
+  // check if the queue is initialized or being initialized
+  bool is_initialized() { return bool(queue_ptr); }
+  bool is_handshaking() {
+    std::lock_guard<std::mutex> lock(handshake_mtx);
+    return task_id > 0;
+  }
+
   // return the raw pointer for the queue
   base_queue<T>* get() { return queue_ptr.get(); }
 
-  // basic queue operations
-  bool empty() const {
-    // if the queue is not initialized, it's empty
-    if (!queue_ptr) return true;
-    return queue_ptr->empty();
-  }
-  bool full() const {
-    // if the queue is not initialized, it's not full
-    if (!queue_ptr) return false;
-    return queue_ptr->full();
-  }
-  T front() const {
-    wait_initialized();
-    return queue_ptr->front();
-  }
-  T pop() {
-    wait_initialized();
-    return queue_ptr->pop();
-  }
-  void push(const T& val) {
-    wait_initialized();
-    queue_ptr->push(val);
+  // initialize the queue without handshaking two tasks, such as in a leaf task
+  // in this case, frt is always false.
+  void initialize_queue_without_handshake(uint64_t depth = 0,
+                                          const std::string& name = "") {
+    std::lock_guard<std::mutex> lock(handshake_mtx);
+    CHECK(task_id == 0) << "handshake is already in progress";
+    initialize_queue(false, depth, name);
   }
 
-  void wait_initialized() const {
-    while (!queue_ptr) {
-      internal::yield("channel is beging initialized");
-    }
-  }
-
-  void initialize_queue(bool is_frt = false, uint64_t depth = 0,
-                        const std::string& name = "") {
+  // handshaking two tasks to initialize the queue and decide whether it is an
+  // FRT queue or not
+  void initialize_queue_by_handshake(bool is_frt = false, uint64_t depth = 0,
+                                     const std::string& name = "") {
     // ensure that the function is sequentially called to avoid complications
-    std::lock_guard<std::mutex> lock(initialization_mtx);
+    std::lock_guard<std::mutex> lock(handshake_mtx);
     task_id++;
 
     if (task_id == 1) {
       // the first task simply returns and allows the second task to create
       // the queue, unless it is already known as an FRT queue
-      if (is_frt) queue_ptr = make_queue<T>(true, depth, name);
+      if (is_frt) initialize_queue(is_frt, depth, name);
     } else if (task_id == 2) {
       // the second task creates the queue if the first task hasn't done it yet
-      if (!queue_ptr) queue_ptr = make_queue<T>(is_frt, depth, name);
+      if (!queue_ptr) initialize_queue(is_frt, depth, name);
     } else {
-      LOG(FATAL) << "more than two tasks are trying to create a queue";
+      LOG(FATAL) << "more than two tasks are trying to connect to a channel";
     }
   }
 
  private:
+  void initialize_queue(bool is_frt = false, uint64_t depth = 0,
+                        const std::string& name = "") {
+    CHECK(!is_initialized()) << "queue is already initialized";
+    queue_ptr = make_queue<T>(is_frt, depth, name);
+  }
+
   std::shared_ptr<base_queue<T>> queue_ptr;
-  std::mutex initialization_mtx;
+  std::mutex handshake_mtx;
   int task_id = 0;
 };
 
@@ -307,9 +308,24 @@ class basic_stream {
   int simulation_depth;
 
   std::shared_ptr<shared_queue<elem_t<T>>> queue;
-  std::shared_ptr<shared_queue<elem_t<T>>> initialize_queue(
-      bool is_frt = false) {
-    queue->initialize_queue(is_frt, simulation_depth, name);
+  void initialize_queue_by_handshake(bool is_frt = false) {
+    queue->initialize_queue_by_handshake(is_frt, simulation_depth, name);
+  }
+  std::shared_ptr<shared_queue<elem_t<T>>> ensure_queue() {
+    // if the queue is already initialized, return it
+    if (queue->is_initialized()) return queue;
+
+    // if the queue is handshaking, wait for it to be initialized
+    if (queue->is_handshaking()) {
+      while (!queue->is_initialized())
+        internal::yield("channel '" + name + "' is handshaking");
+      return queue;
+    }
+
+    // if reaching this point, the handshake is not performed and the queue is
+    // not initialized. we initialize it without handshaking. this happens when
+    // the queue is created in a leaf task.
+    queue->initialize_queue_without_handshake(simulation_depth, name);
     return queue;
   }
 };
@@ -402,8 +418,8 @@ class istream : virtual public internal::basic_stream<T> {
   /// This is a @a non-blocking and @a non-destructive operation.
   ///
   /// @return Whether the stream is empty.
-  bool empty() const {
-    bool is_empty = this->queue->empty();
+  bool empty() {
+    bool is_empty = this->ensure_queue()->empty();
     if (is_empty) {
       internal::yield("channel '" + this->get_name() + "' is empty");
     }
@@ -417,9 +433,9 @@ class istream : virtual public internal::basic_stream<T> {
   /// @param[out] is_eot Uninitialized if the stream is empty. Otherwise,
   ///                    updated to indicate whether the next token is EoT.
   /// @return            Whether @c is_eot is updated.
-  bool try_eot(bool& is_eot) const {
+  bool try_eot(bool& is_eot) {
     if (!empty()) {
-      is_eot = this->queue->front().eot;
+      is_eot = this->ensure_queue()->front().eot;
       return true;
     }
     return false;
@@ -431,7 +447,7 @@ class istream : virtual public internal::basic_stream<T> {
   ///
   /// @param[out] is_success Whether the next token is available.
   /// @return                Whether the next token is available and is EoT.
-  bool eot(bool& is_success) const {
+  bool eot(bool& is_success) {
     bool eot = false;
     is_success = try_eot(eot);
     return eot;
@@ -442,7 +458,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// This is a @a non-blocking and @a non-destructive operation.
   ///
   /// @return Whether the next token is available and is EoT.
-  bool eot(std::nullptr_t) const {
+  bool eot(std::nullptr_t) {
     bool eot = false;
     try_eot(eot);
     return eot;
@@ -457,9 +473,9 @@ class istream : virtual public internal::basic_stream<T> {
   /// @param[out] value Uninitialized if the stream is empty. Otherwise, updated
   ///                   to be the value of the next token.
   /// @return           Whether @c value is updated.
-  bool try_peek(T& value) const {
+  bool try_peek(T& value) {
     if (!empty()) {
-      auto elem = this->queue->front();
+      auto elem = this->ensure_queue()->front();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' peeked when closed";
       }
@@ -479,7 +495,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return                The value of the next token is returned if it is
   ///                        available. Otherwise, default-constructed @c T() is
   ///                        returned.
-  T peek(bool& is_success) const {
+  T peek(bool& is_success) {
     T val;
     is_success = try_peek(val);
     return val;
@@ -493,7 +509,7 @@ class istream : virtual public internal::basic_stream<T> {
   ///
   /// @return The value of the next token is returned if it is available.
   ///         Otherwise, default-constructed @c T() is returned.
-  T peek(std::nullptr_t) const {
+  T peek(std::nullptr_t) {
     T val;
     try_peek(val);
     return val;
@@ -509,9 +525,9 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return                The value of the next token is returned if it is
   ///                        available. Otherwise, default-constructed @c T() is
   ///                        returned.
-  T peek(bool& is_success, bool& is_eot) const {
+  T peek(bool& is_success, bool& is_eot) {
     if (!empty()) {
-      auto elem = this->queue->front();
+      auto elem = this->ensure_queue()->front();
       is_success = true;
       is_eot = elem.eot;
       return elem.val;
@@ -532,7 +548,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return           Whether @c value is updated.
   bool try_read(T& value) {
     if (!empty()) {
-      auto elem = this->queue->pop();
+      auto elem = this->ensure_queue()->pop();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' read when closed";
       }
@@ -627,7 +643,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return Whether an EoT token is consumed.
   bool try_open() {
     if (!empty()) {
-      auto elem = this->queue->pop();
+      auto elem = this->ensure_queue()->pop();
       if (!elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name()
                    << "' opened when not closed";
@@ -675,7 +691,7 @@ class ostream : virtual public internal::basic_stream<T> {
   ///
   /// @return Whether the stream is full.
   bool full() {
-    bool is_full = this->queue->full();
+    bool is_full = this->ensure_queue()->full();
     if (is_full) {
       internal::yield("channel '" + this->get_name() + "' is full");
     }
@@ -690,7 +706,7 @@ class ostream : virtual public internal::basic_stream<T> {
   /// @return          Whether @c value has been written successfully.
   bool try_write(const T& value) {
     if (!full()) {
-      this->queue->push({value, false});
+      this->ensure_queue()->push({value, false});
       return true;
     }
     return false;
@@ -724,7 +740,7 @@ class ostream : virtual public internal::basic_stream<T> {
   /// @return Whether the EoT token has been written successfully.
   bool try_close() {
     if (!full()) {
-      this->queue->push({{}, true});
+      this->ensure_queue()->push({{}, true});
       return true;
     }
     return false;
@@ -1001,13 +1017,13 @@ namespace internal {
 template <typename T, uint64_t N, typename U>
 struct accessor<istream<T>&, stream<U, N>&> {
   static istream<T> access(stream<U, N>& arg) {
-    arg.initialize_queue(false);
+    arg.initialize_queue_by_handshake(false);
     return arg;
   }
 
   static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
-    arg.initialize_queue(true);
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.queue->get());
+    arg.initialize_queue_by_handshake(true);
+    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.ensure_queue()->get());
     CHECK(ptr) << "channel '" << arg.get_name()
                << "' is not an FRT stream, please report a bug";
     instance.SetArg(idx++, ptr->stream);
@@ -1017,13 +1033,13 @@ struct accessor<istream<T>&, stream<U, N>&> {
 template <typename T, uint64_t N, typename U>
 struct accessor<ostream<T>&, stream<U, N>&> {
   static ostream<T> access(stream<U, N>& arg) {
-    arg.initialize_queue(false);
+    arg.initialize_queue_by_handshake(false);
     return arg;
   }
 
   static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
-    arg.initialize_queue(true);
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.queue->get());
+    arg.initialize_queue_by_handshake(true);
+    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.ensure_queue()->get());
     CHECK(ptr) << "channel '" << arg.get_name()
                << "' is not an FRT stream, please report a bug";
     instance.SetArg(idx++, ptr->stream);
