@@ -219,12 +219,24 @@ class queue_reference {
   base_queue<T>* get() { return queue_ptr.get(); }
 
   // basic queue operations
-  bool empty() const { return queue_ptr->empty(); }
-  bool full() const { return queue_ptr->full(); }
-  T front() const { return queue_ptr->front(); }
-  T pop() { return queue_ptr->pop(); }
+  bool empty() const {
+    CHECK(queue_ptr) << "channel is not initialized";
+    return queue_ptr->empty();
+  }
+  bool full() const {
+    CHECK(queue_ptr) << "channel is not initialized";
+    return queue_ptr->full();
+  }
+  T front() const {
+    CHECK(queue_ptr) << "channel is not initialized";
+    return queue_ptr->front();
+  }
+  T pop() {
+    CHECK(queue_ptr) << "channel is not initialized";
+    return queue_ptr->pop();
+  }
   void push(const T& val) {
-    ensure_queue();
+    CHECK(queue_ptr) << "channel is not initialized";
     queue_ptr->push(val);
   }
 
