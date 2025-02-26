@@ -26,9 +26,6 @@ int main(int argc, char* argv[]) {
 
   bool has_error = false;
   tapa::task()
-      // The kernel must be invoked before any direct reader/writer; otherwise
-      // `tapa::stream` will not bind correctly.
-      .invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c, n)
       .invoke([&] {
         for (uint64_t i = 0; i < n; ++i) {
           a.write(static_cast<float>(i));
@@ -37,6 +34,7 @@ int main(int argc, char* argv[]) {
         a.close();
         b.close();
       })
+      .invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c, n)
       .invoke([&] {
         for (uint64_t i = 0; i < n; ++i) {
           auto actual = c.read();
