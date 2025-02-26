@@ -1014,32 +1014,40 @@ class streams : public internal::unbound_streams<T, S> {
 
 namespace internal {
 
-template <typename T, uint64_t N, typename U>
-struct accessor<istream<T>&, stream<U, N>&> {
-  static istream<T> access(stream<U, N>& arg) {
+#define TAPA_DEFINE_DEVICE_ACCESSOR(io)                                   \
+  /* param = i/o */                                                       \
+  template <typename T, uint64_t N, typename U>                           \
+  struct accessor<io##stream<T>&, stream<U, N>&> {                        \
+    static io##stream<T> access(stream<U, N>& arg) {                      \
+      arg.initialize_queue_by_handshake(false);                           \
+      return arg;                                                         \
+    }                                                                     \
+    static void access(fpga::Instance& instance, int& idx,                \
+                       stream<U, N>& arg) {                               \
+      arg.initialize_queue_by_handshake(true);                            \
+      auto ptr =                                                          \
+          dynamic_cast<frt_queue<elem_t<T>>*>(arg.ensure_queue()->get()); \
+      CHECK(ptr) << "channel '" << arg.get_name()                         \
+                 << "' is not an FRT stream, please report a bug";        \
+      instance.SetArg(idx++, ptr->stream);                                \
+    }                                                                     \
+  };
+
+TAPA_DEFINE_DEVICE_ACCESSOR(i)
+TAPA_DEFINE_DEVICE_ACCESSOR(o)
+TAPA_DEFINE_DEVICE_ACCESSOR(unbound_)
+
+#undef TAPA_DEFINE_DEVICE_ACCESSOR
+
+template <uint64_t N, typename U>
+struct accessor<stream<U, N>&, stream<U, N>&> {
+  static stream<U, N> access(stream<U, N>& arg) {
     arg.initialize_queue_by_handshake(false);
     return arg;
   }
-
   static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
     arg.initialize_queue_by_handshake(true);
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.ensure_queue()->get());
-    CHECK(ptr) << "channel '" << arg.get_name()
-               << "' is not an FRT stream, please report a bug";
-    instance.SetArg(idx++, ptr->stream);
-  }
-};
-
-template <typename T, uint64_t N, typename U>
-struct accessor<ostream<T>&, stream<U, N>&> {
-  static ostream<T> access(stream<U, N>& arg) {
-    arg.initialize_queue_by_handshake(false);
-    return arg;
-  }
-
-  static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
-    arg.initialize_queue_by_handshake(true);
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(arg.ensure_queue()->get());
+    auto ptr = dynamic_cast<frt_queue<elem_t<U>>*>(arg.ensure_queue()->get());
     CHECK(ptr) << "channel '" << arg.get_name()
                << "' is not an FRT stream, please report a bug";
     instance.SetArg(idx++, ptr->stream);
