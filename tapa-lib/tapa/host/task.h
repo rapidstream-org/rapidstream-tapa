@@ -27,7 +27,7 @@ namespace internal {
 
 template <typename Param, typename Arg>
 struct accessor {
-  static Param access(Arg&& arg) { return arg; }
+  static Param access(Arg&& arg, bool) { return arg; }
   static void access(fpga::Instance& instance, int& idx, Arg&& arg) {
     instance.SetArg(idx++, static_cast<Param>(arg));
   }
@@ -35,7 +35,7 @@ struct accessor {
 
 template <typename T>
 struct accessor<T, seq> {
-  static T access(seq&& arg) { return arg.pos++; }
+  static T access(seq&& arg, bool) { return arg.pos++; }
   static void access(fpga::Instance& instance, int& idx, seq&& arg) {
     instance.SetArg(idx++, static_cast<T>(arg.pos++));
   }
@@ -55,16 +55,13 @@ struct invoker {
 
   template <typename... Args>
   static void invoke(int mode, F&& f, Args&&... args) {
+    // Create a functor that captures args by value
+    auto functor = invoker::functor_with_accessors(
+        mode > 0, std::forward<F>(f), std::index_sequence_for<Args...>{},
+        std::forward<Args>(args)...);
     if (mode > 0) {  // Sequential scheduling.
-      // not going through the accessor because it is basically calling the
-      // function directly. accessors attempt to handshake with each other,
-      // which causes deadlock in sequential scheduling.
-      f(std::forward<Args>(args)...);
+      std::move(functor)();
     } else {
-      // Create a functor that captures args by value
-      auto functor = invoker::functor_with_accessors(
-          std::forward<F>(f), std::index_sequence_for<Args...>{},
-          std::forward<Args>(args)...);
       internal::schedule(/*detach=*/mode < 0, std::move(functor));
     }
   }
@@ -130,12 +127,13 @@ struct invoker {
   }
 
   template <typename Func, size_t... Is, typename... CapturedArgs>
-  static auto functor_with_accessors(Func&& func, std::index_sequence<Is...>,
+  static auto functor_with_accessors(bool is_sequential, Func&& func,
+                                     std::index_sequence<Is...>,
                                      CapturedArgs&&... args) {
     // std::bind creates a copy of args
     return std::bind(
         func, accessor<std::tuple_element_t<Is, Params>, CapturedArgs>::access(
-                  std::forward<CapturedArgs>(args))...);
+                  std::forward<CapturedArgs>(args), is_sequential)...);
   }
 };
 
