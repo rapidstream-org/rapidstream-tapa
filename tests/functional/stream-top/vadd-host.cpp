@@ -26,27 +26,33 @@ int main(int argc, char* argv[]) {
 
   bool has_error = false;
   tapa::task()
-      .invoke([&] {
-        for (uint64_t i = 0; i < n; ++i) {
-          a.write(static_cast<float>(i));
-          b.write(static_cast<float>(i) * 2);
-        }
-        a.close();
-        b.close();
-      })
+      .invoke(
+          // tapa data types must be argument of lambda instead of capture,
+          // otherwise, the stream will not be binded as i/o stream.
+          [&](tapa::ostream<float>& a, tapa::ostream<float>& b) {
+            for (uint64_t i = 0; i < n; ++i) {
+              a.write(static_cast<float>(i));
+              b.write(static_cast<float>(i) * 2);
+            }
+            a.close();
+            b.close();
+          },
+          a, b)
       .invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c, n)
-      .invoke([&] {
-        for (uint64_t i = 0; i < n; ++i) {
-          auto actual = c.read();
-          auto expected = i * 3;
-          if (actual != expected) {
-            std::cerr << "expected: " << expected << ", actual: " << actual
-                      << std::endl;
-            has_error = true;
-          }
-        }
-        c.open();
-      });
+      .invoke(
+          [&](tapa::istream<float>& c) {
+            for (uint64_t i = 0; i < n; ++i) {
+              auto actual = c.read();
+              auto expected = i * 3;
+              if (actual != expected) {
+                std::cerr << "expected: " << expected << ", actual: " << actual
+                          << std::endl;
+                has_error = true;
+              }
+            }
+            c.open();
+          },
+          c);
 
   if (!has_error) std::clog << "PASS!" << std::endl;
   return has_error;
