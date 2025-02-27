@@ -55,14 +55,16 @@ struct invoker {
 
   template <typename... Args>
   static void invoke(int mode, F&& f, Args&&... args) {
-    // Create a functor that captures args by value
-    auto functor = invoker::functor_with_accessors(
-        std::forward<F>(f), std::index_sequence_for<Args...>{},
-        std::forward<Args>(args)...);
-
     if (mode > 0) {  // Sequential scheduling.
-      std::move(functor)();
+      // not going through the accessor because it is basically calling the
+      // function directly. accessors attempt to handshake with each other,
+      // which causes deadlock in sequential scheduling.
+      f(std::forward<Args>(args)...);
     } else {
+      // Create a functor that captures args by value
+      auto functor = invoker::functor_with_accessors(
+          std::forward<F>(f), std::index_sequence_for<Args...>{},
+          std::forward<Args>(args)...);
       internal::schedule(/*detach=*/mode < 0, std::move(functor));
     }
   }
