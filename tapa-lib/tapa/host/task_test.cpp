@@ -35,8 +35,16 @@ void DataSink(tapa::istream<int>& data_in_q, int n) {
 // WARNING: This is not synthesizable.
 TEST(TaskTest, YieldingWithoutCoroutineWorks) {
   tapa::stream<int, 2> data_q;
-  std::thread t1(DataSource, std::ref(data_q), kN);
-  std::thread t2(DataSink, std::ref(data_q), kN);
+  std::thread t1(
+      DataSource,
+      std::ref(tapa::internal::template accessor<
+               tapa::ostream<int>&, tapa::stream<int, 2>&>::access(data_q)),
+      kN);
+  std::thread t2(
+      DataSink,
+      std::ref(tapa::internal::template accessor<
+               tapa::istream<int>&, tapa::stream<int, 2>&>::access(data_q)),
+      kN);
   t1.join();
   t2.join();
 }
