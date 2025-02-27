@@ -6,10 +6,14 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import json
+import os
+from pathlib import Path
 from typing import NoReturn
 
 import click
 
+from tapa.abgraph.gen_abgraph import get_top_level_ab_graph
 from tapa.backend.xilinx import parse_device_info
 from tapa.steps.common import (
     is_pipelined,
@@ -79,6 +83,26 @@ from tapa.steps.common import (
     default="hls",
     help="Flow Option: 'hls' for FPGA Fabric steps, 'aie' for Versal AIE steps.",
 )
+@click.option(
+    "--nonpipeline-fifos",
+    type=click.Path(dir_okay=False, writable=True),
+    default=None,
+    help=(
+        "`--nonpipeline_fifos` specifies the stream FIFOs to not add "
+        "pipeline to. A grouping_constrains.json file will be generated "
+        "for rapidstream."
+    ),
+)
+@click.option(
+    "--gen-ab-graph",
+    is_flag=True,
+    type=bool,
+    default=None,
+    help=(
+        "`--gen_ab-graph` specifies whether to generate the AutoBridge "
+        "graph for the AutoBridge partitioning."
+    ),
+)
 def synth(  # noqa: PLR0913,PLR0917
     part_num: str | None,
     platform: str | None,
@@ -90,6 +114,8 @@ def synth(  # noqa: PLR0913,PLR0917
     enable_synth_util: bool,
     print_fifo_ops: bool,
     flow_type: str,
+    nonpipeline_fifos: Path | None,
+    gen_ab_graph: bool,
 ) -> None:
     """Synthesize the TAPA program into RTL code."""
     program = load_tapa_program()
@@ -121,6 +147,26 @@ def synth(  # noqa: PLR0913,PLR0917
         if enable_synth_util:
             program.generate_post_synth_util(part_num, jobs)
         program.generate_top_rtl(print_fifo_ops)
+
+        if nonpipeline_fifos:
+            with open(nonpipeline_fifos, encoding="utf-8") as fifo_file:
+                fifos = json.load(fifo_file)
+            with open(
+                os.path.join(program.work_dir, "grouping_constraints.json"),
+                "w",
+                encoding="utf-8",
+            ) as json_file:
+                result = program.get_grouping_constraints(fifos)
+                json.dump(result, json_file)
+
+        if gen_ab_graph:
+            graph = get_top_level_ab_graph(program)
+            with open(
+                os.path.join(program.work_dir, "ab_graph.json"),
+                "w",
+                encoding="utf-8",
+            ) as json_file:
+                json_file.write(graph.model_dump_json())
 
         settings["synthed"] = True
         store_persistent_context("settings")

@@ -9,6 +9,7 @@ RapidStream Contributor License Agreement.
 
 import click
 
+from tapa.abgraph.gen_abgraph import get_top_level_ab_graph
 from tapa.steps.common import (
     is_pipelined,
     load_persistent_context,
