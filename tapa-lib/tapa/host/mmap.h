@@ -570,7 +570,7 @@ template <typename T>
 struct accessor<async_mmap<T>, mmap<T>&> {
   [[deprecated("please use async_mmap<T>& in formal parameters")]]  //
   static async_mmap<T>
-  access(mmap<T>& arg) {
+  access(mmap<T>& arg, bool) {
     LOG_FIRST_N(ERROR, 1) << "please use async_mmap<T>& in formal parameters";
     return async_mmap<T>::schedule(arg);
   }
@@ -578,21 +578,21 @@ struct accessor<async_mmap<T>, mmap<T>&> {
 
 template <typename T>
 struct accessor<async_mmap<T>&, mmap<T>&> {
-  static async_mmap<T> access(mmap<T>& arg) {
+  static async_mmap<T> access(mmap<T>& arg, bool) {
     return async_mmap<T>::schedule(arg);
   }
 };
 
 template <typename T, uint64_t S>
 struct accessor<mmap<T>, mmaps<T, S>&> {
-  static mmap<T> access(mmaps<T, S>& arg) { return arg.access(); }
+  static mmap<T> access(mmaps<T, S>& arg, bool) { return arg.access(); }
 };
 
 template <typename T, uint64_t S>
 struct accessor<async_mmap<T>, mmaps<T, S>&> {
   [[deprecated("please use async_mmap<T>& in formal parameters")]]  //
   static async_mmap<T>
-  access(mmaps<T, S>& arg) {
+  access(mmaps<T, S>& arg, bool) {
     LOG_FIRST_N(ERROR, 1) << "please use async_mmap<T>& in formal parameters";
     return async_mmap<T>::schedule(arg.access());
   }
@@ -600,7 +600,7 @@ struct accessor<async_mmap<T>, mmaps<T, S>&> {
 
 template <typename T, uint64_t S>
 struct accessor<async_mmap<T>&, mmaps<T, S>&> {
-  static async_mmap<T> access(mmaps<T, S>& arg) {
+  static async_mmap<T> access(mmaps<T, S>& arg, bool) {
     return async_mmap<T>::schedule(arg.access());
   }
 };
@@ -608,7 +608,7 @@ struct accessor<async_mmap<T>&, mmaps<T, S>&> {
 #define TAPA_DEFINE_ACCESSER(tag, frt_tag)                         \
   template <typename T>                                            \
   struct accessor<mmap<T>, tag##_mmap<T>> {                        \
-    static mmap<T> access(tag##_mmap<T> arg) { return arg; }       \
+    static mmap<T> access(tag##_mmap<T> arg, bool) { return arg; } \
     static void access(fpga::Instance& instance, int& idx,         \
                        tag##_mmap<T> arg) {                        \
       auto buf = fpga::frt_tag(arg.get(), arg.size());             \
