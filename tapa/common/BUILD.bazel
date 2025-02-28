@@ -5,9 +5,34 @@
 # RapidStream Contributor License Agreement.
 
 load("@rules_python//python:defs.bzl", "py_library")
+load("//bazel:pytest_rules.bzl", "py_test")
+
+package(
+    default_visibility = [
+        "//tapa:__subpackages__",
+    ],
+)
 
 py_library(
     name = "common",
-    srcs = glob(["**/*.py"]),
-    visibility = ["//tapa:__subpackages__"],
+    srcs = glob(
+        ["*.py"],
+        exclude = [
+            "unique_attrs.py",
+            "*_test.py",
+        ],
+    ),
+)
+
+py_library(
+    name = "unique_attrs",
+    srcs = ["unique_attrs.py"],
+)
+
+py_test(
+    name = "unique_attrs_test",
+    srcs = ["unique_attrs_test.py"],
+    deps = [
+        ":unique_attrs",
+    ],
 )
