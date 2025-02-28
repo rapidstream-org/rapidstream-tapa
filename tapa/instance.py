@@ -11,7 +11,6 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from pyverilog.vparser.ast import (
-    Decl,
     Eq,
     Identifier,
     Input,
@@ -343,7 +342,7 @@ class Instance:
             )
 
     @property
-    def public_handshake_ports(self) -> Iterator[Decl]:
+    def public_handshake_ports(self) -> Iterator[Input | Output]:
         """Public handshake IO ports used for this instance.
 
         These include all public IO ports like `ap_start` and `ap_done`.
