@@ -434,6 +434,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def del_ports(self, port_names: Iterable[str]) -> tuple[str, ...]:
         """Delete IO ports from this module."""
+        port_names = set(port_names)
 
         def func(item: Node) -> bool:
             if isinstance(item, Decl):
