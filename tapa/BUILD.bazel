@@ -11,6 +11,7 @@ load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@tapa_deps//:requirements.bzl", "requirement")
 load("//bazel:nuitka_rules.bzl", "nuitka_binary")
+load("//bazel:pytest_rules.bzl", "py_test")
 
 package(default_visibility = ["//tapa:__subpackages__"])
 
@@ -69,13 +70,8 @@ py_wheel(
 
 py_library(
     name = "tapa-py-libs",
-    srcs = [
-        "__init__.py",
-    ],
-    data = [
-        ":VERSION",
-    ],
     deps = [
+        ":__init__",
         ":core",
         ":instance",
         ":safety_check",
@@ -86,6 +82,14 @@ py_library(
         "//tapa/steps",
         "//tapa/verilog",
         requirement("click"),
+    ],
+)
+
+py_library(
+    name = "__init__",
+    srcs = ["__init__.py"],
+    data = [
+        ":VERSION",
     ],
 )
 
@@ -145,11 +149,21 @@ py_library(
     name = "task",
     srcs = ["task.py"],
     deps = [
+        ":__init__",
         ":instance",
         ":util",
         "//tapa/backend",
         "//tapa/verilog",
+        "//tapa/verilog/xilinx:module",
         requirement("pyverilog"),
+    ],
+)
+
+py_test(
+    name = "task_test",
+    srcs = ["task_test.py"],
+    deps = [
+        ":task",
     ],
 )
 

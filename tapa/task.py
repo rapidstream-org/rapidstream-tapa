@@ -631,7 +631,8 @@ class Task:  # noqa: PLR0904
         scalar_regex_str = "|".join(
             x.name
             for x in self.ports.values()
-            if not x.cat.is_stream and not x.is_streams  # TODO: refactor port.cat
+            if x.name in self.fsm_module.ports  # skip unused ports
+            and (not x.cat.is_stream and not x.is_streams)  # TODO: refactor port.cat
         )
         scalar_pragma = f" scalar=({scalar_regex_str})" if scalar_regex_str else ""
         pragma_list = [
