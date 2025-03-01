@@ -736,16 +736,15 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         addr_width: int = 64,
         id_width: int | None = None,
     ) -> "Module":
+        io_ports = []
         for channel, ports in M_AXI_PORTS.items():
-            io_ports = []
             for port, direction in ports:
                 io_port = (Input if direction == "input" else Output)(
                     name=f"{M_AXI_PREFIX}{name}_{channel}{port}",
                     width=get_m_axi_port_width(port, data_width, addr_width, id_width),
                 )
                 io_ports.append(with_rs_pragma(io_port))
-            self.add_ports(io_ports)
-        return self
+        return self.add_ports(io_ports)
 
     def cleanup(self) -> None:
         self.del_params(prefix="ap_ST_fsm_state")
