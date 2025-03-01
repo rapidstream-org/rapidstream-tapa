@@ -84,14 +84,8 @@ from tapa.verilog.xilinx.const import (
     CLK_SENS_LIST,
     DONE,
     FALSE,
-    HANDSHAKE_CLK,
-    HANDSHAKE_DONE,
-    HANDSHAKE_IDLE,
     HANDSHAKE_INPUT_PORTS,
     HANDSHAKE_OUTPUT_PORTS,
-    HANDSHAKE_READY,
-    HANDSHAKE_RST_N,
-    HANDSHAKE_START,
     IDLE,
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
@@ -959,15 +953,6 @@ int main(int argc, char ** argv)
             make_port_arg(x, x) for x in HANDSHAKE_INPUT_PORTS + HANDSHAKE_OUTPUT_PORTS
         ]
         fsm_upstream_module_ports = {}  # keyed by arg.name for deduplication
-        task.fsm_module.add_ports(
-            [
-                Input(HANDSHAKE_CLK),
-                Input(HANDSHAKE_RST_N),
-                Input(HANDSHAKE_START),
-                Output(HANDSHAKE_READY),
-                *(Output(x) for x in (HANDSHAKE_DONE, HANDSHAKE_IDLE)),
-            ]
-        )
 
         # Wires connecting to the downstream (task instances).
         fsm_downstream_portargs: list[PortArg] = []

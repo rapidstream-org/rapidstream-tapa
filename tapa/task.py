@@ -18,7 +18,9 @@ from pyverilog.vparser.ast import (
     Constant,
     Decl,
     Identifier,
+    Input,
     IntConst,
+    Output,
     ParamArg,
     Partselect,
     Plus,
@@ -40,7 +42,10 @@ from tapa.verilog.xilinx.axis import (
 )
 from tapa.verilog.xilinx.const import (
     HANDSHAKE_CLK,
+    HANDSHAKE_DONE,
+    HANDSHAKE_IDLE,
     HANDSHAKE_OUTPUT_PORTS,
+    HANDSHAKE_READY,
     HANDSHAKE_RST,
     HANDSHAKE_RST_N,
     HANDSHAKE_START,
@@ -133,6 +138,15 @@ class Task:  # noqa: PLR0904
             )
             self.ports = port_dict
             self.fsm_module = Module(name=f"{self.name}_fsm")
+            self.fsm_module.add_ports(
+                [
+                    Input(HANDSHAKE_CLK),
+                    Input(HANDSHAKE_RST_N),
+                    Input(HANDSHAKE_START),
+                    Output(HANDSHAKE_READY),
+                    *(Output(x) for x in (HANDSHAKE_DONE, HANDSHAKE_IDLE)),
+                ]
+            )
         elif ports:
             # Nonsynthesizable tasks need ports to generate template
             self.ports = port_dict
