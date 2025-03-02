@@ -6,17 +6,19 @@
 
 "use strict";
 
-import { sidebarContainers, updateSidebar } from "./sidebar.js";
+import { antvDagre, graphOptions, layoutOptions } from "./graph-options.js";
+import {
+  resetInstance,
+  resetSidebar,
+  updateSidebarForCombo,
+  updateSidebarForNode,
+} from "./sidebar.js";
 import { getGraphData } from "./praser.js";
+import { isCombo } from "./helper.js";
 
-/** @type {$} */
-export const $ = (tagName, props) => Object.assign(
-	document.createElement(tagName), props
-);
-
-/** @type {(comboId: string) => string} */
-export const getComboName = comboId => comboId.replace(/^combo:/, "");
-
+/** Used in "Save Image" button
+ * @type {string} */
+let filename;
 
 /** @type {GraphJSON} */
 let graphJson;
@@ -29,12 +31,7 @@ let graphData = {
   combos: [],
 };
 
-// Grouping radios in header
-
-/** @satisfies { HTMLFormElement & { elements: { grouping: { value: string; } } } | null } } */
-const grouping = document.querySelector(".grouping");
-
-// File Input
+// File Input and graph rendering
 
 /** @satisfies {HTMLInputElement & { files: FileList } | null} */
 const fileInput = document.querySelector("input.fileInput");
@@ -42,49 +39,127 @@ if (fileInput === null) {
   throw new TypeError("Element input.fileInput not found!");
 }
 
-/** @param {import("@antv/g6").Graph} graph */
+/** Grouping radios' form in header
+ * @satisfies {HTMLFormElement & { elements: { grouping: { value: string; } } } | null} */
+const grouping = document.querySelector(".grouping");
+
+
+/** Render graph when file or grouping changed.
+ * @type {(graph: Graph, graphData: GraphData) => Promise<void>} */
+const renderGraph = async (graph, graphData) => {
+  antvDagre.sortByCombo = graphData.combos.length > 1;
+  graph.setData(graphData);
+  await graph.render();
+};
+
+/** Render graph when file or grouping changed.
+ * @type {(option: GetGraphDataOptions) => Promise<void>} */
+const renderGraphWithNewOption = async option => {
+  graphData = getGraphData(graphJson, option);
+  globalThis.graphData = graphData;
+
+  resetSidebar("Loading...");
+  // Reset zoom if it's not 1
+  if (graph.rendered && graph.getZoom() !== 1) {
+    graph.setData({});
+    await graph.draw();
+    await graph.zoomTo(1, false);
+  }
+
+  await renderGraph(graph, graphData);
+  resetInstance();
+}
+
+/** @param {Graph} graph */
 const setupFileInput = (graph) => {
-  const reader = new FileReader();
-  reader.addEventListener("load", e => {
-    const result = e.target?.result;
-    if (typeof result !== "string") return;
-
-    const flat = grouping?.elements.grouping.value === "flat";
-
-    /** @satisfies {GraphJSON} */
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    graphJson = JSON.parse(result);
-    graphData = getGraphData(graphJson, flat);
-
-    console.debug("graph.json\n", graphJson);
-    console.debug("graphData\n", graphData);
-
-    graph.setData(graphData);
-    void graph.render();
-
-    // render twice for medium-sized graphs
-    // (large enough for a better 2nd render, small enough for performance)
-    graphData.nodes.length > 50 &&
-    graphData.nodes.length < 1000 &&
-    void graph.render();
-  });
 
   const readFile = () => {
+
+    /** @type {File | undefined} */
     const file = fileInput.files[0];
-    if (file) reader.readAsText(file);
+
+    if (!file) return false;
+    if (file.type !== "application/json") {
+      console.warn("File type is not application/json!");
+    }
+
+    // Update filename and graph
+    filename = file.name;
+
+    resetSidebar("Loading...");
+    file.text().then(async text => {
+
+      const flat = grouping?.elements.grouping.value === "flat";
+
+      /** @satisfies {GraphJSON} */
+      graphJson = JSON.parse(text);
+      graphData = getGraphData(graphJson, { flat });
+      Object.assign(globalThis, { graphJson, graphData });
+
+      console.debug(`${filename}:\n`, graphJson, "\ngraphData:\n", graphData);
+
+      // Reset zoom if it's not 1
+      if (graph.rendered && graph.getZoom() !== 1) {
+        graph.setData({});
+        await graph.draw();
+        await graph.zoomTo(1, false);
+      }
+
+      // Render & auto layout graph
+      resetInstance("Rendering...");
+      await renderGraph(graph, graphData);
+
+      const topTask = graphJson.tasks[graphJson.top];
+      topTask.level === "upper" &&
+      Object.getOwnPropertyNames(topTask.tasks).length > 10 &&
+      await graph.layout(graphOptions.layout);
+      resetInstance();
+
+    }).catch(error => {
+      console.error(error);
+      resetInstance(String(error));
+    });
+
+    return true;
+
   };
-  readFile();
+
+  readFile() ||
+  resetInstance("Please load the graph.json file.");
+
   fileInput.addEventListener("change", readFile);
 };
 
 // Buttons
 
-/** @param {import("@antv/g6").Graph} graph */
-const setupGraphButtons = (graph) => {
-  /**
-   * @typedef {EventListenerOrEventListenerObject} Listener
-   * @type {(selector: string, listener: Listener) => void} */
-  const setButton = (selector, callback) => {
+/** Button selector and click event callback
+ * @param {Graph} graph
+ * @returns {[string, EventListenerOrEventListenerObject][]} */
+const getGraphButtons = (graph) => [[
+  ".btn-clearGraph",
+  () => void graph.clear().then(() => resetInstance("Please load a file."))
+], [
+  ".btn-rerenderGraph",
+  () => void graph.layout().then(() => graph.fitView())
+], [
+  ".btn-fitCenter",
+  () => void graph.fitCenter()
+], [
+  ".btn-fitView",
+  () => void graph.fitView()
+], [
+  ".btn-saveImage",
+  () => void graph.toDataURL().then(
+    href => Object.assign(
+      document.createElement("a"),
+      { href, download: filename, rel: "noopener" },
+    ).click(),
+  )
+]];
+
+/** @param {Graph} graph */
+const setupGraphButtons = graph => getGraphButtons(graph).forEach(
+  ([selector, callback]) => {
     /** @satisfies { HTMLButtonElement | null } */
     const button = document.querySelector(selector);
     if (button) {
@@ -93,142 +168,79 @@ const setupGraphButtons = (graph) => {
     } else {
       console.warn(`setButton(): "${selector}" don't match any element!`);
     }
-  };
-
-  setButton(".btn-clearGraph", () => void graph.clear());
-  setButton(".btn-refreshGraph", () => void graph.render());
-  setButton(".btn-fitCenter", () => void graph.fitCenter());
-  setButton(".btn-fitView", () => void graph.fitView());
-}
+  }
+);
 
 // G6.Graph()
 
 (() => {
 
-  const container = document.querySelector(".graph-container");
-  if (!(container instanceof HTMLElement)) {
-    throw new TypeError("container is not a HTMLElement!");
-  }
-
   // https://g6.antv.antgroup.com/api/graph/option
   const graph = new G6.Graph({
-    container,
-    autoResize: true,
-    autoFit: "view",
-    padding: 10,
-    theme: "light",
-
-    animation: {
-      duration: 250, // ms
-    },
-
-    // https://g6.antv.antgroup.com/api/elements/nodes/base-node
-    node: {
-      style: {
-        labelText: node => node.id,
-      },
-    },
-    edge: {
-      style: {
-        endArrow: true,
-        labelFontFamily: "monospace",
-        labelText: ({ id }) => {
-          // Trim the prefix part
-          id = id?.slice(id.indexOf("/") + 1);
-          // If still very long, then cap each part's length to 15
-          if (id && id.length > 20) {
-            id = id.split("/").map(
-              part => part.length <= 15 ? part : `${part.slice(1, 12)}...`
-            ).join("/");
-          }
-          return id;
-        },
-      }
-    },
-    combo: {
-      // type: "rect",
-      style: {
-        labelFill: "gray",
-        labelFontSize: 10,
-        labelPlacement: "top",
-        strokeWidth: 2,
-        labelText: ({id}) => getComboName(id),
-      }
-    },
-
-    /** @type {BuiltInLayoutOptions} */
-    layout: {
-      type: "force-atlas2",
-      kr: 200,
-      kg: 20,
-      tao: 10,
-      nodeSize: [60, 40],
-      preventOverlap: true,
-      padding: 10,
-      // mode: "linlog",
-      // dissuadeHubs: true,
-    },
-
-    transforms: ["process-parallel-edges"],
+    ...graphOptions,
 
     behaviors: [
-      "drag-canvas",
+      // "auto-adapt-label",
+      /** @type {import("@antv/g6").BrushSelectOptions} */
+      ({
+        type: "brush-select",
+        mode: "diff",
+        enableElements: ["node"],
+      }),
+      /** @type {import("@antv/g6").DragCanvasOptions} */
+      ({
+        type: "drag-canvas",
+        key: "drag-canvas",
+      }),
       "zoom-canvas",
       "drag-element",
+
+      /** @type {import("@antv/g6").CollapseExpandOptions} */
+      ({
+        type: "collapse-expand",
+        animation: false, // only use layout animation in onExpand()
+        onExpand: id => isCombo(id) && void graph.layout(layoutOptions),
+      }),
+
       /** @type {import("@antv/g6").ClickSelectOptions} */
       ({
         type: "click-select",
         degree: 1,
-        // TODO: update sidebar for combo (UpperTask)
         onClick: ({ target: item }) => {
-          if (item.type !== "node") {
-            const p = $("p", { textContent: "Please select a node." });
-            sidebarContainers.forEach(
-              element => element.replaceChildren(p.cloneNode(true)),
-            );
-            return;
+          if (!("type" in item)) { resetSidebar(); return; }
+          switch (item.type) {
+            case "node":  updateSidebarForNode(item.id, graph); break;
+            case "combo": updateSidebarForCombo(item.id); break;
+            case "edge":  resetSidebar("Edge is not supported yet."); break;
+            default: resetSidebar(); break;
           }
-
-          const node = graph.getNodeData(item.id);
-          updateSidebar(item.id, node, graphData);
-        }
-      })
-    ],
-
-    plugins: [
-      /** @type {import("@antv/g6").TooltipOptions} */
-      ({
-        type: "tooltip",
-        getContent: (_event, items) => Promise.resolve(
-          items.map(
-            item => `ID: <code>${item.id}</code>`
-          ).join("<br>")
-        ),
+        },
       }),
+
     ],
+
   });
 
+  globalThis.graph = graph;
+
+  // Rerender when grouping method changed
   if (grouping) {
     for (let i = 0; i < grouping.elements.length; i++) {
-      grouping.elements[i].addEventListener("change", ({target}) => {
-        if (!(target instanceof HTMLInputElement)) return;
-        if (graphJson) {
-          const flat = target.value === "flat";
-          graphData = getGraphData(graphJson, flat);
-          graph.setData(graphData);
-          void graph.render();
-        }
-      })
+      grouping.elements[i].addEventListener(
+        "change",
+        ({ target }) =>
+          graphJson &&
+          target instanceof HTMLInputElement &&
+          void renderGraphWithNewOption({ flat: target.value === "flat" }),
+      )
     }
   }
 
-  // Override the default "Loading..."
-  sidebarContainers[0].replaceChildren(
-    $("p", { textContent: "Please select a node." }),
-  );
+  // Graph loading finished, remove loading status in instance sidebar
+  resetInstance();
 
   setupFileInput(graph);
   setupGraphButtons(graph);
 
-  console.debug("graph object\n", graph);
+  console.debug("graph object:\n", graph);
 })();
