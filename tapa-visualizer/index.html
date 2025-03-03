@@ -28,9 +28,10 @@ html, body, .graph-container { height: 100%; }
 body {
 	margin: 0;
 	display: grid;
-	grid-template: auto 1fr / minmax(min(42em, 100%), auto) 1fr;
+	grid-template: auto 1fr / minmax(min(42em, 100%), auto) auto 1fr;
 }
-header, header .flex, aside { display: flex; }
+header, header .flex { display: flex; }
+aside { display: contents; }
 header {
 	grid-column: 1 / -1;
 	border-bottom: 1px solid #BEBEBE;
@@ -121,11 +122,18 @@ header {
 		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
 		<span class="btn-text">Source Code</span>
 	</label>
+	<label class="btn btn-options" tabindex="0">
+		<input type="radio" name="sidebar" value="options" hidden>
+		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+		<span class="btn-text">Options</span>
+	</label>
+
 </div>
 
 <div class="sidebar-contents">
 
 	<section class="details">
+		<!-- TODO: add a "Task" block for task infomations -->
 		<details class="instance" open="">
 			<summary>
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-todo"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
@@ -153,7 +161,7 @@ header {
 
 		<details class="connections" open="">
 			<summary>
-				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-workflow"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cable"><path d="M17 21v-2a1 1 0 0 1-1-1v-1a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1"/><path d="M19 15V6.5a1 1 0 0 0-7 0v11a1 1 0 0 1-7 0V9"/><path d="M21 21v-2h-4"/><path d="M3 5h4V3"/><path d="M7 5a1 1 0 0 1 1 1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a1 1 0 0 1 1-1V3"/></svg>
 				Connections
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
 			</summary>
@@ -165,15 +173,54 @@ header {
 	</section>
 
 	<section class="source">
-		<div class="source-summary">Source Code</div>
-		<div class="source-content">
+		<div class="summary">Source Code</div>
+		<div class="sidebar-content-source">
 			<p>TODO</p>
 		</div>
+	</section>
+
+
+	<section class="options">
+		<div class="summary">Options</div>
+		<form class="sidebar-content-options">
+
+			<p>Layout Options</p>
+			<fieldset>
+				<legend>Layout algorithm:</legend>
+				<label><input type="radio" name="layout" value="force-atlas2" checked> ForceAtlas2</label>
+				<label><input type="radio" name="layout" value="antv-dagre"> AntvDagre</label>
+				<label><input type="radio" name="layout" value="dagre"> Dagre</label>
+			</fieldset>
+			<p>Graph Options</p>
+			<fieldset class="only-one-combo">
+				<legend>Expand other upper tasks:</legend>
+				<label><input type="radio" name="expand" value="false"> Collapse</label>
+				<label><input type="radio" name="expand" value="true" checked> Expand</label>
+				<p class="hint">Top task will always expand by default.</p>
+				<p class="hint only-one-combo">Current graph has no other upper tasks than top task.</p>
+			</fieldset>
+			<fieldset>
+				<legend>Show connection ports:</legend>
+				<label><input type="radio" name="port" value="false" checked> Hide</label>
+				<label><input type="radio" name="port" value="true"> Show</label>
+			</fieldset>
+			<p>Save Image Options</p>
+			<p>TODO</p>
+		</form>
 	</section>
 
 </div>
 
 </aside>
+
+<dialog>
+	<h2>
+		C++ Code
+		<button class="btn-copy">Copy</button>
+		<button class="btn-close" autofocus>Close</button>
+	</h2>
+	<pre><code></code></pre>
+</dialog>
 
 <script>
 // Inline scripts aren't covered by ESlint & TypeScript, be careful
@@ -188,6 +235,21 @@ header {
 			sidebar.style.setProperty("display", newValue);
 		});
 		toggleSidebar.disabled = false;
+	}
+
+	const dialog = document.querySelector("dialog");
+	if (dialog) {
+		const closeBtn = dialog.querySelector(":scope .btn-close");
+		closeBtn?.addEventListener("click", () => dialog.close());
+
+		const code = dialog.querySelector(":scope > pre > code");
+		if (code) {
+			const copyBtn = dialog.querySelector(":scope .btn-copy");
+			copyBtn?.addEventListener(
+				"click",
+				() => void navigator.clipboard.writeText(code.textContent)
+			);
+		}
 	}
 })();
 </script>

@@ -24,9 +24,6 @@ export const append = (parent, ...children) => {
 
 // combo id prefix
 
-/** @type {(comboName: string) => boolean} */
-export const isCombo = id => id.startsWith("combo:");
-
 /** @type {(comboName: string) => string} */
 export const getComboId = comboName => `combo:${comboName}`;
 
