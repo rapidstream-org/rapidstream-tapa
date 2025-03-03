@@ -39,7 +39,15 @@ export const resetSidebar = (instanceText = "Please select an item.") => [
   (text, i) => sidebarContainers[i].replaceChildren($text("p", text)),
 );
 
-// object to element parsers
+// DOM Helpers
+
+/** @type {(elements: (Node | string)[]) => HTMLUListElement} */
+const ul = elements => append(
+  $("ul", { style: "font-family: monospace;" }),
+  ...elements
+);
+
+// Object to element parsers
 
 /** @type {(args: [string, { arg: string, cat: string }][]) => HTMLElement} */
 const parseArgs = args => append(
@@ -72,9 +80,14 @@ const parsePorts = ports => append(
 );
 
 /** @type {(code: string) => HTMLButtonElement} */
-const getCopyButton = (code) => {
-  const button = $text("button", "Copy Code");
-  button.addEventListener("click", () => void navigator.clipboard.writeText(code));
+const showCode = (code) => {
+  const button = $text("button", "Show C++ Code");
+  button.addEventListener("click", () => {
+    // TODO: Set title of the dialog to the task name
+    const container = document.querySelector("dialog code");
+    if (container) { container.textContent = code; }
+    document.querySelector("dialog")?.showModal();
+  });
   return button;
 };
 
@@ -84,10 +97,6 @@ const getCopyButton = (code) => {
  * Instance Name, Upper Task, Sub-Task(s)
  * @type {(node: NodeData) => HTMLElement} */
 const getNodeInfo = node => {
-
-  if (node.id.startsWith("<unknown>")) {
-    return $text("p", "This node represents a missing fifo source or target.");
-  }
 
   const dl = append(
     $("dl"),
@@ -120,6 +129,27 @@ const getNodeInfo = node => {
   }
 
   const { data } = node;
+  const { task } = data;
+  if (task) {
+    dl.append(
+      $text("dt", "Task Level"),
+      $text("dd", task.level),
+      $text("dt", "Build Target"),
+      $text("dd", task.target),
+      $text("dt", "Vendor"),
+      $text("dd", task.vendor),
+
+      // Lower task can have ports too
+      $text("dt", "Ports"),
+      task.ports && task.ports.length !== 0
+        ? parsePorts(task.ports)
+        : $text("dd", "none"),
+
+      $text("dt", "Code"),
+      append($("dd"), showCode(task.code)),
+    )
+  }
+
   if ("subTask" in data) {
     appendSubTask(dl, data.subTask);
   } else if ("subTasks" in data && Array.isArray(data.subTasks)) {
@@ -130,23 +160,26 @@ const getNodeInfo = node => {
     console.warn("Selected node is missing data!", node)
   }
 
-  const { task } = data;
-  if (task) {
-    dl.append(
-      $text("dt", "Task Level"),
-      $text("dd", task.level),
-      $text("dt", "Build Target"),
-      $text("dd", task.target),
-      $text("dt", "Vendor"),
-      $text("dd", task.vendor),
-      $text("dt", "Code"),
-      append($("dd"), getCopyButton(task.code)),
-    )
-  }
-
   return dl;
 
 };
+
+const sourcesTitle = append(
+  $("p", { textContent: "Sources" }),
+  $("br"),
+  $("code", {
+    className: "hint",
+    textContent: "Format: connection name -> target task name",
+  }),
+);
+const targetsTitle = append(
+  $("p", { textContent: "Targets" }),
+  $("br"),
+  $("code", {
+    className: "hint",
+    textContent: "Format: connection name <- source task name",
+  }),
+);
 
 /** Update sidebar for selected node
  *  @param {string} id
@@ -175,26 +208,18 @@ export const updateSidebarForNode = (id, graph) => {
   sources.forEach(edge => neighborIds.add(edge.target));
   targets.forEach(edge => neighborIds.add(edge.source));
 
-  /** @type {(elements: (Node | string)[]) => HTMLUListElement} */
-  const ul = elements => append(
-    $("ul", { style: "font-family: monospace;" }),
-    ...elements
-  );
-
   neighbors.replaceChildren(
     neighborIds.size > 0
     ? ul([...neighborIds.values().map(id => $("li", { textContent: id }))])
     : $("p", { textContent: `Node ${node.id} has no neighbors.` }),
   );
 
-  // TODO: replace innerHTML
   connections.replaceChildren(
-    $("p", { innerHTML: "Sources<br><code style='font-size: .8rem;'>Format: connection name -> target task name</code>" }),
+    sourcesTitle,
     ul(sources.map(edge => $("li", { textContent: `${edge.id} -> ${edge.target}` }))),
-    $("p", { innerHTML: "Targets<br><code style='font-size: .8rem;'>Format: connection name <- source task name</code>" }),
+    targetsTitle,
     ul(targets.map(edge => $("li", { textContent: `${edge.id} <- ${edge.source}` }))),
   );
-
 
 };
 
@@ -202,31 +227,57 @@ export const updateSidebarForNode = (id, graph) => {
 /** Get an `<dl>` element containing:
  * Instance Name, Upper Task, Sub-Task(s)
  * @type {(node: ComboData) => HTMLElement} */
-const getComboInfo = (combo) => append(
-  $("dl"),
-  $text("dt", "Instance Name"),
-  $text("dd", combo.id),
-  $text("dt", "Task Level"),
-  $text("dd", combo.data.level),
-  $text("dt", "Build Target"),
-  $text("dd", combo.data.target),
-  $text("dt", "Vendor"),
-  $text("dd", combo.data.vendor),
+const getComboInfo = (combo) => {
+  const comboName = getComboName(combo.id);
 
-  // Parse ports to table
-  $text("dt", "Ports"),
-  combo.data.ports.length === 0
-    ? $text("dd", "none")
-    : parsePorts(combo.data.ports),
+  const { data } = combo;
+  const tasks = Object.entries(data.tasks).flatMap(
+    ([name, subTasks]) => subTasks.map(
+      (_subTask, i) => $("li", { textContent: `${name}/${i}` })
+    )
+  );
 
-  $text("dt", "Tasks"),
-  $text("dd", "TODO"),
-  $text("dt", "Fifos"),
-  $text("dd", "TODO"),
+  /** get name of sub-task
+   * @type {(by: [string, number] | undefined) => string}
+   * @param by fifo.produced_by / fifo.consumed_by */
+  const get = by => by?.join("/") ?? comboName;
+  const fifos = Object.entries(data.fifos).map(
+    ([name, { produced_by: p, consumed_by: c, depth }]) => $("li", {
+      textContent: `${name}:\n${get(p)} -> ${get(c)}, depth: ${depth ?? "?"}`
+    })
+  );
 
-  $text("dt", "Code"),
-  append($("dd"), getCopyButton(combo.data.code)),
-);
+  return append(
+    $("dl"),
+    $text("dt", "Instance Name"),
+    $text("dd", combo.id),
+    $text("dt", "Task Level"),
+    $text("dd", data.level),
+    $text("dt", "Build Target"),
+    $text("dd", data.target),
+    $text("dt", "Vendor"),
+    $text("dd", data.vendor),
+
+    // Parse ports to table
+    $text("dt", "Ports"),
+    data.ports && data.ports.length !== 0
+      ? parsePorts(data.ports)
+      : $text("dd", "none"),
+
+    $text("dt", "Tasks"),
+    tasks.length !== 0
+    ? append($("dd"), ul(tasks))
+    : $text("dd", "none"),
+
+    $text("dt", "FIFOs"),
+    fifos.length !== 0
+    ? append($("dd", { style: "white-space: pre;" }), ul(fifos))
+    : $text("dd", "none"),
+
+    $text("dt", "Code"),
+    append($("dd"), showCode(data.code)),
+  );
+};
 
 /** Update sidebar for selected combo
  *  @param {string} id */

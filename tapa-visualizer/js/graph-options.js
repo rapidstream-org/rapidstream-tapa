@@ -46,7 +46,6 @@ const trimEdgeId = id => {
 
 /** @type {Required<Pick<import("@antv/g6").GraphOptions, "node" | "edge" | "combo">>} */
 const elementOptions = {
-  // TODO: customize selected style
   // https://g6.antv.antgroup.com/api/elements/nodes/base-node
   node: {
     type: "rect",
@@ -54,7 +53,7 @@ const elementOptions = {
       size: ({ style }) => style?.size ?? [120, 40],
       fill: ({ style }) => style?.fill ?? "#198754",
       radius: 2,
-      // TODO: port toggle
+
       portR: 5,
       portFill: "#198754",
 
@@ -65,9 +64,7 @@ const elementOptions = {
       labelFill: "white",
       labelFontWeight: "bold",
       labelFontFamily: "monospace",
-      labelText: ({ id }) => id.startsWith("<unknown>@")
-        ? id.replace("<unknown>@", "<unknown> @ ")
-        : id,
+      labelText: ({ id }) => id,
     },
     // Builtin states: "selected" "highlight" "active" "inactive" "disabled"
     state: {
@@ -127,7 +124,7 @@ const elementOptions = {
 /**
  * @type      {import("@antv/g6").SingleLayoutOptions}
  * @satisfies {import("@antv/g6").AntVDagreLayoutOptions} */
- export const antvDagre = {
+export const antvDagre = {
   type: "antv-dagre",
   // rankdir: "LR",
   ranksep: 60,
@@ -139,7 +136,7 @@ const elementOptions = {
 /**
  * @type      {import("@antv/g6").SingleLayoutOptions}
  * @satisfies {import("@antv/g6").DagreLayoutOptions} */
- export const dagre = {
+export const dagre = {
   type: "dagre",
   nodeSize: [160, 120],
 };
@@ -165,8 +162,6 @@ export const forceAtlas2 = {
 };
 
 
-export const layoutOptions = forceAtlas2;
-
 /** @type {Omit<import("@antv/g6").GraphOptions, "data">} */
 export const graphOptions = {
   ...canvasOptions,
@@ -177,7 +172,7 @@ export const graphOptions = {
 
   animation: { duration: 250 }, // ms
 
-  layout: layoutOptions,
+  layout: forceAtlas2,
 
   // behaviors are defined in graph.js since they call the graph object.
 

@@ -39,22 +39,68 @@ const getIndexRange = indexes => {
   ).join(",");
 };
 
-/** @type {import("@antv/g6").Placement[]} */
-const placements = [
-  [0, 0], [0.25, 0], "top",    [0.75, 0], [1, 0], "right",
-  [0, 1], [0.75, 1], "bottom", [0.25, 1], [1, 1], "left",
-];
+/** TODO: Better placement per port amount
+ * - 1 port:           0.5
+ * - 2 ports:    0.25,      0.75
+ * - 3 ports: 0,       0.5,       1
+ * - 4 ports: 0, 0.25,      0.75, 1
+ * - 5 ports: 0, 0.25, 0.5, 0.75, 1
+ */
+/** @type {Placements} */
+const placements = {
+  istream: ["top",    [0.25, 0], [0.75, 0], [0, 0], [1, 0]],
+  ostream: ["bottom", [0.25, 1], [0.75, 1], [0, 1], [1, 1]],
+};
 
-/** @type {12} */
-const maxPortsLength = 12; // placements.length;
+/** @type {5} */
+const ioPortsLength = 5; // placements[istream / ostream].length;
 
-/** @type {(json: GraphJSON, flat: GetGraphDataOptions) => GraphData} */
-export const getGraphData = (json, {
-  flat = false,
-  // TODO: expand toggle, port toggle
-  expand = false,
-  port = false,
-}) => {
+/** subTask -> ioPorts
+ * @type {(subTask: SubTask, ioPorts: IOPorts) => void} */
+const setIOPorts = (subTask, ioPorts) => {
+  for (const argName in subTask.args) {
+    const { arg, cat } = subTask.args[argName];
+    switch (cat) {
+      case "istream": ioPorts.istream.push(arg); break;
+      case "ostream": ioPorts.ostream.push(arg); break;
+    }
+  }
+};
+
+/** ioPorts -> style.ports
+ * @typedef {import("@antv/g6/lib/spec/element/node.js").NodeStyle} NodeStyle
+ * @type {(ioPorts: IOPorts, style: NodeStyle) => void} */
+const setPortsToStyle = (ioPorts, style) => {
+  /** @type {import("@antv/g6").NodePortStyleProps[]} */
+  let ports = [];
+  /** @type {["istream", "ostream"]} */
+  (["istream", "ostream"]).forEach(stream => {
+    if (ioPorts[stream].length <= ioPortsLength) {
+      ports = ports.concat(
+        ports,
+        ioPorts[stream].map(
+          (key, j) => ({ key, placement: placements[stream][j] })
+        ),
+      );
+    }
+  });
+  style.ports = ports;
+}
+
+/** @type {Readonly<Required<GetGraphDataOptions>>} */
+const defaultOptions = {
+  flat: false,
+  expand: false,
+  port: false,
+};
+
+/** @type {(json: GraphJSON, options: GetGraphDataOptions) => GraphData} */
+export const getGraphData = (json, options = defaultOptions) => {
+
+  /** Rename `port` option to a meaningful one */
+  const { flat, port: showPorts } = options;
+  /** Convert `expand` option to combo's `collapsed` style */
+  const collapsed = !options.expand;
 
   /** @type {GraphData} */
   const graphData = {
@@ -64,9 +110,6 @@ export const getGraphData = (json, {
   };
 
   const { nodes, edges, combos } = graphData;
-
-  /** Convert `expand` option to combo's `collapsed` style */
-  const collapsed = !expand;
 
   /** Gather upper tasks to determine if there is only 1 upper task
    * @type {Map<string, UpperTask>} */
@@ -132,11 +175,10 @@ export const getGraphData = (json, {
     data: topTask,
   });
 
+  // Loop 1: sub-tasks -> combos and nodes
   upperTasks.forEach((upperTask, upperTaskName) => {
-
-    // Add sub-tasks
     for (const subTaskName in upperTask.tasks) {
-      /** Sub-tasks, `${subTaskName}/0`, `${subTaskName}/1`, ... */
+      /** Sub-tasks: `${subTaskName}/0`, `${subTaskName}/1`, ... */
       const subTasks = upperTask.tasks[subTaskName];
 
       /** Sub-tasks' task
@@ -146,104 +188,99 @@ export const getGraphData = (json, {
       /** upperTask's combo id */
       let combo = getComboId(upperTaskName);
 
-      /** Node style, not for combo
+      /** Node style, not for combo;
+       * ports don't gone by itself, set default ports to override existing ones
        * @type {NonNullable<NodeData["style"]>} */
-      const style = {};
+      const style = { ports: [] };
 
-      // Add combo for upper task
       if (task?.level === "upper") {
-        const newComboId = getComboId(subTaskName);
+        // Upper 1: Add combo for upper task
         const newCombo = {
-          id: newComboId,
+          id: getComboId(subTaskName),
           combo,
           type: "circle",
           data: task,
           style: { collapsed },
         };
-
         // Insert combo after its parent for z-index order
         const i = combos.findIndex(({ id }) => id === combo);
         i !== -1
           ? combos.splice(i + 1, 0, newCombo)
           : combos.push(newCombo);
 
-        // Put combo's node under it
-        combo = newComboId;
-
-        // Color node by task level if there is more than 1 upper task
+        // Upper 2: If there is more than 1 upper task, color node by task level
         if (colorByTaskLevel) style.fill = majorNodeColor;
+
+        // Put combo's node under it
+        // TODO: make it an option?
+        // combo = getComboId(subTaskName);
       }
 
       // Add node for subTask
       if (flat) {
-        subTasks.forEach(
-          (subTask, i) => {
-            const args = Object.values(subTask.args);
-            const ports = port && args.length <= maxPortsLength
-              ? args.map(({ arg }, i) => ({ key: arg, placement: placements[i] }))
-              : undefined;
-
-            nodes.push({
-              id: `${subTaskName}/${i}`,
-              combo,
-              style: { ...style, ports },
-              data: { task, subTask },
-            });
+        subTasks.forEach((subTask, i) => {
+          if (showPorts) {
+          /** @type {IOPorts} */
+            const ioPorts = { istream: [], ostream: [] };
+            setIOPorts(subTask, ioPorts);
+            setPortsToStyle(ioPorts, style);
           }
-        );
-      } else {
-        const args = new Set(
-          subTasks
-            .flatMap(subTask => Object.values(subTask.args))
-            .map(({ arg }) => arg)
-        );
-        const ports = port && args.size <= maxPortsLength
-        ? [...args].map((key, i) => ({ key, placement: placements[i] }))
-        : undefined;
 
-        nodes.push({
-          id: subTaskName,
-          combo,
-          style: { ...style, ports },
-          data: { task, subTasks },
-        });
+          const id = `${subTaskName}/${i}`;
+          nodes.push({ id, combo, style, data: { task, subTask } });
+        })
+      } else {
+        if (showPorts) {
+          /** @type {IOPorts} */
+          const ioPorts = { istream: [], ostream: [] };
+          subTasks.forEach(subTask => setIOPorts(subTask, ioPorts));
+          setPortsToStyle(ioPorts, style);
+        }
+
+        nodes.push({ id: subTaskName, combo, style, data: { task, subTasks } });
       }
 
     }
+  });
 
-    /** fifo groups, for fifos like fifo_x_xx[0], fifo_x_xx[1]...
+  // Loop 2: fifo -> edges
+  upperTasks.forEach((upperTask, upperTaskName) => {
+
+    /** fifo groups, for fifos like fifo_xx[0], fifo_xx[1]...
      * @type {Map<string, Set<number>>} */
     const fifoGroups = new Map();
 
-    /** @type {string[]} */
-    let needUnknownNode = [];
-
-    /**
-     * @type {(by: [string, number] | undefined) => string}
-     * @param by fifo.produced_by / fifo.consumed_by */
-    const getSubTaskWithFallback = by => {
-      if (by) {
-        return flat ? by.join("/") : by[0];
-      } else {
-        needUnknownNode.push(upperTaskName);
-        return `<unknown>@${upperTaskName}`;
-      }
-    };
-
     for (const fifoName in upperTask.fifos) {
       const fifo = upperTask.fifos[fifoName];
+      if (!fifo.produced_by && !fifo.consumed_by) {
+        console.warn(
+          `fifo ${fifoName} without produced_by and consumed_by in ${upperTaskName}:`,
+          upperTask,
+        )
+        continue;
+      }
 
-      const source = getSubTaskWithFallback(fifo.produced_by);
-      const target = getSubTaskWithFallback(fifo.consumed_by);
+    /** get source / target sub-task with fallback to the upper task
+     *
+     * TODO: connect to upperTaskName/1 upperTaskName/2 if they exist
+     * @type {(by: [string, number] | undefined) => string}
+     * @param by fifo.produced_by / fifo.consumed_by */
+     const getSubTask = by => flat
+      ? by?.join("/") ?? `${upperTaskName}/0`
+      : by?.[0] ?? upperTaskName;
+
+      const source = getSubTask(fifo.produced_by);
+      const target = getSubTask(fifo.consumed_by);
 
       // Match fifo groups
       const matchResult = fifoName.match(/^(.*)\[(\d+)\]$/);
       if (matchResult === null) {
         // Not fifo groups, add edge directly
+        const id = `${upperTaskName}/${fifoName}`;
         const style = { sourcePort: fifoName, targetPort: fifoName };
-        addEdge({ source, target, id: `${upperTaskName}/${fifoName}`, style, data: fifo });
+        addEdge({ source, target, id, style, data: fifo });
       } else {
-        // add fifo group index
+        // Add to fifo group map
         const name = matchResult[1];
         const key = [name, source, target].join("\n");
         const index = Number.parseInt(matchResult[2]);
@@ -251,19 +288,12 @@ export const getGraphData = (json, {
       }
     }
 
+    // Add fifo groups
     fifoGroups.forEach((indexes, key) => {
       const [name, source, target] = key.split("\n");
       const indexRange = getIndexRange([...indexes.values()]);
       addEdge({ source, target, id: `${upperTaskName}/${name}[${indexRange}]` });
     });
-
-    needUnknownNode.forEach(
-      taskName => nodes.push({
-        id: `<unknown>@${taskName}`,
-        combo: getComboId(taskName),
-        style: { fill: "gray" },
-      })
-    );
 
   });
 
