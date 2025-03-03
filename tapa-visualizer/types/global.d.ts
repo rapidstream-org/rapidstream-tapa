@@ -12,9 +12,11 @@ interface JSON {
     parse<T>(text: string, reviver?: <This, X, Y>(this: This, key: string, value: X) => Y): T;
 }
 
+// Helpers
 type $ = <K extends keyof HTMLElementTagNameMap>(tagName: K, prop?: Record<string, unknown>) => HTMLElementTagNameMap[K];
 type $text = <K extends keyof HTMLElementTagNameMap>(tagName: K, textContent: string | number) => HTMLElementTagNameMap[K];
 
+// Globals
 declare var graph: Graph;
 declare var graphData: GraphData;
 declare var graphJSON: GraphJSON;
@@ -39,6 +41,32 @@ type GetGraphDataOptions = {
    * @default "auto" */
   // nodeFill?: "auto" | "connection" | "task-level";
 };
+
+// Ports
+type Placements = {
+  istream: import("@antv/g6").Placement[];
+  ostream: import("@antv/g6").Placement[];
+};
+type IOPorts = {
+  istream: string[];
+  ostream: string[];
+};
+
+// Forms
+interface GroupingFormControls extends HTMLFormControlsCollection {
+  grouping: { value: "flat" | "default"; },
+}
+interface OptionsFormControls extends HTMLFormControlsCollection {
+  layout: { value: "force-atlas2" | "antv-dagre"| "dagre"; },
+  expand: { value: "true" | "false"; },
+  port: { value: "true" | "false"; },
+}
+interface GroupingForm extends HTMLFormElement {
+  elements: GroupingFormControls,
+}
+interface OptionsForm extends HTMLFormElement {
+  elements: OptionsFormControls,
+}
 
 // graph.json
 
@@ -65,6 +93,8 @@ type UpperTask = {
 
 type LowerTask = {
   level: "lower", target: string, vendor: string;
+  /** A dict mapping port names to Port objects for the current task. */
+  ports?: Port[],
   /** HLS C++ code of this task. */
   code: string,
 }

@@ -6,68 +6,143 @@
 
 "use strict";
 
-import { antvDagre, graphOptions, layoutOptions } from "./graph-options.js";
+import { antvDagre, dagre, forceAtlas2, graphOptions } from "./graph-options.js";
 import {
   resetInstance,
   resetSidebar,
   updateSidebarForCombo,
   updateSidebarForNode,
 } from "./sidebar.js";
+import { getComboId } from "./helper.js";
 import { getGraphData } from "./praser.js";
-import { isCombo } from "./helper.js";
 
 /** Used in "Save Image" button
- * @type {string} */
+ * @type {string | undefined} */
 let filename;
 
-/** @type {GraphJSON} */
+/** @type {GraphJSON | undefined} */
 let graphJson;
 
 /** Data for G6.Graph()
  * @type {GraphData} */
-let graphData = {
-  nodes: [],
-  edges: [],
-  combos: [],
-};
+let graphData = { nodes: [], edges: [], combos: [] };
 
-// File Input and graph rendering
 
-/** @satisfies {HTMLInputElement & { files: FileList } | null} */
-const fileInput = document.querySelector("input.fileInput");
-if (fileInput === null) {
-  throw new TypeError("Element input.fileInput not found!");
-}
+// Form and options + graph rendering for new option
 
 /** Grouping radios' form in header
- * @satisfies {HTMLFormElement & { elements: { grouping: { value: string; } } } | null} */
-const grouping = document.querySelector(".grouping");
+ * @satisfies {GroupingForm | null} */
+const groupingForm = document.querySelector(".grouping");
 
+/** Options sidebar's form, contains all the options other than grouping.
+ *
+ * For convenience, it's the only sidebar managed outside of `sidebar.js`.
+ * @satisfies {OptionsForm | null} */
+const optionsForm = document.querySelector(".sidebar-content-options");
+
+const getLayout = (layout = optionsForm?.elements.layout.value) => {
+  switch (layout) {
+    case "force-atlas2": return forceAtlas2;
+    case "antv-dagre": return antvDagre;
+    case "dagre": return dagre;
+    default: return forceAtlas2;
+  }
+};
+
+const getOptions = () => ({
+  flat: groupingForm?.elements.grouping.value === "flat",
+  expand: optionsForm?.elements.expand.value === "true",
+  port: optionsForm?.elements.port.value === "true",
+});
+
+let options = getOptions();
 
 /** Render graph when file or grouping changed.
  * @type {(graph: Graph, graphData: GraphData) => Promise<void>} */
 const renderGraph = async (graph, graphData) => {
+  // Update sortByCombo by combo amount
   antvDagre.sortByCombo = graphData.combos.length > 1;
-  graph.setData(graphData);
-  await graph.render();
-};
 
-/** Render graph when file or grouping changed.
- * @type {(option: GetGraphDataOptions) => Promise<void>} */
-const renderGraphWithNewOption = async option => {
-  graphData = getGraphData(graphJson, option);
-  globalThis.graphData = graphData;
-
-  resetSidebar("Loading...");
-  // Reset zoom if it's not 1
+  // Reset zoom if it's not 100% (1)
   if (graph.rendered && graph.getZoom() !== 1) {
     graph.setData({});
     await graph.draw();
     await graph.zoomTo(1, false);
   }
 
+  graph.setData(graphData);
+  await graph.render();
+};
+
+/** Update options & re-render graph when option changed.
+ * @type {(graph: Graph, newOption: GetGraphDataOptions) => Promise<void>} */
+const renderGraphWithNewOption = async (graph, newOption) => {
+  Object.assign(options, newOption);
+
+  // Only re-render if graph exist
+  if (!graphJson) return;
+  graphData = getGraphData(graphJson, options);
+  console.debug(
+    "\ngraphData:\n", graphData,
+    "\ngetGraphData() options:", options,
+  );
+
+  resetSidebar("Loading...");
   await renderGraph(graph, graphData);
   resetInstance();
+};
+
+/** @param {Graph} graph */
+const setupRadioToggles = graph => {
+  // Rerender when grouping method changed
+  if (groupingForm) {
+    for (let i = 0; i < groupingForm.elements.length; i++) {
+      groupingForm.elements[i].addEventListener(
+        "change",
+        ({ target }) =>
+          target instanceof HTMLInputElement &&
+          void renderGraphWithNewOption(
+            graph,
+            { flat: target.value === "flat" }
+          ),
+      )
+    }
+  }
+
+  if (optionsForm) {
+    for (let i = 0; i < optionsForm.elements.length; i++) {
+      const element = optionsForm.elements[i];
+      if (!(element instanceof HTMLInputElement)) continue;
+      if (element.name === "layout") {
+        element.addEventListener(
+          "change", () => {
+            graph.setLayout(getLayout());
+            void graph.layout().then(() => graph.fitView());
+          }
+        );
+        continue;
+      }
+
+      element.addEventListener(
+        "change",
+        ({ target }) =>
+          target instanceof HTMLInputElement &&
+          void renderGraphWithNewOption(
+            graph,
+            { [target.name]: target.value === "true" },
+          ),
+      )
+    }
+  }
+};
+
+
+// File Input + graph rendering for new file
+
+/** @satisfies {HTMLInputElement & { files: FileList } | null} */
+const fileInput = document.querySelector("input.fileInput");
+if (fileInput === null) {
+  throw new TypeError("Element input.fileInput not found!");
 }
 
 /** @param {Graph} graph */
@@ -89,30 +164,52 @@ const setupFileInput = (graph) => {
     resetSidebar("Loading...");
     file.text().then(async text => {
 
-      const flat = grouping?.elements.grouping.value === "flat";
-
       /** @satisfies {GraphJSON} */
       graphJson = JSON.parse(text);
-      graphData = getGraphData(graphJson, { flat });
-      Object.assign(globalThis, { graphJson, graphData });
-
-      console.debug(`${filename}:\n`, graphJson, "\ngraphData:\n", graphData);
-
-      // Reset zoom if it's not 1
-      if (graph.rendered && graph.getZoom() !== 1) {
-        graph.setData({});
-        await graph.draw();
-        await graph.zoomTo(1, false);
+      if (!graphJson?.tasks) {
+        resetInstance("Invalid graph.json, please retry.");
+        return;
       }
 
-      // Render & auto layout graph
+      options = getOptions();
+      graphData = getGraphData(graphJson, options);
+      Object.assign(globalThis, { graphJson, graphData });
+
+      // Update options form's className for hint about only one combo
+      const classListMethod = graphData.combos.length <= 1 ? "add" : "remove";
+      optionsForm?.classList[classListMethod]("only-one-combo");
+
+      console.debug(
+        `${filename}:\n`, graphJson,
+        "\ngraphData:\n", graphData,
+        "\ngetGraphData() options:", options,
+      );
+
+      // Render graph
       resetInstance("Rendering...");
       await renderGraph(graph, graphData);
 
-      const topTask = graphJson.tasks[graphJson.top];
-      topTask.level === "upper" &&
-      Object.getOwnPropertyNames(topTask.tasks).length > 10 &&
-      await graph.layout(graphOptions.layout);
+      const expand = optionsForm?.elements.expand.value === "true";
+      const topChildren = graph.getChildrenData(getComboId(graphJson.top));
+      const visibleElements = expand ? graphData.nodes : topChildren;
+
+      // Run a 2nd layout if amount of visible elements is acceptable
+      visibleElements.length >= 10 &&
+      visibleElements.length <= 500 &&
+      await graph.layout(getLayout());
+
+      // Run translateElementTo() twice to reset position for collapsed combo
+      !expand &&
+      graph.getChildrenData(getComboId(graphJson.top)).forEach(item => {
+        if (item.type === "circle" && item.style?.collapsed) {
+          const position = graph.getElementPosition(item.id);
+          void (async () => {
+            await graph.translateElementTo(item.id, position, false);
+            await graph.translateElementTo(item.id, position, false);
+          })();
+        }
+      });
+
       resetInstance();
 
     }).catch(error => {
@@ -137,7 +234,12 @@ const setupFileInput = (graph) => {
  * @returns {[string, EventListenerOrEventListenerObject][]} */
 const getGraphButtons = (graph) => [[
   ".btn-clearGraph",
-  () => void graph.clear().then(() => resetInstance("Please load a file."))
+  () => void graph.clear().then(() => {
+    filename = "";
+    graphJson = undefined;
+    graphData = { nodes: [], edges: [], combos: [] };
+    resetSidebar("Please load a file.");
+  })
 ], [
   ".btn-rerenderGraph",
   () => void graph.layout().then(() => graph.fitView())
@@ -179,6 +281,8 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
   const graph = new G6.Graph({
     ...graphOptions,
 
+    layout: getLayout(),
+
     behaviors: [
       // "auto-adapt-label",
       /** @type {import("@antv/g6").BrushSelectOptions} */
@@ -198,8 +302,13 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
       /** @type {import("@antv/g6").CollapseExpandOptions} */
       ({
         type: "collapse-expand",
-        animation: false, // only use layout animation in onExpand()
-        onExpand: id => isCombo(id) && void graph.layout(layoutOptions),
+        animation: false,
+        // If combo contains more than 1 children, layout again to avoid G6 bug
+        // TODO: fix node with identical position
+        onExpand: id =>
+          graph.getComboData(id) &&
+          graph.getChildrenData(id).length > 1 &&
+          void graph.layout(),
       }),
 
       /** @type {import("@antv/g6").ClickSelectOptions} */
@@ -220,27 +329,16 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
     ],
 
   });
+  // graph.on();
 
   globalThis.graph = graph;
-
-  // Rerender when grouping method changed
-  if (grouping) {
-    for (let i = 0; i < grouping.elements.length; i++) {
-      grouping.elements[i].addEventListener(
-        "change",
-        ({ target }) =>
-          graphJson &&
-          target instanceof HTMLInputElement &&
-          void renderGraphWithNewOption({ flat: target.value === "flat" }),
-      )
-    }
-  }
 
   // Graph loading finished, remove loading status in instance sidebar
   resetInstance();
 
   setupFileInput(graph);
   setupGraphButtons(graph);
+  setupRadioToggles(graph);
 
   console.debug("graph object:\n", graph);
 })();
