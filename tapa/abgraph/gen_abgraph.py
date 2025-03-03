@@ -18,7 +18,8 @@ def get_top_level_ab_graph(program: Program) -> ABGraph:
     fifo_width = collect_fifo_width(program)
     port_width = collect_port_width(program)
     graph = get_basic_ab_graph(program, task_area, fifo_width)
-    return add_port_iface_connections(program, graph, port_width)
+    graph = add_port_iface_connections(program, graph, port_width)
+    return add_scalar_connections(program, graph, port_width)
 
 
 def collect_fifo_width(program: Program) -> dict[str, int]:
@@ -38,9 +39,15 @@ def collect_port_width(program: Program) -> dict[str, int]:
     """Collect the width of the top level ports."""
     port_width = {}
     for port in program.top_task.ports.values():
-        if not any((port.is_streams, port.cat.is_stream, port.cat.is_mmap)):
-            continue
-        port_width[port.name] = int(port.width)
+        if port.cat.is_mmap:
+            # if the port is mmap, both input and output width are not negligible
+            port_width[port.name] = MMAP_WIDTH
+        elif port.is_streams:
+            port_width[port.name] = int(port.width) * len(
+                get_streams_fifos(program.top_task.module, port.name)
+            )
+        else:
+            port_width[port.name] = int(port.width)
 
     return port_width
 
@@ -147,5 +154,40 @@ def add_port_iface_connections(
                     index=len(edges),
                 )
             )
+
+    return ABGraph(vs=list(vertices.values()), es=edges)
+
+
+def add_scalar_connections(
+    program: Program, graph: ABGraph, port_width: dict[str, int]
+) -> ABGraph:
+    """"""
+    vertices = {v.name: v for v in graph.vs}
+    edges = graph.es.copy()
+
+    top = program.top_task
+    fsm_vertex = ABVertex(
+        name=top.fsm_module.name,
+        area=Area(lut=0, ff=0, bram_18k=0, dsp=0, uram=0),
+        sub_cells=(),
+        target_slot=None,
+        reserved_slot=None,
+        current_slot=None,
+    )
+    for port in top.ports.values():
+        if not port.cat.is_scalar:
+            continue
+        vertices[top.fsm_module.name] = fsm_vertex
+        connected_task = program.get_inst_by_port_arg_name(None, top, port.name).name
+
+        # scalar always points from the FSM to the task
+        edges.append(
+            ABEdge(
+                source_vertex=fsm_vertex,
+                target_vertex=vertices[connected_task],
+                width=port_width[port.name],
+                index=len(edges),
+            )
+        )
 
     return ABGraph(vs=list(vertices.values()), es=edges)
