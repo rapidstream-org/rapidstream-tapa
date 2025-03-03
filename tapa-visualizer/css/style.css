@@ -75,10 +75,6 @@ main > .graph-container > .tooltip {
 }
 
 /* aside */
-aside {
-	overflow: hidden;
-}
-.sidebar-tabs,
 .sidebar-contents {
 	overflow: auto;
 }
@@ -93,4 +89,23 @@ aside {
 .sidebar-contents {
 	flex: 1;
 	font-size: .9rem;
+}
+
+/* dialog */
+dialog {
+	/* 100% - 2rem margin - 2rem padding - 2px border */
+	max-height: calc(100% - 4rem - 2px);
+	border-width: 1px;
+	margin: 1rem auto;
+}
+dialog > h2 {
+	display: flex;
+	gap: .5rem;
+}
+dialog > h2 > button:first-child {
+	margin-inline-start: auto;
+}
+dialog > pre {
+	overflow: auto;
+	max-height: calc(100vh - 10rem);
 }
