@@ -95,7 +95,7 @@ def test_lower_level_task_module() -> None:
 
     port = module.get_port_of("istream_peek", "_dout")
     assert port.name == "istream_peek_dout"
-    module.del_ports([port.name])
+    module.del_port(port.name)
     with pytest.raises(
         ValueError,
         match=r"module LowerLevelTask does not have port istream_peek._dout",

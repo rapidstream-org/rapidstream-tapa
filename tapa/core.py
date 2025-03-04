@@ -1339,17 +1339,9 @@ int main(int argc, char ** argv)
                         except Module.NoMatchingPortError:
                             continue
 
-                        _logger.debug(
-                            "  remove %s",
-                            task.module.get_port_of(peek_port, suffix).name,
-                        )
-                        if task.module.del_ports(
-                            [task.module.get_port_of(peek_port, suffix).name]
-                        ):
-                            top_fifos.add(fifo)
-                        else:
-                            msg = f"failed to remove {peek_port} from {task.name}"
-                            raise ValueError(msg)
+                        name = task.module.get_port_of(peek_port, suffix).name
+                        _logger.debug("  remove %s", name)
+                        task.module.del_port(name)
 
         if task.name in self.gen_templates:
             _logger.info("skip instrumenting template task %s", task.name)

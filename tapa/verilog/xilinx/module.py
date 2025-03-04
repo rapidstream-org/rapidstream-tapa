@@ -432,32 +432,32 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._increment_idx(len(decl_list), "io_port")
         return self
 
-    def del_ports(self, port_names: Iterable[str]) -> tuple[str, ...]:
-        """Delete IO ports from this module."""
-        port_names = set(port_names)
+    def del_port(self, port_name: str) -> None:
+        """Delete IO port from this module.
+
+        Args:
+        ----
+          port_name (str): Name of the IO port.
+
+        Raises:
+        ------
+          ValueError: Module does not have the port.
+        """
+        removed_ports = []
 
         def func(item: Node) -> bool:
             if isinstance(item, Decl):
                 for decl in item.list:
-                    if isinstance(decl, IOPort) and decl.name in port_names:
+                    if isinstance(decl, IOPort) and decl.name == port_name:
+                        removed_ports.append(decl.name)
                         return False
             return True
 
         self._filter(func, "port")
 
-        removed_ports = tuple(
-            port.name
-            for port in self._module_def.portlist.ports
-            if port.name in port_names
-        )
-
-        self._module_def.portlist.ports = tuple(
-            port
-            for port in self._module_def.portlist.ports
-            if port.name not in port_names
-        )
-
-        return removed_ports
+        if not removed_ports:
+            msg = f"no port {port_name} found in module {self.name}"
+            raise ValueError(msg)
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
         signal_tuple = tuple(signals)
