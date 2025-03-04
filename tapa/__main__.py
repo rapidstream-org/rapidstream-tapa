@@ -57,6 +57,11 @@ _logger = logging.getLogger().getChild(__name__)
     help="Specify temporary directory, which will be cleaned up after the execution",
 )
 @click.option(
+    "--clang-format-quota-in-bytes",
+    default=Options.clang_format_quota_in_bytes,
+    help="Limit clang-format to the first few bytes of code.",
+)
+@click.option(
     "--recursion-limit",
     default=3000,
     metavar="limit",
@@ -65,7 +70,7 @@ _logger = logging.getLogger().getChild(__name__)
 @click.option(
     "--enable-pyslang / --disable-pyslang",
     type=bool,
-    default=False,
+    default=Options.enable_pyslang,
     help="Enable or disable pyslang (experimental).",
 )
 @click.version_option(__version__, prog_name="tapa")
@@ -76,12 +81,14 @@ def entry_point(  # noqa: PLR0913,PLR0917
     quiet: bool,
     work_dir: str,
     temp_dir: str | None,
+    clang_format_quota_in_bytes: int,
     recursion_limit: int,
     enable_pyslang: bool,
 ) -> None:
     """The TAPA compiler."""
     setup_logging(verbose, quiet, work_dir)
 
+    Options.clang_format_quota_in_bytes = clang_format_quota_in_bytes
     Options.enable_pyslang = enable_pyslang
 
     # Setup execution context

@@ -175,6 +175,14 @@ py_library(
     ],
 )
 
+py_test(
+    name = "util_test",
+    srcs = ["util_test.py"],
+    deps = [
+        ":util",
+    ],
+)
+
 pkg_files(
     name = "pkg-runtime",
     srcs = ["//tapa:nuitka"],

@@ -31,26 +31,37 @@ class Options:
 
     enable_pyslang: bool = False
 
+    # Only clang-format the first 1MB code to avoid performance bottleneck:
+    # https://github.com/rapidstream-org/rapidstream-tapa/issues/232
+    clang_format_quota_in_bytes: int = 1_000_000
+
+
+_clang_formatted_byte_count = 0
+
 
 def clang_format(code: str, *args: str) -> str:
     """Apply clang-format with given arguments, if possible."""
-    for version in range(10, 4, -1):
+    for version in range(20, 4, -1):
         clang_format_exe = shutil.which(f"clang-format-{version}")
         if clang_format_exe is not None:
             break
     else:
         clang_format_exe = shutil.which("clang-format")
-    if clang_format_exe is not None:
-        proc = subprocess.run(
-            [clang_format_exe, *args],
-            input=code,
-            stdout=subprocess.PIPE,
-            check=True,
-            text=True,
-        )
-        proc.check_returncode()
-        return proc.stdout
-    return code
+    if clang_format_exe is None:
+        return code
+
+    global _clang_formatted_byte_count  # noqa: PLW0603
+    new_byte_count = _clang_formatted_byte_count + len(code)
+    if new_byte_count > Options.clang_format_quota_in_bytes:
+        return code
+    _clang_formatted_byte_count = new_byte_count
+
+    _logger.debug("clang-format quota: %d bytes", new_byte_count)
+    return subprocess.check_output(
+        [clang_format_exe, *args],
+        input=code,
+        text=True,
+    )
 
 
 def get_indexed_name(name: str, idx: int | None) -> str:
