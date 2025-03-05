@@ -11,8 +11,8 @@ def _tapa_xo_impl(ctx):
     src = ctx.file.src
     top_name = ctx.attr.top_name
     platform_name = ctx.attr.platform_name
-    output_file = ctx.actions.declare_file(
-        ctx.attr.output_file or "{}.{}.hw.xo".format(top_name, platform_name),
+    output_file = ctx.outputs.output_file or ctx.actions.declare_file(
+        ctx.attr.name + ".xo",
     )
 
     # Start building the command to run tapa-cli analyze.
@@ -81,7 +81,7 @@ tapa_xo = rule(
         "top_name": attr.string(mandatory = True),
         "custom_rtl_files": attr.label_list(allow_files = True),
         "platform_name": attr.string(mandatory = True),
-        "output_file": attr.string(),
+        "output_file": attr.output(),
         "tapa_cli": attr.label(
             cfg = "exec",
             default = Label("//tapa"),
