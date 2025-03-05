@@ -11,12 +11,18 @@ def _tapa_xo_impl(ctx):
     src = ctx.file.src
     top_name = ctx.attr.top_name
     platform_name = ctx.attr.platform_name
+    work_dir = ctx.actions.declare_directory(ctx.attr.name + ".tapa")
     output_file = ctx.outputs.output_file or ctx.actions.declare_file(
         ctx.attr.name + ".xo",
     )
 
-    # Start building the command to run tapa-cli analyze.
-    tapa_cmd = [tapa_cli.path, "analyze", "-f", src.path, "--top", top_name]
+    outputs = [work_dir]
+
+    # Start building the command to run tapa-cli.
+    tapa_cmd = [tapa_cli.path, "--work-dir", work_dir.path]
+
+    # Build the command for tapa-cli analyze.
+    tapa_cmd.extend(["analyze", "--input", src.path, "--top", top_name])
 
     # Add tapacc and tapa-clang executables.
     if ctx.file.tapacc:
@@ -53,6 +59,7 @@ def _tapa_xo_impl(ctx):
 
     # Complete the command sequence with the pack command.
     tapa_cmd.extend(["pack", "--output", output_file.path])
+    outputs.append(output_file)
 
     # Add custom rtl
     for rtl_file in ctx.files.custom_rtl_files:
@@ -60,7 +67,7 @@ def _tapa_xo_impl(ctx):
 
     # Define a custom action to run the synthesized command.
     ctx.actions.run(
-        outputs = [output_file],
+        outputs = outputs,
         inputs = [src] + ctx.files.hdrs + ctx.files.custom_rtl_files,
         tools = [tapa_cli, ctx.executable.vitis_hls_env],
         executable = ctx.executable.vitis_hls_env,
