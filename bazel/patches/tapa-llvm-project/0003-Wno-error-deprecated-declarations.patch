@@ -5,7 +5,7 @@
          "include/llvm/Support/VCSRevision.h",
      ],
 -    copts = llvm_copts,
-+    copts = llvm_copts + ["-Wno-error=deprecated-declarations"],
++    copts = llvm_copts + ["-Wno-deprecated-declarations"],
      defines = select({
          "@platforms//cpu:aarch64": [
          ],

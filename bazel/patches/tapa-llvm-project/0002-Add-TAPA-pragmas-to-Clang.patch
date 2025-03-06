@@ -3,12 +3,6 @@ From: Jason Lau <lau@rapidstream-da.com>
 Date: Tue, 3 Sep 2024 14:01:19 -0700
 Subject: [PATCH] Add TAPA pragmas to Clang
 
----
- clang/include/clang/Basic/Attr.td | 33 ++++++++++++++++
- clang/lib/Sema/SemaDeclAttr.cpp   | 62 +++++++++++++++++++++++++++++++
- clang/lib/Sema/SemaStmtAttr.cpp   | 48 ++++++++++++++++++++++++
- 3 files changed, 143 insertions(+)
-
 diff --git a/clang/include/clang/Basic/Attr.td b/clang/include/clang/Basic/Attr.td
 index 46d0a66d59c3..4e4c52ced4f8 100644
 --- a/clang/include/clang/Basic/Attr.td
@@ -186,16 +180,27 @@ index 7f452d177c16..63955cce53d7 100644
  class CallExprFinder : public ConstEvaluatedExprVisitor<CallExprFinder> {
    bool FoundAsmStmt = false;
 @@ -672,6 +716,10 @@ static Attr *ProcessStmtAttribute(Sema &S, Stmt *St, const ParsedAttr &A,
-     return handleCodeAlignAttr(S, St, A);
-   case ParsedAttr::AT_MSConstexpr:
-     return handleMSConstexprAttr(S, St, A, Range);
+     return handleNoConvergentAttr(S, St, A, Range);
+   case ParsedAttr::AT_Annotate:
+     return S.CreateAnnotationAttr(A);
 +  case ParsedAttr::AT_TapaPipeline:
 +    return handleTapaPipelineAttr(S, St, A, Range);
 +  case ParsedAttr::AT_TapaUnroll:
 +    return handleTapaUnrollAttr(S, St, A, Range);
    default:
-     // N.B., ClangAttrEmitter.cpp emits a diagnostic helper that ensures a
-     // declaration attribute is not written on a statement, but this code is
+     if (Attr *AT = nullptr; A.getInfo().handleStmtAttribute(S, St, A, AT) !=
+                             ParsedAttrInfo::NotHandled) {
+diff --git a/clang/include/clang/Basic/AttributeCommonInfo.h b/clang/include/clang/Basic/AttributeCommonInfo.h
+index deadbeef1..deadbeef2 100644
+--- a/clang/include/clang/Basic/AttributeCommonInfo.h
++++ b/clang/include/clang/Basic/AttributeCommonInfo.h
+@@ -68,5 +68,5 @@ enum Kind {
+     UnknownAttribute,
+   };
+-  enum class Scope { NONE, CLANG, GNU, MSVC, OMP, HLSL, GSL, RISCV };
++  enum class Scope { NONE, CLANG, GNU, MSVC, OMP, HLSL, GSL, RISCV, TAPA };
+   enum class AttrArgsInfo {
+     None,
 -- 
 2.34.1
 

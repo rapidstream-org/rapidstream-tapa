@@ -14,7 +14,7 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
-bazel_dep(name = "rules_python", version = "1.2.0-rc0")
+bazel_dep(name = "rules_python", version = "1.2.0")
 
 bazel_dep(name = "toolchains_llvm", version = "1.3.0", dev_dependency = True)
 
@@ -194,15 +194,15 @@ EOF
 )
 
 # Build LLVM from source
-LLVM_VERSION_MAJOR = 19
+LLVM_VERSION_MAJOR = 20
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 7
+LLVM_VERSION_PATCH = 0
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
-LLVM_SHA256 = "82401fea7b79d0078043f7598b835284d6650a75b93e64b6f761ea7b63097501"
+LLVM_SHA256 = "4579051e3c255fb4bb795d54324f5a7f3ef79bd9181e44293d7ee9a7f62aad9a"
 
 # Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/707c0f939d1a801370aeb3a795e1a253a880f4f7/modules/llvm-project/17.0.3/patches
 http_archive(
@@ -228,6 +228,7 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 # Library dependencies
 bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "protobuf", version = "30.0")
 EOF
         """.format(LLVM_VERSION),
         # 0004-Add-BUILD.bazel.patch
@@ -242,13 +243,15 @@ LLVM_VERSION_MAJOR = {0}
 LLVM_VERSION_MINOR = {1}
 LLVM_VERSION_PATCH = {2}
 PACKAGE_VERSION = "{0}.{1}.{2}"
+MAX_CLANG_ABI_COMPAT_VERSION = "{0}"
 EOF
         """.format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH),
     ],
     patches = [
-        "//bazel:patches/tapa-llvm-project/0001-Disable-zlib-zstd-mpfr-and-pfm.patch",
+        "//bazel:patches/tapa-llvm-project/0001-Disable-zlib-zstd-mpfr-pfm-and-proto.patch",
         "//bazel:patches/tapa-llvm-project/0002-Add-TAPA-pragmas-to-Clang.patch",
         "//bazel:patches/tapa-llvm-project/0003-Wno-error-deprecated-declarations.patch",
+        "//bazel:patches/tapa-llvm-project/0004-Patch-missing-macro.patch",
     ],
     sha256 = LLVM_SHA256,
     strip_prefix = "llvm-project-{}.src".format(LLVM_VERSION),

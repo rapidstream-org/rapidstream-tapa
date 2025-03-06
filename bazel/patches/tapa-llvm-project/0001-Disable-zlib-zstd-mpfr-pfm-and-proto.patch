@@ -3,12 +3,7 @@ From: Alexander Khabarov <alexander.khabarov@arm.com>
 Date: Thu, 19 Oct 2023 15:07:57 +0000
 Subject: [PATCH] Disable `zlib`, `zstd`, `mpfr` and `pfm`
 
-`zlib`, `zstd`, `mpfr` and `pfm` are optional dependencies.
----
- libc/BUILD.bazel |  2 +-
- lld/BUILD.bazel  |  4 ++--
- llvm/BUILD.bazel | 12 +++---------
- 3 files changed, 6 insertions(+), 12 deletions(-)
+`zlib`, `zstd`, `mpfr`, `pfm` and `proto` are optional dependencies.
 
 diff --git a/utils/bazel/llvm-project-overlay/libc/BUILD.bazel b/utils/bazel/llvm-project-overlay/libc/BUILD.bazel
 index 0ee339526..51676d039 100644
@@ -68,3 +63,31 @@ index ef5299138..836d4049e 100644
      values = [
          "disable",  # Don't include pfm at all
          "external",  # Build pfm from source
+diff --git a/utils/bazel/llvm-project-overlay/clang/BUILD.bazel b/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
+index deadbeeef..deaadbeef 100644
+--- a/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
+@@ -2780,23 +2780,0 @@
+-proto_library(
+-    name = "cxx-proto",
+-    srcs = ["tools/clang-fuzzer/cxx_proto.proto"],
+-)
+-
+-cc_proto_library(
+-    name = "cxx_cc_proto",
+-    deps = [":cxx-proto"],
+-)
+-
+-cc_library(
+-    name = "proto-to-cxx-lib",
+-    srcs = ["tools/clang-fuzzer/proto-to-cxx/proto_to_cxx.cpp"],
+-    hdrs = ["tools/clang-fuzzer/proto-to-cxx/proto_to_cxx.h"],
+-    includes = ["tools/clang-fuzzer"],
+-    deps = [":cxx_cc_proto"],
+-)
+-
+-cc_binary(
+-    name = "clang-proto-to-cxx",
+-    srcs = ["tools/clang-fuzzer/proto-to-cxx/proto_to_cxx_main.cpp"],
+-    deps = [":proto-to-cxx-lib"],
+-)

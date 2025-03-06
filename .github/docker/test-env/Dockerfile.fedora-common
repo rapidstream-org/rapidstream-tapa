@@ -21,6 +21,8 @@ ARG DOCKER_GROUP_ID
 #   - ocl-icd
 
 RUN yum update -y && \
+    # Update the following line to the latest date for retriggering the docker build
+    echo "Installing system dependencies as of 20250306" && \
     yum install -y \
         gcc-c++ \
         git \

@@ -1,0 +1,29 @@
+--- a/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
++++ b/utils/bazel/llvm-project-overlay/clang/BUILD.bazel
+@@ -8,6 +8,7 @@
+     "LLVM_VERSION_MAJOR",
+     "LLVM_VERSION_MINOR",
+     "LLVM_VERSION_PATCH",
++    "MAX_CLANG_ABI_COMPAT_VERSION",
+     "PACKAGE_VERSION",
+ )
+ load("//:workspace_root.bzl", "workspace_root")
+@@ -662,7 +663,9 @@
+         "echo '#define CLANG_VERSION_MINOR {minor}' >> $@\n" +
+         "echo '#define CLANG_VERSION_PATCHLEVEL {patch}' >> $@\n" +
+-        "echo '#define CLANG_VERSION_STRING \"{vers}\"' >> $@\n"
++        "echo '#define CLANG_VERSION_STRING \"{vers}\"' >> $@\n" +
++        "echo '#define MAX_CLANG_ABI_COMPAT_VERSION {compat}' >> $@\n"
+     ).format(
++        compat = MAX_CLANG_ABI_COMPAT_VERSION,
+         major = LLVM_VERSION_MAJOR,
+         minor = LLVM_VERSION_MINOR,
+         patch = LLVM_VERSION_PATCH,
+@@ -2777,7 +2780,6 @@
+     ],
+ )
+ 
+-
+ cc_library(
+     name = "clang-fuzzer-initialize",
+     srcs = ["tools/clang-fuzzer/fuzzer-initialize/fuzzer_initialize.cpp"],
