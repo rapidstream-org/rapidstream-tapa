@@ -54,3 +54,32 @@ cc_binary(
         "@vitis_hls//:include",
     ],
 )
+
+tapa_xo(
+    name = "stream-top-hls",
+    src = "vadd.cpp",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "VecAdd",
+    vitis_mode = False,
+)
+
+sh_test(
+    name = "stream-top-hls-sim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        # sh_test args are subject to shell tokenization:
+        # https://bazel.build/reference/be/common-definitions#test.args
+        "vivado",
+        "-mode batch",
+        "-source $(location :testbench/sim.tcl)",
+        "-tclargs $(location :stream-top-hls)",
+        "$(location :testbench/hls-stream-tb.sv)",
+    ],
+    data = [
+        ":stream-top-hls",
+        ":testbench/hls-stream-tb.sv",
+        ":testbench/sim.tcl",
+    ],
+)

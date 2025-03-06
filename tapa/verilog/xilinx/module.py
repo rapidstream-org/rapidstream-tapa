@@ -459,6 +459,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             msg = f"no port {port_name} found in module {self.name}"
             raise ValueError(msg)
 
+        self._module_def.portlist.ports = tuple(
+            x for x in self._module_def.portlist.ports if x.name != port_name
+        )
+
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
         signal_tuple = tuple(signals)
         self._module_def.items = (

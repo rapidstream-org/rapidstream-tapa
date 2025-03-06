@@ -1342,6 +1342,7 @@ int main(int argc, char ** argv)
                         name = task.module.get_port_of(peek_port, suffix).name
                         _logger.debug("  remove %s", name)
                         task.module.del_port(name)
+                        top_fifos.add(fifo)
 
         if task.name in self.gen_templates:
             _logger.info("skip instrumenting template task %s", task.name)
