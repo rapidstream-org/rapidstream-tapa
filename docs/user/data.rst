@@ -212,9 +212,9 @@ clock cycle, a decision must be made regarding which packet to prioritize.
 
 This decision-making process needs to occur before removing any tokens from
 the input channels (streams). The code accomplishes this by first peeking at
-the input stream using :ref:`peek <classtapa_1_1istream_1a6df8ab2e1caaaf2e32844b7cc716cf11>`
-to examine the destinations without consuming the data. Based on these peeked
-destinations, it determines which inputs can be processed.
+the input stream using `peek` to examine the destinations without consuming
+the data. Based on these peeked destinations, it determines which inputs can
+be processed.
 
 .. note::
 
