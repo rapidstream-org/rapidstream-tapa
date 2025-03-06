@@ -8,6 +8,7 @@ RapidStream Contributor License Agreement.
 
 from tapa.abgraph.ab_graph import ABEdge, ABGraph, ABVertex, Area, convert_area
 from tapa.core import Program
+from tapa.verilog.xilinx.module import get_streams_fifos
 
 TAPA_PORT_PREFIX = "__tapa_port_"
 
@@ -122,7 +123,7 @@ def add_port_iface_connections(
 
     top = program.top_task
     for port in top.ports.values():
-        if not (port.cat.is_stream or port.cat.is_mmap):
+        if not (port.cat.is_stream or port.cat.is_mmap or port.is_streams):
             continue
         dummy_vertex = ABVertex(
             name=port.name,
