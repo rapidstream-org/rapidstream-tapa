@@ -11,6 +11,8 @@ from tapa.core import Program
 
 TAPA_PORT_PREFIX = "__tapa_port_"
 
+MMAP_WIDTH = (405, 43)
+
 
 def get_top_level_ab_graph(program: Program) -> ABGraph:
     """Generates the top level ab graph."""
@@ -35,7 +37,7 @@ def collect_fifo_width(program: Program) -> dict[str, int]:
     return fifo_width
 
 
-def collect_port_width(program: Program) -> dict[str, int]:
+def collect_port_width(program: Program) -> dict[str, int | tuple[int, int]]:
     """Collect the width of the top level ports."""
     port_width = {}
     for port in program.top_task.ports.values():
@@ -120,7 +122,7 @@ def add_port_iface_connections(
 
     top = program.top_task
     for port in top.ports.values():
-        if port.cat.is_scalar:
+        if not (port.cat.is_stream or port.cat.is_mmap):
             continue
         dummy_vertex = ABVertex(
             name=port.name,
@@ -134,23 +136,32 @@ def add_port_iface_connections(
 
         connected_task = program.get_inst_by_port_arg_name(None, top, port.name).name
 
-        # some ports are bidirectional, so we need to add two edges
-        if not port.cat.is_ommap or port.cat.is_ostream:
+        # for mmap ports, both input and output width
+        # are not negligible, so we need to add two edges
+        if port.cat.is_mmap or port.cat.is_istream:
+            if port.cat.is_mmap:
+                width = port_width[port.name][1]
+            else:
+                width = port_width[port.name]
             edges.append(
                 ABEdge(
                     source_vertex=dummy_vertex,
                     target_vertex=vertices[connected_task],
-                    width=port_width[port.name],
+                    width=width,
                     index=len(edges),
                 )
             )
 
-        if not port.cat.is_immap or port.cat.is_istream:
+        if port.cat.is_mmap or port.cat.is_ostream:
+            if port.cat.is_mmap:
+                width = port_width[port.name][0]
+            else:
+                width = port_width[port.name]
             edges.append(
                 ABEdge(
                     source_vertex=vertices[connected_task],
                     target_vertex=dummy_vertex,
-                    width=port_width[port.name],
+                    width=width,
                     index=len(edges),
                 )
             )
