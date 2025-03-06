@@ -12,9 +12,10 @@ def _tapa_xo_impl(ctx):
     top_name = ctx.attr.top_name
     platform_name = ctx.attr.platform_name
     work_dir = ctx.actions.declare_directory(ctx.attr.name + ".tapa")
-    output_file = ctx.outputs.output_file or ctx.actions.declare_file(
-        ctx.attr.name + ".xo",
-    )
+
+    output_file = ctx.outputs.output_file
+    if output_file == None and ctx.attr.vitis_mode:
+        output_file = ctx.actions.declare_file(ctx.attr.name + ".xo")
 
     outputs = [work_dir]
 
@@ -39,6 +40,11 @@ def _tapa_xo_impl(ctx):
         for include in ctx.files.include:
             tapa_cmd.extend(["--cflags", "-I" + include.path])
 
+    if ctx.attr.vitis_mode:
+        tapa_cmd.extend(["--vitis-mode"])
+    else:
+        tapa_cmd.extend(["--no-vitis-mode"])
+
     # Build the command for tapa-cli synth.
     tapa_cmd.extend(["synth", "--platform", platform_name])
 
@@ -58,8 +64,9 @@ def _tapa_xo_impl(ctx):
     tapa_cmd.extend(["link"])
 
     # Complete the command sequence with the pack command.
-    tapa_cmd.extend(["pack", "--output", output_file.path])
-    outputs.append(output_file)
+    if output_file != None:
+        tapa_cmd.extend(["pack", "--output", output_file.path])
+        outputs = [output_file] + outputs
 
     # Add custom rtl
     for rtl_file in ctx.files.custom_rtl_files:
@@ -75,7 +82,7 @@ def _tapa_xo_impl(ctx):
     )
 
     # Return default information, including the output file.
-    return [DefaultInfo(files = depset([output_file]))]
+    return [DefaultInfo(files = depset([output_file or work_dir]))]
 
 # Define the custom Bazel rule.
 tapa_xo = rule(
@@ -97,6 +104,10 @@ tapa_xo = rule(
         "tapacc": attr.label(allow_single_file = True),
         "tapa_clang": attr.label(allow_single_file = True),
         "cflags": attr.string(),
+        "vitis_mode": attr.bool(
+            default = True,
+            doc = "If true, generate XO as `output_file`. Otherwise, generate RTL in the work dir as `output_file`.",
+        ),
         "clock_period": attr.string(),
         "part_num": attr.string(),
         "enable_synth_util": attr.bool(),
