@@ -1200,6 +1200,7 @@ int main(int argc, char ** argv)
         )
         task.fsm_module.add_ports(fsm_upstream_module_ports.values())
         task.fsm_module.add_ports(fsm_downstream_module_ports)
+        task.add_rs_pragmas_to_fsm()
 
         # instantiate async_mmap modules at the upper levels
         # the base address may not be 0, so must use full 64 bit
@@ -1304,8 +1305,6 @@ int main(int argc, char ** argv)
         task.module.cleanup()
         if task.name == self.top and self.vitis_mode:
             task.module.add_rs_pragmas()
-        if task.name not in self.gen_templates:
-            task.add_rs_pragmas_to_fsm()
 
         # remove top level peek ports
         top_fifos = set()
