@@ -20,6 +20,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from collections.abc import Generator
 from concurrent import futures
 from pathlib import Path
 from typing import NamedTuple
@@ -106,7 +107,7 @@ STATE01 = IntConst("2'b01")
 STATE11 = IntConst("2'b11")
 STATE10 = IntConst("2'b10")
 
-CUSTOM_RTL_FILE_EXTENSIONS = (".v", ".tcl")
+FIFO_DIRECTIONS = ["consumed_by", "produced_by"]
 
 
 def gen_declarations(task: Task) -> tuple[list[str], list[str], list[str]]:
@@ -433,20 +434,13 @@ int main(int argc, char ** argv)
         custom_rtl: list[Path] = []
         for path in rtl_paths:
             if path.is_file():
-                if path.suffix not in CUSTOM_RTL_FILE_EXTENSIONS:
-                    msg = f"unsupported file type: {path}"
-                    raise ValueError(msg)
                 custom_rtl.append(path)
             elif path.is_dir():
-                vlg_files = [
-                    file
-                    for file_type in CUSTOM_RTL_FILE_EXTENSIONS
-                    for file in path.rglob(f"*{file_type}")
-                ]
-                if not vlg_files:
-                    msg = f"no verilog files found in {path}"
+                rtl_files = list(path.rglob("*"))
+                if not rtl_files:
+                    msg = f"no rtl files found in {path}"
                     raise ValueError(msg)
-                custom_rtl.extend(vlg_files)
+                custom_rtl.extend(rtl_files)
             elif path.exists():
                 msg = f"unsupported path: {path}"
                 raise ValueError(msg)
@@ -875,7 +869,7 @@ int main(int argc, char ** argv)
             task.module.add_fifo_instance(
                 name=fifo_name,
                 rst=RST,
-                width=self._get_fifo_width(task, fifo_name),
+                width=self.get_fifo_width(task, fifo_name),
                 depth=fifo["depth"],
             )
 
@@ -1372,7 +1366,7 @@ int main(int argc, char ** argv)
         with open(self.get_rtl(task.name), "w", encoding="utf-8") as rtl_code:
             rtl_code.write(task.module.code)
 
-    def _get_fifo_width(self, task: Task, fifo: str) -> Node:
+    def get_fifo_width(self, task: Task, fifo: str) -> Node:
         producer_task, _, fifo_port = task.get_connection_to(fifo, "produced_by")
         port = self.get_task(producer_task).module.get_port_of(
             fifo_port,
@@ -1396,6 +1390,9 @@ int main(int argc, char ** argv)
         assert Path.exists(rtl_path)
 
         custom_rtl = self._get_custom_rtl_files(rtl_paths)
+        _logger.info("Adding custom RTL files to the project:")
+        for file_path in custom_rtl:
+            _logger.info("  %s", file_path)
         self._check_custom_rtl_format(custom_rtl, templates_info)
 
         for file_path in custom_rtl:
@@ -1460,7 +1457,7 @@ int main(int argc, char ** argv)
                 "Custom RTL ports:",
                 *(f"  {port}" for port in rtl_module.ports.values()),
             ]
-            raise ValueError("\n".join(msg))
+            _logger.warning("\n".join(msg))
 
     def get_aie_graph(self, task: Task) -> str:
         """Generates the complete AIE graph code."""
@@ -1488,6 +1485,86 @@ int main(int argc, char ** argv)
             port_def="\n\t\t".join(port_def),
             connect_def="\n\t\t".join(connect_def),
         )
+
+    def _find_task_inst_hierarchy(
+        self,
+        target_task: str,
+        current_task: str,
+        current_inst: str,
+        current_hierarchy: tuple[str, ...],
+    ) -> Generator[tuple[str, ...]]:
+        """Find hierarchies of all instances of the given task name."""
+        if current_task == target_task:
+            yield (*current_hierarchy, current_inst)
+        for inst in self._tasks[current_task].instances:
+            assert inst.name
+            self._find_task_inst_hierarchy(
+                target_task,
+                inst.task.name,
+                inst.name,
+                (*current_hierarchy, current_inst),
+            )
+
+    @staticmethod
+    def get_inst_by_port_arg_name(
+        target_task: str | None, parent_task: Task, port_arg_name: str
+    ) -> Instance:
+        """Get the instance of the target task that connect to the port arg name.
+
+        If target_task is None, return the first instance that connects to the port arg
+        name. If target_task is not None, return the instance that connects to the port
+        arg name and is of the target task.
+        """
+        matched_inst = None
+        for inst in parent_task.instances:
+            if target_task and inst.task.name != target_task:
+                continue
+            for arg in inst.args:
+                if arg.name == port_arg_name:
+                    matched_inst = inst
+                    break
+        assert matched_inst is not None
+        return matched_inst
+
+    def get_grouping_constraints(
+        self, nonpipeline_fifos: list[str] | None = None
+    ) -> list[list[str]]:
+        """Generates the grouping constraints based on critical path."""
+        _logger.info("Resolving grouping constraints from non-pipeline FIFOs")
+
+        if not nonpipeline_fifos:
+            return []
+
+        grouping_constraints = []
+        for task_fifo_name in nonpipeline_fifos:
+            # dfs all tasks to find all task instances
+            task_name, fifo_name = tuple(task_fifo_name.split("."))
+            found_hierarchies = self._find_task_inst_hierarchy(
+                task_name, self.top, self.top, ()
+            )
+            fifo = self._tasks[task_name].fifos[fifo_name]
+            assert all(direction in fifo for direction in FIFO_DIRECTIONS)
+            consumer_task: str = fifo["consumed_by"][0]
+            producer_task: str = fifo["produced_by"][0]
+            for hierarchy in found_hierarchies:
+                # find fifo producer and consumer instance names as fifo object only
+                # contains task names
+                producer_inst = self.get_inst_by_port_arg_name(
+                    producer_task, self._tasks[task_name], fifo_name
+                ).name
+                consumer_inst = self.get_inst_by_port_arg_name(
+                    consumer_task, self._tasks[task_name], fifo_name
+                ).name
+
+                grouping_constraints.append(
+                    [
+                        "/".join((*hierarchy, producer_inst)),
+                        "/".join((*hierarchy, fifo_name)),
+                        "/".join((*hierarchy, consumer_inst)),
+                    ]
+                )
+
+        return grouping_constraints
 
 
 def _redact(xo: zipfile.ZipFile, info: zipfile.ZipInfo) -> bytes:
