@@ -250,7 +250,7 @@ EOF
     patches = [
         "//bazel:patches/tapa-llvm-project/0001-Disable-zlib-zstd-mpfr-pfm-and-proto.patch",
         "//bazel:patches/tapa-llvm-project/0002-Add-TAPA-pragmas-to-Clang.patch",
-        "//bazel:patches/tapa-llvm-project/0003-Wno-error-deprecated-declarations.patch",
+        "//bazel:patches/tapa-llvm-project/0003-Wno-error.patch",
         "//bazel:patches/tapa-llvm-project/0004-Patch-missing-macro.patch",
     ],
     sha256 = LLVM_SHA256,

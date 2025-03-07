@@ -1,6 +1,6 @@
 --- a/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
 +++ b/utils/bazel/llvm-project-overlay/llvm/BUILD.bazel
-@@ -247,7 +247,7 @@
+@@ -274,7 +274,7 @@ cc_library(
          "include/llvm/Support/Extension.def",
          "include/llvm/Support/VCSRevision.h",
      ],
@@ -9,3 +9,12 @@
      defines = select({
          "@platforms//cpu:aarch64": [
          ],
+@@ -1441,7 +1441,7 @@ cc_library(
+     hdrs = glob(["include/llvm/Transforms/Instrumentation/*.h"]) + [
+         "include/llvm/Transforms/Utils/Instrumentation.h",
+     ],
+-    copts = llvm_copts,
++    copts = llvm_copts + ["-Wno-unused-variable"],
+     deps = [
+         ":Analysis",
+         ":BinaryFormat",
