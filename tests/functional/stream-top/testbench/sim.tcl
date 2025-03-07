@@ -6,7 +6,7 @@ set work_dir [lindex $argv 0]
 set testbench_path [lindex $argv 1]
 
 set proj_name "vecadd_proj"
-set proj_dir "/tmp/vivado_proj"
+set proj_dir "/tmp/$work_dir/vivado_proj"
 set source_dir "$work_dir/hdl"
 set log_file "$proj_dir/$proj_name.sim/sim_1/behav/xsim/simulate.log"
 
