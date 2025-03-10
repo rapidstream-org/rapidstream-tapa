@@ -117,9 +117,9 @@ def get_tapa_cflags() -> tuple[str, ...]:
     }
 
     # WORKAROUND: tapa-lib-include must be included first to make Vitis happy
-    include_flags = ["-isystem", str(tapa_lib_include)]
+    include_flags = ["-isystem" + str(tapa_lib_include)]
     for include in includes - {tapa_lib_include}:
-        include_flags.extend(["-isystem", str(include)])
+        include_flags.extend(["-isystem" + str(include)])
 
     return (
         *include_flags,

@@ -192,14 +192,14 @@ def find_tapacc_cflags(
     # Add vendor include files to tapacc cflags
     vendor_include_paths = ()
     for vendor_path in get_vendor_include_paths():
-        vendor_include_paths += ("-isystem", vendor_path)
+        vendor_include_paths += ("-isystem" + vendor_path,)
         _logger.info("added vendor include path `%s`", vendor_path)
 
     # Add system include files to tapacc cflags
     system_includes = []
     system_include_path = find_resource("tapa-system-include")
     if system_include_path:
-        system_includes.extend(["-isystem", str(system_include_path)])
+        system_includes.extend(["-isystem" + str(system_include_path)])
 
     # TODO: Vitis HLS highly depends on the assert to be defined in
     #       the system include path in a certain way. One attempt was

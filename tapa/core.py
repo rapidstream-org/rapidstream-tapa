@@ -52,6 +52,7 @@ from pyverilog.vparser.ast import (
 from pyverilog.vparser.parser import ParseError
 
 from tapa.backend.xilinx import RunAie, RunHls
+from tapa.common.paths import find_resource
 from tapa.instance import Instance, Port
 from tapa.safety_check import check_mmap_arg_name
 from tapa.synthesis import ProgramSynthesisMixin
@@ -604,9 +605,10 @@ int main(int argc, char ** argv)
                     return
             except OSError:
                 pass
-            hls_cflags = (
-                f"{self.cflags} -DTAPA_TARGET_DEVICE_ -DTAPA_TARGET_XILINX_HLS_"
-            )
+            hls_defines = "-DTAPA_TARGET_DEVICE_ -DTAPA_TARGET_XILINX_HLS_"
+            # WORKAROUND: Vitis HLS requires -I or gflags cannot be found...
+            hls_includes = f"-I{find_resource('tapa-extra-runtime-include')}"
+            hls_cflags = f"{self.cflags} {hls_defines} {hls_includes}"
             if flow_type == "hls":
                 with (
                     open(self.get_tar(task.name), "wb") as tarfileobj,
