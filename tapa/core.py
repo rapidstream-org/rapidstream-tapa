@@ -61,7 +61,6 @@ from tapa.util import (
     clang_format,
     get_instance_name,
     get_module_name,
-    get_vendor_include_paths,
     get_xpfm_path,
 )
 from tapa.verilog.ast_utils import (
@@ -605,13 +604,8 @@ int main(int argc, char ** argv)
                     return
             except OSError:
                 pass
-            hls_cflags = " ".join(
-                (
-                    self.cflags,
-                    "-DTAPA_TARGET_DEVICE_",
-                    "-DTAPA_TARGET_XILINX_HLS_",
-                    *(f"-isystem{x}" for x in get_vendor_include_paths()),
-                ),
+            hls_cflags = (
+                f"{self.cflags} -DTAPA_TARGET_DEVICE_ -DTAPA_TARGET_XILINX_HLS_"
             )
             if flow_type == "hls":
                 with (
