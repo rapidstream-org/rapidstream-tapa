@@ -8,6 +8,10 @@
 
 namespace tapa {
 
+struct executable {
+  explicit executable(std::string path);
+};
+
 struct task {
   template <typename Func, typename... Args>
   task& invoke(Func&& func, Args&&... args);
@@ -21,6 +25,8 @@ struct task {
   task& invoke(Func&& func, Args&&... args);
   template <int mode, int n, typename Func, typename... Args, size_t name_size>
   task& invoke(Func&& func, const char (&name)[name_size], Args&&... args);
+  template <typename Func, typename... Args>
+  task& invoke(Func&& func, executable exe, Args&&... args);
 };
 
 }  // namespace tapa

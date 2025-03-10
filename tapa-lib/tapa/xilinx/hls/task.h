@@ -9,6 +9,10 @@
 
 namespace tapa {
 
+struct executable {
+  explicit executable(std::string path);
+};
+
 struct task {
   template <typename Func, typename... Args>
   task& invoke(Func&& func, Args&&... args) {
@@ -46,6 +50,12 @@ struct task {
       invoke<mode>(std::forward<Func>(func), std::forward<Args>(args)...);
     }
     return *this;
+  }
+
+  template <typename Func, typename... Args>
+  task& invoke(Func&& func, executable exe, Args&&... args) {
+    return invoke<join>(std::forward<Func>(func), "",
+                        std::forward<Args>(args)...);
   }
 };
 

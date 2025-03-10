@@ -369,6 +369,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   for (auto invoke : invokes) {
     int step = -1;
     bool has_name = false;
+    bool has_executable = false;
     uint64_t vec_length = 1;
     if (const auto method = dyn_cast<CXXMethodDecl>(invoke->getCalleeDecl())) {
       auto args = method->getTemplateSpecializationArgs()->asArray();
@@ -429,6 +430,14 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         const bool arg_is_int =
             arg->EvaluateAsInt(arg_eval_as_int_result, this->context_);
 
+        // skip if arg[i] is tapa::executable, which is used to specify the
+        // bitstream file of a task. if the task is being synthesized, the
+        // bitstream file of its sub-tasks should be simply ignored.
+        if (IsTapaType(arg, "executable")) {
+          has_executable = true;
+          continue;
+        }
+
         // element in an array
         auto op_call = dyn_cast<CXXOperatorCallExpr>(arg);
         if (op_call == nullptr) {
@@ -469,13 +478,15 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
                        std::to_string(uint64_t(
                            arg_eval_as_int_result.Val.getInt().getExtValue()));
           }
+
           if (i == 0) {
             task_name = arg_name;
             metadata["tasks"][task_name].push_back({{"step", step}});
             task = decl_ref->getDecl()->getAsFunction();
           } else {
             assert(task != nullptr);
-            auto param = task->getParamDecl(has_name ? i - 2 : i - 1);
+            auto skip_params = (has_name ? 1 : 0) + (has_executable ? 1 : 0);
+            auto param = task->getParamDecl(i - 1 - skip_params);
             auto param_name = param->getNameAsString();
             string param_cat;
 
