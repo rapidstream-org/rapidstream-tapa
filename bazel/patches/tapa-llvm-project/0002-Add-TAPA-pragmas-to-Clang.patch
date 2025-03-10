@@ -201,6 +201,19 @@ index deadbeef1..deadbeef2 100644
 +  enum class Scope { NONE, CLANG, GNU, MSVC, OMP, HLSL, GSL, RISCV, TAPA };
    enum class AttrArgsInfo {
      None,
+diff --git a/clang/lib/Basic/Attributes.cpp b/clang/lib/Basic/Attributes.cpp
+index deadbeef1..deadbeef2 100644
+--- a/clang/lib/Basic/Attributes.cpp
++++ b/clang/lib/Basic/Attributes.cpp
+@@ -187,7 +187,8 @@
+       .Case("hlsl", AttributeCommonInfo::Scope::HLSL)
+       .Case("msvc", AttributeCommonInfo::Scope::MSVC)
+       .Case("omp", AttributeCommonInfo::Scope::OMP)
+-      .Case("riscv", AttributeCommonInfo::Scope::RISCV);
++      .Case("riscv", AttributeCommonInfo::Scope::RISCV)
++      .Case("tapa", AttributeCommonInfo::Scope::TAPA);
+ }
+ 
+ unsigned AttributeCommonInfo::calculateAttributeSpellingListIndex() const {
 -- 
 2.34.1
-
