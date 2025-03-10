@@ -677,10 +677,17 @@ int main(int argc, char ** argv)
             with futures.ThreadPoolExecutor(max_workers=jobs) as executor:
                 any(executor.map(worker, self._tasks.values(), itertools.count(0)))
         except RuntimeError:
-            _logger.error(
-                "HLS failed, see above for details. You may use `--keep-hls-work-dir` "
-                "to keep the HLS work directory for debugging."
-            )
+            if not keep_hls_work_dir:
+                _logger.error(
+                    "HLS failed, see above for details. You may use "
+                    "`--keep-hls-work-dir` to keep the HLS work directory "
+                    "for debugging."
+                )
+            else:
+                _logger.error(
+                    "HLS failed, see above for details. Please check the logs in %s",
+                    os.path.join(self.work_dir, "hls"),
+                )
             sys.exit(1)
 
         return self
