@@ -5,6 +5,7 @@
 # RapidStream Contributor License Agreement.
 
 load("@rules_python//python:defs.bzl", "py_library")
+load("@tapa_deps//:requirements.bzl", "requirement")
 load("//bazel:pytest_rules.bzl", "py_test")
 
 package(
@@ -18,10 +19,29 @@ py_library(
     srcs = glob(
         ["*.py"],
         exclude = [
+            "pyslang_rewriter.py",
             "unique_attrs.py",
             "*_test.py",
         ],
     ),
+)
+
+py_library(
+    name = "pyslang_rewriter",
+    srcs = ["pyslang_rewriter.py"],
+    deps = [
+        requirement("pyslang"),
+        requirement("intervaltree"),
+    ],
+)
+
+py_test(
+    name = "pyslang_rewriter_test",
+    srcs = ["pyslang_rewriter_test.py"],
+    deps = [
+        ":pyslang_rewriter",
+        requirement("pyslang"),
+    ],
 )
 
 py_library(

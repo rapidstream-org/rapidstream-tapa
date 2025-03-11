@@ -1,5 +1,6 @@
 click
 coloredlogs
+intervaltree
 jinja2
 networkx
 nuitka==2.6.6
