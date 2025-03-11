@@ -59,6 +59,10 @@ def _tapa_xo_impl(ctx):
         tapa_cmd.extend(["--part-num", ctx.attr.part_num])
     if ctx.attr.enable_synth_util:
         tapa_cmd.extend(["--enable-synth-util"])
+    ab_graph_file = None
+    if ctx.attr.gen_ab_graph:
+        tapa_cmd.extend(["--gen-ab-graph"])
+        ab_graph_file = ctx.actions.declare_file("ab_graph.json")
 
     # Build the command for tapa-cli link.
     tapa_cmd.extend(["link"])
@@ -81,8 +85,20 @@ def _tapa_xo_impl(ctx):
         arguments = tapa_cmd,
     )
 
+    # Extract ab_graph
+    ab_graph_return = []
+    if ab_graph_file:
+        ctx.actions.run_shell(
+            inputs = [work_dir],
+            outputs = [ab_graph_file],
+            command = """
+            cp {}/ab_graph.json {}
+            """.format(work_dir.path, ab_graph_file.path),
+        )
+        ab_graph_return = [ab_graph_file]
+
     # Return default information, including the output file.
-    return [DefaultInfo(files = depset([output_file or work_dir]))]
+    return [DefaultInfo(files = depset([output_file or work_dir] + ab_graph_return))]
 
 # Define the custom Bazel rule.
 tapa_xo = rule(
@@ -111,6 +127,7 @@ tapa_xo = rule(
         "clock_period": attr.string(),
         "part_num": attr.string(),
         "enable_synth_util": attr.bool(),
+        "gen_ab_graph": attr.bool(),
         "vitis_hls_env": attr.label(
             cfg = "exec",
             default = Label("//bazel:vitis_hls_env"),
