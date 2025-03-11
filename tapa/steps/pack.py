@@ -8,10 +8,14 @@ RapidStream Contributor License Agreement.
 
 import logging
 import os
+import tempfile
+import zipfile
 from pathlib import Path
 
 import click
+from yaml import safe_dump
 
+from tapa.core import Program
 from tapa.steps.common import is_pipelined, load_persistent_context, load_tapa_program
 
 _logger = logging.getLogger().getChild(__name__)
@@ -46,7 +50,7 @@ NEWLINE = [""]
     "--output",
     "-o",
     type=click.Path(dir_okay=False, writable=True),
-    default="work.xo",
+    required=False,
     help="Output packed .xo Xilinx object file.",
 )
 @click.option(
@@ -73,7 +77,7 @@ NEWLINE = [""]
     "template for the custom rtl",
 )
 def pack(
-    output: str,
+    output: str | None,
     bitstream_script: str | None,
     flow_type: str,
     custom_rtl: tuple[Path, ...],
@@ -81,6 +85,7 @@ def pack(
     """Pack the generated RTL into a Xilinx object file."""
     program = load_tapa_program()
     settings = load_persistent_context("settings")
+    vitis_mode = settings.get("vitis-mode", True)
 
     if flow_type == "aie":
         return
@@ -89,17 +94,43 @@ def pack(
         msg = "You must run `link` before you can `pack`."
         raise click.BadArgumentUsage(msg)
 
-    if not settings.get("vitis-mode", True):
-        _logger.warning(
-            "you are not in Vitis mode, the generated RTL will not be packed."
-        )
-        return
     if custom_rtl:
         templates_info = load_persistent_context("templates_info")
         program.replace_custom_rtl(custom_rtl, templates_info)
+
+    if vitis_mode:
+        pack_xo(program, output, bitstream_script)
+    else:
+        pack_zip(program, output)
+        if bitstream_script is not None:
+            _logger.warning(
+                "you are not in Vitis mode, the bitstream script will not be generated."
+            )
+
+    is_pipelined("pack", True)
+
+
+def pack_xo(program: Program, output: str | None, bitstream_script: str | None) -> None:
+    """Pack the generated RTL into a Xilinx object file.
+
+    Args:
+        program: The program object.
+        output_file: The output .xo file.
+        bitstream_script: The script file to generate the bitstream.
+    """
+    if output is None:
+        output = "work.xo"
+    if not output.endswith(".xo"):
+        output = f"{output}.xo"
+        _logger.warning(
+            "you are in Vitis mode, the generated RTL will be packed "
+            "into an .xo file: %s.",
+            output,
+        )
     program.pack_rtl(output)
 
     if bitstream_script is not None:
+        settings = load_persistent_context("settings")
         with open(bitstream_script, "w", encoding="utf-8") as script:
             script.write(
                 get_vitis_script(
@@ -111,8 +142,6 @@ def pack(
                 )
             )
             _logger.info("generate the v++ script at %s", bitstream_script)
-
-    is_pipelined("pack", True)
 
 
 def get_vitis_script(
@@ -178,3 +207,68 @@ def get_vitis_script(
     script += NEWLINE
 
     return "\n".join(script)
+
+
+def pack_zip(program: Program, output: str | None) -> None:
+    """Pack the generated RTL into a zip file.
+
+    Args:
+        program: The program object.
+        output: The output zip file.
+    """
+    if output is None:
+        output = "work.zip"
+    if not output.endswith(".zip"):
+        output = f"{output}.zip"
+        _logger.warning(
+            "you are not in Vitis mode, the generated RTL will be packed "
+            "into a .zip file: %s",
+            output,
+        )
+
+    _logger.info("packing the design into a zip file: %s", output)
+
+    with (
+        tempfile.TemporaryFile() as tmp_file,
+        zipfile.ZipFile(tmp_file, "w") as tmp_zipf,
+    ):
+        _logger.info("adding the RTL to the zip file")
+        all_files = Path(program.rtl_dir).glob("**")
+        for file in all_files:
+            if file.is_file():
+                tmp_zipf.write(file, f"rtl/{file.relative_to(program.rtl_dir)}")
+                _logger.debug("added %s to the zip file", file)
+
+        _logger.info("adding the TAPA information to the zip file")
+        for filename in program.report:
+            file = Path(filename)
+            # filter out unreadable json files
+            if file.suffix == ".json":
+                continue
+            tmp_zipf.write(file, f"{file.name}")
+            _logger.debug("added %s to the zip file", file)
+
+        graph = load_persistent_context("graph")
+        tmp_zipf.writestr("graph.yaml", safe_dump(graph))
+        _logger.debug("added graph.yaml to the zip file")
+
+        settings = load_persistent_context("settings")
+        tmp_zipf.writestr("settings.yaml", safe_dump(settings))
+        _logger.debug("added settings.yaml to the zip file")
+
+        _logger.info("adding the HLS reports to the zip file")
+        report_files = Path(program.report_dir).glob("**/*_csynth.rpt")
+        for file in report_files:
+            tmp_zipf.write(file, f"report/{file.relative_to(program.report_dir)}")
+            _logger.debug("added %s to the zip file", file)
+
+        # redact timestamp, source location etc. to make zip reproducible
+        _logger.info("generating the final zip file")
+        with zipfile.ZipFile(output, "w") as output_zipf:
+            for info in tmp_zipf.infolist():
+                redacted_info = zipfile.ZipInfo(info.filename)
+                redacted_info.compress_type = zipfile.ZIP_DEFLATED
+                redacted_info.external_attr = info.external_attr
+                output_zipf.writestr(redacted_info, tmp_zipf.read(info))
+
+    _logger.info("packed the design into a zip file: %s", output)
