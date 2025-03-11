@@ -97,6 +97,7 @@ def find_external_lib_in_runfiles() -> set[Path]:
                 potential_path / "gflags+",
                 potential_path / "glog+",
                 potential_path / "tinyxml2+",
+                potential_path / "yaml-cpp+",
                 potential_path / "rules_boost++non_module_dependencies+boost",
             }
 
@@ -157,5 +158,6 @@ def get_tapa_ldflags() -> tuple[str, ...]:
         "-lgflags",
         "-l:libOpenCL.so.1",
         "-ltinyxml2",
+        "-lyaml-cpp",
         "-lstdc++fs",
     )

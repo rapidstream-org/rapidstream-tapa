@@ -33,6 +33,9 @@ class TapaFastCosimDevice : public Device {
   static std::unique_ptr<Device> New(std::string_view path,
                                      std::string_view content);
 
+  void LoadArgsFromKernelXml();
+  void LoadArgsFromTapaYaml();
+
   void SetScalarArg(int index, const void* arg, int size) override;
   void SetBufferArg(int index, Tag tag, const BufferArg& arg) override;
   void SetStreamArg(int index, Tag tag, StreamArg& arg) override;

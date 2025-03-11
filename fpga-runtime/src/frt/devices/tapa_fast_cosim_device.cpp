@@ -23,6 +23,7 @@
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
+#include <yaml-cpp/yaml.h>
 #include <nlohmann/json.hpp>
 
 #include "frt/arg_info.h"
@@ -88,19 +89,38 @@ struct TapaFastCosimDevice::Context {
 
 TapaFastCosimDevice::TapaFastCosimDevice(std::string_view xo_path)
     : xo_path(fs::absolute(xo_path)), work_dir(GetWorkDirectory()) {
-  miniz_cpp::zip_file xo_file = this->xo_path;
-  std::string kernel_xml;
+  if (xo_path.compare(xo_path.size() - 3, 3, ".xo") == 0) {
+    LoadArgsFromKernelXml();
+  } else if (xo_path.compare(xo_path.size() - 4, 4, ".zip") == 0) {
+    LoadArgsFromTapaYaml();
+  } else {
+    LOG(FATAL) << "Unknown file extension: " << xo_path;
+  }
+
+  LOG(INFO) << "Running hardware simulation with TAPA fast cosim";
+}
+
+static std::string ReadFileInZip(const std::string& zip_path,
+                                 const std::string& filename) {
+  miniz_cpp::zip_file xo_file = zip_path;
   for (auto& info : xo_file.infolist()) {
-    constexpr std::string_view kSuffix = "/kernel.xml";
-    if (info.filename.size() >= kSuffix.size() &&
-        std::equal(kSuffix.rbegin(), kSuffix.rend(), info.filename.rbegin())) {
-      kernel_xml = xo_file.read(info);
-      break;
+    // Check for files in the root directory.
+    if (info.filename == filename) {
+      return xo_file.read(info);
+    }
+    // Check for files in subdirectories.
+    const std::string suffix = "/" + filename;
+    if (info.filename.size() >= suffix.size() &&
+        std::equal(suffix.rbegin(), suffix.rend(), info.filename.rbegin())) {
+      return xo_file.read(info);
     }
   }
-  LOG_IF(FATAL, kernel_xml.empty())
-      << "Missing 'kernel.xml' in '" << xo_path << "'";
+  LOG(FATAL) << "Missing '" << filename << "' in '" << zip_path << "'";
+  return "";
+}
 
+void TapaFastCosimDevice::LoadArgsFromKernelXml() {
+  std::string kernel_xml = ReadFileInZip(xo_path, "kernel.xml");
   tinyxml2::XMLDocument doc;
   doc.Parse(kernel_xml.data());
   for (const tinyxml2::XMLElement* xml_arg = doc.FirstChildElement("root")
@@ -130,8 +150,32 @@ TapaFastCosimDevice::TapaFastCosimDevice(std::string_view xo_path)
     }
     args_.push_back(arg);
   }
+}
 
-  LOG(INFO) << "Running hardware simulation with TAPA fast cosim";
+void TapaFastCosimDevice::LoadArgsFromTapaYaml() {
+  std::string graph_yaml = ReadFileInZip(xo_path, "graph.yaml");
+  YAML::Node graph = YAML::Load(graph_yaml);
+  auto ports = graph["tasks"][graph["top"].as<std::string>()]["ports"];
+
+  size_t index = 0;
+  for (auto it = ports.begin(); it != ports.end(); ++it) {
+    auto port = *it;
+    ArgInfo arg;
+    arg.index = index++;
+    arg.name = port["name"].as<std::string>();
+    arg.type = port["type"].as<std::string>();
+    auto port_cat = port["cat"].as<std::string>();
+    if (port_cat == "scalar") {
+      arg.cat = ArgInfo::kScalar;
+    } else if (port_cat == "mmap") {
+      arg.cat = ArgInfo::kMmap;
+    } else if (port_cat == "istream" || port_cat == "ostream") {
+      arg.cat = ArgInfo::kStream;
+    } else {
+      LOG(FATAL) << "Unknown argument category: " << port_cat;
+    }
+    args_.push_back(arg);
+  }
 }
 
 TapaFastCosimDevice::~TapaFastCosimDevice() {

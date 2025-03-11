@@ -22,11 +22,14 @@ from tapa.cosim.templates import (
     get_axi_ram_module,
     get_axis,
     get_begin,
-    get_dut,
     get_end,
+    get_fifo,
+    get_hls_dut,
+    get_hls_test_signals,
     get_s_axi_control,
     get_srl_fifo_template,
-    get_test_signals,
+    get_vitis_dut,
+    get_vitis_test_signals,
 )
 from tapa.cosim.vivado import get_vivado_tcl
 
@@ -94,31 +97,31 @@ def parse_m_axi_interfaces(top_rtl_path: str) -> list[AXI]:
     return axi_list
 
 
-def get_cosim_tb(
+def get_cosim_tb(  # noqa: PLR0913,PLR0917
     top_name: str,
     s_axi_control_path: str,
     axi_list: list[AXI],
     args: Sequence[Arg],
     scalar_to_val: dict[str, str],
+    mode: str,
 ) -> str:
     """
     generate a lightweight testbench to test the HLS RTL
     """
-    arg_to_reg_addrs = parse_register_addr(s_axi_control_path)
+    tb = get_begin() + "\n"
 
-    tb = ""
-    tb += get_begin() + "\n"
-
-    for axi in axi_list:
-        tb += get_axi_ram_inst(axi) + "\n"
-
-    tb += get_s_axi_control() + "\n"
-
-    tb += get_axis(args) + "\n"
-
-    tb += get_dut(top_name, args) + "\n"
-
-    tb += get_test_signals(arg_to_reg_addrs, scalar_to_val, args)
+    if mode == "vitis":
+        arg_to_reg_addrs = parse_register_addr(s_axi_control_path)
+        for axi in axi_list:
+            tb += get_axi_ram_inst(axi) + "\n"
+        tb += get_s_axi_control() + "\n"
+        tb += get_axis(args) + "\n"
+        tb += get_vitis_dut(top_name, args) + "\n"
+        tb += get_vitis_test_signals(arg_to_reg_addrs, scalar_to_val, args)
+    else:
+        tb += get_fifo(args) + "\n"
+        tb += get_hls_dut(top_name, args, scalar_to_val) + "\n"
+        tb += get_hls_test_signals(args)
 
     tb += get_end() + "\n"
 
@@ -172,6 +175,7 @@ def main() -> None:  # pylint: disable=too-many-locals
         axi_list,
         config["args"],
         config["scalar_to_val"],
+        config["mode"],
     )
 
     # generate test bench RTL files

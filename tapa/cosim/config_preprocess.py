@@ -16,6 +16,8 @@ import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
+from yaml import safe_load
+
 from tapa.cosim.common import Arg, Port
 
 _logger = logging.getLogger().getChild(__name__)
@@ -79,7 +81,7 @@ def parse_part_num(xo_dir: str) -> str | None:
     return extract_part_from_xml_file(csynth_reports[0])
 
 
-def _parse_xo_update_config(config: dict, tb_output_dir: str) -> None:
+def _parse_and_update_config(config: dict, tb_output_dir: str) -> None:
     """
     Only supports TAPA xo. Vitis XO has different hierarchy and RTL coding style
     """
@@ -92,6 +94,42 @@ def _parse_xo_update_config(config: dict, tb_output_dir: str) -> None:
     zip_ref = zipfile.ZipFile(f"{tmp_path}/target.xo", "r")
     zip_ref.extractall(tmp_path)
 
+    if xo_path.endswith(".xo"):
+        config["mode"] = "vitis"
+        _parse_xo_update_config(config, tmp_path)
+    elif xo_path.endswith(".zip"):
+        config["mode"] = "hls"
+        _parse_zip_update_config(config, tmp_path)
+    else:
+        msg = f"Unsupported xo file format: {xo_path}"
+        raise ValueError(msg)
+
+    # convert argument index in the config file to actual names
+    id_to_name = {arg.id: arg.name for arg in config["args"]}
+
+    # update scalar arguments
+    def change_id_to_name(id_to_val: dict[str, str]) -> dict[str, str]:
+        return {
+            id_to_name[int(scalar_arg_id)]: val
+            for scalar_arg_id, val in id_to_val.items()
+        }
+
+    for entry in (
+        "scalar_to_val",
+        "axi_to_data_file",
+        "axis_to_data_file",
+        "axi_to_c_array_size",
+    ):
+        config[entry] = change_id_to_name(config[entry] or {})
+
+
+def _parse_xo_update_config(config: dict, tmp_path: str) -> None:
+    """Parse the xo file and update the config file with the extracted information.
+
+    Args:
+        config (dict): The configuration dictionary.
+        tmp_path (str): The temporary directory path.
+    """
     # only supports tapa xo
     src_dirs = glob.glob(f"{tmp_path}/ip_repo/*/src")
     assert len(src_dirs) == 1, "Only supports TAPA XO. Vitis XO is not supported"
@@ -127,25 +165,64 @@ def _parse_xo_update_config(config: dict, tb_output_dir: str) -> None:
         _logger.debug("arg: %s", arg)
     config["args"] = args
 
-    # convert argument index in the config file to actual names
-    id_to_name = {arg.id: arg.name for arg in args}
-
-    # update scalar arguments
-    def change_id_to_name(id_to_val: dict[str, str]) -> dict[str, str]:
-        return {
-            id_to_name[int(scalar_arg_id)]: val
-            for scalar_arg_id, val in id_to_val.items()
-        }
-
-    for entry in (
-        "scalar_to_val",
-        "axi_to_data_file",
-        "axis_to_data_file",
-        "axi_to_c_array_size",
-    ):
-        config[entry] = change_id_to_name(config[entry] or {})
-
     config["part_num"] = parse_part_num(tmp_path)
+
+
+def _parse_zip_update_config(config: dict, tmp_path: str) -> None:
+    """Parse the zip file and update the config file with the extracted information.
+
+    Args:
+        config (dict): The configuration dictionary.
+        tmp_path (str): The temporary directory path.
+    """
+    rtl_dir = Path(tmp_path) / "rtl"
+    # only supports tapa generated zip file
+    assert rtl_dir.is_dir(), "Only supports TAPA XO. Vitis XO is not supported"
+    config["verilog_path"] = str(rtl_dir)
+
+    # extract other kernel information
+    graph_file_path = Path(tmp_path) / "graph.yaml"
+    assert graph_file_path.is_file(), "Fail to extract kernel information"
+    with graph_file_path.open(encoding="utf-8") as f:
+        # top name of the kernel
+        graph = safe_load(f)
+        config["top_name"] = graph["top"]
+
+        # parse kernel ports
+        ports = []
+        for idx, port in enumerate(graph["tasks"][config["top_name"]]["ports"]):
+            if port["cat"] == "istream":
+                address_qualifier = 4
+                mode = "read_only"
+            elif port["cat"] == "ostream":
+                address_qualifier = 4
+                mode = "write_only"
+            elif port["cat"] == "scalar":
+                address_qualifier = 0
+                mode = "read_only"
+            else:
+                msg = f"Unsupported port category: {port['cat']}"
+                raise ValueError(msg)
+
+            ports.append(
+                Arg(
+                    name=port["name"],
+                    address_qualifier=address_qualifier,
+                    id=idx,
+                    port=Port(
+                        name=port["name"],
+                        mode=mode,
+                        data_width=port["width"],
+                    ),
+                )
+            )
+        config["args"] = ports
+
+    settings_file_path = Path(tmp_path) / "settings.yaml"
+    assert settings_file_path.is_file(), "Fail to extract kernel settings"
+    with settings_file_path.open(encoding="utf-8") as f:
+        settings = safe_load(f)
+        config["part_num"] = settings["part_num"]
 
 
 def _check_scalar_val_format(config: dict) -> None:
@@ -172,7 +249,7 @@ def preprocess_config(
         config["scalar_to_val"] = {}
 
     _update_relative_path(config, config_path)
-    _parse_xo_update_config(config, tb_output_dir)
+    _parse_and_update_config(config, tb_output_dir)
     _check_scalar_val_format(config)
 
     # overwrite part number if provided

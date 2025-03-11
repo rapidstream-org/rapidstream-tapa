@@ -201,25 +201,8 @@ def get_s_axi_control() -> str:
 
 
 def get_axis(args: Sequence[Arg]) -> str:
+    lines = [get_stream_typedef(args)]
     axis_args = [arg for arg in args if arg.is_stream]
-
-    # create type alias for widths used for axis
-    widths = set()
-    for arg in axis_args:
-        widths |= {
-            arg.port.data_width,
-            arg.port.data_width + 1,  # for eot
-        }
-    lines = []
-    # list comprehension is only more readable when short
-    # ruff: noqa: PERF401
-    for width in widths:
-        lines.append(
-            f"""
-    typedef logic unpacked_uint{width}_t[{width - 1}:0];
-    typedef logic [{width - 1}:0] packed_uint{width}_t;
-"""
-        )
     for arg in axis_args:
         lines.append(
             f"""
@@ -233,7 +216,47 @@ def get_axis(args: Sequence[Arg]) -> str:
     return "\n".join(lines)
 
 
-def get_dut(top_name: str, args: Sequence[Arg]) -> str:
+def get_fifo(args: Sequence[Arg]) -> str:
+    lines = [get_stream_typedef(args)]
+    fifo_args = [arg for arg in args if arg.is_stream]
+    for arg in fifo_args:
+        lines.append(
+            f"""
+  packed_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data;
+  unpacked_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data_unpacked;
+  logic fifo_{arg.name}_valid;
+  logic fifo_{arg.name}_ready;
+"""
+        )
+    return "\n".join(lines)
+
+
+def get_stream_typedef(args: Sequence[Arg]) -> str:
+    stream_args = [arg for arg in args if arg.is_stream]
+
+    # create type alias for widths used for axis
+    widths = set()
+    for arg in stream_args:
+        widths |= {
+            arg.port.data_width,
+            arg.port.data_width + 1,  # for eot
+        }
+
+    lines = []
+    # list comprehension is only more readable when short
+    # ruff: noqa: PERF401
+    for width in widths:
+        lines.append(
+            f"""
+  typedef logic unpacked_uint{width}_t[{width - 1}:0];
+  typedef logic [{width - 1}:0] packed_uint{width}_t;
+"""
+        )
+
+    return "\n".join(lines)
+
+
+def get_vitis_dut(top_name: str, args: Sequence[Arg]) -> str:
     dut = f"""
   {top_name} dut (
     .s_axi_control_AWVALID (s_axi_control_awvalid),
@@ -319,7 +342,49 @@ def get_dut(top_name: str, args: Sequence[Arg]) -> str:
     return dut
 
 
-def get_test_signals(
+def get_hls_dut(
+    top_name: str, args: Sequence[Arg], scalar_to_val: dict[str, str]
+) -> str:
+    dut = f"\n  {top_name} dut (\n"
+
+    for arg in args:
+        if arg.is_mmap:
+            msg = "mmap is not supported in HLS"
+            raise NotImplementedError(msg)
+
+        if arg.is_stream and arg.port.is_istream:
+            dut += f"""
+    .{arg.name}_s_dout(fifo_{arg.name}_data),
+    .{arg.name}_s_empty_n(fifo_{arg.name}_valid),
+    .{arg.name}_s_read(fifo_{arg.name}_ready),
+"""
+
+        if arg.is_stream and arg.port.is_ostream:
+            dut += f"""
+    .{arg.name}_s_din(fifo_{arg.name}_data),
+    .{arg.name}_s_full_n(fifo_{arg.name}_ready),
+    .{arg.name}_s_write(fifo_{arg.name}_valid),
+"""
+
+        if arg.is_scalar:
+            dut += f"""
+    .{arg.name}({scalar_to_val.get(arg.name, 0)} & REG_MASK_32_BIT),\n
+"""
+
+    dut += """
+    .ap_clk(ap_clk),
+    .ap_rst_n(ap_rst_n),
+    .ap_start(ap_start),
+    .ap_done(ap_done),
+    .ap_ready(ap_ready),
+    .ap_idle()
+  );
+"""
+
+    return dut
+
+
+def get_vitis_test_signals(
     arg_to_reg_addrs: dict[str, str],
     scalar_arg_to_val: dict[str, str],
     args: list[Arg],
@@ -396,7 +461,6 @@ def get_test_signals(
 
 {newline.join(axis_assignments)}
 
-  wire [31:0] REG_MASK_32_BIT = {{32{{1\'b1}}}};
   initial begin
     s_axi_aw_write = 1'b0;
     s_axi_aw_din = 1'b0;
@@ -469,6 +533,99 @@ def get_test_signals(
     return test
 
 
+def get_hls_test_signals(args: list[Arg]) -> str:
+    fifo_signal_init = []
+    fifo_dpi_calls = []
+    fifo_assignments = []
+
+    # build signals for FIFOs
+    for arg in args:
+        if not arg.is_stream:
+            continue
+        fifo_signal_init.append(
+            f"""
+    fifo_{arg.name}_valid = 1'b0;
+    fifo_{arg.name}_ready = 1'b0;
+"""
+        )
+        if arg.port.is_istream:
+            fifo_dpi_calls.append(f"""
+    tapa::istream(
+        fifo_{arg.name}_data_unpacked,
+        fifo_{arg.name}_valid,
+        fifo_{arg.name}_ready,
+        "{arg.name}"
+    );
+""")
+            fifo_assignments.append(f"""
+    assign fifo_{arg.name}_data =
+        packed_uint{arg.port.data_width + 1}_t'(fifo_{arg.name}_data_unpacked);
+""")
+        elif arg.port.is_ostream:
+            fifo_dpi_calls.append(f"""
+    tapa::ostream(
+        fifo_{arg.name}_data_unpacked,
+        fifo_{arg.name}_ready,
+        fifo_{arg.name}_valid,
+        "{arg.name}"
+    );
+""")
+            fifo_assignments.append(f"""
+    assign fifo_{arg.name}_data_unpacked =
+        unpacked_uint{arg.port.data_width + 1}_t'(fifo_{arg.name}_data);
+""")
+        else:
+            msg = f"unexpected arg.port.mode: {arg.port.mode}"
+            raise ValueError(msg)
+
+    newline = "\n"
+    test = f"""
+  parameter HALF_CLOCK_PERIOD = 2;
+  parameter CLOCK_PERIOD = HALF_CLOCK_PERIOD * 2;
+
+  // clock
+  always begin
+      ap_clk = 1'b0;
+      #HALF_CLOCK_PERIOD;
+      ap_clk = 1'b1;
+      #HALF_CLOCK_PERIOD;
+
+     if (ap_rst_n) begin
+        {newline.join(fifo_dpi_calls)}
+     end
+  end
+
+{newline.join(fifo_assignments)}
+
+  initial begin
+    ap_start = 1'b0;
+{newline.join(fifo_signal_init)}
+    ap_rst_n = 1'b0;
+
+    #(CLOCK_PERIOD*1000);
+    ap_rst_n = 1'b1;
+    #(CLOCK_PERIOD*100);
+
+"""
+
+    test += """
+    // start the kernel
+    ap_start = 1;
+    #CLOCK_PERIOD;
+
+    // wait for ap_ready
+    wait(ap_ready);
+
+    // wait for ap_done
+    wait(ap_done);
+    #(CLOCK_PERIOD*100);
+    $finish;
+  end
+"""
+
+    return test
+
+
 def get_begin() -> str:
     return """
 `timescale 1 ns / 1 ps
@@ -492,6 +649,11 @@ module test();
 
   reg ap_clk;
   reg ap_rst_n;
+  reg ap_start;
+  wire ap_done;
+  wire ap_ready;
+
+  wire [31:0] REG_MASK_32_BIT = {{32{{1\'b1}}}};
 
 """
 

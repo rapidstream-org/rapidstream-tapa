@@ -51,6 +51,7 @@ cc_library(
         "@nlohmann_json//:json",
         "@tinyxml2",
         "@xilinx_xrt//:xrt",
+        "@yaml-cpp",
     ],
 )
 
@@ -142,6 +143,7 @@ pkg_files(
         "@gflags",
         "@glog",
         "@tinyxml2",
+        "@yaml-cpp",
     ],
     prefix = "usr/lib",
     strip_prefix = strip_prefix.files_only(),
