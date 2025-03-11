@@ -109,6 +109,8 @@ STATE10 = IntConst("2'b10")
 
 FIFO_DIRECTIONS = ["consumed_by", "produced_by"]
 
+AIE_DEFAULT_DEPTH = 64
+
 
 def gen_declarations(task: Task) -> tuple[list[str], list[str], list[str]]:
     """Generates kernel and port declarations."""
@@ -227,14 +229,14 @@ def gen_connections(task: Task) -> list[str]:  # noqa: C901  # TODO: refactor th
                 "Ports should be connected to/from io"
             )
             connect_def.append(
-                f"connect<window<{width}>> {name}_link"
+                f"connect<window<{int(width) // 8 * AIE_DEFAULT_DEPTH}>> {name}_link"
                 f" (k_{link_from_src[name][0]}, p_{name}.in[0]);"
             )
 
         if name in link_to_dst:
             assert link_to_dst[name][1] == "io", "Ports should be connected to/from io"
             connect_def.append(
-                f"connect<window<{width}>> {name}_link"
+                f"connect<window<{int(width) // 8 * AIE_DEFAULT_DEPTH}>> {name}_link"
                 f" (p_{name}.out[0], k_{link_to_dst[name][0]});"
             )
 
