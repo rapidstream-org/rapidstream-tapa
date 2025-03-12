@@ -189,8 +189,14 @@ def add_scalar_connections(
     for port in top.ports.values():
         if not port.cat.is_scalar:
             continue
+        try:
+            connected_task = program.get_inst_by_port_arg_name(
+                None, top, port.name
+            ).name
+        except AssertionError:
+            # scalar might not be connected to any task
+            continue
         vertices[top.fsm_module.name] = fsm_vertex
-        connected_task = program.get_inst_by_port_arg_name(None, top, port.name).name
 
         # scalar always points from the FSM to the task
         edges.append(
