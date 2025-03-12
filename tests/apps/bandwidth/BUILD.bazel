@@ -8,6 +8,16 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//bazel:tapa_rules.bzl", "tapa_xo")
 load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
+exports_files(
+    [
+        ".",
+        "bandwidth.cpp",
+        "bandwidth.h",
+        "lfsr.h",
+    ],
+    visibility = ["//tests/functional:__subpackages__"],
+)
+
 sh_test(
     name = "bandwidth",
     size = "medium",

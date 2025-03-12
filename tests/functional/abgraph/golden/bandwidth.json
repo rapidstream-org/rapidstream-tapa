@@ -1,0 +1,452 @@
+{
+    "es": [
+        {
+            "index": 0,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "chan_0",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_0",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 43
+        },
+        {
+            "index": 1,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_0",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "chan_0",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 405
+        },
+        {
+            "index": 2,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "chan_1",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_1",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 43
+        },
+        {
+            "index": 3,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_1",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "chan_1",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 405
+        },
+        {
+            "index": 4,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "chan_2",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_2",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 43
+        },
+        {
+            "index": 5,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_2",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "chan_2",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 405
+        },
+        {
+            "index": 6,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "chan_3",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_3",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 43
+        },
+        {
+            "index": 7,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_3",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "chan_3",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 405
+        },
+        {
+            "index": 8,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Bandwidth_fsm",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_3",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 64
+        },
+        {
+            "index": 9,
+            "source_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 0,
+                    "lut": 0,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Bandwidth_fsm",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "target_vertex": {
+                "area": {
+                    "bram_18k": 0,
+                    "dsp": 0,
+                    "ff": 840,
+                    "lut": 757,
+                    "uram": 0
+                },
+                "current_slot": null,
+                "name": "Copy_3",
+                "reserved_slot": null,
+                "sub_cells": [],
+                "target_slot": null
+            },
+            "width": 64
+        }
+    ],
+    "vs": [
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 840,
+                "lut": 757,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "Copy_0",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        },
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 840,
+                "lut": 757,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "Copy_1",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        },
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 840,
+                "lut": 757,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "Copy_2",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        },
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 840,
+                "lut": 757,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "Copy_3",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        },
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 0,
+                "lut": 0,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "chan_0",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        },
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 0,
+                "lut": 0,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "chan_1",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        },
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 0,
+                "lut": 0,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "chan_2",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        },
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 0,
+                "lut": 0,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "chan_3",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        },
+        {
+            "area": {
+                "bram_18k": 0,
+                "dsp": 0,
+                "ff": 0,
+                "lut": 0,
+                "uram": 0
+            },
+            "current_slot": null,
+            "name": "Bandwidth_fsm",
+            "reserved_slot": null,
+            "sub_cells": [],
+            "target_slot": null
+        }
+    ]
+}

@@ -1,0 +1,127 @@
+"""Tests TAPA abgraph generation."""
+
+# Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("//bazel:pytest_rules.bzl", "py_test")
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+
+# vadd test
+tapa_xo(
+    name = "vadd-abgraph-json",
+    src = "//tests/apps/vadd:vadd.cpp",
+    hdrs = ["//tests/apps/vadd:vadd.h"],
+    include = ["."],
+    enable_synth_util = True,
+    flatten_hierarchy = True,
+    gen_ab_graph = True,
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "VecAdd",
+)
+
+py_test(
+    name = "vadd-abgraph-test",
+    srcs = ["abgraph-test.py"],
+    args = ["--test=vadd"],
+    data = [
+        "conftest.py",
+        "golden/vadd.json",
+        ":vadd-abgraph-json",
+    ],
+    deps = [
+        "//tapa",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+# bandwidth test
+tapa_xo(
+    name = "bandwidth-abgraph-json",
+    src = "//tests/apps/bandwidth:bandwidth.cpp",
+    hdrs = [
+        "//tests/apps/bandwidth:bandwidth.h",
+        "//tests/apps/bandwidth:lfsr.h",
+    ],
+    include = ["."],
+    enable_synth_util = True,
+    flatten_hierarchy = True,
+    gen_ab_graph = True,
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Bandwidth",
+)
+
+py_test(
+    name = "bandwidth-abgraph-test",
+    srcs = ["abgraph-test.py"],
+    args = ["--test=bandwidth"],
+    data = [
+        "conftest.py",
+        "golden/bandwidth.json",
+        ":bandwidth-abgraph-json",
+    ],
+    deps = [
+        "//tapa",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+# cannon test
+tapa_xo(
+    name = "cannon-abgraph-json",
+    src = "//tests/apps/cannon:cannon.cpp",
+    hdrs = [
+        "//tests/apps/cannon:cannon.h",
+    ],
+    include = ["."],
+    enable_synth_util = True,
+    flatten_hierarchy = True,
+    gen_ab_graph = True,
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Cannon",
+)
+
+py_test(
+    name = "cannon-abgraph-test",
+    srcs = ["abgraph-test.py"],
+    args = ["--test=cannon"],
+    data = [
+        "conftest.py",
+        "golden/cannon.json",
+        ":cannon-abgraph-json",
+    ],
+    deps = [
+        "//tapa",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+# network test
+tapa_xo(
+    name = "network-abgraph-json",
+    src = "//tests/apps/network:network.cpp",
+    hdrs = [
+        "//tests/apps/network:network.h",
+    ],
+    include = ["."],
+    enable_synth_util = True,
+    flatten_hierarchy = True,
+    gen_ab_graph = True,
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Network",
+)
+
+py_test(
+    name = "network-abgraph-test",
+    srcs = ["abgraph-test.py"],
+    args = ["--test=network"],
+    data = [
+        "conftest.py",
+        "golden/network.json",
+        ":network-abgraph-json",
+    ],
+    deps = [
+        "//tapa",
+        "@rules_python//python/runfiles",
+    ],
+)
