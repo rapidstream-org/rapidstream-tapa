@@ -45,6 +45,10 @@ def _tapa_xo_impl(ctx):
     else:
         tapa_cmd.extend(["--no-vitis-mode"])
 
+    # Add flatten hierarchy, if specified.
+    if ctx.attr.flatten_hierarchy:
+        tapa_cmd.extend(["--flatten-hierarchy"])
+
     # Build the command for tapa-cli synth.
     tapa_cmd.extend(["synth", "--platform", platform_name])
 
@@ -128,6 +132,7 @@ tapa_xo = rule(
         "part_num": attr.string(),
         "enable_synth_util": attr.bool(),
         "gen_ab_graph": attr.bool(),
+        "flatten_hierarchy": attr.bool(),
         "vitis_hls_env": attr.label(
             cfg = "exec",
             default = Label("//bazel:vitis_hls_env"),
