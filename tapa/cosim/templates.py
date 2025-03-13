@@ -4,6 +4,14 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+# IMPORTANT WORKAROUND and FIXME:
+# There are a few places where we added `aaa_` prefix to the signals to ensure
+# the simulation order of xsim. The root cause is yet to be identified.
+# However, debugging blocking assignments in the testbench is daunting.
+# We will revisit this issue in the future, maybe by using non-blocking
+# assignments in the testbench. The main challenge is to interface non-blocking
+# operations with DPI calls, which are blocking by nature.
+
 import logging
 import os
 import sys
@@ -222,10 +230,10 @@ def get_fifo(args: Sequence[Arg]) -> str:
     for arg in fifo_args:
         lines.append(
             f"""
-  packed_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data;
-  unpacked_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data_unpacked;
-  logic fifo_{arg.name}_valid;
-  logic fifo_{arg.name}_ready;
+  packed_uint{arg.port.data_width + 1}_t aaa_fifo_{arg.name}_data;
+  unpacked_uint{arg.port.data_width + 1}_t aaa_fifo_{arg.name}_data_unpacked;
+  logic aaa_fifo_{arg.name}_valid;
+  logic aaa_fifo_{arg.name}_ready;
 """
         )
     return "\n".join(lines)
@@ -354,16 +362,16 @@ def get_hls_dut(
 
         if arg.is_stream and arg.port.is_istream:
             dut += f"""
-    .{arg.name}_s_dout(fifo_{arg.name}_data),
-    .{arg.name}_s_empty_n(fifo_{arg.name}_valid),
-    .{arg.name}_s_read(fifo_{arg.name}_ready),
+    .{arg.name}_s_dout(aaa_fifo_{arg.name}_data),
+    .{arg.name}_s_empty_n(aaa_fifo_{arg.name}_valid),
+    .{arg.name}_s_read(aaa_fifo_{arg.name}_ready),
 """
 
         if arg.is_stream and arg.port.is_ostream:
             dut += f"""
-    .{arg.name}_s_din(fifo_{arg.name}_data),
-    .{arg.name}_s_full_n(fifo_{arg.name}_ready),
-    .{arg.name}_s_write(fifo_{arg.name}_valid),
+    .{arg.name}_s_din(aaa_fifo_{arg.name}_data),
+    .{arg.name}_s_full_n(aaa_fifo_{arg.name}_ready),
+    .{arg.name}_s_write(aaa_fifo_{arg.name}_valid),
 """
 
         if arg.is_scalar:
@@ -447,15 +455,14 @@ def get_vitis_test_signals(
   parameter HALF_CLOCK_PERIOD = 2;
   parameter CLOCK_PERIOD = HALF_CLOCK_PERIOD * 2;
 
-  // clock
+  // Clock and stream signals
   always begin
-      ap_clk = 1'b0;
-      #HALF_CLOCK_PERIOD;
-      ap_clk = 1'b1;
-      #HALF_CLOCK_PERIOD;
-
-    if (ap_rst_n) begin
-        {newline.join(axis_dpi_calls)}
+    ap_clk = 1'b0;
+    #HALF_CLOCK_PERIOD;
+    ap_clk = 1'b1;
+    #HALF_CLOCK_PERIOD;
+    if (kernel_started) begin
+      {newline.join(axis_dpi_calls)}
     end
   end
 
@@ -470,6 +477,7 @@ def get_vitis_test_signals(
 {newline.join(axis_signal_init)}
     s_axi_control_arvalid = 1'b0;
     ap_rst_n = 1'b0;
+    kernel_started = 0;
 
     #(CLOCK_PERIOD*1000);
     ap_rst_n = 1'b1;
@@ -502,6 +510,7 @@ def get_vitis_test_signals(
 
     // stop writing control signal
     s_axi_aw_write = 0; s_axi_w_write = 0; #CLOCK_PERIOD;
+    kernel_started = 1;
 
     // start polling ap_done
     #(CLOCK_PERIOD*1000);
@@ -544,86 +553,90 @@ def get_hls_test_signals(args: list[Arg]) -> str:
             continue
         fifo_signal_init.append(
             f"""
-    fifo_{arg.name}_valid = 1'b0;
-    fifo_{arg.name}_ready = 1'b0;
+    aaa_fifo_{arg.name}_valid = 1'b0;
+    aaa_fifo_{arg.name}_ready = 1'b0;
 """
         )
         if arg.port.is_istream:
             fifo_dpi_calls.append(f"""
     tapa::istream(
-        fifo_{arg.name}_data_unpacked,
-        fifo_{arg.name}_valid,
-        fifo_{arg.name}_ready,
+        aaa_fifo_{arg.name}_data_unpacked,
+        aaa_fifo_{arg.name}_valid,
+        aaa_fifo_{arg.name}_ready,
         "{arg.name}"
     );
 """)
             fifo_assignments.append(f"""
-    assign fifo_{arg.name}_data =
-        packed_uint{arg.port.data_width + 1}_t'(fifo_{arg.name}_data_unpacked);
+    assign aaa_fifo_{arg.name}_data =
+        packed_uint{arg.port.data_width + 1}_t'(aaa_fifo_{arg.name}_data_unpacked);
 """)
         elif arg.port.is_ostream:
             fifo_dpi_calls.append(f"""
     tapa::ostream(
-        fifo_{arg.name}_data_unpacked,
-        fifo_{arg.name}_ready,
-        fifo_{arg.name}_valid,
+        aaa_fifo_{arg.name}_data_unpacked,
+        aaa_fifo_{arg.name}_ready,
+        aaa_fifo_{arg.name}_valid,
         "{arg.name}"
     );
 """)
             fifo_assignments.append(f"""
-    assign fifo_{arg.name}_data_unpacked =
-        unpacked_uint{arg.port.data_width + 1}_t'(fifo_{arg.name}_data);
+    assign aaa_fifo_{arg.name}_data_unpacked =
+        unpacked_uint{arg.port.data_width + 1}_t'(aaa_fifo_{arg.name}_data);
 """)
         else:
             msg = f"unexpected arg.port.mode: {arg.port.mode}"
             raise ValueError(msg)
 
     newline = "\n"
-    test = f"""
+
+    return f"""
   parameter HALF_CLOCK_PERIOD = 2;
   parameter CLOCK_PERIOD = HALF_CLOCK_PERIOD * 2;
 
-  // clock
+  // Clock and stream signals
   always begin
-      ap_clk = 1'b0;
-      #HALF_CLOCK_PERIOD;
-      ap_clk = 1'b1;
-      #HALF_CLOCK_PERIOD;
-
-     if (ap_rst_n) begin
-        {newline.join(fifo_dpi_calls)}
-     end
+    ap_clk = 1'b0;
+    #HALF_CLOCK_PERIOD;
+    ap_clk = 1'b1;
+    #HALF_CLOCK_PERIOD;
+    if (kernel_started) begin
+      {newline.join(fifo_dpi_calls)}
+    end
   end
 
 {newline.join(fifo_assignments)}
 
   initial begin
-    ap_start = 1'b0;
+    // Reset DUT
 {newline.join(fifo_signal_init)}
     ap_rst_n = 1'b0;
+    ap_start = 0;
+    kernel_started = 0;
 
     #(CLOCK_PERIOD*1000);
     ap_rst_n = 1'b1;
     #(CLOCK_PERIOD*100);
 
-"""
-
-    test += """
-    // start the kernel
+    // Start DUT
     ap_start = 1;
     #CLOCK_PERIOD;
 
-    // wait for ap_ready
-    wait(ap_ready);
+    kernel_started = 1;
 
-    // wait for ap_done
-    wait(ap_done);
+    fork
+        begin
+            wait(ap_ready);
+            ap_start = 0;
+        end
+        begin
+            wait(ap_done);
+        end
+    join
+
     #(CLOCK_PERIOD*100);
     $finish;
   end
 """
-
-    return test
 
 
 def get_begin() -> str:
@@ -652,6 +665,8 @@ module test();
   reg ap_start;
   wire ap_done;
   wire ap_ready;
+
+  reg kernel_started;
 
   wire [31:0] REG_MASK_32_BIT = {{32{{1\'b1}}}};
 
