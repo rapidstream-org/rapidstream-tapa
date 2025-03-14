@@ -6,6 +6,8 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import re
+
 from tapa.abgraph.ab_graph import ABEdge, ABGraph, ABVertex, Area, convert_area
 from tapa.core import Program
 from tapa.verilog.xilinx.module import get_streams_fifos
@@ -84,18 +86,34 @@ def get_basic_ab_graph(
             current_slot=None,
         )
 
+    def replace_bracketed_number(s: str) -> str:
+        """Replace the bracketed number in the string with an underscore.
+
+        Streams fifo names contain a bracketed number at the end such as fifo[0],
+        which matches the connected task instance arg name in the pattern of fifo_0.
+        We need to replace the bracketed number with an underscore to match the
+        connected task instance arg name.
+        """
+        pattern = r"\[(\d+)\]$"
+        match = re.search(pattern, s)
+
+        if match:
+            number = match.group(1)
+            return re.sub(pattern, f"_{number}", s)
+        return s
+
     for fifo_name, fifo_inst in top.fifos.items():
         # each fifo has a producer and a consumer, but the fifo_inst only tells
         # the task name, not the instance name. So we need to check all instances
         # port connection to find the instance name.
         consumer_task = fifo_inst["consumed_by"][0]
         consumer_task_inst = program.get_inst_by_port_arg_name(
-            consumer_task, top, fifo_name
+            consumer_task, top, replace_bracketed_number(fifo_name)
         ).name
 
         producer_task = fifo_inst["produced_by"][0]
         producer_task_inst = program.get_inst_by_port_arg_name(
-            producer_task, top, fifo_name
+            producer_task, top, replace_bracketed_number(fifo_name)
         ).name
 
         edges.append(
