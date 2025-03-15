@@ -8,9 +8,11 @@ RapidStream Contributor License Agreement.
 
 from typing import Literal, NamedTuple
 
+import pyslang
 from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import ast
 
+from tapa.common.unique_attrs import UniqueAttrs
 from tapa.verilog.xilinx import ast_types
 
 
@@ -20,7 +22,38 @@ class IOPort(NamedTuple):
     width: ast.Width | None
 
     @classmethod
-    def create(cls, port: ast_types.IOPort) -> "IOPort":
+    def create(
+        cls,
+        port: ast_types.IOPort | pyslang.PortDeclarationSyntax,
+    ) -> "IOPort":
+        if isinstance(port, ast_types.IOPort):
+            return IOPort._from_pyverilog(port)
+        if isinstance(port, pyslang.PortDeclarationSyntax):
+            return IOPort._from_pyslang(port)
+        msg = f"unexpected type {type(port)}"
+        raise TypeError(msg)
+
+    @classmethod
+    def _from_pyslang(cls, port: pyslang.PortDeclarationSyntax) -> "IOPort":
+        attrs = UniqueAttrs(width=None)
+
+        def visitor(node: object) -> None:
+            if isinstance(node, pyslang.RangeSelectSyntax):
+                attrs.width = ast.Width(
+                    msb=ast.Constant(str(node.left)),
+                    lsb=ast.Constant(str(node.right)),
+                )
+            elif isinstance(node, pyslang.DeclaratorSyntax):
+                attrs.name = node.name.valueText
+            elif isinstance(node, pyslang.VariablePortHeaderSyntax):
+                attrs.direction = node.direction.valueText
+
+        port.visit(visitor)
+
+        return IOPort(**attrs)  # type: ignore  # noqa: PGH003
+
+    @classmethod
+    def _from_pyverilog(cls, port: ast_types.IOPort) -> "IOPort":
         if isinstance(port, ast.Input):
             direction = "input"
         elif isinstance(port, ast.Output):

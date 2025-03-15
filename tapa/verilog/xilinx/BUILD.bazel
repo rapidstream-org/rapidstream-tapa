@@ -44,6 +44,8 @@ py_library(
     srcs = ["ioport.py"],
     deps = [
         ":ast_types",
+        "//tapa/common:unique_attrs",
+        requirement("pyslang"),
         requirement("pyverilog"),
     ],
 )
@@ -53,6 +55,7 @@ py_test(
     srcs = ["ioport_test.py"],
     deps = [
         ":ioport",
+        requirement("pyslang"),
         requirement("pyverilog"),
     ],
 )

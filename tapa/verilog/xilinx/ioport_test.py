@@ -6,6 +6,7 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import pyslang
 from pyverilog.vparser import ast
 
 from tapa.verilog.xilinx.ioport import IOPort
@@ -19,6 +20,15 @@ def test_creation() -> None:
     assert ioport.name == _NAME
     assert ioport.direction == "input"
     assert ioport.width is _WIDTH
+    assert str(ioport) == "input [31:0] foo;"
+
+
+def test_creation_pyslang() -> None:
+    port = pyslang.SyntaxTree.fromText("input [31:0] foo;").root
+    assert isinstance(port, pyslang.PortDeclarationSyntax)
+    ioport = IOPort.create(port)
+    assert ioport.name == "foo"
+    assert ioport.direction == "input"
     assert str(ioport) == "input [31:0] foo;"
 
 
