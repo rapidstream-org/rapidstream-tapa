@@ -14,8 +14,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -43,6 +45,14 @@ struct accessor<T, seq> {
 
 void* allocate(size_t length);
 void deallocate(void* addr, size_t length);
+
+// std::bind wrapper with arguments evaluated from left to right.
+struct binder {
+  template <typename F, typename... Args>
+  binder(F&& f, Args&&... args)
+      : result(std::bind(std::forward<F>(f), std::forward<Args>(args)...)) {}
+  std::function<void()> result;
+};
 
 template <typename F>
 struct invoker {
@@ -131,9 +141,11 @@ struct invoker {
                                      std::index_sequence<Is...>,
                                      CapturedArgs&&... args) {
     // std::bind creates a copy of args
-    return std::bind(
+    // Aggregate initialization evaluates args from left to right.
+    return binder{
         func, accessor<std::tuple_element_t<Is, Params>, CapturedArgs>::access(
-                  std::forward<CapturedArgs>(args), is_sequential)...);
+                  std::forward<CapturedArgs>(args), is_sequential)...}
+        .result;
   }
 };
 
