@@ -31,8 +31,9 @@ sh_test(
         ":proc-elem-xo",
         "//tapa/cosim:tapa-fast-cosim",
     ],
+    env = {"TAPA_CONCURRENCY": "1"},
     tags = [
-        "cpu:2",
+        "cpu:5",
     ],
 )
 
