@@ -66,6 +66,7 @@ py_library(
     deps = [
         ":ioport",
         "//tapa/backend",
+        "//tapa/common:pyslang_rewriter",
         "//tapa/common:unique_attrs",
         "//tapa/verilog",
         requirement("jinja2"),
@@ -82,6 +83,7 @@ py_test(
         "//tapa/verilog/xilinx/testdata:UpperLevelTask.v",
     ],
     deps = [
+        ":ast_types",
         ":module",
         "//tapa:util",
     ],

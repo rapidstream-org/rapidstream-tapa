@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from tapa.util import Options
+from tapa.verilog.xilinx import ast_types
 from tapa.verilog.xilinx.module import Module
 
 _TESTDATA_PATH = (Path(__file__).parent / "testdata").resolve()
@@ -118,6 +119,48 @@ def test_upper_level_task_module() -> None:
     module.cleanup()
 
     assert module.params == {}
+
+
+@pytest.mark.usefixtures("options")
+def test_add_ports_succeeds() -> None:
+    module = Module(name="foo")
+    assert module.ports == {}
+
+    module.add_ports([ast_types.Input("bar")])
+    ports = module.ports
+    assert list(ports) == ["bar"]
+    assert ports["bar"].name == "bar"
+    assert ports["bar"].width is None
+    assert ports["bar"].direction == "input"
+
+    module.add_ports([ast_types.Input("baz"), ast_types.Output("qux")])
+    ports = module.ports
+    assert list(ports) == ["bar", "baz", "qux"]
+    assert ports["baz"].name == "baz"
+    assert ports["baz"].width is None
+    assert ports["baz"].direction == "input"
+    assert ports["qux"].name == "qux"
+    assert ports["qux"].width is None
+    assert ports["qux"].direction == "output"
+
+
+@pytest.mark.usefixtures("options")
+def test_del_port_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_ports([ast_types.Input("bar")])
+
+    module.del_port("bar")
+
+    assert module.ports == {}
+
+
+@pytest.mark.usefixtures("options")
+def test_del_nonexistent_port_fails() -> None:
+    module = Module(name="foo")
+    module.add_ports([ast_types.Input("bar")])
+
+    with pytest.raises(ValueError, match="no port baz found in module foo"):
+        module.del_port("baz")
 
 
 @pytest.mark.usefixtures("options")

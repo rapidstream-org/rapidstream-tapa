@@ -9,7 +9,7 @@ import logging
 import os.path
 import re
 import tempfile
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Generator, Iterable, Iterator
 from typing import get_args
 
 import pyslang
@@ -46,6 +46,7 @@ from pyverilog.vparser.ast import (
 from pyverilog.vparser.parser import VerilogCodeParser
 
 from tapa.backend.xilinx import M_AXI_PREFIX
+from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
 from tapa.util import Options
 from tapa.verilog.ast_utils import make_port_arg, make_pragma
@@ -128,6 +129,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 self._syntax_tree = pyslang.SyntaxTree.fromText(
                     f"module {name}(); endmodule",
                 )
+                self._rewriter = PyslangRewriter(self._syntax_tree)
             self.ast = Source(
                 name,
                 Description([ModuleDef(name, Paramlist(()), Portlist(()), items=())]),
@@ -170,6 +172,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             )
             if Options.enable_pyslang:
                 self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
+                self._rewriter = PyslangRewriter(self._syntax_tree)
             self.ast: Source = codeparser.parse()
             self.directives: tuple[Directive, ...] = codeparser.get_directives()
         self._handshake_output_ports = {}
@@ -238,6 +241,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     @property
     def ports(self) -> dict[str, ioport.IOPort]:
+        if Options.enable_pyslang:
+            return self._ports_pyslang
         port_lists = [
             # ANSI style: ports declared in header
             (x.first for x in self._module_def.portlist.ports if isinstance(x, Ioport)),
@@ -249,6 +254,18 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             for x in itertools.chain.from_iterable(port_lists)
             if isinstance(x, Input | Output | Inout)
         }
+
+    @property
+    def _ports_pyslang(self) -> dict[str, ioport.IOPort]:
+        ports = {}
+
+        def visitor(node: object) -> None:
+            if isinstance(node, pyslang.PortDeclarationSyntax):
+                port = ioport.IOPort.create(node)
+                ports[port.name] = port
+
+        self._syntax_tree.root.visit(visitor)
+        return ports
 
     class NoMatchingPortError(ValueError):
         """No matching port being found exception."""
@@ -421,6 +438,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         Each port could be an `IOPort`, or an `Decl` that has a single `IOPort`
         prefixed with 0 or more `Pragma`s.
         """
+        if Options.enable_pyslang:
+            return self._add_ports_pyslang(ports)
         decl_list = []
         port_list = []
         for port in ports:
@@ -447,6 +466,56 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._increment_idx(len(decl_list), "io_port")
         return self
 
+    def _add_ports_pyslang(self, ports: Iterable[IOPort | Decl]) -> "Module":
+        attrs = UniqueAttrs()
+
+        # Source range of the last port declaration in the module body.
+        # If found, new ports will be appended after it. Otherwise, new ports
+        # are appended after the header.
+        # Typed as a singleton list so the visitor can update it.
+        last_port_decl_range: list[pyslang.SourceRange | None] = [None]
+
+        def visitor(node: object) -> None:
+            if isinstance(node, pyslang.ModuleHeaderSyntax):
+                attrs.module_header = node
+            elif isinstance(node, pyslang.PortDeclarationSyntax):
+                last_port_decl_range[0] = node.sourceRange
+
+        self._syntax_tree.root.visit(visitor)
+        assert isinstance(attrs.module_header, pyslang.ModuleHeaderSyntax)
+
+        def flatten(ports: Iterable[IOPort | Decl]) -> Generator[ioport.IOPort]:
+            for port in ports:
+                if isinstance(port, Decl):
+                    yield from flatten(x for x in port.list if isinstance(x, IOPort))
+                elif isinstance(port, IOPort):
+                    yield ioport.IOPort.create(port)
+                else:
+                    msg = f"unexpected port `{port}`"
+                    raise ValueError(msg)
+
+        header_pieces = []
+        body_pieces = []
+        for port in flatten(ports):
+            header_pieces.extend([",\n  ", port.name])
+            body_pieces.extend(["\n  ", str(port)])
+        if len(attrs.module_header.ports[1]) == 0 and header_pieces:
+            # Remove the first `,` if there is no preceding ports.
+            header_pieces[0] = "  "
+
+        self._rewriter.add_before(
+            # Append new ports before token `)` of the port list in header.
+            attrs.module_header.ports.getLastToken().location,
+            "".join(header_pieces),
+        )
+        self._rewriter.add_before(
+            # If module has no existing port, append new ports after the header.
+            (last_port_decl_range[0] or attrs.module_header.sourceRange).end,
+            "".join(body_pieces),
+        )
+        self._syntax_tree = self._rewriter.commit()
+        return self
+
     def del_port(self, port_name: str) -> None:
         """Delete IO port from this module.
 
@@ -458,6 +527,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         ------
           ValueError: Module does not have the port.
         """
+        if Options.enable_pyslang:
+            self._del_port_pyslang(port_name)
+            return
+
         removed_ports = []
 
         def func(item: Node) -> bool:
@@ -477,6 +550,24 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._module_def.portlist.ports = tuple(
             x for x in self._module_def.portlist.ports if x.name != port_name
         )
+
+    def _del_port_pyslang(self, port_name: str) -> None:
+        removed_ports = []
+
+        def visitor(node: object) -> pyslang.VisitAction:
+            if not isinstance(node, pyslang.PortDeclarationSyntax):
+                return pyslang.VisitAction.Advance
+            if ioport.IOPort.create(node).name != port_name:
+                return pyslang.VisitAction.Skip
+            self._rewriter.remove(node.sourceRange)
+            removed_ports.append(node)
+            return pyslang.VisitAction.Interrupt
+
+        self._syntax_tree.root.visit(visitor)
+        if not removed_ports:
+            msg = f"no port {port_name} found in module {self.name}"
+            raise ValueError(msg)
+        self._syntax_tree = self._rewriter.commit()
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
         signal_tuple = tuple(signals)

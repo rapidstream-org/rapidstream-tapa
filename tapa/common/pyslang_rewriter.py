@@ -4,8 +4,12 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import logging
+
 import pyslang
 from intervaltree import IntervalTree
+
+_logger = logging.getLogger().getChild(__name__)
 
 
 class PyslangRewriter:
@@ -60,6 +64,12 @@ class PyslangRewriter:
             start, stop, _ = interval
             pieces.extend(self._additions.get(start, []))
             pieces.append(text[start:stop])
+
+        _logger.debug(
+            "committing %d additions and %d deletions",
+            sum(map(len, (self._additions.values()))),
+            len(self._deletions),
+        )
 
         self._syntax_tree = pyslang.SyntaxTree.fromText("".join(pieces))
         self._buffer_id = None
