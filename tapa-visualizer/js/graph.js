@@ -315,6 +315,7 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
       ({
         type: "click-select",
         degree: 1,
+        neighborState: "highlight",
         onClick: ({ target: item }) => {
           if (!("type" in item)) { resetSidebar(); return; }
           switch (item.type) {
