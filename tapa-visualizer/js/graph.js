@@ -11,6 +11,7 @@ import {
   resetInstance,
   resetSidebar,
   updateSidebarForCombo,
+  updateSidebarForEdge,
   updateSidebarForNode,
 } from "./sidebar.js";
 import { getComboId } from "./helper.js";
@@ -251,7 +252,7 @@ const getGraphButtons = (graph) => [[
   () => void graph.fitView()
 ], [
   ".btn-saveImage",
-  () => void graph.toDataURL().then(
+  () => void graph.toDataURL({ mode: "overall" }).then(
     href => Object.assign(
       document.createElement("a"),
       { href, download: filename, rel: "noopener" },
@@ -277,6 +278,14 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
 
 (() => {
 
+  /** @type {((states: Record<string, string[]>) => Record<string, string[]>)} */
+  const showSelectedNodes = states => {
+    const selected = Object.keys(states);
+    selected.length > 0 &&
+    resetSidebar(`Selected nodes: ${selected.join(", ")}`);
+    return states;
+  }
+
   // https://g6.antv.antgroup.com/api/graph/option
   const graph = new G6.Graph({
     ...graphOptions,
@@ -285,21 +294,36 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
 
     behaviors: [
       // "auto-adapt-label",
-      /** @type {import("@antv/g6").BrushSelectOptions} */
-      ({
-        type: "brush-select",
-        mode: "diff",
-        enableElements: ["node"],
-      }),
-      /** @type {import("@antv/g6").DragCanvasOptions} */
-      ({
-        type: "drag-canvas",
-        key: "drag-canvas",
-      }),
       "zoom-canvas",
       "drag-element",
 
-      /** @type {import("@antv/g6").CollapseExpandOptions} */
+      /** drag canvas when Shift or Ctrl are not pressed
+       * @type {import("@antv/g6").DragCanvasOptions} */
+      ({
+        type: "drag-canvas",
+        enable: event => !event.ctrlKey && !event.shiftKey,
+      }),
+      /** Shift + drag: brush select (box selection)
+       * @type {import("@antv/g6").BrushSelectOptions} */
+      ({
+        type: "brush-select",
+        trigger: ["shift"],
+        mode: "diff",
+        enableElements: ["node"],
+        onSelect: showSelectedNodes,
+      }),
+      /** Ctrl + drag: lasso select
+       * @type {import("@antv/g6").LassoSelectOptions} */
+      ({
+        type: "lasso-select",
+        trigger: ["control"],
+        mode: "diff",
+        enableElements: ["node"],
+        onSelect: showSelectedNodes,
+      }),
+
+      /** Double click to collapse / expand combo
+       * @type {import("@antv/g6").CollapseExpandOptions} */
       ({
         type: "collapse-expand",
         animation: false,
@@ -320,8 +344,8 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
           if (!("type" in item)) { resetSidebar(); return; }
           switch (item.type) {
             case "node":  updateSidebarForNode(item.id, graph); break;
-            case "combo": updateSidebarForCombo(item.id); break;
-            case "edge":  resetSidebar("Edge is not supported yet."); break;
+            case "combo": updateSidebarForCombo(item.id, graph); break;
+            case "edge":  updateSidebarForEdge(item.id); break;
             default: resetSidebar(); break;
           }
         },
