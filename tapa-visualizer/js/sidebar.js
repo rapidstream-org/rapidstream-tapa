@@ -85,7 +85,10 @@ const showCode = (code) => {
   button.addEventListener("click", () => {
     // TODO: Set title of the dialog to the task name
     const container = document.querySelector("dialog code");
-    if (container) { container.textContent = code; }
+    if (container) {
+      container.textContent = code;
+      globalThis.Prism?.highlightElement(container, true);
+    }
     document.querySelector("dialog")?.showModal();
   });
   return button;
