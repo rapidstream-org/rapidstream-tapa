@@ -105,7 +105,11 @@ dialog > h2 {
 dialog > h2 > button:first-child {
 	margin-inline-start: auto;
 }
-dialog > pre {
+dialog > pre,
+dialog > pre[class*="language-"] {
+	max-height: calc(100vh - 12rem);
+	width: calc(100% - 4rem);
+	margin-left: -3px;
 	overflow: auto;
-	max-height: calc(100vh - 10rem);
+	font-size: .9rem;
 }

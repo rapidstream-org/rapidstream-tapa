@@ -21,5 +21,8 @@
         "js/*.js",
         "types/*.d.ts",
         "eslint.config.mjs"
+    ],
+    "exclude": [
+        "js/*.min.js"
     ]
 }
