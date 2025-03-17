@@ -42,7 +42,7 @@ header {
 	border-right: 1px solid #BEBEBE;
 }
 
-:root { line-height: 1.368; }
+:root { font-family: system-ui, sans-serif; line-height: 1.368; }
 .lucide { width: 1rem; height: 1rem; }
 </style>
 
@@ -108,21 +108,25 @@ header {
 <aside>
 
 <div class="sidebar-tabs">
+
+	<label class="btn btn-explorer" tabindex="0">
+		<input type="radio" name="sidebar" value="explorer" hidden>
+		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-tree"><path d="M21 12h-8"/><path d="M21 6H8"/><path d="M21 18h-8"/><path d="M3 6v4c0 1.1.9 2 2 2h3"/><path d="M3 10v6c0 1.1.9 2 2 2h3"/></svg>
+		<span class="btn-text">Explorer</span>
+	</label>
+
 	<label class="btn btn-details" tabindex="0">
 		<input type="radio" name="sidebar" value="details" hidden checked>
 		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
 		<span class="btn-text">Details</span>
 	</label>
+
 	<label class="btn btn-connections" tabindex="0">
 		<input type="radio" name="sidebar" value="connections" hidden>
 		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waypoints"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>
 		<span class="btn-text">Connections</span>
 	</label>
-	<label class="btn btn-source" tabindex="0">
-		<input type="radio" name="sidebar" value="source" hidden>
-		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-		<span class="btn-text">Source Code</span>
-	</label>
+
 	<label class="btn btn-options" tabindex="0">
 		<input type="radio" name="sidebar" value="options" hidden>
 		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
@@ -132,6 +136,13 @@ header {
 </div>
 
 <div class="sidebar-contents">
+
+	<section class="explorer">
+		<div class="summary">Explorer</div>
+		<div class="sidebar-content-explorer">
+			<p>TODO</p>
+		</div>
+	</section>
 
 	<section class="details">
 		<!-- TODO: add a "Task" block for task infomations -->
@@ -143,6 +154,16 @@ header {
 			</summary>
 			<div class="sidebar-content-instance">
 				<p>Loading...</p>
+			</div>
+		</details>
+		<details class="task" open="">
+			<summary>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-todo"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+				Task
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+			</summary>
+			<div class="sidebar-content-task">
+				<p>Please select a node or combo.</p>
 			</div>
 		</details>
 	</section>
@@ -173,14 +194,6 @@ header {
 
 	</section>
 
-	<section class="source">
-		<div class="summary">Source Code</div>
-		<div class="sidebar-content-source">
-			<p>TODO</p>
-		</div>
-	</section>
-
-
 	<section class="options">
 		<div class="summary">Options</div>
 		<form class="sidebar-content-options">
@@ -193,6 +206,9 @@ header {
 				<label><input type="radio" name="layout" value="dagre"> Dagre</label>
 			</fieldset>
 			<p>Graph Options</p>
+			<fieldset>
+				<legend>Color scheme: TODO</legend>
+			</fieldset>
 			<fieldset class="only-one-combo">
 				<legend>Expand other upper tasks:</legend>
 				<label><input type="radio" name="expand" value="false"> Collapse</label>
@@ -207,6 +223,20 @@ header {
 			</fieldset>
 			<p>Save Image Options</p>
 			<p>TODO</p>
+			<fieldset disabled>
+				<legend>Image file type:</legend>
+				<label><input type="radio" name="type" value="png" checked> PNG</label>
+				<label><input type="radio" name="type" value="jpeg"> JPEG</label>
+				<label><input type="radio" name="type" value="webp"> WebP</label>
+			</fieldset>
+			<fieldset disabled>
+				<legend>Image quality:</legend>
+				<label><input type="checkbox" name="quality" value="webp"> Use default</label><br>
+				<label style="display: block; margin: .25rem .25rem 0;">
+					Quality: <input type="range" name="quality" min="0" max="1" step="0.05"
+					style="vertical-align: bottom; margin: 0 .5ch;" />
+				</label>
+			</fieldset>
 		</form>
 	</section>
 

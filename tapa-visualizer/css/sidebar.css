@@ -12,9 +12,9 @@
 .sidebar-contents section {
 	display: none;
 }
+.sidebar-tabs:has(.btn-explorer    > input:checked) + .sidebar-contents > .explorer,
 .sidebar-tabs:has(.btn-details     > input:checked) + .sidebar-contents > .details,
 .sidebar-tabs:has(.btn-connections > input:checked) + .sidebar-contents > .connections,
-.sidebar-tabs:has(.btn-source      > input:checked) + .sidebar-contents > .source,
 .sidebar-tabs:has(.btn-options     > input:checked) + .sidebar-contents > .options {
 	display: block;
 }
@@ -62,15 +62,15 @@
 }
 
 /* sidebar contents - ol ul dl */
-.sidebar-contents p,
-.sidebar-contents ol,
-.sidebar-contents ul {
+.sidebar-contents p {
 	margin-top: .5rem;
 	margin-bottom: .5rem;
 }
 .sidebar-contents ol,
 .sidebar-contents ul {
+	margin: 0;
 	padding-inline-start: 1em;
+	font-size: .85rem;
 }
 .sidebar-contents ul {
 	list-style-type: "• ";
@@ -85,6 +85,10 @@
 	font-size: .85rem;
 }
 .sidebar-contents dl > dd {
+	max-height: 24rem;
+	overflow: auto;
+	scrollbar-width: thin;
+
 	margin: 0;
 	margin-top: .1rem;
 	margin-bottom: .25rem;
@@ -93,16 +97,43 @@
 
 /* sidebar contents - table */
 .sidebar-contents table {
-	margin: .5em 0;
+	position: relative;
+	margin: 0;
 	border-collapse: collapse;
+	overflow-wrap: anywhere;
+	font-size: .9rem;
 }
 .sidebar-contents th,
 .sidebar-contents td {
+	min-width: 8ch;
 	padding: .1em .5ch;
 	border: 1px solid;
+	border-color: currentColor #CCC;
 }
-.sidebar-contents td {
-	font-family: monospace;
+.sidebar-contents th:first-child,
+.sidebar-contents td:first-child {
+	border-left-color: currentColor;
+}
+.sidebar-contents th:last-child,
+.sidebar-contents td:last-child {
+	border-right-color: currentColor;
+}
+.sidebar-contents th {
+	position: sticky;
+	top: 0;
+}
+/* th/td border are not sticky, but ::before is, add border in ::before */
+.sidebar-contents th::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	z-index: -1;
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+	background-color: white;
 }
 
 /* Upper task's ports table: center everything other than Type */
