@@ -22,6 +22,7 @@ You may have to disable security.fileuri.strict_origin_policy. -->
 <script defer src="https://unpkg.com/@antv/g6@5.0.44/dist/g6.min.js"></script>
 
 <link rel="stylesheet" href="./css/style.css">
+<link rel="stylesheet" href="./css/prism.min.css">
 <style>
 /* basic layout & reset */
 html, body, .graph-container { height: 100%; }
@@ -219,7 +220,7 @@ header {
 		<button class="btn-copy">Copy</button>
 		<button class="btn-close" autofocus>Close</button>
 	</h2>
-	<pre><code></code></pre>
+	<pre><code class="language-cpp line-numbers"></code></pre>
 </dialog>
 
 <script>
@@ -254,5 +255,5 @@ header {
 })();
 </script>
 <script type="module" src="./js/graph.js"></script>
-
+<script defer src="./js/prism.min.js" data-manual></script>
 </html>

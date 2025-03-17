@@ -12,7 +12,9 @@ import ts from "typescript-eslint";
  *  @type {Pick<import("eslint").Linter.Config, "name" | "ignores">} */
 const globalIgnores = {
   name: "global ignores",
-  ignores: [],
+  ignores: [
+    "js/*.min.js",
+  ],
 };
 
 /** @type {import("eslint").Linter.Config[]} */
@@ -55,7 +57,6 @@ const config = [
     languageOptions: {
       parserOptions: {
         project: true,
-        projectService: true,
       },
     },
     rules: {
