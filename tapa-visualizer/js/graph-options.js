@@ -50,8 +50,8 @@ const elementOptions = {
   node: {
     type: "rect",
     style: {
-      size: ({ style }) => style?.size ?? [120, 40],
-      fill: ({ style }) => style?.fill ?? "#198754",
+      size: [120, 40],
+      fill: ({ style }) => style?.fill ?? "#198754", // Bootstrap $green-500
       radius: 2,
 
       portR: 5,
@@ -66,19 +66,31 @@ const elementOptions = {
       labelFontFamily: "monospace",
       labelText: ({ id }) => id,
     },
-    // Builtin states: "selected" "highlight" "active" "inactive" "disabled"
+    // Builtin states: "selected" "active" "inactive" "disabled" "highlight"
     state: {
+      // selected (degree 0): stroke + halo
       selected: {
-        stroke: "#051b11",
-        strokeOpacity: 0.75,
+        halo: true,
+        strokeOpacity: 1,
+        stroke: "#20c997", // Bootstrap $teal-500
+        haloStroke: "#20c997",
+        lineWidth: 4,
+        haloLineWidth: 12,
+      },
+      // highlight (degree 1): stroke only
+      highlight: {
+        halo: true,
+        strokeOpacity: 1,
+        stroke: "#20c997",
+        haloStroke: "#20c997",
         lineWidth: 2,
-        haloLineWidth: 10,
+        haloLineWidth: 6,
       },
     },
   },
   edge: {
     style: {
-      stroke: "#A3CFBB",
+      stroke: "#A3CFBB", // Bootstrap $green-200
       endArrow: true,
 
       labelBackground: true,
@@ -90,14 +102,24 @@ const elementOptions = {
     },
     state: {
       selected: {
-        labelFontWeight: "normal",
         labelFontSize: 12,
-        labelBackgroundFill: "#EFE",
-      }
+        labelFontWeight: "normal",
+        stroke: "#20c997",
+        lineWidth: 3,
+        haloLineWidth: 9,
+      },
+      highlight: {
+        halo: true,
+        labelFontWeight: "normal",
+        stroke: "#20c997",
+        lineWidth: 2,
+        haloLineWidth: 6,
+        haloStrokeOpacity: .25,
+      },
     }
   },
   combo: {
-    // type: "rect",
+    type: "rect",
     style: {
       fill: "#13795B",
       stroke: "#13795B",
@@ -109,13 +131,16 @@ const elementOptions = {
 
       labelFill: "gray",
       labelPlacement: "top",
+      labelFontFamily: "monospace",
+      labelOffsetY: -5,
       labelText: ({ id }) => getComboName(id),
     },
     state: {
       selected: {
-        haloStrokeOpacity: 0.25,
+        labelFontSize: 12,
         lineWidth: 3,
-        labelFontSize: 10,
+        haloLineWidth: 9,
+        haloStrokeOpacity: 0.25,
       },
     },
   },

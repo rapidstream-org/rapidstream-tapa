@@ -9,7 +9,7 @@
 import { getComboId } from "./helper.js";
 
 /** Color for node with more than 1 connection */
-const majorNodeColor = "#0F5132";
+const majorNodeColor = "#0F5132"; // Bootstrap $green-700
 
 /** @type {<K, V>(map: Map<K, Set<V>>, key: K, value: V) => void} */
 const addToMappedSet = (map, key, value) => {
@@ -171,7 +171,6 @@ export const getGraphData = (json, options = defaultOptions) => {
 
   combos.push({
     id: getComboId(topTaskName),
-    type: "rect",
     data: topTask,
   });
 
@@ -198,7 +197,6 @@ export const getGraphData = (json, options = defaultOptions) => {
         const newCombo = {
           id: getComboId(subTaskName),
           combo,
-          type: "circle",
           data: task,
           style: { collapsed },
         };
