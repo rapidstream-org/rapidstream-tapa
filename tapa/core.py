@@ -109,13 +109,16 @@ STATE10 = IntConst("2'b10")
 
 FIFO_DIRECTIONS = ["consumed_by", "produced_by"]
 
-AIE_DEFAULT_DEPTH = 64
+# AIE_DEPTH is the number of elements in the AIE windows.
+AIE_DEPTH = 64
 
 
 def gen_declarations(task: Task) -> tuple[list[str], list[str], list[str]]:
     """Generates kernel and port declarations."""
     port_decl = [
-        f"input_plio p_{port.name};" if port.is_immap else f"output_plio p_{port.name};"
+        f"input_plio p_{port.name};"
+        if port.is_immap or port.is_istream
+        else f"output_plio p_{port.name};"
         for port in task.ports.values()
     ]
     kernel_decl = [
@@ -160,7 +163,7 @@ def gen_definitions(task: Task) -> tuple[list[str], ...]:
     port_def = [
         f'p_{port.name} = input_plio::create("{port.name}",'
         f' plio_{port.width}_bits, "{port.name}.txt");'
-        if port.is_immap
+        if port.is_immap or port.is_istream
         else f'p_{port.name} = output_plio::create("{port.name}",'
         f' plio_{port.width}_bits, "{port.name}.txt");'
         for port in task.ports.values()
@@ -175,8 +178,9 @@ def gen_definitions(task: Task) -> tuple[list[str], ...]:
     )
 
 
-def gen_connections(task: Task) -> list[str]:  # noqa: C901  # TODO: refactor this function
+def gen_connections(task: Task) -> list[str]:  # noqa: C901 PLR0912
     """Generates connections between ports and kernels."""
+    # TODO: refactor this function
     link_from_src = {}
     link_to_dst = {}
     for name, insts in task.tasks.items():
@@ -213,32 +217,52 @@ def gen_connections(task: Task) -> list[str]:  # noqa: C901  # TODO: refactor th
                     msg = f"Unknown connection category: {conn_dict['cat']}"
                     raise ValueError(msg)
 
-    connect_def = []
-    for name in task.fifos:
-        assert link_from_src[name][1] == "net", "FIFOs should be connected to/from net"
-        connect_def.append(
-            f"connect<stream> {name} (k_{link_from_src[name][0]},"
-            f" k_{link_to_dst[name][0]});"
-        )
+    for k, val in link_from_src.items():
+        pass
+
+    for k, val in link_to_dst.items():
+        pass
+
+    connect_def = [
+        f"connect<stream> {name} (k_{link_from_src[name][0]},"
+        f" k_{link_to_dst[name][0]});"
+        for name in task.fifos
+        if name in link_from_src and name in link_to_dst
+    ]
 
     for port in task.ports.values():
         name = port.name
         width = port.width
+        window_default_size = int(width) // 8 * AIE_DEPTH
         if name in link_from_src:
-            assert link_from_src[name][1] == "io", (
-                "Ports should be connected to/from io"
-            )
-            connect_def.append(
-                f"connect<window<{int(width) // 8 * AIE_DEFAULT_DEPTH}>> {name}_link"
-                f" (k_{link_from_src[name][0]}, p_{name}.in[0]);"
-            )
+            if link_from_src[name][1] == "io":
+                connect_def.append(
+                    f"connect<window<{window_default_size}>> {name}_link"
+                    f" (k_{link_from_src[name][0]}, p_{name}.in[0]);"
+                )
+            elif link_from_src[name][1] == "net":
+                connect_def.append(
+                    f"connect<stream> {name}_link"
+                    f" (k_{link_from_src[name][0]}, p_{name}.in[0]);"
+                )
+            else:
+                msg = f"Port[{name}] should be connected to io/net"
+                raise ValueError(msg)
 
         if name in link_to_dst:
-            assert link_to_dst[name][1] == "io", "Ports should be connected to/from io"
-            connect_def.append(
-                f"connect<window<{int(width) // 8 * AIE_DEFAULT_DEPTH}>> {name}_link"
-                f" (p_{name}.out[0], k_{link_to_dst[name][0]});"
-            )
+            if link_to_dst[name][1] == "io":
+                connect_def.append(
+                    f"connect<window<{window_default_size}>> {name}_link"
+                    f" (p_{name}.out[0], k_{link_to_dst[name][0]});"
+                )
+            elif link_to_dst[name][1] == "net":
+                connect_def.append(
+                    f"connect<stream> {name}_link"
+                    f" (p_{name}.out[0], k_{link_to_dst[name][0]});"
+                )
+            else:
+                msg = f"Port[{name}] should be connected to io"
+                raise ValueError(msg)
 
     return connect_def
 
