@@ -4,11 +4,14 @@
  * RapidStream Contributor License Agreement.
  */
 
-import { $, getComboName } from "./graph.js";
+"use strict";
 
-// sidebar content containers
-export const sidebarContainers = [
+import { $, $text, append, getComboName } from "./helper.js";
+
+// sidebar content container elements
+const sidebarContainers = [
   "instance",
+  "task",
   "neighbors",
   "connections",
 ].map(name => {
@@ -22,45 +25,99 @@ export const sidebarContainers = [
 
 const [
   instance,
+  task,
   neighbors,
   connections,
 ] = sidebarContainers;
 
-/** @type {<T extends HTMLElement>(parent: T, ...children: (Node | string)[]) => T} */
-const append = (parent, ...children) => {
-  parent.append(...children);
-  return parent;
-}
+export const resetInstance = (text = "Please select an item.") =>
+  instance.replaceChildren($text("p", text));
+
+export const resetSidebar = (instanceText = "Please select an item.") => [
+  instanceText,
+  "Please select a node or combo.",
+  "Please select a node.",
+  "Please select a node.",
+].forEach(
+  (text, i) => sidebarContainers[i].replaceChildren($text("p", text)),
+);
+
+// DOM Helpers
+
+/** @type {(elements: (Node | string)[]) => HTMLUListElement} */
+const ul = elements => append(
+  $("ul", { style: "font-family: monospace;" }),
+  ...elements
+);
+
+// Object to element parsers
 
 /** @type {(args: [string, { arg: string, cat: string }][]) => HTMLElement} */
 const parseArgs = args => append(
   $("dd"), append(
     $("ul"), ...args.map(
       ([name, { arg, cat }]) =>
-        $("li", { textContent: `${name}: ${arg} (${cat})` })
+        $text("li", `${name}: ${arg} (${cat})`)
     )
   )
 );
 
+/** Parse ports into <table>
+ * @type {(ports: Port[]) => HTMLTableElement} */
+const parsePorts = ports => append(
+  $("table", { className: "upperTask-ports" }),
+  append(
+    $("tr"),
+    $text("th", "Name"),
+    $text("th", "Category"),
+    $text("th", "Type"),
+    $text("th", "Width"),
+  ),
+  ...ports.map(
+    ({name, cat, type, width}) => append(
+      $("tr"),
+      ...[name, cat, type, width].map(
+        value => $text("td", value),
+      ),
+    ),
+  ),
+);
+
+/** @type {(code: string) => HTMLButtonElement} */
+const showCode = (code) => {
+  const button = $text("button", "Show C++ Code");
+  button.addEventListener("click", () => {
+    // TODO: Set title of the dialog to the task name
+    const container = document.querySelector("dialog code");
+    if (container) {
+      container.textContent = code;
+      globalThis.Prism?.highlightElement(container, true);
+    }
+    document.querySelector("dialog")?.showModal();
+  });
+  return button;
+};
+
 // Details
 
-/** @type {(node: import("@antv/g6").NodeData) => HTMLDListElement} */
-const getDetailsFromNode = node => {
+/** Get an `<dl>` element containing:
+ * Instance Name, Upper Task, Sub-Task(s)
+ * @type {(node: NodeData) => HTMLElement} */
+const getNodeInfo = node => {
 
-  /** @satisfies {HTMLDListElement} */
   const dl = append(
     $("dl"),
-    $("dt", { textContent: "Instance Name" }),
-    $("dd", { textContent: node.id }),
-    $("dt", { textContent: "Upper Task" }),
-    $("dd", { textContent: getComboName(node.combo ?? "<none>") }),
+    $text("dt", "Instance Name"),
+    $text("dd", node.id),
+    $text("dt", "Upper Task"),
+    $text("dd", getComboName(node.combo ?? "<none>")),
   );
 
-  /**
+  /** Append info for 1 sub-task, indexed or not indexed
    * @param {HTMLDListElement} dl
    * @param {SubTask} subTask
    * @param {number} [i] */
-  const appendNodeData = (dl, { args, step }, i) => {
+  const appendSubTask = (dl, { args, step }, i) => {
     const argsArr = Object.entries(args);
     if (typeof i === "number") {
       dl.append($("dt", {
@@ -69,29 +126,23 @@ const getDetailsFromNode = node => {
       }));
     }
     dl.append(
-      $("dt", { textContent: `Arguments` }),
+      $text("dt", "Arguments"),
       argsArr.length > 0
         ? parseArgs(argsArr)
-        : $("dd", { textContent: "<none>" }),
-      $("dt", { textContent: `Step` }),
-      $("dd", { textContent: step }),
+        : $text("dd", "<none>"),
+      $text("dt", "Step"),
+      $text("dd", step),
     );
   }
 
-  if (node.data?.subTasks) {
-    /**
-     * @type {SubTask[]}
-     * @ts-expect-error unknown */
-    const subTasks = node.data?.subTasks;
-    subTasks.forEach(
-      (subTask, i) => appendNodeData(dl, subTask, i)
+  const { data } = node;
+
+  if ("subTask" in data) {
+    appendSubTask(dl, data.subTask);
+  } else if ("subTasks" in data && Array.isArray(data.subTasks)) {
+    data.subTasks.forEach(
+      (subTask, i) => appendSubTask(dl, subTask, i)
     );
-  } else if (node.data?.args) {
-    /**
-     * @type {SubTask}
-     * @ts-expect-error unknown */
-    const subTask = node.data;
-    appendNodeData(dl, subTask);
   } else {
     console.warn("Selected node is missing data!", node)
   }
@@ -100,42 +151,118 @@ const getDetailsFromNode = node => {
 
 };
 
+/** Get an `<dl>` element containing:
+ * Instance Name, Upper Task, Sub-Task(s)
+ * @type {(node: Task, taskName: string) => HTMLElement} */
+const getTaskInfo = (task, taskName) => {
+  const dl = append(
+    $("dl"),
+    $text("dt", "Task Name"),
+    $text("dd", taskName),
+    $text("dt", "Task Level"),
+    $text("dd", task.level),
+    $text("dt", "Build Target"),
+    $text("dd", task.target),
+    $text("dt", "Vendor"),
+    $text("dd", task.vendor),
+
+    // Lower task can have ports too
+    $text("dt", "Ports"),
+    task.ports && task.ports.length !== 0
+      ? append($("dd"), parsePorts(task.ports))
+      : $text("dd", "none"),
+  );
+
+  if (task.level === "upper") {
+    /** @type {HTMLLIElement[]} */
+    const tasks = [];
+    for (const name in task.tasks) {
+      const subTasks = task.tasks[name];
+      for (let i = 0; i < subTasks.length; i++) {
+        tasks.push($("li", { textContent: `${name}/${i}` }));
+      }
+    }
+
+    /** get sub-tasks' name for fifo
+     * @type {(by: [string, number] | undefined) => string}
+     * @param by fifo.produced_by / fifo.consumed_by */
+    const getName = by => by?.join("/") ?? taskName;
+
+    /** @type {HTMLLIElement[]} */
+    const fifos = [];
+    for (const name in task.fifos) {
+      const { produced_by: p, consumed_by: c, depth: d } = task.fifos[name];
+      const depth = d !== undefined ? ` (depth: ${d})` : "";
+      const fifo = `${getName(p)} -> ${getName(c)}`;
+      fifos.push($text("li", `${name}${depth}:\n${fifo}`));
+    }
+
+    dl.append(
+      $text("dt", "Sub-Tasks"),
+      tasks.length !== 0
+        ? append($("dd"), ul(tasks))
+        : $text("dd", "none"),
+
+      $text("dt", "FIFO Streams"),
+      fifos.length !== 0
+        ? append($("dd", { style: "white-space: pre-wrap;" }), ul(fifos))
+        : $text("dd", "none"),
+    );
+  }
+
+  dl.append(
+    $text("dt", "Code"),
+    append($("dd"), showCode(task.code)),
+  );
+
+  return dl;
+};
+
+const sourcesTitle = append(
+  $("p", { textContent: "Sources" }),
+  $("br"),
+  $("code", {
+    className: "hint",
+    textContent: "Format: connection name -> target task name",
+  }),
+);
+const targetsTitle = append(
+  $("p", { textContent: "Targets" }),
+  $("br"),
+  $("code", {
+    className: "hint",
+    textContent: "Format: connection name <- source task name",
+  }),
+);
+
 /** Update sidebar for selected node
- *  @param {string} id
- *  @param {import("@antv/g6").NodeData} node
- *  @param {GraphData} graphData */
- export const updateSidebar = (id, node, graphData) => {
+ * @param {string} id
+ * @param {Graph} graph */
+export const updateSidebarForNode = (id, graph) => {
 
-  instance.replaceChildren(
-    node
-    ? getDetailsFromNode(node)
-    : $("p", { textContent: `node ${id} not found!` })
-  );
+  /** @ts-expect-error @type {NodeData | undefined} */
+  const node = graph.getNodeData(id);
+  if (!node) {
+    resetSidebar(`Node ${id} not found!`);
+    return;
+  }
 
-  /** @type {(elements: (Node | string)[]) => HTMLUListElement} */
-  const ul = elements => {
-    const ul = $("ul", { style: "font-family: monospace;" });
-    ul.append(...elements);
-    return ul;
-  };
+  // Details sidebar: Instance & Task
+  const nodeInfo = getNodeInfo(node);
+  instance.replaceChildren(nodeInfo);
 
-  /** @type {import("@antv/g6").EdgeData[]} */
-  const sources = [];
-  /** @type {import("@antv/g6").EdgeData[]} */
-  const targets = [];
-  graphData.edges.forEach(edge => {
-    edge.source === id && sources.push(edge);
-    edge.target === id && targets.push(edge);
-  });
+  const taskInfo = node.data.task
+    ? getTaskInfo(node.data.task, node.id)
+    : $text("p", "This item has no task infomation.");
+  task.replaceChildren(taskInfo);
 
-  connections.replaceChildren(
-    $("p", { textContent: "Sources" }),
-    ul(sources.map(edge => $("li", { textContent: `${edge.id} -> ${edge.target}` }))),
-    $("p", { textContent: "Targets" }),
-    ul(targets.map(edge => $("li", { textContent: `${edge.id} <- ${edge.source}` }))),
-  );
+  // Connection sidebar: Neighbors & Connections
+  const sources = graph.getRelatedEdgesData(node.id, "out");
+  const targets = graph.getRelatedEdgesData(node.id, "in");
 
-  /** @type {Set<string>} */
+  /** `graph.getNeighborNodesData()` will call `graph.getRelatedEdgesData()`
+   * again, thus it'll be better to get neighbors ourselves.
+   * @type {Set<string>} */
   const neighborIds = new Set();
   sources.forEach(edge => neighborIds.add(edge.target));
   targets.forEach(edge => neighborIds.add(edge.source));
@@ -143,7 +270,72 @@ const getDetailsFromNode = node => {
   neighbors.replaceChildren(
     neighborIds.size > 0
     ? ul([...neighborIds.values().map(id => $("li", { textContent: id }))])
-    : $("p", { textContent: `${id} has no neighbors.` }),
+    : $("p", { textContent: `Node ${node.id} has no neighbors.` }),
+  );
+
+  connections.replaceChildren(
+    sourcesTitle,
+    ul(sources.map(edge => $("li", { textContent: `${edge.id} -> ${edge.target}` }))),
+    targetsTitle,
+    ul(targets.map(edge => $("li", { textContent: `${edge.id} <- ${edge.source}` }))),
+  );
+
+};
+
+
+/** Get an `<dl>` element containing:
+ * Instance Name, Upper Task, Sub-Task(s)
+ * @type {(node: ComboData, graph: Graph) => HTMLElement} */
+const getComboInfo = (combo, graph) => {
+
+  const children = graph.getChildrenData(combo.id).map(
+    child => $text("li", child.id),
+  );
+
+  return append(
+    $("dl"),
+    $text("dt", "Instance Name"),
+    $text("dd", combo.id),
+    $text("dt", "Children"),
+    append($("dd"), ul(children)),
+  );
+};
+
+/** Update sidebar for selected combo
+ * @param {string} id
+ * @param {Graph} graph */
+export const updateSidebarForCombo = (id, graph) => {
+
+  /** @ts-expect-error @type {ComboData | undefined} */
+  const combo = graph.getComboData(id);
+  if (!combo) {
+    resetSidebar(`Combo ${id} not found!`);
+    return;
+  }
+
+  const comboInfo = getComboInfo(combo, graph);
+  instance.replaceChildren(comboInfo);
+
+  const taskInfo = getTaskInfo(combo.data, getComboName(combo.id));
+  task.replaceChildren(taskInfo);
+
+
+  neighbors.replaceChildren($text("p", "Please select a node."));
+  connections.replaceChildren($text("p", "Please select a node."));
+
+};
+
+/** Update sidebar for selected edge
+ * TODO: support show edge infomation
+ * @param {string} id */
+export const updateSidebarForEdge = id => {
+  id.at(-1);
+  instance.replaceChildren(
+    $text("p", "Edge is not fully supported yet.")
+  );
+
+  task.replaceChildren(
+    $text("p", "Edge has no task infomation.")
   );
 
 };

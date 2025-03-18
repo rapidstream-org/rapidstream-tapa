@@ -10,8 +10,8 @@ RapidStream Contributor License Agreement.
 part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide
 Contributors 2022. -->
 
-<!-- Disable security.fileuri.strict_origin_policy if you need to open this
-file directly through file:// URI on Firefox. -->
+<!-- If you need to open this file directly through file:// URI on Firefox,
+You may have to disable security.fileuri.strict_origin_policy. -->
 
 <html lang="en">
 
@@ -19,15 +19,20 @@ file directly through file:// URI on Firefox. -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TAPA Visualizer</title>
 
+<script defer src="https://unpkg.com/@antv/g6@5.0.44/dist/g6.min.js"></script>
+
+<link rel="stylesheet" href="./css/style.css">
+<link rel="stylesheet" href="./css/prism.min.css">
 <style>
 /* basic layout & reset */
 html, body, .graph-container { height: 100%; }
 body {
 	margin: 0;
 	display: grid;
-	grid-template: auto 1fr / minmax(min(42em, 100%), auto) 1fr;
+	grid-template: auto 1fr / minmax(min(42em, 100%), auto) auto 1fr;
 }
-header, header .flex, aside { display: flex; }
+header, header .flex { display: flex; }
+aside { display: contents; }
 header {
 	grid-column: 1 / -1;
 	border-bottom: 1px solid #BEBEBE;
@@ -37,11 +42,9 @@ header {
 	border-right: 1px solid #BEBEBE;
 }
 
-:root { line-height: 1.368; }
+:root { font-family: system-ui, sans-serif; line-height: 1.368; }
 .lucide { width: 1rem; height: 1rem; }
 </style>
-
-<link rel="stylesheet" href="./css/style.css">
 
 <header>
 
@@ -70,9 +73,9 @@ header {
 
 		<hr>
 
-		<button class="btn btn-refreshGraph" disabled="">
+		<button class="btn btn-rerenderGraph" disabled="">
 			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-			<span class="btn-text">Refresh Graph</span>
+			<span class="btn-text">Rerender Graph</span>
 		</button>
 		<button class="btn btn-fitCenter" disabled="">
 			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-fullscreen"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect width="10" height="8" x="7" y="8" rx="1"/></svg>
@@ -105,26 +108,44 @@ header {
 <aside>
 
 <div class="sidebar-tabs">
+
+	<label class="btn btn-explorer" tabindex="0">
+		<input type="radio" name="sidebar" value="explorer" hidden>
+		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-tree"><path d="M21 12h-8"/><path d="M21 6H8"/><path d="M21 18h-8"/><path d="M3 6v4c0 1.1.9 2 2 2h3"/><path d="M3 10v6c0 1.1.9 2 2 2h3"/></svg>
+		<span class="btn-text">Explorer</span>
+	</label>
+
 	<label class="btn btn-details" tabindex="0">
 		<input type="radio" name="sidebar" value="details" hidden checked>
 		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
 		<span class="btn-text">Details</span>
 	</label>
+
 	<label class="btn btn-connections" tabindex="0">
 		<input type="radio" name="sidebar" value="connections" hidden>
 		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waypoints"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>
 		<span class="btn-text">Connections</span>
 	</label>
-	<label class="btn btn-source" tabindex="0">
-		<input type="radio" name="sidebar" value="source" hidden>
-		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-		<span class="btn-text">Source Code</span>
+
+	<label class="btn btn-options" tabindex="0">
+		<input type="radio" name="sidebar" value="options" hidden>
+		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+		<span class="btn-text">Options</span>
 	</label>
+
 </div>
 
 <div class="sidebar-contents">
 
+	<section class="explorer">
+		<div class="summary">Explorer</div>
+		<div class="sidebar-content-explorer">
+			<p>TODO</p>
+		</div>
+	</section>
+
 	<section class="details">
+		<!-- TODO: add a "Task" block for task infomations -->
 		<details class="instance" open="">
 			<summary>
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-todo"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
@@ -133,6 +154,16 @@ header {
 			</summary>
 			<div class="sidebar-content-instance">
 				<p>Loading...</p>
+			</div>
+		</details>
+		<details class="task" open="">
+			<summary>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-todo"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+				Task
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+			</summary>
+			<div class="sidebar-content-task">
+				<p>Please select a node or combo.</p>
 			</div>
 		</details>
 	</section>
@@ -152,7 +183,7 @@ header {
 
 		<details class="connections" open="">
 			<summary>
-				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-workflow"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cable"><path d="M17 21v-2a1 1 0 0 1-1-1v-1a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1"/><path d="M19 15V6.5a1 1 0 0 0-7 0v11a1 1 0 0 1-7 0V9"/><path d="M21 21v-2h-4"/><path d="M3 5h4V3"/><path d="M7 5a1 1 0 0 1 1 1v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a1 1 0 0 1 1-1V3"/></svg>
 				Connections
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
 			</summary>
@@ -163,16 +194,64 @@ header {
 
 	</section>
 
-	<section class="source">
-		<div class="source-summary">Source Code</div>
-		<div class="source-content">
+	<section class="options">
+		<div class="summary">Options</div>
+		<form class="sidebar-content-options">
+
+			<p>Layout Options</p>
+			<fieldset>
+				<legend>Layout algorithm:</legend>
+				<label><input type="radio" name="layout" value="force-atlas2" checked> ForceAtlas2</label>
+				<label><input type="radio" name="layout" value="antv-dagre"> AntvDagre</label>
+				<label><input type="radio" name="layout" value="dagre"> Dagre</label>
+			</fieldset>
+			<p>Graph Options</p>
+			<fieldset>
+				<legend>Color scheme: TODO</legend>
+			</fieldset>
+			<fieldset class="only-one-combo">
+				<legend>Expand other upper tasks:</legend>
+				<label><input type="radio" name="expand" value="false"> Collapse</label>
+				<label><input type="radio" name="expand" value="true" checked> Expand</label>
+				<p class="hint">Top task will always expand by default.</p>
+				<p class="hint only-one-combo">Current graph has no other upper tasks than top task.</p>
+			</fieldset>
+			<fieldset>
+				<legend>Show connection ports:</legend>
+				<label><input type="radio" name="port" value="false" checked> Hide</label>
+				<label><input type="radio" name="port" value="true"> Show</label>
+			</fieldset>
+			<p>Save Image Options</p>
 			<p>TODO</p>
-		</div>
+			<fieldset disabled>
+				<legend>Image file type:</legend>
+				<label><input type="radio" name="type" value="png" checked> PNG</label>
+				<label><input type="radio" name="type" value="jpeg"> JPEG</label>
+				<label><input type="radio" name="type" value="webp"> WebP</label>
+			</fieldset>
+			<fieldset disabled>
+				<legend>Image quality:</legend>
+				<label><input type="checkbox" name="quality" value="webp"> Use default</label><br>
+				<label style="display: block; margin: .25rem .25rem 0;">
+					Quality: <input type="range" name="quality" min="0" max="1" step="0.05"
+					style="vertical-align: bottom; margin: 0 .5ch;" />
+				</label>
+			</fieldset>
+		</form>
 	</section>
 
 </div>
 
 </aside>
+
+<dialog>
+	<h2>
+		C++ Code
+		<button class="btn-copy">Copy</button>
+		<button class="btn-close" autofocus>Close</button>
+	</h2>
+	<pre><code class="language-cpp line-numbers"></code></pre>
+</dialog>
 
 <script>
 // Inline scripts aren't covered by ESlint & TypeScript, be careful
@@ -188,11 +267,23 @@ header {
 		});
 		toggleSidebar.disabled = false;
 	}
+
+	const dialog = document.querySelector("dialog");
+	if (dialog) {
+		const closeBtn = dialog.querySelector(":scope .btn-close");
+		closeBtn?.addEventListener("click", () => dialog.close());
+
+		const code = dialog.querySelector(":scope > pre > code");
+		if (code) {
+			const copyBtn = dialog.querySelector(":scope .btn-copy");
+			copyBtn?.addEventListener(
+				"click",
+				() => void navigator.clipboard.writeText(code.textContent)
+			);
+		}
+	}
 })();
 </script>
-
-<script defer src="https://unpkg.com/@antv/g6@5.0.42/dist/g6.min.js"></script>
-
 <script type="module" src="./js/graph.js"></script>
-
+<script defer src="./js/prism.min.js" data-manual></script>
 </html>

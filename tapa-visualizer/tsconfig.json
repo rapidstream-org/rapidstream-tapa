@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "allowJs": true,
+        "alwaysStrict": true,
         "checkJs": true,
         "incremental": true,
         "isolatedModules": true,
@@ -13,11 +14,15 @@
         "moduleResolution": "bundler",
         "noEmit": true,
         "strict": true,
+        "strictNullChecks": true,
         "target": "ES2023"
     },
     "include": [
         "js/*.js",
         "types/*.d.ts",
         "eslint.config.mjs"
+    ],
+    "exclude": [
+        "js/*.min.js"
     ]
 }
