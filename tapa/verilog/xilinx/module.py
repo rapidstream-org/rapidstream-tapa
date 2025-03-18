@@ -745,7 +745,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         self._filter(func, "param")
 
-    def add_instancelist(self, item: InstanceList) -> "Module":
+    def _add_instancelist(self, item: InstanceList) -> "Module":
         self._module_def.items = (
             self._module_def.items[: self._next_instance_idx]
             + (item,)
@@ -773,7 +773,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 ),
             ),
         )
-        self.add_instancelist(item)
+        self._add_instancelist(item)
         return self
 
     def add_logics(self, logics: Iterable[Logic]) -> "Module":
