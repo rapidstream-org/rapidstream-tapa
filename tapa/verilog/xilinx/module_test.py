@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
+from pyverilog.vparser import ast
 
 from tapa.util import Options
 from tapa.verilog import ast_utils
@@ -135,7 +136,10 @@ def test_upper_level_task_module() -> None:
         "ap_ST_fsm_state2_blk",
         "ap_ce_reg",
     ]
-    assert module.params != {}
+    assert list(module.params) == [
+        "ap_ST_fsm_state1",
+        "ap_ST_fsm_state2",
+    ]
 
     module.cleanup()
 
@@ -225,6 +229,56 @@ def test_del_nonexistent_signal_succeeds() -> None:
     module.del_signals(prefix="baz")
 
     assert list(module.signals) == ["bar"]
+
+
+@pytest.mark.usefixtures("options")
+def test_add_params_succeeds() -> None:
+    module = Module(name="foo")
+    assert module.params == {}
+
+    module.add_params(
+        [
+            ast.Parameter(
+                "bar",
+                ast.Constant(42),
+                width=ast_utils.make_width(233),
+            )
+        ]
+    )
+    params = module.params
+    assert list(params) == ["bar"]
+    assert _CODEGEN.visit(params["bar"]) == "parameter [232:0] bar = 42;"
+
+    module.add_params(
+        [
+            ast.Parameter("baz", ast.Constant(0)),
+            ast.Parameter("qux", ast.Constant(1)),
+        ]
+    )
+    params = module.params
+    assert list(params) == ["bar", "baz", "qux"]
+    assert _CODEGEN.visit(params["baz"]) == "parameter baz = 0;"
+    assert _CODEGEN.visit(params["qux"]) == "parameter qux = 1;"
+
+
+@pytest.mark.usefixtures("options")
+def test_del_params_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_params([ast.Parameter("bar", ast.Constant(0))])
+
+    module.del_params(prefix="bar")
+
+    assert module.params == {}
+
+
+@pytest.mark.usefixtures("options")
+def test_del_nonexistent_param_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_params([ast.Parameter("bar", ast.Constant(0))])
+
+    module.del_params(prefix="baz")
+
+    assert list(module.params) == ["bar"]
 
 
 @pytest.mark.usefixtures("options")

@@ -10,7 +10,7 @@ import os.path
 import re
 import tempfile
 from collections.abc import Callable, Generator, Iterable, Iterator
-from typing import get_args
+from typing import Literal, get_args
 
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
@@ -383,12 +383,32 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     @property
     def params(self) -> dict[str, Parameter]:
+        if Options.enable_pyslang:
+            return self._params_pyslang
         param_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
         return {
             x.name: x
             for x in itertools.chain.from_iterable(param_lists)
             if isinstance(x, Parameter)
         }
+
+    @property
+    def _params_pyslang(self) -> dict[str, Parameter]:
+        params = {}
+
+        def visitor(node: object) -> pyslang.VisitAction:
+            if isinstance(node, pyslang.ParameterDeclarationSyntax):
+                param = Parameter(
+                    _get_name(node),
+                    Constant(str(node.declarators[0].initializer.expr).strip()),
+                    _get_width(node.type),
+                )
+                params[param.name] = param
+                return pyslang.VisitAction.Skip
+            return pyslang.VisitAction.Advance
+
+        self._syntax_tree.root.visit(visitor)
+        return params
 
     @property
     def code(self) -> str:
@@ -594,7 +614,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
         if Options.enable_pyslang:
-            return self._add_signals_pyslang(signals)
+            return self._add_signals_or_params(signals)
         decl = Decl(list=tuple(signals))
         self._module_def.items = (
             self._module_def.items[: self._next_signal_idx]
@@ -604,7 +624,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._increment_idx(len(decl.list), "signal")
         return self
 
-    def _add_signals_pyslang(self, signals: Iterable[Signal]) -> "Module":
+    def _add_signals_or_params(
+        self, signal_or_params: Iterable[Signal | Parameter]
+    ) -> "Module":
         attrs = UniqueAttrs()
 
         # Source range of the last port, wire, or reg declaration in the module
@@ -612,10 +634,15 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         # signals are appended after the header.
         # Typed as a singleton list so the visitor can update it.
         last_signal_range: list[pyslang.SourceRange | None] = [None]
+        last_param_range: list[pyslang.SourceRange | None] = [None]
 
         def visitor(node: object) -> pyslang.VisitAction:
             if isinstance(node, pyslang.ModuleHeaderSyntax):
                 attrs.module_header = node
+                return pyslang.VisitAction.Skip
+            if isinstance(node, pyslang.ParameterDeclarationSyntax):
+                last_signal_range[0] = node.sourceRange
+                last_param_range[0] = node.sourceRange
                 return pyslang.VisitAction.Skip
             if isinstance(node, _SIGNAL_SYNTAX | pyslang.PortDeclarationSyntax):
                 last_signal_range[0] = node.sourceRange
@@ -624,13 +651,22 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         self._syntax_tree.root.visit(visitor)
         assert isinstance(attrs.module_header, pyslang.ModuleHeaderSyntax)
-        pieces = []
-        for signal in signals:
-            pieces.extend(["\n  ", _CODEGEN.visit(signal)])
+        signal_pieces = []
+        param_pieces = []
+        for signal_or_param in signal_or_params:
+            if isinstance(signal_or_param, Signal):
+                signal_pieces.extend(["\n  ", _CODEGEN.visit(signal_or_param)])
+            elif isinstance(signal_or_param, Parameter):
+                param_pieces.extend(["\n  ", _CODEGEN.visit(signal_or_param)])
         self._rewriter.add_before(
             # If module has no existing port, append new ports after the header.
             (last_signal_range[0] or attrs.module_header.sourceRange).end,
-            pieces,
+            signal_pieces,
+        )
+        self._rewriter.add_before(
+            # If module has no existing port, append new ports after the header.
+            (last_param_range[0] or attrs.module_header.sourceRange).end,
+            param_pieces,
         )
         self._syntax_tree = self._rewriter.commit()
         return self
@@ -650,7 +686,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def del_signals(self, prefix: str = "", suffix: str = "") -> None:
         if Options.enable_pyslang:
-            self._del_signals_pyslang(prefix, suffix)
+            self._del_matching("signals", prefix, suffix)
             return
 
         def func(item: Node) -> bool:
@@ -664,9 +700,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         self._filter(func, "signal")
 
-    def _del_signals_pyslang(self, prefix: str, suffix: str) -> None:
+    def _del_matching(
+        self, syntax: Literal["signals", "params"], prefix: str, suffix: str
+    ) -> None:
         def visitor(node: object) -> pyslang.VisitAction:
-            if isinstance(node, _SIGNAL_SYNTAX):
+            if (syntax == "signals" and isinstance(node, _SIGNAL_SYNTAX)) or (
+                syntax == "params"
+                and isinstance(node, pyslang.ParameterDeclarationSyntax)
+            ):
                 name = _get_name(node)
                 if name.startswith(prefix) and name.endswith(suffix):
                     self._rewriter.remove(node.sourceRange)
@@ -677,16 +718,22 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._syntax_tree = self._rewriter.commit()
 
     def add_params(self, params: Iterable[Parameter]) -> "Module":
-        param_tuple = tuple(params)
+        if Options.enable_pyslang:
+            return self._add_signals_or_params(params)
+        decl = Decl(list=tuple(params))
         self._module_def.items = (
             self._module_def.items[: self._next_param_idx]
-            + param_tuple
+            + (decl,)
             + self._module_def.items[self._next_param_idx :]
         )
-        self._increment_idx(len(param_tuple), "param")
+        self._increment_idx(len(decl.list), "param")
         return self
 
     def del_params(self, prefix: str = "", suffix: str = "") -> None:
+        if Options.enable_pyslang:
+            self._del_matching("params", prefix, suffix)
+            return
+
         def func(item: Node) -> bool:
             if isinstance(item, Decl):
                 item = item.list[0]
@@ -1099,7 +1146,11 @@ def with_rs_pragma(node: Input | Output | Decl) -> Decl:
 
 
 def _get_name(
-    node: pyslang.DataDeclarationSyntax | pyslang.NetDeclarationSyntax,
+    node: (
+        pyslang.DataDeclarationSyntax
+        | pyslang.NetDeclarationSyntax
+        | pyslang.ParameterDeclarationSyntax
+    ),
 ) -> str:
     return node.declarators[0].name.valueText
 
