@@ -91,6 +91,7 @@ __all__ = [
 # vitis hls generated port infixes
 FIFO_INFIXES = ("_V", "_r", "_s", "")
 
+_CODEGEN = ASTCodeGenerator()
 _SIGNAL_SYNTAX = pyslang.DataDeclarationSyntax | pyslang.NetDeclarationSyntax
 
 
@@ -393,7 +394,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     def code(self) -> str:
         return "\n".join(
             directive for _, directive in self.directives
-        ) + ASTCodeGenerator().visit(self.ast)
+        ) + _CODEGEN.visit(self.ast)
 
     def get_template_code(self) -> str:
         module = None
@@ -429,7 +430,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         return "\n".join(
             directive for _, directive in self.directives
-        ) + ASTCodeGenerator().visit(template_ast)
+        ) + _CODEGEN.visit(template_ast)
 
     def _increment_idx(self, length: int, target: str) -> None:
         attr_map = {attr: priority for priority, attr in enumerate(self._ATTRS)}
@@ -623,10 +624,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         self._syntax_tree.root.visit(visitor)
         assert isinstance(attrs.module_header, pyslang.ModuleHeaderSyntax)
-        codegen = ASTCodeGenerator()
         pieces = []
         for signal in signals:
-            pieces.extend(["\n  ", codegen.visit(signal)])
+            pieces.extend(["\n  ", _CODEGEN.visit(signal)])
         self._rewriter.add_before(
             # If module has no existing port, append new ports after the header.
             (last_signal_range[0] or attrs.module_header.sourceRange).end,
