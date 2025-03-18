@@ -428,6 +428,16 @@ class Port:
         return self.is_istreams or self.is_ostreams
 
     @property
+    def is_istream(self) -> bool:
+        """If port is istreams."""
+        return self.cat.is_istream
+
+    @property
+    def is_ostream(self) -> bool:
+        """If port is istreams."""
+        return self.cat.is_ostream
+
+    @property
     def is_immap(self) -> bool:
         """If port is immap."""
         return self.cat.is_immap
