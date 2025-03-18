@@ -10,11 +10,14 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 
 from tapa.util import Options
+from tapa.verilog import ast_utils
 from tapa.verilog.xilinx import ast_types
 from tapa.verilog.xilinx.module import Module
 
+_CODEGEN = ASTCodeGenerator()
 _TESTDATA_PATH = (Path(__file__).parent / "testdata").resolve()
 
 
@@ -114,10 +117,40 @@ def test_upper_level_task_module() -> None:
     )
 
     assert module.name == "UpperLevelTask"
+    assert list(module.signals) == [
+        "ap_done",
+        "ap_idle",
+        "ap_ready",
+        "ap_rst_n_inv",
+        "ap_CS_fsm",
+        "ap_CS_fsm_state1",
+        "istream_s_blk_n",
+        "ap_CS_fsm_state2",
+        "ostreams_s_blk_n",
+        "ap_block_state1",
+        "ostreams_s_write_local",
+        "istream_s_read_local",
+        "ap_NS_fsm",
+        "ap_ST_fsm_state1_blk",
+        "ap_ST_fsm_state2_blk",
+        "ap_ce_reg",
+    ]
     assert module.params != {}
 
     module.cleanup()
 
+    assert list(module.signals) == [
+        "ap_block_state1",
+        "ostreams_s_write_local",
+        "istream_s_read_local",
+        "ap_ST_fsm_state1_blk",
+        "ap_ST_fsm_state2_blk",
+        "ap_ce_reg",
+        "ap_rst_n_inv",
+        "ap_done",
+        "ap_idle",
+        "ap_ready",
+    ]
     assert module.params == {}
 
 
@@ -126,22 +159,16 @@ def test_add_ports_succeeds() -> None:
     module = Module(name="foo")
     assert module.ports == {}
 
-    module.add_ports([ast_types.Input("bar")])
+    module.add_ports([ast_types.Input("bar", width=ast_utils.make_width(233))])
     ports = module.ports
     assert list(ports) == ["bar"]
-    assert ports["bar"].name == "bar"
-    assert ports["bar"].width is None
-    assert ports["bar"].direction == "input"
+    assert str(ports["bar"]) == "input [232:0] bar;"
 
     module.add_ports([ast_types.Input("baz"), ast_types.Output("qux")])
     ports = module.ports
     assert list(ports) == ["bar", "baz", "qux"]
-    assert ports["baz"].name == "baz"
-    assert ports["baz"].width is None
-    assert ports["baz"].direction == "input"
-    assert ports["qux"].name == "qux"
-    assert ports["qux"].width is None
-    assert ports["qux"].direction == "output"
+    assert str(ports["baz"]) == "input baz;"
+    assert str(ports["qux"]) == "output qux;"
 
 
 @pytest.mark.usefixtures("options")
@@ -161,6 +188,43 @@ def test_del_nonexistent_port_fails() -> None:
 
     with pytest.raises(ValueError, match="no port baz found in module foo"):
         module.del_port("baz")
+
+
+@pytest.mark.usefixtures("options")
+def test_add_signals_succeeds() -> None:
+    module = Module(name="foo")
+    assert module.signals == {}
+
+    module.add_signals([ast_types.Wire("bar", width=ast_utils.make_width(233))])
+    signals = module.signals
+    assert list(signals) == ["bar"]
+    assert _CODEGEN.visit(signals["bar"]) == "wire [232:0] bar;"
+
+    module.add_signals([ast_types.Wire("baz"), ast_types.Reg("qux")])
+    signals = module.signals
+    assert list(signals) == ["bar", "baz", "qux"]
+    assert _CODEGEN.visit(signals["baz"]) == "wire baz;"
+    assert _CODEGEN.visit(signals["qux"]) == "reg qux;"
+
+
+@pytest.mark.usefixtures("options")
+def test_del_signals_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_signals([ast_types.Wire("bar")])
+
+    module.del_signals(prefix="bar")
+
+    assert module.signals == {}
+
+
+@pytest.mark.usefixtures("options")
+def test_del_nonexistent_signal_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_signals([ast_types.Wire("bar")])
+
+    module.del_signals(prefix="baz")
+
+    assert list(module.signals) == ["bar"]
 
 
 @pytest.mark.usefixtures("options")
