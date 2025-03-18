@@ -5,6 +5,7 @@ RapidStream Contributor License Agreement.
 """
 
 import logging
+from collections.abc import Iterable
 
 import pyslang
 from intervaltree import IntervalTree
@@ -27,9 +28,13 @@ class PyslangRewriter:
         # All additions and deletions must happen on the same buffer ID.
         self._buffer_id: pyslang.BufferID | None = None
 
-    def add_before(self, location: pyslang.SourceLocation, text: str) -> None:
+    def add_before(
+        self, location: pyslang.SourceLocation, text: str | Iterable[str]
+    ) -> None:
+        if isinstance(text, str):
+            text = [text]
         self._set_or_check_buffer_id(location.buffer)
-        self._additions.setdefault(location.offset, []).append(text)
+        self._additions.setdefault(location.offset, []).extend(text)
 
     def remove(self, range_: pyslang.SourceRange) -> None:
         self._set_or_check_buffer_id(range_.start.buffer)

@@ -506,12 +506,12 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._rewriter.add_before(
             # Append new ports before token `)` of the port list in header.
             attrs.module_header.ports.getLastToken().location,
-            "".join(header_pieces),
+            header_pieces,
         )
         self._rewriter.add_before(
             # If module has no existing port, append new ports after the header.
             (last_port_decl_range[0] or attrs.module_header.sourceRange).end,
-            "".join(body_pieces),
+            body_pieces,
         )
         self._syntax_tree = self._rewriter.commit()
         return self

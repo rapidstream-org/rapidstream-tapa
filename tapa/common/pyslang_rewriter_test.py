@@ -34,6 +34,13 @@ def test_commit_noop_succeeds(
     assert rewriter.commit() is syntax_tree
 
 
+def test_add_list_of_string_succeeds(
+    rewriter: PyslangRewriter, root: PortDeclarationSyntax
+) -> None:
+    rewriter.add_before(root.sourceRange.start, ["output ", "reg ", "bar; "])
+    assert str(rewriter.commit().root) == "output reg bar; input wire foo;"
+
+
 def test_add_before_root_start_succeeds(
     rewriter: PyslangRewriter, root: PortDeclarationSyntax
 ) -> None:
