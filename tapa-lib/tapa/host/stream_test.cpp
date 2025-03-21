@@ -129,5 +129,13 @@ TEST(StringifyTest, TapaInternalElemFromBinaryString) {
   EXPECT_EQ(val.val, 1.f);
 }
 
+TEST(StreamNameTest, StreamsHaveIndexedNames) {
+  tapa::streams<int, 3> data_q("data");
+
+  EXPECT_EQ(data_q[0].get_name(), "data[0]");
+  EXPECT_EQ(data_q[1].get_name(), "data[1]");
+  EXPECT_EQ(data_q[2].get_name(), "data[2]");
+}
+
 }  // namespace
 }  // namespace tapa

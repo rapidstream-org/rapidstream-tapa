@@ -964,7 +964,9 @@ class streams : public internal::unbound_streams<T, S> {
             std::make_shared<typename internal::basic_streams<T>::metadata_t>(
                 name, 0)) {
     for (int i = 0; i < S; ++i) {
-      this->ptr->refs.emplace_back(name, N, SimulationDepth);
+      this->ptr->refs.emplace_back(
+          std::string(name) + "[" + std::to_string(i) + "]", N,
+          SimulationDepth);
     }
   }
 
