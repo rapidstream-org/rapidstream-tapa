@@ -307,10 +307,6 @@ class basic_stream {
   int depth;
   int simulation_depth;
 
-  std::shared_ptr<shared_queue<elem_t<T>>> queue;
-  void initialize_queue_by_handshake(bool is_frt = false) {
-    queue->initialize_queue_by_handshake(is_frt, simulation_depth, name);
-  }
   std::shared_ptr<shared_queue<elem_t<T>>> ensure_queue() {
     // if the queue is already initialized, return it
     if (queue->is_initialized()) return queue;
@@ -328,6 +324,25 @@ class basic_stream {
     queue->initialize_queue_without_handshake(simulation_depth, name);
     return queue;
   }
+
+ private:
+  // `accessor` calls `initialize_queue_by_handshake` and `frt_set_arg`.
+  template <typename Param, typename Arg>
+  friend struct internal::accessor;
+
+  void initialize_queue_by_handshake(bool is_frt = false) {
+    queue->initialize_queue_by_handshake(is_frt, simulation_depth, name);
+  }
+
+  void frt_set_arg(fpga::Instance& instance, int& idx) {
+    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(ensure_queue()->get());
+    CHECK(ptr != nullptr) << "channel '" << get_name()
+                          << "' is not an FRT stream, please report a bug";
+    instance.SetArg(idx++, ptr->stream);
+  }
+
+  // Child class must access `queue` using `ensure_queue()`.
+  std::shared_ptr<shared_queue<elem_t<T>>> queue;
 };
 
 // shared pointer of multiple queues
@@ -787,8 +802,6 @@ class stream : public internal::unbound_stream<T> {
       : internal::basic_stream<T>(name, N, SimulationDepth) {}
 
  private:
-  template <typename Param, typename Arg>
-  friend struct internal::accessor;
   template <typename U, uint64_t friend_length, uint64_t friend_depth,
             uint64_t friend_simulation_depth>
   friend class streams;
@@ -1014,23 +1027,19 @@ class streams : public internal::unbound_streams<T, S> {
 
 namespace internal {
 
-#define TAPA_DEFINE_DEVICE_ACCESSOR(io)                                   \
-  /* param = i/o */                                                       \
-  template <typename T, uint64_t N, typename U>                           \
-  struct accessor<io##stream<T>&, stream<U, N>&> {                        \
-    static io##stream<T> access(stream<U, N>& arg, bool sequential) {     \
-      if (!sequential) arg.initialize_queue_by_handshake(false);          \
-      return arg;                                                         \
-    }                                                                     \
-    static void access(fpga::Instance& instance, int& idx,                \
-                       stream<U, N>& arg) {                               \
-      arg.initialize_queue_by_handshake(true);                            \
-      auto ptr =                                                          \
-          dynamic_cast<frt_queue<elem_t<T>>*>(arg.ensure_queue()->get()); \
-      CHECK(ptr) << "channel '" << arg.get_name()                         \
-                 << "' is not an FRT stream, please report a bug";        \
-      instance.SetArg(idx++, ptr->stream);                                \
-    }                                                                     \
+#define TAPA_DEFINE_DEVICE_ACCESSOR(io)                               \
+  /* param = i/o */                                                   \
+  template <typename T, uint64_t N, typename U>                       \
+  struct accessor<io##stream<T>&, stream<U, N>&> {                    \
+    static io##stream<T> access(stream<U, N>& arg, bool sequential) { \
+      if (!sequential) arg.initialize_queue_by_handshake(false);      \
+      return arg;                                                     \
+    }                                                                 \
+    static void access(fpga::Instance& instance, int& idx,            \
+                       stream<U, N>& arg) {                           \
+      arg.initialize_queue_by_handshake(true);                        \
+      arg.frt_set_arg(instance, idx);                                 \
+    }                                                                 \
   };
 
 TAPA_DEFINE_DEVICE_ACCESSOR(i)
@@ -1047,10 +1056,7 @@ struct accessor<stream<U, N>&, stream<U, N>&> {
   }
   static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
     arg.initialize_queue_by_handshake(true);
-    auto ptr = dynamic_cast<frt_queue<elem_t<U>>*>(arg.ensure_queue()->get());
-    CHECK(ptr) << "channel '" << arg.get_name()
-               << "' is not an FRT stream, please report a bug";
-    instance.SetArg(idx++, ptr->stream);
+    arg.frt_set_arg(instance, idx);
   }
 };
 
