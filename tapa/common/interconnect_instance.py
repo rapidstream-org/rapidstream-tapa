@@ -38,7 +38,9 @@ class InterconnectInstance(Base):
         # FIXME: remove consumed_by and produced_by completely
         assert self.parent is not None
         insts = (
-            insts_override if insts_override is not None else self.parent.obj["tasks"]
+            insts_override
+            if insts_override is not None
+            else self.parent.definition.obj["tasks"]
         )
         assert isinstance(insts, dict)
 
