@@ -6,11 +6,18 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+from collections import defaultdict
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from tapa.common.base import Base
 from tapa.common.task_definition import TaskDefinition
 from tapa.common.task_instance import TaskInstance
+
+if TYPE_CHECKING:
+    from tapa.common.interconnect_instance import InterconnectInstance
+
+INST_NAME = "{}_{}"
 
 
 class Graph(Base):
@@ -86,3 +93,101 @@ class Graph(Base):
         }
 
         return Graph(self.name, new_obj)
+
+    def get_fp_slot(
+        self, slot_name: str, tasks_in_slot: list[str], top: Base
+    ) -> TaskDefinition:
+        """Returns the floorplanned slot task."""
+        # Construct obj of the slot by modifying the top task
+        new_obj = self.get_top_task_def().to_dict()
+        new_obj["level"] = "upper"
+
+        # Find all task instances
+        insts = self.get_top_task_inst().get_subtasks_insts()
+        for inst in insts:
+            # make sure top has been flattened
+            assert isinstance(inst.definition, TaskDefinition)
+            assert inst.definition.get_level() == TaskDefinition.Level.LEAF, (
+                "Top task must be flattened for floorplanning"
+            )
+
+        # filter out tasks that are not in the slot
+        new_insts = [inst for inst in insts if inst.name in tasks_in_slot]
+
+        assert new_insts, [inst.name for inst in insts]
+
+        # obj['tasks']:
+        # construct the task insts of the slot
+        new_obj["tasks"] = defaultdict(list)
+        for inst in new_insts:
+            new_obj["tasks"][inst.definition.name].append(inst.to_dict())
+
+        # obj['fifos']:
+        # construct the fifos of the slot
+        fifos = self.get_top_task_inst().get_interconnect_insts()
+        new_fifos: list[InterconnectInstance] = []
+        fifo_ports: list[str] = []
+        for fifo in fifos:
+            fifo_obj = fifo.to_dict()
+            src = fifo_obj["consumed_by"]
+            dst = fifo_obj["produced_by"]
+            # For fifo connecting task insts inside the slot, keep it
+            if (
+                INST_NAME.format(src[0], src[1]) in tasks_in_slot
+                and INST_NAME.format(dst[0], dst[1]) in tasks_in_slot
+            ):
+                new_fifos.append(fifo)
+            # For fifo connecting a task inst inside and an inst outside the slot,
+            # put it to ports later
+            elif (
+                INST_NAME.format(src[0], src[1]) in tasks_in_slot
+                or INST_NAME.format(dst[0], dst[1]) in tasks_in_slot
+            ):
+                fifo_ports.append(fifo.name)
+        new_obj["fifos"] = {fifo.name: fifo.to_dict() for fifo in new_fifos}
+
+        # obj['ports']:
+        # Reconstruct the ports of the slot
+        # Remove all ports that are not used by the insts in the slot
+        used_args: set[str] = set()
+        for inst in new_insts:
+            assert isinstance(inst.obj["args"], dict)
+            args = inst.obj["args"]
+            assert isinstance(args, dict)
+            for arg in args.values():
+                assert isinstance(arg, dict)
+                assert isinstance(arg["arg"], str)
+                used_args.add(arg["arg"])
+        assert isinstance(new_obj["ports"], list)
+        new_ports = [port for port in new_obj["ports"] if port["name"] in used_args]
+
+        # Add fifos connecting the slot and the outside as ports
+        # Find the port on inst that connects to the fifo and copy
+        # the port to the slot
+        new_ports += self._get_used_ports(new_insts, fifo_ports)
+
+        new_obj["ports"] = new_ports
+
+        return TaskDefinition(slot_name, new_obj, top)
+
+    @staticmethod
+    def _get_used_ports(new_insts: list[TaskInstance], fifo_ports: list[str]) -> list:
+        """Find the port on inst that connects to the fifo."""
+        new_ports = []
+        for inst in new_insts:
+            assert isinstance(inst.obj["args"], dict)
+            args = inst.obj["args"]
+            assert isinstance(args, dict)
+            for port_name, arg in args.items():
+                if arg["arg"] not in fifo_ports:
+                    continue
+                ports = inst.definition.obj["ports"]
+                assert isinstance(ports, list)
+                for port in ports:
+                    if port["name"] != port_name:
+                        continue
+                    new_port = port.copy()
+                    new_port["name"] = arg["arg"]
+                    new_ports.append(new_port)
+
+        return new_ports
