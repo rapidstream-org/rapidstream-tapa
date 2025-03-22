@@ -1,0 +1,169 @@
+{
+    "s1": {
+        "code": "// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n#include <cstdint> /* clang -E -fkeep-system-includes */\n\n#include <tapa.h> /* clang -E -fkeep-system-includes */\n\nextern \"C\" {\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n);\n\n\n}  // extern \"C\"\n\nvoid Add(tapa::istream<float>& a, tapa::istream<float>& b,\n         tapa::ostream<float>& c, uint64_t n) ;\nvoid Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,\n                 tapa::ostream<float>& stream) ;\nvoid Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,\n                 uint64_t n) ;\nextern \"C\" {\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n) {\n\n#pragma HLS interface s_axilite port = a bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(a); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(a); }\n\n#pragma HLS interface s_axilite port = b bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(b); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(b); }\n\n#pragma HLS interface s_axilite port = c bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(c); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(c); }\n\n#pragma HLS interface s_axilite port = n bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(n); }\n\n\n#pragma HLS interface s_axilite port = return bundle = control\n}\n\n\n}  // extern \"C\"\n\n",
+        "fifos": {
+            "a_q_VecAdd": {
+                "consumed_by": [
+                    "Add",
+                    0
+                ],
+                "depth": 2,
+                "produced_by": [
+                    "Mmap2Stream",
+                    0
+                ]
+            },
+            "c_q_VecAdd": {
+                "consumed_by": [
+                    "Stream2Mmap",
+                    0
+                ],
+                "depth": 2,
+                "produced_by": [
+                    "Add",
+                    0
+                ]
+            }
+        },
+        "level": "upper",
+        "ports": [
+            {
+                "cat": "mmap",
+                "name": "a",
+                "type": "const float*",
+                "width": 32
+            },
+            {
+                "cat": "mmap",
+                "name": "c",
+                "type": "float*",
+                "width": 32
+            },
+            {
+                "cat": "scalar",
+                "name": "n",
+                "type": "uint64_t",
+                "width": 64
+            },
+            {
+                "cat": "istream",
+                "name": "b_q_VecAdd",
+                "type": "float",
+                "width": 32
+            }
+        ],
+        "target": "hls",
+        "tasks": {
+            "Add": [
+                {
+                    "args": {
+                        "a": {
+                            "arg": "a_q_VecAdd",
+                            "cat": "istream"
+                        },
+                        "b": {
+                            "arg": "b_q_VecAdd",
+                            "cat": "istream"
+                        },
+                        "c": {
+                            "arg": "c_q_VecAdd",
+                            "cat": "ostream"
+                        },
+                        "n": {
+                            "arg": "n",
+                            "cat": "scalar"
+                        }
+                    },
+                    "step": 0
+                }
+            ],
+            "Mmap2Stream": [
+                {
+                    "args": {
+                        "mmap": {
+                            "arg": "a",
+                            "cat": "mmap"
+                        },
+                        "n": {
+                            "arg": "n",
+                            "cat": "scalar"
+                        },
+                        "stream": {
+                            "arg": "a_q_VecAdd",
+                            "cat": "ostream"
+                        }
+                    },
+                    "step": 0
+                }
+            ],
+            "Stream2Mmap": [
+                {
+                    "args": {
+                        "mmap": {
+                            "arg": "c",
+                            "cat": "mmap"
+                        },
+                        "n": {
+                            "arg": "n",
+                            "cat": "scalar"
+                        },
+                        "stream": {
+                            "arg": "c_q_VecAdd",
+                            "cat": "istream"
+                        }
+                    },
+                    "step": 0
+                }
+            ]
+        },
+        "vendor": "xilinx"
+    },
+    "s2": {
+        "code": "// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n#include <cstdint> /* clang -E -fkeep-system-includes */\n\n#include <tapa.h> /* clang -E -fkeep-system-includes */\n\nextern \"C\" {\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n);\n\n\n}  // extern \"C\"\n\nvoid Add(tapa::istream<float>& a, tapa::istream<float>& b,\n         tapa::ostream<float>& c, uint64_t n) ;\nvoid Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,\n                 tapa::ostream<float>& stream) ;\nvoid Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,\n                 uint64_t n) ;\nextern \"C\" {\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n) {\n\n#pragma HLS interface s_axilite port = a bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(a); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(a); }\n\n#pragma HLS interface s_axilite port = b bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(b); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(b); }\n\n#pragma HLS interface s_axilite port = c bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(c); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(c); }\n\n#pragma HLS interface s_axilite port = n bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(n); }\n\n\n#pragma HLS interface s_axilite port = return bundle = control\n}\n\n\n}  // extern \"C\"\n\n",
+        "fifos": {},
+        "level": "upper",
+        "ports": [
+            {
+                "cat": "mmap",
+                "name": "b",
+                "type": "const float*",
+                "width": 32
+            },
+            {
+                "cat": "scalar",
+                "name": "n",
+                "type": "uint64_t",
+                "width": 64
+            },
+            {
+                "cat": "ostream",
+                "name": "b_q_VecAdd",
+                "type": "float",
+                "width": 32
+            }
+        ],
+        "target": "hls",
+        "tasks": {
+            "Mmap2Stream": [
+                {
+                    "args": {
+                        "mmap": {
+                            "arg": "b",
+                            "cat": "mmap"
+                        },
+                        "n": {
+                            "arg": "n",
+                            "cat": "scalar"
+                        },
+                        "stream": {
+                            "arg": "b_q_VecAdd",
+                            "cat": "ostream"
+                        }
+                    },
+                    "step": 0
+                }
+            ]
+        },
+        "vendor": "xilinx"
+    }
+}
