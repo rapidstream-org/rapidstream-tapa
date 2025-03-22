@@ -326,9 +326,10 @@ class basic_stream {
   }
 
  private:
-  // `accessor` calls `initialize_queue_by_handshake` and `frt_set_arg`.
-  template <typename Param, typename Arg>
-  friend struct internal::accessor;
+  template <typename Arg>
+  friend Arg access_stream(Arg arg, bool sequential);
+  template <typename Arg>
+  friend void access_stream(fpga::Instance&, int&, Arg arg);
 
   void initialize_queue_by_handshake(bool is_frt = false) {
     queue->initialize_queue_by_handshake(is_frt, simulation_depth, name);
@@ -1029,75 +1030,102 @@ class streams : public internal::unbound_streams<T, S> {
 
 namespace internal {
 
-#define TAPA_DEFINE_DEVICE_ACCESSOR(io)                               \
-  /* param = i/o */                                                   \
-  template <typename T, uint64_t N, typename U>                       \
-  struct accessor<io##stream<T>&, stream<U, N>&> {                    \
-    static io##stream<T> access(stream<U, N>& arg, bool sequential) { \
-      if (!sequential) arg.initialize_queue_by_handshake(false);      \
-      return arg;                                                     \
-    }                                                                 \
-    static void access(fpga::Instance& instance, int& idx,            \
-                       stream<U, N>& arg) {                           \
-      arg.initialize_queue_by_handshake(true);                        \
-      arg.frt_set_arg(instance, idx);                                 \
-    }                                                                 \
+// Helper functions for accessing stream(s), friended by `basic_stream`.
+template <typename T>
+T access_stream(T arg, bool sequential) {
+  if (!sequential) arg.initialize_queue_by_handshake(/*is_frt=*/false);
+  return arg;
+}
+template <typename T>
+void access_stream(fpga::Instance& instance, int& idx, T arg) {
+  arg.initialize_queue_by_handshake(/*is_frt=*/true);
+  arg.frt_set_arg(instance, idx);
+}
+template <typename T>
+T access_streams(T arg, bool sequential) {
+  for (int i = 0; i < T::length; ++i) {
+    access_stream(arg[i], sequential);
+  }
+  return arg;
+}
+template <typename T>
+void access_streams(fpga::Instance& instance, int& idx, T arg) {
+  for (int i = 0; i < T::length; ++i) {
+    access_stream(instance, idx, arg[i]);
+  }
+}
+
+#define TAPA_DEFINE_DEVICE_ACCESSOR(io, arg_ref) /***************************/ \
+  /* param = i/ostream, arg = stream */                                        \
+  template <typename T, uint64_t N, typename U>                                \
+  struct accessor<io##stream<T>&, stream<U, N> arg_ref> {                      \
+    static io##stream<T> access(stream<U, N> arg_ref arg, bool sequential) {   \
+      return access_stream(arg, sequential);                                   \
+    }                                                                          \
+    static void access(fpga::Instance& instance, int& idx,                     \
+                       stream<U, N> arg_ref arg) {                             \
+      return access_stream(instance, idx, arg);                                \
+    }                                                                          \
   };
 
-TAPA_DEFINE_DEVICE_ACCESSOR(i)
-TAPA_DEFINE_DEVICE_ACCESSOR(o)
-TAPA_DEFINE_DEVICE_ACCESSOR(unbound_)
+// streams are accessed as stream without reference
+TAPA_DEFINE_DEVICE_ACCESSOR(i, )
+TAPA_DEFINE_DEVICE_ACCESSOR(i, &)
+TAPA_DEFINE_DEVICE_ACCESSOR(o, )
+TAPA_DEFINE_DEVICE_ACCESSOR(o, &)
+TAPA_DEFINE_DEVICE_ACCESSOR(unbound_, )
+TAPA_DEFINE_DEVICE_ACCESSOR(unbound_, &)
 
 #undef TAPA_DEFINE_DEVICE_ACCESSOR
 
-template <uint64_t N, typename U>
-struct accessor<stream<U, N>&, stream<U, N>&> {
-  static stream<U, N> access(stream<U, N>& arg, bool sequential) {
-    if (!sequential) arg.initialize_queue_by_handshake(false);
-    return arg;
-  }
-  static void access(fpga::Instance& instance, int& idx, stream<U, N>& arg) {
-    arg.initialize_queue_by_handshake(true);
-    arg.frt_set_arg(instance, idx);
-  }
-};
-
-#define TAPA_DEFINE_ACCESSER(io, reference)                              \
-  /* param = i/ostream, arg = streams */                                 \
-  template <typename T, uint64_t length, uint64_t depth>                 \
-  struct accessor<io##stream<T> reference, streams<T, length, depth>&> { \
-    static io##stream<T> access(streams<T, length, depth>& arg, bool) {  \
-      return arg.access_as_##io##stream();                               \
-    }                                                                    \
-  };                                                                     \
-                                                                         \
-  /* param = i/ostream, arg = i/ostreams */                              \
-  template <typename T, uint64_t length>                                 \
-  struct accessor<io##stream<T> reference, io##streams<T, length>&> {    \
-    static io##stream<T> access(io##streams<T, length>& arg, bool) {     \
-      return arg.access();                                               \
-    }                                                                    \
-  };                                                                     \
-                                                                         \
-  /* param = i/ostreams, arg = streams */                                \
-  template <typename T, uint64_t param_length, uint64_t arg_length,      \
-            uint64_t depth>                                              \
-  struct accessor<io##streams<T, param_length> reference,                \
-                  streams<T, arg_length, depth>&> {                      \
-    static io##streams<T, param_length> access(                          \
-        streams<T, arg_length, depth>& arg, bool) {                      \
-      return arg.template access_as_##io##streams<param_length>();       \
-    }                                                                    \
-  };                                                                     \
-                                                                         \
-  /* param = i/ostreams, arg = i/ostreams */                             \
-  template <typename T, uint64_t param_length, uint64_t arg_length>      \
-  struct accessor<io##streams<T, param_length> reference,                \
-                  io##streams<T, arg_length>&> {                         \
-    static io##streams<T, param_length> access(                          \
-        io##streams<T, arg_length>& arg, bool) {                         \
-      return arg.template access<param_length>();                        \
-    }                                                                    \
+#define TAPA_DEFINE_ACCESSER(io, reference) /********************************/ \
+  /* param = i/ostream, arg = streams */                                       \
+  template <typename T, uint64_t length, uint64_t depth>                       \
+  struct accessor<io##stream<T> reference, streams<T, length, depth>&> {       \
+    static io##stream<T> access(streams<T, length, depth>& arg,                \
+                                bool sequential) {                             \
+      return access_stream(arg.access_as_##io##stream(), sequential);          \
+    }                                                                          \
+    static void access(fpga::Instance& instance, int& idx,                     \
+                       streams<T, length, depth>& arg) {                       \
+      return access_stream(instance, idx, arg.access_as_##io##stream());       \
+    }                                                                          \
+  };                                                                           \
+                                                                               \
+  /* param = i/ostream, arg = i/ostreams */                                    \
+  template <typename T, uint64_t length>                                       \
+  struct accessor<io##stream<T> reference, io##streams<T, length>&> {          \
+    static io##stream<T> access(io##streams<T, length>& arg, bool) {           \
+      return arg.access();                                                     \
+    }                                                                          \
+  };                                                                           \
+                                                                               \
+  /* param = i/ostreams, arg = streams */                                      \
+  template <typename T, uint64_t param_length, uint64_t arg_length,            \
+            uint64_t depth>                                                    \
+  struct accessor<io##streams<T, param_length> reference,                      \
+                  streams<T, arg_length, depth>&> {                            \
+    static io##streams<T, param_length> access(                                \
+        streams<T, arg_length, depth>& arg, bool sequential) {                 \
+      return access_streams(                                                   \
+          arg.template access_as_##io##streams<param_length>(), sequential);   \
+    }                                                                          \
+    static void access(fpga::Instance& instance, int& idx,                     \
+                       streams<T, arg_length, depth>& arg) {                   \
+      return access_streams(                                                   \
+          instance, idx,                                                       \
+          arg.template access_as_##io##streams<param_length>());               \
+    }                                                                          \
+  };                                                                           \
+                                                                               \
+  /* param = i/ostreams, arg = i/ostreams */                                   \
+  template <typename T, uint64_t param_length, uint64_t arg_length>            \
+  struct accessor<io##streams<T, param_length> reference,                      \
+                  io##streams<T, arg_length>&> {                               \
+    static io##streams<T, param_length> access(                                \
+        io##streams<T, arg_length>& arg, bool) {                               \
+      return arg.template access<param_length>();                              \
+    }                                                                          \
   };
 
 TAPA_DEFINE_ACCESSER(i, )

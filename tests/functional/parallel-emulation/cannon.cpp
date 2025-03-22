@@ -15,65 +15,34 @@ DEFINE_string(proc_elem_bitstream, "",
 
 // Scatter n*n matrix into p*p blocks, each block.
 void Scatter_internal(tapa::mmap<const float> matrix_ptr,
-                      tapa::ostream<float>& block_00,
-                      tapa::ostream<float>& block_01,
-                      tapa::ostream<float>& block_10,
-                      tapa::ostream<float>& block_11) {
+                      tapa::ostreams<float, p * p>& block) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
-  for (uint64_t i = 0; i < kNumElems; ++i) {
-    block_00.write(*matrix_ptr);
-    ++matrix_ptr;
-  }
-  for (uint64_t i = 0; i < kNumElems; ++i) {
-    block_01.write(*matrix_ptr);
-    ++matrix_ptr;
-  }
-  for (uint64_t i = 0; i < kNumElems; ++i) {
-    block_10.write(*matrix_ptr);
-    ++matrix_ptr;
-  }
-  for (uint64_t i = 0; i < kNumElems; ++i) {
-    block_11.write(*matrix_ptr);
-    ++matrix_ptr;
+  for (int j = 0; j < p * p; ++j) {
+    for (uint64_t i = 0; i < kNumElems; ++i) {
+      block[j].write(*matrix_ptr);
+      ++matrix_ptr;
+    }
   }
 }
 
-void Scatter(tapa::mmap<const float> matrix_ptr, tapa::ostream<float>& block_00,
-             tapa::ostream<float>& block_01, tapa::ostream<float>& block_10,
-             tapa::ostream<float>& block_11) {
-  tapa::task().invoke(Scatter_internal, matrix_ptr, block_00, block_01,
-                      block_10, block_11);
+void Scatter(tapa::mmap<const float> matrix_ptr,
+             tapa::ostreams<float, p * p>& block) {
+  tapa::task().invoke(Scatter_internal, matrix_ptr, block);
 }
 
 void Gather_internal(tapa::mmap<float> matrix_ptr,
-                     tapa::istream<float>& block_00,
-                     tapa::istream<float>& block_01,
-                     tapa::istream<float>& block_10,
-                     tapa::istream<float>& block_11) {
+                     tapa::istreams<float, p * p>& block) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
-  for (uint64_t i = 0; i < kNumElems; ++i) {
-    *matrix_ptr = block_00.read();
-    ++matrix_ptr;
-  }
-  for (uint64_t i = 0; i < kNumElems; ++i) {
-    *matrix_ptr = block_01.read();
-    ++matrix_ptr;
-  }
-  for (uint64_t i = 0; i < kNumElems; ++i) {
-    *matrix_ptr = block_10.read();
-    ++matrix_ptr;
-  }
-  for (uint64_t i = 0; i < kNumElems; ++i) {
-    *matrix_ptr = block_11.read();
-    ++matrix_ptr;
+  for (int j = 0; j < p * p; ++j) {
+    for (uint64_t i = 0; i < kNumElems; ++i) {
+      *matrix_ptr = block[j].read();
+      ++matrix_ptr;
+    }
   }
 }
 
-void Gather(tapa::mmap<float> matrix_ptr, tapa::istream<float>& block_00,
-            tapa::istream<float>& block_01, tapa::istream<float>& block_10,
-            tapa::istream<float>& block_11) {
-  tapa::task().invoke(Gather_internal, matrix_ptr, block_00, block_01, block_10,
-                      block_11);
+void Gather(tapa::mmap<float> matrix_ptr, tapa::istreams<float, p * p>& block) {
+  tapa::task().invoke(Gather_internal, matrix_ptr, block);
 }
 
 // Each PE processes n/p * n/p block of matrix.
@@ -141,18 +110,9 @@ void Cannon(tapa::mmap<const float> a_vec, tapa::mmap<const float> b_vec,
   assert(kN % p == 0);
   assert(n <= kN);
 
-  tapa::stream<float, 2> a_00("a->PE00");
-  tapa::stream<float, 2> a_01("a->PE01");
-  tapa::stream<float, 2> a_10("a->PE10");
-  tapa::stream<float, 2> a_11("a->PE11");
-  tapa::stream<float, 2> b_00("b->PE00");
-  tapa::stream<float, 2> b_01("b->PE01");
-  tapa::stream<float, 2> b_10("b->PE10");
-  tapa::stream<float, 2> b_11("b->PE11");
-  tapa::stream<float, 2> c_00("c->PE00");
-  tapa::stream<float, 2> c_01("c->PE01");
-  tapa::stream<float, 2> c_10("c->PE10");
-  tapa::stream<float, 2> c_11("c->PE11");
+  tapa::streams<float, p * p> a("a");
+  tapa::streams<float, p * p> b("b");
+  tapa::streams<float, p * p> c("c");
   tapa::stream<float, 8> fifo_00_01("PE00->PE01");
   tapa::stream<float, 8> fifo_01_00("PE01->PE00");
   tapa::stream<float, 8> fifo_10_11("PE10->PE11");
@@ -163,18 +123,15 @@ void Cannon(tapa::mmap<const float> a_vec, tapa::mmap<const float> b_vec,
   tapa::stream<float, 8> fifo_11_01("PE11->PE01");
 
   tapa::task()
-      .invoke(Scatter, tapa::executable(FLAGS_scatter_bitstream), a_vec, a_00,
-              a_01, a_10, a_11)
-      .invoke(Scatter, tapa::executable(FLAGS_scatter_bitstream), b_vec, b_00,
-              b_01, b_10, b_11)
-      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a_00, b_00,
-              c_00, fifo_00_10, fifo_10_00, fifo_00_01, fifo_01_00)
-      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a_01, b_01,
-              c_01, fifo_01_11, fifo_11_01, fifo_01_00, fifo_00_01)
-      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a_10, b_10,
-              c_10, fifo_10_00, fifo_00_10, fifo_10_11, fifo_11_10)
-      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a_11, b_11,
-              c_11, fifo_11_01, fifo_01_11, fifo_11_10, fifo_10_11)
-      .invoke(Gather, tapa::executable(FLAGS_gather_bitstream), c_vec, c_00,
-              c_01, c_10, c_11);
+      .invoke(Scatter, tapa::executable(FLAGS_scatter_bitstream), a_vec, a)
+      .invoke(Scatter, tapa::executable(FLAGS_scatter_bitstream), b_vec, b)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c,
+              fifo_00_10, fifo_10_00, fifo_00_01, fifo_01_00)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c,
+              fifo_01_11, fifo_11_01, fifo_01_00, fifo_00_01)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c,
+              fifo_10_00, fifo_00_10, fifo_10_11, fifo_11_10)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c,
+              fifo_11_01, fifo_01_11, fifo_11_10, fifo_10_11)
+      .invoke(Gather, tapa::executable(FLAGS_gather_bitstream), c_vec, c);
 }
