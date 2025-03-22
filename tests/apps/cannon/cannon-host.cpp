@@ -22,7 +22,7 @@ DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  const uint64_t n = 32;  // Hardcoded for efficient hardware generation.
+  const uint64_t n = kN;  // Hardcoded for efficient hardware generation.
   vector<float> a_vec(n * n);
   vector<float> b_vec(n * n);
   vector<float> c_vec(n * n);
@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
   }
 
   // reshape the matrices into 2x2 blocks (each has size n/2 x n/2)
-  const int p = 2;
   vector<float> a_buf(n * n);
   vector<float> b_buf(n * n);
   vector<float> c_buf(n * n);

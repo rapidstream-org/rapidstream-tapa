@@ -11,6 +11,7 @@ load("//bazel:v++_rules.bzl", "vpp_xclbin")
 exports_files(
     [
         ".",
+        "cannon-host.cpp",
         "cannon.cpp",
         "cannon.h",
     ],

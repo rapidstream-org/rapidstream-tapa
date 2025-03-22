@@ -39,10 +39,12 @@ sh_test(
 
 cc_binary(
     name = "cannon-host",
-    srcs = glob([
-        "*.cpp",
-        "*.h",
-    ]),
+    srcs = [
+        "cannon.cpp",
+        "cannon.h",
+        "//tests/apps/cannon:cannon-host.cpp",
+    ],
+    includes = ["."],
     deps = [
         "//tapa-lib:tapa",
         "@gflags",
