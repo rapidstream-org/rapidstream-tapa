@@ -40,13 +40,16 @@ void ProcElem(tapa::istream<float>& a_fifo, tapa::istream<float>& b_fifo,
 #pragma HLS array_partition variable = c cyclic factor = 32
 
   // Initialize local a, b, and c.
+init:
   for (uint64_t i = 0; i < kNumElems; ++i) {
     a[i] = a_fifo.read();
     b[i] = b_fifo.read();
     c[i] = 0.f;
   }
 
+outer:
   for (int l = 0; l < p; ++l) {
+  compute:
     [[tapa::pipeline(1)]] for (int ij = 0; ij < kNumElems; ++ij) {
 #pragma HLS dependence false variable = c
       float tmp = 0.f;
@@ -57,6 +60,7 @@ void ProcElem(tapa::istream<float>& a_fifo, tapa::istream<float>& b_fifo,
       }
       c[ij] += tmp;
     }
+  communicate:
     [[tapa::pipeline(1)]] for (uint64_t a_wr = 0, b_wr = 0, a_rd = 0, b_rd = 0;
                                a_wr < kNumElems || b_wr < kNumElems ||
                                a_rd < kNumElems || b_rd < kNumElems;) {
@@ -70,6 +74,7 @@ void ProcElem(tapa::istream<float>& a_fifo, tapa::istream<float>& b_fifo,
     }
   }
 
+finalize:
   for (uint64_t i = 0; i < kNumElems; ++i) {
     c_fifo.write(c[i]);
   }
