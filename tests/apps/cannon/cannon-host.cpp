@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  // reshape the matrices into 2x2 blocks (each has size n/2 x n/2)
+  // reshape the matrices into pxp blocks (each has size n/p x n/p)
   vector<float> a_buf(n * n);
   vector<float> b_buf(n * n);
   vector<float> c_buf(n * n);
@@ -52,8 +52,9 @@ int main(int argc, char* argv[]) {
     for (uint64_t j = 0; j < p; ++j) {
       for (uint64_t ii = 0; ii < n / p; ++ii) {
         for (uint64_t jj = 0; jj < n / p; ++jj) {
-          a_block[i][(i + j) % p][ii][jj] = a[i * n / p + ii][j * n / p + jj];
-          b_block[(i + j) % p][j][ii][jj] = b[i * n / p + ii][j * n / p + jj];
+          const uint64_t k = (i + j) % p;
+          a_block[i][j][ii][jj] = a[i * n / p + ii][k * n / p + jj];
+          b_block[i][j][ii][jj] = b[k * n / p + ii][j * n / p + jj];
         }
       }
     }
