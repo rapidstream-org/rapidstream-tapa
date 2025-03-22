@@ -3,9 +3,11 @@
 // RapidStream Contributor License Agreement.
 
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 
 #include <iostream>
-#include <limits>
+#include <random>
 #include <vector>
 
 #include <gflags/gflags.h>
@@ -29,13 +31,12 @@ int main(int argc, char* argv[]) {
   auto a = reinterpret_cast<float(*)[n]>(a_vec.data());
   auto b = reinterpret_cast<float(*)[n]>(b_vec.data());
   auto c = reinterpret_cast<float(*)[n]>(c_vec.data());
+  std::mt19937 gen;
+  std::uniform_real_distribution<float> dist;
   for (uint64_t i = 0; i < n; ++i) {
     for (uint64_t j = 0; j < n; ++j) {
-      auto shuffle = [](uint64_t x, uint64_t n) -> float {
-        return static_cast<float>((n / 2 - x) * (n / 2 - x));
-      };
-      a[i][j] = pow(shuffle(i, n), 1.8f) + shuffle(j, n);
-      b[i][j] = pow(shuffle(j, n), 1.2f) + shuffle(i, n);
+      a[i][j] = dist(gen);
+      b[i][j] = dist(gen);
       c[i][j] = 0.f;
     }
   }
