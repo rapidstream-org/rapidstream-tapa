@@ -1,0 +1,255 @@
+{
+    "cflags": [
+        "-std=c++14",
+        "-nostdinc++",
+        "-isystem",
+        "/home/Ed-5100/rapidstream-tapa/bazel-bin/tapa/tapa.runfiles/_main/tapa-lib",
+        "-isystem",
+        "/home/Ed-5100/rapidstream-tapa/bazel-bin/tapa/tapa.runfiles/_main/tapa-system-include/tapa-extra-runtime-include",
+        "-isystem",
+        "/home/Ed-5100/rapidstream-tapa/bazel-bin/tapa/tapa.runfiles/_main/fpga-runtime/src",
+        "-Wno-attributes",
+        "-Wno-unknown-pragmas",
+        "-Wno-unused-label",
+        "-isystem",
+        "/opt/tools/xilinx/Vitis_HLS/2022.2/include",
+        "-isystem",
+        "/opt/tools/xilinx/Vitis_HLS/2022.2/tps/lnx64/gcc-8.3.0/include/c++/8.3.0",
+        "-isystem",
+        "/opt/tools/xilinx/Vitis_HLS/2022.2/tps/lnx64/gcc-8.3.0/include/c++/8.3.0/x86_64-pc-linux-gnu"
+    ],
+    "tasks": {
+        "Add": {
+            "code": "// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n#include <cstdint> /* clang -E -fkeep-system-includes */\n\n#include <tapa.h> /* clang -E -fkeep-system-includes */\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n);\n\nvoid Add(tapa::istream<float>& a, tapa::istream<float>& b,\n         tapa::ostream<float>& c, uint64_t n) {\n#pragma HLS disaggregate variable = a\n#pragma HLS interface ap_fifo port = a._\n#pragma HLS aggregate variable = a._ bit\n#pragma HLS interface ap_fifo port = a._peek\n#pragma HLS aggregate variable = a._peek bit\nvoid(a._.empty());\nvoid(a._peek.empty());\n\n#pragma HLS disaggregate variable = b\n#pragma HLS interface ap_fifo port = b._\n#pragma HLS aggregate variable = b._ bit\n#pragma HLS interface ap_fifo port = b._peek\n#pragma HLS aggregate variable = b._peek bit\nvoid(b._.empty());\nvoid(b._peek.empty());\n\n#pragma HLS disaggregate variable = c\n#pragma HLS interface ap_fifo port = c._\n#pragma HLS aggregate variable = c._ bit\nvoid(c._.full());\n\n\n  for (uint64_t i = 0; i < n; ++i) {\n    c << (a.read() + b.read());\n  }\n}\nvoid Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,\n                 tapa::ostream<float>& stream) ;\nvoid Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,\n                 uint64_t n) ;\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n) ;\n",
+            "level": "lower",
+            "ports": [
+                {
+                    "cat": "istream",
+                    "name": "a",
+                    "type": "float",
+                    "width": 32
+                },
+                {
+                    "cat": "istream",
+                    "name": "b",
+                    "type": "float",
+                    "width": 32
+                },
+                {
+                    "cat": "ostream",
+                    "name": "c",
+                    "type": "float",
+                    "width": 32
+                },
+                {
+                    "cat": "scalar",
+                    "name": "n",
+                    "type": "uint64_t",
+                    "width": 64
+                }
+            ],
+            "target": "hls",
+            "vendor": "xilinx"
+        },
+        "Mmap2Stream": {
+            "code": "// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n#include <cstdint> /* clang -E -fkeep-system-includes */\n\n#include <tapa.h> /* clang -E -fkeep-system-includes */\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n);\n\nvoid Add(tapa::istream<float>& a, tapa::istream<float>& b,\n         tapa::ostream<float>& c, uint64_t n) ;\nvoid Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,\n                 tapa::ostream<float>& stream) {\n#pragma HLS interface m_axi port = mmap offset = direct bundle = mmap\n\n\n#pragma HLS disaggregate variable = stream\n#pragma HLS interface ap_fifo port = stream._\n#pragma HLS aggregate variable = stream._ bit\nvoid(stream._.full());\n\n  for (uint64_t i = 0; i < n; ++i) {\n    stream << mmap[i];\n  }\n}\nvoid Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,\n                 uint64_t n) ;\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n) ;\n",
+            "level": "lower",
+            "ports": [
+                {
+                    "cat": "mmap",
+                    "name": "mmap",
+                    "type": "const float*",
+                    "width": 32
+                },
+                {
+                    "cat": "scalar",
+                    "name": "n",
+                    "type": "uint64_t",
+                    "width": 64
+                },
+                {
+                    "cat": "ostream",
+                    "name": "stream",
+                    "type": "float",
+                    "width": 32
+                }
+            ],
+            "target": "hls",
+            "vendor": "xilinx"
+        },
+        "Stream2Mmap": {
+            "code": "// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n#include <cstdint> /* clang -E -fkeep-system-includes */\n\n#include <tapa.h> /* clang -E -fkeep-system-includes */\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n);\n\nvoid Add(tapa::istream<float>& a, tapa::istream<float>& b,\n         tapa::ostream<float>& c, uint64_t n) ;\nvoid Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,\n                 tapa::ostream<float>& stream) ;\nvoid Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,\n                 uint64_t n) {\n#pragma HLS disaggregate variable = stream\n#pragma HLS interface ap_fifo port = stream._\n#pragma HLS aggregate variable = stream._ bit\n#pragma HLS interface ap_fifo port = stream._peek\n#pragma HLS aggregate variable = stream._peek bit\nvoid(stream._.empty());\nvoid(stream._peek.empty());\n\n#pragma HLS interface m_axi port = mmap offset = direct bundle = mmap\n\n\n  for (uint64_t i = 0; i < n; ++i) {\n    stream >> mmap[i];\n  }\n}\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n) ;\n",
+            "level": "lower",
+            "ports": [
+                {
+                    "cat": "istream",
+                    "name": "stream",
+                    "type": "float",
+                    "width": 32
+                },
+                {
+                    "cat": "mmap",
+                    "name": "mmap",
+                    "type": "float*",
+                    "width": 32
+                },
+                {
+                    "cat": "scalar",
+                    "name": "n",
+                    "type": "uint64_t",
+                    "width": 64
+                }
+            ],
+            "target": "hls",
+            "vendor": "xilinx"
+        },
+        "VecAdd": {
+            "code": "// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.\n// All rights reserved. The contributor(s) of this file has/have agreed to the\n// RapidStream Contributor License Agreement.\n#include <cstdint> /* clang -E -fkeep-system-includes */\n\n#include <tapa.h> /* clang -E -fkeep-system-includes */\n\nextern \"C\" {\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n);\n\n\n}  // extern \"C\"\n\nvoid Add(tapa::istream<float>& a, tapa::istream<float>& b,\n         tapa::ostream<float>& c, uint64_t n) ;\nvoid Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,\n                 tapa::ostream<float>& stream) ;\nvoid Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,\n                 uint64_t n) ;\nextern \"C\" {\n\nvoid VecAdd(uint64_t a, uint64_t b,\n            uint64_t c, uint64_t n) {\n\n#pragma HLS interface s_axilite port = a bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(a); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(a); }\n\n#pragma HLS interface s_axilite port = b bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(b); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(b); }\n\n#pragma HLS interface s_axilite port = c bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(c); }\n{ auto val = reinterpret_cast<volatile uint8_t&>(c); }\n\n#pragma HLS interface s_axilite port = n bundle = control\n{ auto val = reinterpret_cast<volatile uint8_t&>(n); }\n\n\n#pragma HLS interface s_axilite port = return bundle = control\n}\n\n\n}  // extern \"C\"\n\n",
+            "fifos": {
+                "a_q_VecAdd": {
+                    "consumed_by": [
+                        "Add",
+                        0
+                    ],
+                    "depth": 2,
+                    "produced_by": [
+                        "Mmap2Stream",
+                        0
+                    ]
+                },
+                "b_q_VecAdd": {
+                    "consumed_by": [
+                        "Add",
+                        0
+                    ],
+                    "depth": 2,
+                    "produced_by": [
+                        "Mmap2Stream",
+                        1
+                    ]
+                },
+                "c_q_VecAdd": {
+                    "consumed_by": [
+                        "Stream2Mmap",
+                        0
+                    ],
+                    "depth": 2,
+                    "produced_by": [
+                        "Add",
+                        0
+                    ]
+                }
+            },
+            "level": "upper",
+            "ports": [
+                {
+                    "cat": "mmap",
+                    "name": "a",
+                    "type": "const float*",
+                    "width": 32
+                },
+                {
+                    "cat": "mmap",
+                    "name": "b",
+                    "type": "const float*",
+                    "width": 32
+                },
+                {
+                    "cat": "mmap",
+                    "name": "c",
+                    "type": "float*",
+                    "width": 32
+                },
+                {
+                    "cat": "scalar",
+                    "name": "n",
+                    "type": "uint64_t",
+                    "width": 64
+                }
+            ],
+            "target": "hls",
+            "tasks": {
+                "Add": [
+                    {
+                        "args": {
+                            "a": {
+                                "arg": "a_q_VecAdd",
+                                "cat": "istream"
+                            },
+                            "b": {
+                                "arg": "b_q_VecAdd",
+                                "cat": "istream"
+                            },
+                            "c": {
+                                "arg": "c_q_VecAdd",
+                                "cat": "ostream"
+                            },
+                            "n": {
+                                "arg": "n",
+                                "cat": "scalar"
+                            }
+                        },
+                        "step": 0
+                    }
+                ],
+                "Mmap2Stream": [
+                    {
+                        "args": {
+                            "mmap": {
+                                "arg": "a",
+                                "cat": "mmap"
+                            },
+                            "n": {
+                                "arg": "n",
+                                "cat": "scalar"
+                            },
+                            "stream": {
+                                "arg": "a_q_VecAdd",
+                                "cat": "ostream"
+                            }
+                        },
+                        "step": 0
+                    },
+                    {
+                        "args": {
+                            "mmap": {
+                                "arg": "b",
+                                "cat": "mmap"
+                            },
+                            "n": {
+                                "arg": "n",
+                                "cat": "scalar"
+                            },
+                            "stream": {
+                                "arg": "b_q_VecAdd",
+                                "cat": "ostream"
+                            }
+                        },
+                        "step": 0
+                    }
+                ],
+                "Stream2Mmap": [
+                    {
+                        "args": {
+                            "mmap": {
+                                "arg": "c",
+                                "cat": "mmap"
+                            },
+                            "n": {
+                                "arg": "n",
+                                "cat": "scalar"
+                            },
+                            "stream": {
+                                "arg": "c_q_VecAdd",
+                                "cat": "istream"
+                            }
+                        },
+                        "step": 0
+                    }
+                ]
+            },
+            "vendor": "xilinx"
+        }
+    },
+    "top": "VecAdd"
+}
