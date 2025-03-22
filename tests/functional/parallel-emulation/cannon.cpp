@@ -118,25 +118,81 @@ void Cannon(tapa::mmap<const float> a_vec, tapa::mmap<const float> b_vec,
   tapa::streams<float, p * p> a("a");
   tapa::streams<float, p * p> b("b");
   tapa::streams<float, p * p> c("c");
-  tapa::stream<float, 8> fifo_00_01("PE00->PE01");
-  tapa::stream<float, 8> fifo_01_00("PE01->PE00");
-  tapa::stream<float, 8> fifo_10_11("PE10->PE11");
-  tapa::stream<float, 8> fifo_11_10("PE11->PE10");
-  tapa::stream<float, 8> fifo_00_10("PE00->PE10");
-  tapa::stream<float, 8> fifo_10_00("PE10->PE00");
-  tapa::stream<float, 8> fifo_01_11("PE01->PE11");
-  tapa::stream<float, 8> fifo_11_01("PE11->PE01");
+  /*
+      00→01→02→03→
+      ↓  ↓  ↓  ↓
+      10→11→12→13→
+      ↓  ↓  ↓  ↓
+      20→21→22→23→
+      ↓  ↓  ↓  ↓
+      30→31→32→33→
+      ↓  ↓  ↓  ↓
+  */
+  // Horizontal FIFOs
+  tapa::stream<float, 16> fifo_00_01("PE00->PE01");
+  tapa::stream<float, 16> fifo_01_02("PE01->PE02");
+  tapa::stream<float, 16> fifo_02_03("PE02->PE03");
+  tapa::stream<float, 16> fifo_03_00("PE03->PE00");
+  tapa::stream<float, 16> fifo_10_11("PE10->PE11");
+  tapa::stream<float, 16> fifo_11_12("PE11->PE12");
+  tapa::stream<float, 16> fifo_12_13("PE12->PE13");
+  tapa::stream<float, 16> fifo_13_10("PE13->PE10");
+  tapa::stream<float, 16> fifo_20_21("PE20->PE21");
+  tapa::stream<float, 16> fifo_21_22("PE21->PE22");
+  tapa::stream<float, 16> fifo_22_23("PE22->PE23");
+  tapa::stream<float, 16> fifo_23_20("PE23->PE20");
+  tapa::stream<float, 16> fifo_30_31("PE30->PE31");
+  tapa::stream<float, 16> fifo_31_32("PE31->PE32");
+  tapa::stream<float, 16> fifo_32_33("PE32->PE33");
+  tapa::stream<float, 16> fifo_33_30("PE33->PE30");
+
+  // Vertical FIFOs
+  tapa::stream<float, 16> fifo_00_10("PE00->PE10");
+  tapa::stream<float, 16> fifo_10_20("PE10->PE20");
+  tapa::stream<float, 16> fifo_20_30("PE20->PE30");
+  tapa::stream<float, 16> fifo_30_00("PE30->PE00");
+  tapa::stream<float, 16> fifo_01_11("PE01->PE11");
+  tapa::stream<float, 16> fifo_11_21("PE11->PE21");
+  tapa::stream<float, 16> fifo_21_31("PE21->PE31");
+  tapa::stream<float, 16> fifo_31_01("PE31->PE01");
+  tapa::stream<float, 16> fifo_02_12("PE02->PE12");
+  tapa::stream<float, 16> fifo_12_22("PE12->PE22");
+  tapa::stream<float, 16> fifo_22_32("PE22->PE32");
+  tapa::stream<float, 16> fifo_32_02("PE32->PE02");
+  tapa::stream<float, 16> fifo_03_13("PE03->PE13");
+  tapa::stream<float, 16> fifo_13_23("PE13->PE23");
+  tapa::stream<float, 16> fifo_23_33("PE23->PE33");
+  tapa::stream<float, 16> fifo_33_03("PE33->PE03");
 
   tapa::task()
       .invoke(Scatter, tapa::executable(FLAGS_scatter_bitstream), a_vec, a)
       .invoke(Scatter, tapa::executable(FLAGS_scatter_bitstream), b_vec, b)
-      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c,
-              fifo_00_10, fifo_10_00, fifo_00_01, fifo_01_00)
-      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c,
-              fifo_01_11, fifo_11_01, fifo_01_00, fifo_00_01)
-      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c,
-              fifo_10_00, fifo_00_10, fifo_10_11, fifo_11_10)
-      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c,
-              fifo_11_01, fifo_01_11, fifo_11_10, fifo_10_11)
+  // clang-format off
+#if TAPA_CANNON_P == 2
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_00_10, fifo_10_20, fifo_00_01, fifo_01_02)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_01_11, fifo_11_21, fifo_01_02, fifo_00_01)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_10_20, fifo_00_10, fifo_10_11, fifo_11_12)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_11_21, fifo_01_11, fifo_11_12, fifo_10_11)
+#elif TAPA_CANNON_P == 4
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_00_10, fifo_30_00, fifo_00_01, fifo_03_00)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_01_11, fifo_31_01, fifo_01_02, fifo_00_01)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_02_12, fifo_32_02, fifo_02_03, fifo_01_02)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_03_13, fifo_33_03, fifo_03_00, fifo_02_03)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_10_20, fifo_00_10, fifo_10_11, fifo_13_10)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_11_21, fifo_01_11, fifo_11_12, fifo_10_11)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_12_22, fifo_02_12, fifo_12_13, fifo_11_12)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_13_23, fifo_03_13, fifo_13_10, fifo_12_13)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_20_30, fifo_10_20, fifo_20_21, fifo_23_20)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_21_31, fifo_11_21, fifo_21_22, fifo_20_21)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_22_32, fifo_12_22, fifo_22_23, fifo_21_22)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_23_33, fifo_13_23, fifo_23_20, fifo_22_23)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_30_00, fifo_20_30, fifo_30_31, fifo_33_30)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_31_01, fifo_21_31, fifo_31_32, fifo_30_31)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_32_02, fifo_22_32, fifo_32_33, fifo_31_32)
+      .invoke(ProcElem, tapa::executable(FLAGS_proc_elem_bitstream), a, b, c, fifo_33_03, fifo_23_33, fifo_33_30, fifo_32_33)
+#else
+#error "unimplemented PE count"
+#endif
+      // clang-format on
       .invoke(Gather, tapa::executable(FLAGS_gather_bitstream), c_vec, c);
 }

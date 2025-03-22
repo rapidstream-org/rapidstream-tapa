@@ -19,16 +19,16 @@ sh_test(
 sh_test(
     name = "cannon-xosim",
     size = "enormous",
-    timeout = "long",  # often >300s
+    timeout = "long",  # 85s without contention
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location cannon-host)",
-        "--proc_elem_bitstream=$(location proc-elem-xo)",
+        "--proc_elem_bitstream=$(location proc-elem)",
         "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
     ],
     data = [
         ":cannon-host",
-        ":proc-elem-xo",
+        ":proc-elem",
         "//tapa/cosim:tapa-fast-cosim",
     ],
     env = {"TAPA_CONCURRENCY": "1"},
@@ -44,6 +44,7 @@ cc_binary(
         "cannon.h",
         "//tests/apps/cannon:cannon-host.cpp",
     ],
+    defines = ["TAPA_CANNON_P=2"],
     includes = ["."],
     deps = [
         "//tapa-lib:tapa",
@@ -53,10 +54,68 @@ cc_binary(
 )
 
 tapa_xo(
-    name = "proc-elem-xo",
+    name = "proc-elem",
     src = "cannon.cpp",
     hdrs = ["cannon.h"],
     include = ["."],
+    cflags = "-DTAPA_CANNON_P=2",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "ProcElem",
+)
+
+sh_test(
+    name = "cannon-4x4",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = ["$(location cannon-host)"],
+    data = [":cannon-host"],
+    env = {"TAPA_CONCURRENCY": "1"},
+)
+
+sh_test(
+    name = "cannon-xosim-4x4",
+    size = "enormous",
+    timeout = "long",  # 125s without contention
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location cannon-host-4x4)",
+        "--proc_elem_bitstream=$(location proc-elem-4x4)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+    ],
+    data = [
+        ":cannon-host-4x4",
+        ":proc-elem-4x4",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+    env = {"TAPA_CONCURRENCY": "1"},
+    tags = [
+        "cpu:17",
+        "manual",  # heavy contention on CI runners
+    ],
+)
+
+cc_binary(
+    name = "cannon-host-4x4",
+    srcs = [
+        "cannon.cpp",
+        "cannon.h",
+        "//tests/apps/cannon:cannon-host.cpp",
+    ],
+    defines = ["TAPA_CANNON_P=4"],
+    includes = ["."],
+    deps = [
+        "//tapa-lib:tapa",
+        "@gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "proc-elem-4x4",
+    src = "cannon.cpp",
+    hdrs = ["cannon.h"],
+    include = ["."],
+    cflags = "-DTAPA_CANNON_P=4",
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "ProcElem",
 )
