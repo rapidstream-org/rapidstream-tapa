@@ -321,11 +321,14 @@ updated pipeline configuration ``pipeline_config.json`` above.
 Design Space Exploration
 ------------------------
 
+Manual Exploration
+~~~~~~~~~~~~~~~~~~
+
 TAPA offers flexibility in pipeline design between tasks, creating a large
 design space for optimization. Here are key parameters you can adjust:
 
 Grid Size
-~~~~~~~~~
+"""""""""
 
 RapidStream models an FPGA device as a grid of slots, assigning each task
 module to one slot. This spreads logic evenly across the device to reduce
@@ -376,7 +379,7 @@ critical paths. Consider these factors when choosing grid size:
    the components evenly. A trade-off point should be found in the middle.
 
 Slot Usage Limit
-~~~~~~~~~~~~~~~~
+""""""""""""""""
 
 RapidStream ensures each slot's resource utilization stays below a set limit.
 Adjusting this limit affects the final implementation:
@@ -400,7 +403,7 @@ the range.
    floorplan schemes in suboptimal ranges.
 
 Pre-Existing Resource Usage
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+"""""""""""""""""""""""""""
 
 If certain resources are already in use by external components outside the
 TAPA design, adjust the virtual device accordingly to reserve these
@@ -422,7 +425,7 @@ exceeding expectations, potentially leading to local congestion issues.
    for external components.
 
 Inter-Slot Routing
-~~~~~~~~~~~~~~~~~~
+""""""""""""""""""
 
 RapidStream determines the optimal path for inter-slot stream connections by
 selecting appropriate intermediate slots. This process aims to balance wire
@@ -450,3 +453,89 @@ FFs for vertical crossings. Its default value is ``double``.
 
    ``set_slot_capacity`` can be used for rerouting stream connections. And
    ``pp_scheme`` can be used to control FF usage for inter-slot pipelining.
+
+Automated Exploration
+~~~~~~~~~~~~~~~~~~~~~
+
+Besides the optimization suggestions for designers, we offer an integrated exploration flow by analyzing a group of metrics of the implemented solutions, and exerting a series of actions to tune the configurations of partitioning, floorplanning and pipelining.
+
+Metrics
+"""""""
+
+The floorplanning and pipelining in RapidStream automatically dump some metrics.
+
+Floorplan Result
+****************
+
+When floorplanning finishes for a solution, RapidStream generates a report ``metric_floorplan.json`` under the metric directory, ``<--work-dir>/dse/solution_*/metrics/``. A typical report contains the following attributes.
+
+.. code-block:: json
+
+   {
+   "area_limit": 0.8,
+   "overall_usage": {
+      "BRAM_18K": 0.5766,
+      "DSP": 0.3169,
+      "FF": 0.2154,
+      "LUT": 0.5322,
+      "URAM": 0.5333
+   },
+   "slots": [
+      {
+         "total_area": {
+            "bram_18k": 384,
+            "dsp": 720,
+            "ff": 175040,
+            "lut": 77520,
+            "uram": 64
+         },
+         "used_area": {
+            "bram_18k": 256,
+            "dsp": 195,
+            "ff": 32680,
+            "lut": 58030,
+            "uram": 32
+         },
+         "utilization": {
+            "BRAM_18K": 0.6667,
+            "DSP": 0.2708,
+            "FF": 0.1867,
+            "LUT": 0.7486,
+            "URAM": 0.5
+         },
+         "x": 0,
+         "y": 0
+      },
+      {
+         "...": "..."
+      }
+   ]
+   }
+
+The ``area_limit`` is the global upper limit of resource usage applied on all slots. Multiple solutions could apply different global upper limits (even not identical with user's input configuration) because of the DSE mechanism or the floorplanner's multiple trials. The ``overall_usage`` shows the resource usage across the whole device. Then, the ``slots`` shows the usage of all slots in a list.
+
+Pipeline Result
+***************
+
+When pipelining finishes for a solution, RapidStream generates the pipelining report in ``metric_pipeline.json`` under the metric directory. An example of pipelining result over 3x3 slots is as follows.
+
+.. code-block:: json
+
+   {
+      "slot_pair_to_crossing": {
+         "((0,0),(0,1))": 4081,
+         "((0,0),(1,0))": 6912,
+         "((0,1),(0,2))": 3692,
+         "((0,1),(1,1))": 6279,
+         "((0,2),(1,2))": 4163,
+         "((1,0),(1,1))": 4079,
+         "((1,0),(2,0))": 6534,
+         "((1,1),(1,2))": 3936,
+         "((1,1),(2,1))": 7617,
+         "((1,2),(2,2))": 5108,
+         "((2,0),(2,1))": 5048,
+         "((2,1),(2,2))": 5130
+      }
+   }
+
+The ``"((0,0),(0,1))": 4081`` means the number of slot crossings between ``SLOT_X0Y0`` and ``SLOT_X0Y1`` is 4081.
