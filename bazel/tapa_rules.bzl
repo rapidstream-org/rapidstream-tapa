@@ -16,6 +16,8 @@ def _tapa_xo_impl(ctx):
     output_file = ctx.outputs.output_file
     if output_file == None and ctx.attr.vitis_mode:
         output_file = ctx.actions.declare_file(ctx.attr.name + ".xo")
+    if output_file == None and not ctx.attr.vitis_mode:
+        output_file = ctx.actions.declare_file(ctx.attr.name + ".zip")
 
     outputs = [work_dir]
 

@@ -36,6 +36,26 @@ sh_test(
     ],
 )
 
+sh_test(
+    name = "stream-top-hls-zipsim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location stream-top-host)",
+        "--bitstream=$(location stream-top-hls-zip)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+    ],
+    data = [
+        ":stream-top-hls-zip",
+        ":stream-top-host",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+    tags = [
+        "cpu:3",
+    ],
+)
+
 tapa_xo(
     name = "stream-top-xo",
     src = "vadd.cpp",
@@ -56,30 +76,9 @@ cc_binary(
 )
 
 tapa_xo(
-    name = "stream-top-hls",
+    name = "stream-top-hls-zip",
     src = "vadd.cpp",
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
     vitis_mode = False,
-)
-
-sh_test(
-    name = "stream-top-hls-sim",
-    size = "enormous",
-    timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
-    args = [
-        # sh_test args are subject to shell tokenization:
-        # https://bazel.build/reference/be/common-definitions#test.args
-        "vivado",
-        "-mode batch",
-        "-source $(location :testbench/sim.tcl)",
-        "-tclargs $(location :stream-top-hls)",
-        "$(location :testbench/hls-stream-tb.sv)",
-    ],
-    data = [
-        ":stream-top-hls",
-        ":testbench/hls-stream-tb.sv",
-        ":testbench/sim.tcl",
-    ],
 )
