@@ -18,9 +18,10 @@
         "target": "ES2023"
     },
     "include": [
+        "eslint.config.mjs",
         "js/*.js",
         "types/*.d.ts",
-        "eslint.config.mjs"
+        "vite.config.ts",
     ],
     "exclude": [
         "js/*.min.js"
