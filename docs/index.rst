@@ -30,6 +30,7 @@ those contributing to or extending the TAPA framework itself.
   user/tasks
   user/data
   user/rapidstream
+  user/visualizer
 
 .. toctree::
   :maxdepth: 1
