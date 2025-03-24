@@ -2,35 +2,52 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
+import { globalIgnores } from "eslint/config";
 import globals from "globals";
+
+import css from "@eslint/css";
 import js from "@eslint/js";
 import ts from "typescript-eslint";
 
-/** Global ignores
- * Global ignores can't have any other property then ignores (and name)
- * https://eslint.org/docs/latest/use/configure/configuration-files#globally-ignoring-files-with-ignores
- *  @type {Pick<import("eslint").Linter.Config, "name" | "ignores">} */
-const globalIgnores = {
-  name: "global ignores",
-  ignores: [
+/**
+ * @typedef {import("eslint").Linter} Linter
+ * @typedef {import("eslint").Linter.Config} Config
+ * @typedef {import("eslint").Linter.Globals} Globals
+ * @typedef {import("@typescript-eslint/utils").TSESLint.FlatConfig.Config} FlatConfig
+ **/
+
+/** @type {(files: string[], globals: Globals, name?: string) => Config} */
+const globalVariables = (files, globals, name) => ({
+  name,
+  files,
+  languageOptions: { globals },
+});
+
+// Reverse the arguments for clearer code
+
+/** @type {(name: string, ignorePatterns: string[]) => Config} */
+const globalIgnoresR =
+  (name, ignorePatterns) => globalIgnores(ignorePatterns, name);
+/** @type {(name: string, globals: Globals, files: string[]) => Config} */
+const globalVariablesR =
+  (name, globals, files) => globalVariables(files, globals, name);
+
+
+/** @type {(Config | FlatConfig)[]} */
+export default [
+
+  globalIgnoresR("global ignores", [
     "js/*.min.js",
-  ],
-};
+  ]),
 
-/** @type {import("eslint").Linter.Config[]} */
-const config = [
-
-  globalIgnores,
-
-  {
-    name: "languageOptions/globals/browser",
-    languageOptions: { globals: globals.browser },
-  },
-  {
-    name: "languageOptions/globals/nodeBuiltin",
-    files: ["*.config.{js,mjs,cjs,ts}"],
-    languageOptions: { globals: globals.nodeBuiltin },
-  },
+  // Global variables
+  globalVariablesR("globals/browser", globals.browser, [
+    "js/*.js",
+  ]),
+  globalVariablesR("globals/nodeBuiltin", globals.nodeBuiltin, [
+    "eslint.config.mjs",
+    "vite.config.ts",
+  ]),
 
   // JavaScript
   {
@@ -96,6 +113,18 @@ const config = [
     }
   },
 
-];
+  // CSS
+  {
+    name: "css",
+    files: ["css/*.css"],
+    plugins: { css },
+    language: "css/css",
+    rules: {
+      "css/no-duplicate-imports": "error",
+      "css/no-invalid-at-rules": "error",
+      "css/no-invalid-properties": "error",
+      "css/require-baseline": ["warn", { available: "widely" }]
+    },
+  },
 
-export default config;
+];

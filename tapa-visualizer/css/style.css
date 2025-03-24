@@ -30,7 +30,7 @@ https://github.com/emilk/egui/blob/cf965aaa/crates/egui/src/style.rs#L1339 */
 	background-color: #90D1FF;
 }
 
-header,
+body > header,
 .sidebar-tabs,
 .sidebar-contents details > summary {
 	color: var(--fg2);
@@ -38,7 +38,7 @@ header,
 }
 
 /* header */
-header {
+body > header {
 	box-sizing: border-box;
 	min-height: 2rem;
 	padding: .1rem 1.5rem;
@@ -46,23 +46,23 @@ header {
 
 /* Don't wrap btn tooltip like "Toggle Sidebar" on wide screen */
 @media (min-width: 75rem) { /* 75rem * 16px = 1200px = xl in Bootstrap */
-	header { padding: .1rem 2.75rem; }
-	header .btn > .btn-text { white-space: pre; }
+	body > header { padding: .1rem 2.75rem; }
+	body > header .btn > .btn-text { white-space: pre; }
 }
 
-header,
-header .flex {
+body > header,
+body > header .flex {
 	display: flex;
 	align-items: center;
 	gap: .5rem;
 }
 
-header .tools { margin-left: auto; }
-header .tools hr { height: 1rem; margin: 0; }
+body > header .tools { margin-left: auto; }
+body > header .tools hr { height: 1rem; margin: 0; }
 
 
 /* main */
-main {
+body > main {
 	width: 75vw;
 	min-width: 40vw;
 	max-width: 85vw;
@@ -70,7 +70,7 @@ main {
 	resize: horizontal;
 }
 
-main > .graph-container > .tooltip {
+body > main > .graph-container > .tooltip {
 	overflow-wrap: anywhere;
 }
 
@@ -98,12 +98,13 @@ dialog {
 	border-width: 1px;
 	margin: 1rem auto;
 }
-dialog > h2 {
+dialog > header {
 	display: flex;
 	gap: .5rem;
 }
-dialog > h2 > button:first-child {
-	margin-inline-start: auto;
+dialog > header > h2 {
+	margin-block: 0;
+	margin-inline-end: auto;
 }
 dialog > pre,
 dialog > pre[class*="language-"] {

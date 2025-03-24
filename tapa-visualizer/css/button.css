@@ -74,15 +74,15 @@
 }
 
 /* btn in header */
-header .btn {
+body > header .btn {
 	display: inline-flex;
 	flex-direction: column;
 	align-items: center;
 }
-header .btn > .btn-text {
+body > header .btn > .btn-text {
 	top: 2rem;
 }
-header .btn > .btn-text::before {
+body > header .btn > .btn-text::before {
 	top: -4px;
 	left: calc(50% - 4px);
 	transform: rotate(45deg);
