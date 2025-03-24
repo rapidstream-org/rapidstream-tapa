@@ -759,12 +759,12 @@ int main(int argc, char ** argv)
             msg = "top task cannot be a template"
             raise ValueError(msg)
 
-        # instrument the top-level RTL
-        _logger.info("instrumenting top-level RTL")
-        self._instrument_upper_and_template_task(
-            self.top_task,
-            print_fifo_ops,
-        )
+        # instrument the top-level RTL if it is a upper-level task
+        if self.top_task.is_upper:
+            self._instrument_upper_and_template_task(
+                self.top_task,
+                print_fifo_ops,
+            )
 
         _logger.info("generating report")
         task_report = self.top_task.report

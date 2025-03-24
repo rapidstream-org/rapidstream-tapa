@@ -182,8 +182,7 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       // upper-level tapa task.
       // FIXME: This is not a perfect way to determine the level of the task,
       // especially when visiting the function signature.
-      bool is_upper_level_task =
-          is_top_level_task || GetTapaTask(func->getBody()) != nullptr;
+      bool is_upper_level_task = GetTapaTask(func->getBody()) != nullptr;
       // if the task is non-synthesizable, it is a lower-level tapa task.
       if (IsTaskNonSynthesizable(func)) {
         is_upper_level_task = false;
