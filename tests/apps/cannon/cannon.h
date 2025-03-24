@@ -9,11 +9,16 @@
 
 #include <tapa.h>
 
-// p x p PEs
-const int p = 2;
+#ifndef TAPA_CANNON_P
+#define TAPA_CANNON_P 2
+#endif
 
-// Handles kN x kN matrices maximum.
-const int kN = 32;  // Use fixed value for efficient hardware generation.
+// p x p PEs
+constexpr int p = TAPA_CANNON_P;
+
+// Handles kN x kN matrices maximum. Use fixed value for efficient hardware
+// generation.
+constexpr int kN = p * 16;
 
 void Cannon(tapa::mmap<const float> a_vec, tapa::mmap<const float> b_vec,
             tapa::mmap<float> c_vec, uint64_t n);
