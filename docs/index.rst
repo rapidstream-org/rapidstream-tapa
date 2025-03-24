@@ -29,6 +29,7 @@ those contributing to or extending the TAPA framework itself.
   user/vitis
   user/tasks
   user/data
+  user/visualizer
 
 .. toctree::
   :maxdepth: 1
