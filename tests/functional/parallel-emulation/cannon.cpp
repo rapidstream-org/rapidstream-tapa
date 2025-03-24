@@ -14,8 +14,8 @@ DEFINE_string(proc_elem_bitstream, "",
               "path to proc_elem simulation file, run csim if empty");
 
 // Scatter n*n matrix into p*p blocks, each block.
-void Scatter_internal(tapa::mmap<const float> matrix_ptr,
-                      tapa::ostreams<float, p * p>& block) {
+void Scatter(tapa::mmap<const float> matrix_ptr,
+             tapa::ostreams<float, p * p>& block) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   for (int j = 0; j < p * p; ++j) {
     for (uint64_t i = 0; i < kNumElems; ++i) {
@@ -25,13 +25,7 @@ void Scatter_internal(tapa::mmap<const float> matrix_ptr,
   }
 }
 
-void Scatter(tapa::mmap<const float> matrix_ptr,
-             tapa::ostreams<float, p * p>& block) {
-  tapa::task().invoke(Scatter_internal, matrix_ptr, block);
-}
-
-void Gather_internal(tapa::mmap<float> matrix_ptr,
-                     tapa::istreams<float, p * p>& block) {
+void Gather(tapa::mmap<float> matrix_ptr, tapa::istreams<float, p * p>& block) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   for (int j = 0; j < p * p; ++j) {
     for (uint64_t i = 0; i < kNumElems; ++i) {
@@ -41,18 +35,11 @@ void Gather_internal(tapa::mmap<float> matrix_ptr,
   }
 }
 
-void Gather(tapa::mmap<float> matrix_ptr, tapa::istreams<float, p * p>& block) {
-  tapa::task().invoke(Gather_internal, matrix_ptr, block);
-}
-
 // Each PE processes n/p * n/p block of matrix.
-void ProcElem_internal(tapa::istream<float>& a_fifo,
-                       tapa::istream<float>& b_fifo,
-                       tapa::ostream<float>& c_fifo,
-                       tapa::ostream<float>& i_prev,
-                       tapa::istream<float>& i_next,
-                       tapa::ostream<float>& j_prev,
-                       tapa::istream<float>& j_next) {
+void ProcElem(tapa::istream<float>& a_fifo, tapa::istream<float>& b_fifo,
+              tapa::ostream<float>& c_fifo, tapa::ostream<float>& i_prev,
+              tapa::istream<float>& i_next, tapa::ostream<float>& j_prev,
+              tapa::istream<float>& j_next) {
   const uint64_t kNumElems = (kN / p) * (kN / p);
   float a[kN / p * kN / p];
   float b[kN / p * kN / p];
@@ -100,14 +87,6 @@ finalize:
   for (uint64_t i = 0; i < kNumElems; ++i) {
     c_fifo.write(c[i]);
   }
-}
-
-void ProcElem(tapa::istream<float>& a_fifo, tapa::istream<float>& b_fifo,
-              tapa::ostream<float>& c_fifo, tapa::ostream<float>& i_prev,
-              tapa::istream<float>& i_next, tapa::ostream<float>& j_prev,
-              tapa::istream<float>& j_next) {
-  tapa::task().invoke(ProcElem_internal, a_fifo, b_fifo, c_fifo, i_prev, i_next,
-                      j_prev, j_next);
 }
 
 void Cannon(tapa::mmap<const float> a_vec, tapa::mmap<const float> b_vec,
