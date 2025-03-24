@@ -10,6 +10,7 @@ import { antvDagre, dagre, forceAtlas2, graphOptions } from "./graph-options.js"
 import {
   resetInstance,
   resetSidebar,
+  updateExplorer,
   updateSidebarForCombo,
   updateSidebarForEdge,
   updateSidebarForNode,
@@ -22,7 +23,7 @@ import { getGraphData } from "./praser.js";
 let filename;
 
 /** @type {GraphJSON | undefined} */
-let graphJson;
+let graphJSON;
 
 /** Data for G6.Graph()
  * @type {GraphData} */
@@ -81,8 +82,8 @@ const renderGraphWithNewOption = async (graph, newOption) => {
   Object.assign(options, newOption);
 
   // Only re-render if graph exist
-  if (!graphJson) return;
-  graphData = getGraphData(graphJson, options);
+  if (!graphJSON) return;
+  graphData = getGraphData(graphJSON, options);
   console.debug(
     "\ngraphData:\n", graphData,
     "\ngetGraphData() options:", options,
@@ -166,22 +167,23 @@ const setupFileInput = (graph) => {
     file.text().then(async text => {
 
       /** @satisfies {GraphJSON} */
-      graphJson = JSON.parse(text);
-      if (!graphJson?.tasks) {
+      graphJSON = JSON.parse(text);
+      if (!graphJSON?.tasks) {
         resetInstance("Invalid graph.json, please retry.");
         return;
       }
+      updateExplorer(graphJSON);
 
       options = getOptions();
-      graphData = getGraphData(graphJson, options);
-      Object.assign(globalThis, { graphJson, graphData });
+      graphData = getGraphData(graphJSON, options);
+      Object.assign(globalThis, { graphJSON, graphData });
 
       // Update options form's className for hint about only one combo
       const classListMethod = graphData.combos.length <= 1 ? "add" : "remove";
       optionsForm?.classList[classListMethod]("only-one-combo");
 
       console.debug(
-        `${filename}:\n`, graphJson,
+        `${filename}:\n`, graphJSON,
         "\ngraphData:\n", graphData,
         "\ngetGraphData() options:", options,
       );
@@ -191,7 +193,7 @@ const setupFileInput = (graph) => {
       await renderGraph(graph, graphData);
 
       const expand = optionsForm?.elements.expand.value === "true";
-      const topChildren = graph.getChildrenData(getComboId(graphJson.top));
+      const topChildren = graph.getChildrenData(getComboId(graphJSON.top));
       const visibleElements = expand ? graphData.nodes : topChildren;
 
       // Run a 2nd layout if amount of visible elements is acceptable
@@ -201,7 +203,7 @@ const setupFileInput = (graph) => {
 
       // Run translateElementTo() twice to reset position for collapsed combo
       !expand &&
-      graph.getChildrenData(getComboId(graphJson.top)).forEach(item => {
+      graph.getChildrenData(getComboId(graphJSON.top)).forEach(item => {
         if (item.type === "circle" && item.style?.collapsed) {
           const position = graph.getElementPosition(item.id);
           void (async () => {
@@ -237,7 +239,7 @@ const getGraphButtons = (graph) => [[
   ".btn-clearGraph",
   () => void graph.clear().then(() => {
     filename = "";
-    graphJson = undefined;
+    graphJSON = undefined;
     graphData = { nodes: [], edges: [], combos: [] };
     resetSidebar("Please load a file.");
   })

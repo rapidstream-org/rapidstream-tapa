@@ -141,9 +141,15 @@
 	text-align: center;
 }
 
-.sidebar-contents .hint {
-	font-size: .75rem;
-	color: gray;
+.sidebar-content-neighbors > ul {
+	margin: .5rem 0;
+}
+.sidebar-content-explorer > ul {
+	padding: .5rem;
+	list-style-image: none;
+}
+.sidebar-content-explorer > ul > li:hover {
+	background-color: #EEE;
 }
 
 .sidebar-content-options {
@@ -156,6 +162,11 @@
 .sidebar-content-options .hint {
 	margin-top: .25rem;
 	margin-bottom: -.25rem;
+}
+
+.sidebar-contents .hint {
+	font-size: .75rem;
+	color: gray;
 }
 
 /* Hint about only one combo */

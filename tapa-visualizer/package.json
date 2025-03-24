@@ -25,8 +25,8 @@
         "build": "vite build",
         "dev": "vite",
         "patch": "patch-package @antv/g6",
-        "preview": "vite preview",
-        "postinstall": "patch-package"
+        "postinstall": "patch-package",
+        "preview": "vite preview"
     },
     "type": "module",
     "version": "0.1.0"

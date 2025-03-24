@@ -17,13 +17,13 @@
         "strictNullChecks": true,
         "target": "ES2023"
     },
+    "exclude": [
+        "js/*.min.js"
+    ],
     "include": [
         "eslint.config.mjs",
         "js/*.js",
         "types/*.d.ts",
-        "vite.config.ts",
-    ],
-    "exclude": [
-        "js/*.min.js"
+        "vite.config.ts"
     ]
 }

@@ -6,11 +6,12 @@
 
 "use strict";
 
-import { $, $text, append, getComboName } from "./helper.js";
+import { $, $text, append, getComboId, getComboName } from "./helper.js";
 import Prism from "virtual:prismjs";
 
 // sidebar content container elements
 const sidebarContainers = [
+  "explorer",
   "instance",
   "task",
   "neighbors",
@@ -23,6 +24,11 @@ const sidebarContainers = [
     throw new TypeError(`Element .sidebar-content-${name} not found!`);
   }
 });
+
+// Explorer don't need reset when anything is selected
+// .shift() introduces undefined, use [0] for the explorer variable
+const explorer = sidebarContainers[0];
+sidebarContainers.shift();
 
 const [
   instance,
@@ -47,8 +53,8 @@ export const resetSidebar = (instanceText = "Please select an item.") => [
 
 /** @type {(elements: (Node | string)[]) => HTMLUListElement} */
 const ul = elements => append(
-  $("ul", { style: "font-family: monospace;" }),
-  ...elements
+  $("ul", { style: "font-family: monospace; white-space: pre-wrap;" }),
+  ...elements,
 );
 
 // Object to element parsers
@@ -58,9 +64,9 @@ const parseArgs = args => append(
   $("dd"), append(
     $("ul"), ...args.map(
       ([name, { arg, cat }]) =>
-        $text("li", `${name}: ${arg} (${cat})`)
-    )
-  )
+        $text("li", `${name}: ${arg} (${cat})`),
+    ),
+  ),
 );
 
 /** Parse ports into <table>
@@ -106,6 +112,63 @@ const showCode = codeDialog && codeContainer
     title: "Error: C++ code-related element(s) does not exist!",
     disabled: true,
   });
+
+// Explorer
+
+/** @type {(graphJSON: GraphJSON) => void} */
+export const updateExplorer = ({ tasks, top }) => {
+  const taskLis = [];
+
+  /** @type {(task: UpperTask, level: number) => void} */
+  const parseUpperTask = (task, level) => {
+    for (const subTaskName in task.tasks) {
+      const subTask = tasks[subTaskName];
+      if (!subTask) {
+        console.warn(`task not found: ${subTaskName}`);
+        continue;
+      }
+      taskLis.push($text("li", `${"  ".repeat(level)}${subTaskName}`));
+      if (subTask.level === "upper") {
+        parseUpperTask(subTask, level + 1);
+      }
+    }
+  };
+
+  const topTask = tasks[top];
+  if (!topTask) {
+    // TODO: list the tasks instead
+    explorer.replaceChildren($text("p", "This graph has no top task."));
+  }
+  taskLis.push($text("li", top));
+  if (topTask.level === "upper") {
+    parseUpperTask(topTask, 1);
+  }
+
+  const taskUl = ul(taskLis);
+  taskUl.addEventListener("click", ({ target }) => {
+    if (target instanceof HTMLLIElement && target.textContent) {
+
+      /** @type {Record<string, string[]>} */
+      const states = {};
+      [graphData.nodes, graphData.edges, graphData.combos].forEach(
+        items => items.forEach(({ id }) => states[id ?? ""] = [])
+      );
+
+      const id = target.textContent.trim();
+      if (id in states) {
+        states[id].push("selected");
+      } else {
+        const comboId = getComboId(id);
+        comboId in states
+          ? states[comboId].push("selected")
+          : console.warn(`id not found: ${id}`);
+      }
+
+      void graph.setElementState(states);
+    }
+  });
+
+  explorer.replaceChildren(taskUl);
 };
 
 // Details
@@ -215,14 +278,14 @@ const getTaskInfo = (task, taskName) => {
 
       $text("dt", "FIFO Streams"),
       fifos.length !== 0
-        ? append($("dd", { style: "white-space: pre-wrap;" }), ul(fifos))
+        ? append($("dd"), ul(fifos))
         : $text("dd", "none"),
     );
   }
 
   dl.append(
     $text("dt", "Code"),
-    append($("dd"), showCode(task.code)),
+    append($("dd"), showCode(task.code, taskName)),
   );
 
   return dl;
@@ -293,11 +356,8 @@ export const updateSidebarForNode = (id, graph) => {
 };
 
 
-/** Get an `<dl>` element containing:
- * Instance Name, Upper Task, Sub-Task(s)
- * @type {(node: ComboData, graph: Graph) => HTMLElement} */
+/** @type {(node: ComboData, graph: Graph) => HTMLElement} */
 const getComboInfo = (combo, graph) => {
-
   const children = graph.getChildrenData(combo.id).map(
     child => $text("li", child.id),
   );

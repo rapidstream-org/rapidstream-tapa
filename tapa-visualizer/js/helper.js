@@ -16,7 +16,9 @@ export const $ = (tagName, props) => Object.assign(
 /** @type {$text} */
 export const $text = (tagName, textContent) => $(tagName, { textContent });
 
-/** @type {<T extends HTMLElement>(parent: T, ...children: (Node | string)[]) => T} */
+/**
+ * @typedef {(Node | string)[]} Children
+ * @type {<T extends HTMLElement>(parent: T, ...children: Children) => T} */
 export const append = (parent, ...children) => {
   parent.append(...children);
   return parent;
@@ -24,8 +26,10 @@ export const append = (parent, ...children) => {
 
 // combo id prefix
 
-/** @type {(comboName: string) => string} */
+/** "name" -> "combo:name"
+ * @type {(comboName: string) => string} */
 export const getComboId = comboName => `combo:${comboName}`;
 
-/** @type {(comboId: string) => string} */
+/** "combo:name" -> "name"
+ * @type {(comboId: string) => string} */
 export const getComboName = comboId => comboId.replace(/^combo:/, "");
