@@ -22,7 +22,6 @@ You may have to disable security.fileuri.strict_origin_policy. -->
 <script defer src="https://unpkg.com/@antv/g6@5.0.44/dist/g6.min.js"></script>
 
 <link rel="stylesheet" href="./css/style.css">
-<link rel="stylesheet" href="./css/prism.min.css">
 <style>
 /* basic layout & reset */
 html, body, .graph-container { height: 100%; }
@@ -31,9 +30,10 @@ body {
 	display: grid;
 	grid-template: auto 1fr / minmax(min(42em, 100%), auto) auto 1fr;
 }
-header, header .flex { display: flex; }
-aside { display: contents; }
-header {
+body > header,
+body > header .flex { display: flex; }
+body > aside { display: contents; }
+body > header {
 	grid-column: 1 / -1;
 	border-bottom: 1px solid #BEBEBE;
 }
@@ -245,11 +245,11 @@ header {
 </aside>
 
 <dialog>
-	<h2>
-		C++ Code
+	<header>
+		<h2>C++ Code</h2>
 		<button class="btn-copy">Copy</button>
 		<button class="btn-close" autofocus>Close</button>
-	</h2>
+	</header>
 	<pre><code class="language-cpp line-numbers"></code></pre>
 </dialog>
 
@@ -285,5 +285,4 @@ header {
 })();
 </script>
 <script type="module" src="./js/graph.js"></script>
-<script defer src="./js/prism.min.js" data-manual></script>
 </html>

@@ -7,6 +7,7 @@
 "use strict";
 
 import { $, $text, append, getComboName } from "./helper.js";
+import Prism from "virtual:prismjs";
 
 // sidebar content container elements
 const sidebarContainers = [
@@ -83,19 +84,28 @@ const parsePorts = ports => append(
   ),
 );
 
-/** @type {(code: string) => HTMLButtonElement} */
-const showCode = (code) => {
-  const button = $text("button", "Show C++ Code");
-  button.addEventListener("click", () => {
-    // TODO: Set title of the dialog to the task name
-    const container = document.querySelector("dialog code");
-    if (container) {
-      container.textContent = code;
-      globalThis.Prism?.highlightElement(container, true);
-    }
-    document.querySelector("dialog")?.showModal();
+const codeDialog = document.querySelector("dialog");
+const codeContainer = document.querySelector("dialog code");
+/** @type {(code: string, taskName: string) => HTMLButtonElement} */
+const showCode = codeDialog && codeContainer
+  ? (code, taskName) => {
+    const button = $text("button", "Show C++ Code");
+    button.addEventListener("click", () => {
+      codeContainer.textContent = code;
+      Prism.highlightElement(codeContainer);
+
+      const title = codeDialog.querySelector(":scope h2");
+      if (title) title.textContent = taskName;
+
+      codeDialog.showModal();
+    });
+    return button;
+  }
+  : () => $("button", {
+    textContent: "Show C++ Code",
+    title: "Error: C++ code-related element(s) does not exist!",
+    disabled: true,
   });
-  return button;
 };
 
 // Details
