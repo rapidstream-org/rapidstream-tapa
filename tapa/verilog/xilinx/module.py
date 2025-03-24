@@ -412,6 +412,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     @property
     def code(self) -> str:
+        if Options.enable_pyslang:
+            return str(self._syntax_tree.root)
         return "\n".join(
             directive for _, directive in self.directives
         ) + _CODEGEN.visit(self.ast)
@@ -614,7 +616,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
         if Options.enable_pyslang:
-            return self._add_signals_or_params(signals)
+            return self._add_ast_nodes(signals)
         decl = Decl(list=tuple(signals))
         self._module_def.items = (
             self._module_def.items[: self._next_signal_idx]
@@ -624,51 +626,50 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._increment_idx(len(decl.list), "signal")
         return self
 
-    def _add_signals_or_params(
-        self, signal_or_params: Iterable[Signal | Parameter]
+    def _add_ast_nodes(  # noqa: C901
+        self, nodes: Iterable[InstanceList | Signal | Parameter]
     ) -> "Module":
-        attrs = UniqueAttrs()
+        class Context:
+            range: pyslang.SourceRange
+            pieces: list[str]
 
-        # Source range of the last port, wire, or reg declaration in the module
-        # body. If found, new signals will be appended after it. Otherwise, new
-        # signals are appended after the header.
-        # Typed as a singleton list so the visitor can update it.
-        last_signal_range: list[pyslang.SourceRange | None] = [None]
-        last_param_range: list[pyslang.SourceRange | None] = [None]
+            def __init__(self) -> None:
+                self.pieces = []
+
+        param_context = Context()
+        signal_context = Context()
+        instance_context = Context()
 
         def visitor(node: object) -> pyslang.VisitAction:
-            if isinstance(node, pyslang.ModuleHeaderSyntax):
-                attrs.module_header = node
-                return pyslang.VisitAction.Skip
-            if isinstance(node, pyslang.ParameterDeclarationSyntax):
-                last_signal_range[0] = node.sourceRange
-                last_param_range[0] = node.sourceRange
+            if isinstance(
+                node, pyslang.ModuleHeaderSyntax | pyslang.ParameterDeclarationSyntax
+            ):
+                param_context.range = node.sourceRange
+                signal_context.range = node.sourceRange
+                instance_context.range = node.sourceRange
                 return pyslang.VisitAction.Skip
             if isinstance(node, _SIGNAL_SYNTAX | pyslang.PortDeclarationSyntax):
-                last_signal_range[0] = node.sourceRange
+                signal_context.range = node.sourceRange
+                instance_context.range = node.sourceRange
+                return pyslang.VisitAction.Skip
+            if isinstance(node, pyslang.HierarchyInstantiationSyntax):
+                instance_context.range = node.sourceRange
                 return pyslang.VisitAction.Skip
             return pyslang.VisitAction.Advance
 
         self._syntax_tree.root.visit(visitor)
-        assert isinstance(attrs.module_header, pyslang.ModuleHeaderSyntax)
-        signal_pieces = []
-        param_pieces = []
-        for signal_or_param in signal_or_params:
-            if isinstance(signal_or_param, Signal):
-                signal_pieces.extend(["\n  ", _CODEGEN.visit(signal_or_param)])
-            elif isinstance(signal_or_param, Parameter):
-                param_pieces.extend(["\n  ", _CODEGEN.visit(signal_or_param)])
-        self._rewriter.add_before(
-            # If module has no existing port, append new ports after the header.
-            (last_signal_range[0] or attrs.module_header.sourceRange).end,
-            signal_pieces,
-        )
-        self._rewriter.add_before(
-            # If module has no existing port, append new ports after the header.
-            (last_param_range[0] or attrs.module_header.sourceRange).end,
-            param_pieces,
-        )
+
+        for node in nodes:
+            if isinstance(node, Parameter):
+                param_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
+            elif isinstance(node, Signal):
+                signal_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
+            elif isinstance(node, InstanceList):
+                instance_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
+        for context in param_context, signal_context, instance_context:
+            self._rewriter.add_before(context.range.end, context.pieces)
         self._syntax_tree = self._rewriter.commit()
+
         return self
 
     def add_pipeline(self, q: Pipeline, init: Node) -> None:
@@ -719,7 +720,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def add_params(self, params: Iterable[Parameter]) -> "Module":
         if Options.enable_pyslang:
-            return self._add_signals_or_params(params)
+            return self._add_ast_nodes(params)
         decl = Decl(list=tuple(params))
         self._module_def.items = (
             self._module_def.items[: self._next_param_idx]
@@ -773,6 +774,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 ),
             ),
         )
+        if Options.enable_pyslang:
+            return self._add_ast_nodes([item])
         self._add_instancelist(item)
         return self
 

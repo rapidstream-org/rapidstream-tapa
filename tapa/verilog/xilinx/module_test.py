@@ -282,6 +282,47 @@ def test_del_nonexistent_param_succeeds() -> None:
 
 
 @pytest.mark.usefixtures("options")
+def test_add_instance_succeeds() -> None:
+    module = Module(name="foo")
+
+    module.add_instance(
+        module_name="Bar",
+        instance_name="bar",
+        ports=[ast.PortArg("port", ast.Constant("42"))],
+        params=[ast.ParamArg("PARAM", ast.Constant("233"))],
+    )
+
+    assert """
+Bar
+#(
+.PARAM(233)
+)
+bar
+(
+.port(42)
+);
+""" in "\n".join(  # strip() to ignore indentation
+        line.strip() for line in module.code.splitlines()
+    )
+
+    module.add_instance(
+        module_name="Baz",
+        instance_name="baz",
+        ports=[ast.PortArg("qux", ast.Constant("123"))],
+    )
+
+    assert """
+Baz
+baz
+(
+.qux(123)
+);
+""" in "\n".join(  # strip() to ignore indentation
+        line.strip() for line in module.code.splitlines()
+    )
+
+
+@pytest.mark.usefixtures("options")
 def test_add_m_axi() -> None:
     module = Module(name="foo")
 
