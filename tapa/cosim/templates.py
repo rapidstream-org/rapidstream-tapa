@@ -4,14 +4,6 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-# IMPORTANT WORKAROUND and FIXME:
-# There are a few places where we added `aaa_` prefix to the signals to ensure
-# the simulation order of xsim. The root cause is yet to be identified.
-# However, debugging blocking assignments in the testbench is daunting.
-# We will revisit this issue in the future, maybe by using non-blocking
-# assignments in the testbench. The main challenge is to interface non-blocking
-# operations with DPI calls, which are blocking by nature.
-
 import logging
 import os
 import sys
@@ -68,7 +60,8 @@ def get_axi_ram_inst(axi_obj: AXI) -> str:
   wire                                                axi_{axi_obj.name}_rvalid;
   wire                                                axi_{axi_obj.name}_rready;
 
-  reg        axi_ram_{axi_obj.name}_dump_mem; // write out the contents into binary file
+  // write out the contents into binary file
+  reg        axi_ram_{axi_obj.name}_dump_mem = 0;
   wire [3:0] axi_{axi_obj.name}_awqos; // place holder
   wire [3:0] axi_{axi_obj.name}_arqos;
 
@@ -141,7 +134,7 @@ def get_s_axi_control() -> str:
   wire                                    s_axi_control_wready;
   wire [C_S_AXI_CONTROL_DATA_WIDTH-1:0]   s_axi_control_wdata;
   wire [C_S_AXI_CONTROL_WSTRB_WIDTH-1:0]  s_axi_control_wstrb;
-  reg                                     s_axi_control_arvalid;
+  reg                                     s_axi_control_arvalid = 0;
   wire                                    s_axi_control_arready;
   wire [C_S_AXI_CONTROL_ADDR_WIDTH-1:0]   s_axi_control_araddr;
   wire                                    s_axi_control_rvalid;
@@ -154,8 +147,8 @@ def get_s_axi_control() -> str:
 
   // use a large FIFO to buffer the command to s_axi_control
   // in this way we don't need to worry about flow control
-  reg [63:0] s_axi_aw_din;
-  reg        s_axi_aw_write;
+  reg [63:0] s_axi_aw_din = 0;
+  reg        s_axi_aw_write = 0;
 
   fifo_srl #(
     .DATA_WIDTH(64),
@@ -180,8 +173,8 @@ def get_s_axi_control() -> str:
 
   );
 
-  reg [511:0] s_axi_w_din;
-  reg         s_axi_w_write;
+  reg [511:0] s_axi_w_din = 0;
+  reg         s_axi_w_write = 0;
 
   fifo_srl #(
     .DATA_WIDTH(32),
@@ -214,11 +207,18 @@ def get_axis(args: Sequence[Arg]) -> str:
     for arg in axis_args:
         lines.append(
             f"""
+  // data ports connected to DUT
   packed_uint{arg.port.data_width}_t axis_{arg.name}_tdata;
-  unpacked_uint{arg.port.data_width + 1}_t axis_{arg.name}_tdata_unpacked;
   logic axis_{arg.name}_tlast;
-  logic axis_{arg.name}_tvalid;
-  logic axis_{arg.name}_tready;
+
+  // data ports connected to testbench
+  unpacked_uint{arg.port.data_width + 1}_t axis_{arg.name}_tdata_unpacked;
+  unpacked_uint{arg.port.data_width + 1}_t axis_{arg.name}_tdata_unpacked_next;
+
+  logic axis_{arg.name}_tvalid = 0;
+  logic axis_{arg.name}_tready = 0;
+  logic axis_{arg.name}_tvalid_next = 0;
+  logic axis_{arg.name}_tready_next = 0;
 """
         )
     return "\n".join(lines)
@@ -230,10 +230,17 @@ def get_fifo(args: Sequence[Arg]) -> str:
     for arg in fifo_args:
         lines.append(
             f"""
-  packed_uint{arg.port.data_width + 1}_t aaa_fifo_{arg.name}_data;
-  unpacked_uint{arg.port.data_width + 1}_t aaa_fifo_{arg.name}_data_unpacked;
-  logic aaa_fifo_{arg.name}_valid;
-  logic aaa_fifo_{arg.name}_ready;
+  // data ports connected to DUT
+  packed_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data;
+
+  // data ports connected to testbench
+  unpacked_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data_unpacked;
+  unpacked_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data_unpacked_next;
+
+  logic fifo_{arg.name}_valid = 0;
+  logic fifo_{arg.name}_ready = 0;
+  logic fifo_{arg.name}_valid_next = 0;
+  logic fifo_{arg.name}_ready_next = 0;
 """
         )
     return "\n".join(lines)
@@ -362,16 +369,16 @@ def get_hls_dut(
 
         if arg.is_stream and arg.port.is_istream:
             dut += f"""
-    .{arg.name}_s_dout(aaa_fifo_{arg.name}_data),
-    .{arg.name}_s_empty_n(aaa_fifo_{arg.name}_valid),
-    .{arg.name}_s_read(aaa_fifo_{arg.name}_ready),
+    .{arg.name}_s_dout(fifo_{arg.name}_data),
+    .{arg.name}_s_empty_n(fifo_{arg.name}_valid),
+    .{arg.name}_s_read(fifo_{arg.name}_ready),
 """
 
         if arg.is_stream and arg.port.is_ostream:
             dut += f"""
-    .{arg.name}_s_din(aaa_fifo_{arg.name}_data),
-    .{arg.name}_s_full_n(aaa_fifo_{arg.name}_ready),
-    .{arg.name}_s_write(aaa_fifo_{arg.name}_valid),
+    .{arg.name}_s_din(fifo_{arg.name}_data),
+    .{arg.name}_s_full_n(fifo_{arg.name}_ready),
+    .{arg.name}_s_write(fifo_{arg.name}_valid),
 """
 
         if arg.is_scalar:
@@ -397,30 +404,23 @@ def get_vitis_test_signals(
     scalar_arg_to_val: dict[str, str],
     args: list[Arg],
 ) -> str:
-    dump_signal_init = "\n".join(
-        f"    axi_ram_{arg.name}_dump_mem = 1'b0;" for arg in args if arg.is_mmap
-    )
-    axis_signal_init = []
     axis_dpi_calls = []
     axis_assignments = []
     for arg in args:
         if not arg.is_stream:
             continue
-        axis_signal_init.append(
-            f"""
-    axis_{arg.name}_tvalid = 1'b0;
-    axis_{arg.name}_tready = 1'b0;
-"""
-        )
         if arg.port.is_istream:
             axis_dpi_calls.append(
                 f"""
     tapa::istream(
-        axis_{arg.name}_tdata_unpacked,
-        axis_{arg.name}_tvalid,
+        axis_{arg.name}_tdata_unpacked_next,
+        axis_{arg.name}_tvalid_next,
         axis_{arg.name}_tready,
         "{arg.name}"
     );
+
+    axis_{arg.name}_tdata_unpacked <= axis_{arg.name}_tdata_unpacked_next;
+    axis_{arg.name}_tvalid <= axis_{arg.name}_tvalid_next;
 """
             )
             axis_assignments.append(
@@ -434,10 +434,12 @@ def get_vitis_test_signals(
                 f"""
     tapa::ostream(
         axis_{arg.name}_tdata_unpacked,
-        axis_{arg.name}_tready,
+        axis_{arg.name}_tready_next,
         axis_{arg.name}_tvalid,
         "{arg.name}"
     );
+
+    axis_{arg.name}_tready <= axis_{arg.name}_tready_next;
 """
             )
             axis_assignments.append(
@@ -455,12 +457,16 @@ def get_vitis_test_signals(
   parameter HALF_CLOCK_PERIOD = 2;
   parameter CLOCK_PERIOD = HALF_CLOCK_PERIOD * 2;
 
-  // Clock and stream signals
+  // clock
   always begin
-    ap_clk = 1'b0;
-    #HALF_CLOCK_PERIOD;
-    ap_clk = 1'b1;
-    #HALF_CLOCK_PERIOD;
+      ap_clk = 1'b0;
+      #HALF_CLOCK_PERIOD;
+      ap_clk = 1'b1;
+      #HALF_CLOCK_PERIOD;
+  end
+
+  // axis signals
+  always @(posedge ap_clk) begin
     if (kernel_started) begin
       {newline.join(axis_dpi_calls)}
     end
@@ -469,17 +475,11 @@ def get_vitis_test_signals(
 {newline.join(axis_assignments)}
 
   initial begin
-    s_axi_aw_write = 1'b0;
-    s_axi_aw_din = 1'b0;
-    s_axi_w_write = 1'b0;
-    s_axi_w_din = 1'b0;
-{dump_signal_init}
-{newline.join(axis_signal_init)}
-    s_axi_control_arvalid = 1'b0;
+    // reset the DUT
     ap_rst_n = 1'b0;
-    kernel_started = 0;
-
     #(CLOCK_PERIOD*1000);
+
+    // enable the DUT
     ap_rst_n = 1'b1;
     #(CLOCK_PERIOD*100);
 
@@ -488,43 +488,48 @@ def get_vitis_test_signals(
     for arg, addrs in arg_to_reg_addrs.items():
         val = scalar_arg_to_val.get(arg, 0)
         test += (
-            f"    s_axi_aw_write = 1; s_axi_aw_din = {addrs[0]}; "
-            "s_axi_w_write = 1; "
-            f"s_axi_w_din = {val} & REG_MASK_32_BIT; #CLOCK_PERIOD;\n"
+            f"    s_axi_aw_write <= 1; s_axi_aw_din <= {addrs[0]}; "
+            "s_axi_w_write <= 1; "
+            f"s_axi_w_din <= {val} & REG_MASK_32_BIT; @(posedge ap_clk);\n"
         )
         if len(addrs) == 2:  # noqa: PLR2004
             test += (
-                f"    s_axi_aw_write = 1; s_axi_aw_din = {addrs[1]}; "
-                "s_axi_w_write = 1; "
-                f"s_axi_w_din = ({val} >> 32) & REG_MASK_32_BIT; "
-                "#CLOCK_PERIOD;\n"
+                f"    s_axi_aw_write <= 1; s_axi_aw_din <= {addrs[1]}; "
+                "s_axi_w_write <= 1; "
+                f"s_axi_w_din <= ({val} >> 32) & REG_MASK_32_BIT; "
+                f"@(posedge ap_clk);\n"
             )
 
     test += """
-    // start the kernel
-    s_axi_aw_write = 1;
-    s_axi_aw_din = 'h00;
-    s_axi_w_write = 1;
-    s_axi_w_din = 1;
-    #CLOCK_PERIOD;
+    // start the DUT
+    s_axi_aw_write <= 1;
+    s_axi_aw_din <= 'h00;
+    s_axi_w_write <= 1;
+    s_axi_w_din <= 1;
+    @(posedge ap_clk);
 
     // stop writing control signal
-    s_axi_aw_write = 0; s_axi_w_write = 0; #CLOCK_PERIOD;
-    kernel_started = 1;
+    s_axi_aw_write <= 0;
+    s_axi_w_write <= 0;
+    @(posedge ap_clk);
+
+    kernel_started <= 1;
+    @(posedge ap_clk);
 
     // start polling ap_done
     #(CLOCK_PERIOD*1000);
-    s_axi_control_arvalid = 1'b1 & s_axi_control_arready;
+    s_axi_control_arvalid <= 1'b1 & s_axi_control_arready;
+    @(posedge ap_clk);
 
   end
 """
 
     dump_signals = "\n".join(
-        f"          axi_ram_{arg.name}_dump_mem = 1;" for arg in args if arg.is_mmap
+        f"          axi_ram_{arg.name}_dump_mem <= 1;" for arg in args if arg.is_mmap
     )
     test += f"""
   // polling on ap_done
-  always @ (posedge ap_clk) begin
+  always @(posedge ap_clk) begin
     if (~ap_rst_n) begin
     end
     else begin
@@ -543,7 +548,6 @@ def get_vitis_test_signals(
 
 
 def get_hls_test_signals(args: list[Arg]) -> str:
-    fifo_signal_init = []
     fifo_dpi_calls = []
     fifo_assignments = []
 
@@ -551,54 +555,56 @@ def get_hls_test_signals(args: list[Arg]) -> str:
     for arg in args:
         if not arg.is_stream:
             continue
-        fifo_signal_init.append(
-            f"""
-    aaa_fifo_{arg.name}_valid = 1'b0;
-    aaa_fifo_{arg.name}_ready = 1'b0;
-"""
-        )
         if arg.port.is_istream:
             fifo_dpi_calls.append(f"""
     tapa::istream(
-        aaa_fifo_{arg.name}_data_unpacked,
-        aaa_fifo_{arg.name}_valid,
-        aaa_fifo_{arg.name}_ready,
+        fifo_{arg.name}_data_unpacked_next,
+        fifo_{arg.name}_valid_next,
+        fifo_{arg.name}_ready,
         "{arg.name}"
     );
+
+    fifo_{arg.name}_data_unpacked <= fifo_{arg.name}_data_unpacked_next;
+    fifo_{arg.name}_valid <= fifo_{arg.name}_valid_next;
 """)
             fifo_assignments.append(f"""
-    assign aaa_fifo_{arg.name}_data =
-        packed_uint{arg.port.data_width + 1}_t'(aaa_fifo_{arg.name}_data_unpacked);
+    assign fifo_{arg.name}_data =
+        packed_uint{arg.port.data_width + 1}_t'(fifo_{arg.name}_data_unpacked);
 """)
         elif arg.port.is_ostream:
             fifo_dpi_calls.append(f"""
     tapa::ostream(
-        aaa_fifo_{arg.name}_data_unpacked,
-        aaa_fifo_{arg.name}_ready,
-        aaa_fifo_{arg.name}_valid,
+        fifo_{arg.name}_data_unpacked,
+        fifo_{arg.name}_ready_next,
+        fifo_{arg.name}_valid,
         "{arg.name}"
     );
+
+    fifo_{arg.name}_ready <= fifo_{arg.name}_ready_next;
 """)
             fifo_assignments.append(f"""
-    assign aaa_fifo_{arg.name}_data_unpacked =
-        unpacked_uint{arg.port.data_width + 1}_t'(aaa_fifo_{arg.name}_data);
+    assign fifo_{arg.name}_data_unpacked =
+        unpacked_uint{arg.port.data_width + 1}_t'(fifo_{arg.name}_data);
 """)
         else:
             msg = f"unexpected arg.port.mode: {arg.port.mode}"
             raise ValueError(msg)
 
     newline = "\n"
-
     return f"""
   parameter HALF_CLOCK_PERIOD = 2;
   parameter CLOCK_PERIOD = HALF_CLOCK_PERIOD * 2;
 
-  // Clock and stream signals
+  // clock
   always begin
-    ap_clk = 1'b0;
-    #HALF_CLOCK_PERIOD;
-    ap_clk = 1'b1;
-    #HALF_CLOCK_PERIOD;
+      ap_clk = 1'b0;
+      #HALF_CLOCK_PERIOD;
+      ap_clk = 1'b1;
+      #HALF_CLOCK_PERIOD;
+  end
+
+  // fifo signals
+  always @(posedge ap_clk) begin
     if (kernel_started) begin
       {newline.join(fifo_dpi_calls)}
     end
@@ -607,30 +613,30 @@ def get_hls_test_signals(args: list[Arg]) -> str:
 {newline.join(fifo_assignments)}
 
   initial begin
-    // Reset DUT
-{newline.join(fifo_signal_init)}
+    // reset the DUT
     ap_rst_n = 1'b0;
-    ap_start = 0;
-    kernel_started = 0;
-
     #(CLOCK_PERIOD*1000);
+
+    // enable the DUT
     ap_rst_n = 1'b1;
     #(CLOCK_PERIOD*100);
 
-    // Start DUT
-    ap_start = 1;
-    #CLOCK_PERIOD;
+    // start the DUT
+    ap_start <= 1'b1;
+    @(posedge ap_clk);
 
-    kernel_started = 1;
+    kernel_started <= 1;
+    @(posedge ap_clk);
 
     fork
-        begin
-            wait(ap_ready);
-            ap_start = 0;
-        end
-        begin
-            wait(ap_done);
-        end
+      begin
+        wait(ap_ready);
+        ap_start <= 1'b0;
+        @(posedge ap_clk);
+      end
+      begin
+        wait(ap_done);
+      end
     join
 
     #(CLOCK_PERIOD*100);
@@ -660,13 +666,13 @@ endpackage
 
 module test();
 
-  reg ap_clk;
-  reg ap_rst_n;
-  reg ap_start;
+  reg ap_clk = 0;
+  reg ap_rst_n = 0;
+  reg ap_start = 0;
   wire ap_done;
   wire ap_ready;
 
-  reg kernel_started;
+  reg kernel_started = 0;
 
   wire [31:0] REG_MASK_32_BIT = {{32{{1\'b1}}}};
 

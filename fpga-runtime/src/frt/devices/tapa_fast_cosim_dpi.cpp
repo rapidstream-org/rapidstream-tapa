@@ -137,21 +137,25 @@ DPI_DLLESPEC void istream(
   CHECK(istream != nullptr);
   CHECK_EQ(istream->width(), svSize(dout, 1));
 
+  static std::unordered_map<std::string, bool> last_empty_n;
+
+  if (last_empty_n[id] && read == sv_1) {
+    // If we provided data in the last cycle, and the downstream consumed it,
+    // we need to pop that data in this cycle.
+    CHECK(!istream->empty());
+    istream->pop();
+  }
+
   if (istream->empty()) {
-    // No data can be provided in this cycle.
+    // If we are empty in this cycle, we do not provide data.
     StringToOpenArrayHandle(std::string(istream->width(), 'x'), dout);
     empty_n = sv_0;
+    last_empty_n[id] = false;
   } else {
-    // Data is provided in this cycle.
+    // Otherwise, we provide data and tell the downstream we are not empty.
     StringToOpenArrayHandle(istream->front(), dout);
     empty_n = sv_1;
-
-    // If the downstream is ready to take data, the provided data will be
-    // consumed before the next clock edge. After the clock edge, the next
-    // data shall be provided.
-    if (read == sv_1) {
-      istream->pop();
-    }
+    last_empty_n[id] = true;
   }
 }
 
