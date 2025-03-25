@@ -12,7 +12,6 @@ import re
 import tempfile
 from collections.abc import Callable, Generator, Iterable, Iterator
 from types import UnionType
-from typing import get_args
 
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
@@ -492,10 +491,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         for port in ports:
             if isinstance(port, Decl):
                 decl_list.append(port)
-                port_list.extend(
-                    x for x in port.list if isinstance(x, get_args(IOPort))
-                )
-            elif isinstance(port, get_args(IOPort)):
+                port_list.extend(x for x in port.list if isinstance(x, IOPort))
+            elif isinstance(port, IOPort):
                 decl_list.append(Decl((port,)))
                 port_list.append(port)
             else:
