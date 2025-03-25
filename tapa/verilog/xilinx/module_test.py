@@ -16,6 +16,7 @@ from pyverilog.vparser import ast
 from tapa.util import Options
 from tapa.verilog import ast_utils
 from tapa.verilog.xilinx import ast_types
+from tapa.verilog.xilinx.const import HANDSHAKE_CLK, HANDSHAKE_RST_N
 from tapa.verilog.xilinx.module import Module
 
 _CODEGEN = ASTCodeGenerator()
@@ -341,6 +342,22 @@ def test_del_nonexistent_instance_succeeds() -> None:
     module = Module(name="foo")
 
     module.del_instances(prefix="Bar")
+
+
+@pytest.mark.usefixtures("options")
+def test_add_rs_pragmas_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_ports(
+        [
+            ast_types.Input(HANDSHAKE_CLK),
+            ast_types.Input(HANDSHAKE_RST_N),
+        ]
+    )
+
+    module.add_rs_pragmas()
+
+    assert "(* RS_CLK *)input ap_clk;" in module.code
+    assert '(* RS_RST = "ff" *)input ap_rst_n;' in module.code
 
 
 @pytest.mark.usefixtures("options")

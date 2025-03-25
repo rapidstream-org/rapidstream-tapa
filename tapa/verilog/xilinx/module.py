@@ -813,6 +813,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             Module: self, for chaining.
 
         """
+        if Options.enable_pyslang:
+            return self._add_rs_pragmas_pyslang()
         items = []
         for item in self._module_def.items:
             if isinstance(item, Decl):
@@ -821,6 +823,23 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 items.append(item)
         self._module_def.items = tuple(items)
         self._calculate_indices()
+        return self
+
+    def _add_rs_pragmas_pyslang(self) -> "Module":
+        @functools.singledispatch
+        def visitor(node: object) -> pyslang.VisitAction:  # noqa: ARG001
+            return pyslang.VisitAction.Advance
+
+        @visitor.register
+        def _(node: pyslang.PortDeclarationSyntax) -> pyslang.VisitAction:
+            if (pragma := ioport.IOPort.create(node).rs_pragma) is not None:
+                self._rewriter.add_before(
+                    node.sourceRange.start, _CODEGEN.visit(pragma)
+                )
+            return pyslang.VisitAction.Skip
+
+        self._syntax_tree.root.visit(visitor)
+        self._syntax_tree = self._rewriter.commit()
         return self
 
     def del_pragmas(self, pragma: Iterable[str]) -> None:
