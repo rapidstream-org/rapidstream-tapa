@@ -28,9 +28,9 @@ int main(int argc, char* argv[]) {
   vector<float> a_vec(n * n);
   vector<float> b_vec(n * n);
   vector<float> c_vec(n * n);
-  auto a = reinterpret_cast<float(*)[n]>(a_vec.data());
-  auto b = reinterpret_cast<float(*)[n]>(b_vec.data());
-  auto c = reinterpret_cast<float(*)[n]>(c_vec.data());
+  auto a = reinterpret_cast<float (*)[n]>(a_vec.data());
+  auto b = reinterpret_cast<float (*)[n]>(b_vec.data());
+  auto c = reinterpret_cast<float (*)[n]>(c_vec.data());
   std::mt19937 gen;
   std::uniform_real_distribution<float> dist;
   for (uint64_t i = 0; i < n; ++i) {
@@ -45,9 +45,9 @@ int main(int argc, char* argv[]) {
   vector<float> a_buf(n * n);
   vector<float> b_buf(n * n);
   vector<float> c_buf(n * n);
-  auto a_block = reinterpret_cast<float(*)[p][n / p][n / p]>(a_buf.data());
-  auto b_block = reinterpret_cast<float(*)[p][n / p][n / p]>(b_buf.data());
-  auto c_block = reinterpret_cast<float(*)[p][n / p][n / p]>(c_buf.data());
+  auto a_block = reinterpret_cast<float (*)[p][n / p][n / p]>(a_buf.data());
+  auto b_block = reinterpret_cast<float (*)[p][n / p][n / p]>(b_buf.data());
+  auto c_block = reinterpret_cast<float (*)[p][n / p][n / p]>(c_buf.data());
 
   for (uint64_t i = 0; i < p; ++i) {
     for (uint64_t j = 0; j < p; ++j) {

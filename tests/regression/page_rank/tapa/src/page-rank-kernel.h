@@ -97,8 +97,8 @@ inline bool All(const bool (&array)[1]) {
 template <int N>
 inline bool All(const bool (&array)[N]) {
 #pragma HLS inline
-  return All((const bool(&)[N / 2])(array)) &&
-         All((const bool(&)[N - N / 2])(array[N / 2]));
+  return All((const bool (&)[N / 2])(array)) &&
+         All((const bool (&)[N - N / 2])(array[N / 2]));
 }
 
 template <typename T>

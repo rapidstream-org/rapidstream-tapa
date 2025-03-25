@@ -26,8 +26,8 @@ int main(int argc, char* argv[]) {
   vector<float> t0_vec(
       height * width +
       (width * 2 + 1));  // additional space is stencil distance
-  auto t1 = reinterpret_cast<float(*)[width]>(t1_vec.data());
-  auto t0 = reinterpret_cast<float(*)[width]>(t0_vec.data() + width);
+  auto t1 = reinterpret_cast<float (*)[width]>(t1_vec.data());
+  auto t0 = reinterpret_cast<float (*)[width]>(t0_vec.data() + width);
   for (uint64_t i = 0; i < height; ++i) {
     for (uint64_t j = 0; j < width; ++j) {
       auto shuffle = [](uint64_t x, uint64_t n) -> float {
