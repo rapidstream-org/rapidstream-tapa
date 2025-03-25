@@ -115,14 +115,8 @@ export default [
   {
     name: "css",
     files: ["css/*.css"],
-    plugins: { css },
     language: "css/css",
-    rules: {
-      "css/no-duplicate-imports": "error",
-      "css/no-invalid-at-rules": "error",
-      "css/no-invalid-properties": "error",
-      "css/require-baseline": ["warn", { available: "widely" }]
-    },
+		...css.configs.recommended,
   },
 
 ];
