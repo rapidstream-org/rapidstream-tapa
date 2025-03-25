@@ -17,9 +17,6 @@
         "strictNullChecks": true,
         "target": "ES2023"
     },
-    "exclude": [
-        "js/*.min.js"
-    ],
     "include": [
         "eslint.config.mjs",
         "js/*.js",

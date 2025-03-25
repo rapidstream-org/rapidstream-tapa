@@ -36,9 +36,7 @@ const globalVariablesR =
 /** @type {(Config | FlatConfig)[]} */
 export default [
 
-  globalIgnoresR("global ignores", [
-    "js/*.min.js",
-  ]),
+  globalIgnoresR("global ignores", []),
 
   // Global variables
   globalVariablesR("globals/browser", globals.browser, [

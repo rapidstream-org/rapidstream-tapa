@@ -53,7 +53,8 @@
 	transform: rotate(180deg);
 }
 
-.sidebar-contents details > div > p:only-child {
+.sidebar-contents details > div > p:only-child,
+.sidebar-content-explorer > p:only-child {
 	text-align: center;
 }
 

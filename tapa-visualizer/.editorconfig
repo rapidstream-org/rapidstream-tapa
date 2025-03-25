@@ -16,7 +16,7 @@ insert_final_newline = true
 [*.html]
 indent_size = 2
 
-[*.{js,jsx,ts,tsx,mjs,cjs}]
+[*.{js,ts,mjs,cjs,sh}]
 indent_style = space
 indent_size = 2
 
