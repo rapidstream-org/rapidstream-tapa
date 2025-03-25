@@ -681,8 +681,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         """
         self.add_signals(q.signals)
-        logics: list[Logic] = [Assign(left=q[0], right=init)]
-        self.add_logics(logics)
+        self.add_logics([Assign(left=q[0], right=init)])
 
     def del_signals(self, prefix: str = "", suffix: str = "") -> None:
         if Options.enable_pyslang:
