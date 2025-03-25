@@ -323,6 +323,27 @@ baz
 
 
 @pytest.mark.usefixtures("options")
+def test_del_instances_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_instance(
+        module_name="Bar",
+        instance_name="bar",
+        ports=[ast.PortArg("port", ast.Constant("42"))],
+    )
+
+    module.del_instances(prefix="Bar")
+
+    assert "bar" not in module.code
+
+
+@pytest.mark.usefixtures("options")
+def test_del_nonexistent_instance_succeeds() -> None:
+    module = Module(name="foo")
+
+    module.del_instances(prefix="Bar")
+
+
+@pytest.mark.usefixtures("options")
 def test_add_m_axi() -> None:
     module = Module(name="foo")
 

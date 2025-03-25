@@ -4,13 +4,15 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import functools
 import itertools
 import logging
 import os.path
 import re
 import tempfile
 from collections.abc import Callable, Generator, Iterable, Iterator
-from typing import Literal, get_args
+from types import UnionType
+from typing import get_args
 
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
@@ -687,7 +689,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def del_signals(self, prefix: str = "", suffix: str = "") -> None:
         if Options.enable_pyslang:
-            self._del_matching("signals", prefix, suffix)
+            self._del_matching(_SIGNAL_SYNTAX, prefix, suffix)
             return
 
         def func(item: Node) -> bool:
@@ -702,15 +704,13 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._filter(func, "signal")
 
     def _del_matching(
-        self, syntax: Literal["signals", "params"], prefix: str, suffix: str
+        self, node_type: type | UnionType, prefix: str, suffix: str
     ) -> None:
         def visitor(node: object) -> pyslang.VisitAction:
-            if (syntax == "signals" and isinstance(node, _SIGNAL_SYNTAX)) or (
-                syntax == "params"
-                and isinstance(node, pyslang.ParameterDeclarationSyntax)
-            ):
+            if isinstance(node, node_type):
                 name = _get_name(node)
                 if name.startswith(prefix) and name.endswith(suffix):
+                    assert isinstance(node, pyslang.SyntaxNode)
                     self._rewriter.remove(node.sourceRange)
                 return pyslang.VisitAction.Skip
             return pyslang.VisitAction.Advance
@@ -732,7 +732,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def del_params(self, prefix: str = "", suffix: str = "") -> None:
         if Options.enable_pyslang:
-            self._del_matching("params", prefix, suffix)
+            self._del_matching(pyslang.ParameterDeclarationSyntax, prefix, suffix)
             return
 
         def func(item: Node) -> bool:
@@ -796,6 +796,11 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._filter(func, "param")
 
     def del_instances(self, prefix: str = "", suffix: str = "") -> None:
+        """Deletes instances with a matching *module* name."""
+        if Options.enable_pyslang:
+            self._del_matching(pyslang.HierarchyInstantiationSyntax, prefix, suffix)
+            return
+
         def func(item: Node) -> bool:
             return not (
                 isinstance(item, InstanceList)
@@ -1148,7 +1153,13 @@ def with_rs_pragma(node: Input | Output | Decl) -> Decl:
     return Decl(tuple(x for x in items if x is not None))
 
 
-def _get_name(
+@functools.singledispatch
+def _get_name(node: object) -> str:
+    raise TypeError(type(node))
+
+
+@_get_name.register
+def _(
     node: (
         pyslang.DataDeclarationSyntax
         | pyslang.NetDeclarationSyntax
@@ -1156,6 +1167,12 @@ def _get_name(
     ),
 ) -> str:
     return node.declarators[0].name.valueText
+
+
+@_get_name.register
+def _(node: pyslang.HierarchyInstantiationSyntax) -> str:
+    """Returns the *module* name of an instance list."""
+    return node.type.valueText
 
 
 def _get_width(node: pyslang.DataTypeSyntax) -> Width | None:
