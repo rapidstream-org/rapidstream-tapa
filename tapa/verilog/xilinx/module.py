@@ -51,7 +51,7 @@ from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
 from tapa.util import Options
-from tapa.verilog.ast_utils import make_port_arg, make_pragma
+from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.util import (
     Pipeline,
     async_mmap_instance_name,
@@ -62,18 +62,15 @@ from tapa.verilog.util import (
 from tapa.verilog.xilinx import ioport
 from tapa.verilog.xilinx.ast_types import Directive, IOPort, Logic, Signal
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
-from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import (
     CLK,
     FIFO_READ_PORTS,
     FIFO_WRITE_PORTS,
-    HANDSHAKE_CLK,
     HANDSHAKE_DONE,
     HANDSHAKE_IDLE,
     HANDSHAKE_OUTPUT_PORTS,
     HANDSHAKE_READY,
     HANDSHAKE_RST,
-    HANDSHAKE_RST_N,
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
     RST_N,
@@ -1100,46 +1097,15 @@ def get_rs_port(port: str) -> str:
     return "data"
 
 
-def get_rs_pragma(node: Input | Output) -> Pragma | None:
-    """Return the RapidStream pragma for the given `node`."""
-    if isinstance(node, Input | Output):
-        if node.name == HANDSHAKE_CLK:
-            return make_pragma("RS_CLK")
-
-        if node.name == HANDSHAKE_RST_N:
-            return make_pragma("RS_RST", "ff")
-
-        if node.name == "interrupt":
-            return make_pragma("RS_FF", node.name)
-
-        for channel, ports in M_AXI_PORTS.items():
-            for port, _ in ports:
-                if node.name.endswith(f"_{channel}{port}"):
-                    return make_pragma(
-                        "RS_HS",
-                        f"{node.name[: -len(port)]}.{get_rs_port(port)}",
-                    )
-
-        for suffix, role in AXIS_PORTS.items():
-            if node.name.endswith(suffix):
-                return make_pragma("RS_HS", f"{node.name[: -len(suffix)]}.{role}")
-
-        _logger.error("not adding pragma for unknown port '%s'", node.name)
-        return None
-
-    msg = f"unexpected node: {node}"
-    raise ValueError(msg)
-
-
 def with_rs_pragma(node: Input | Output | Decl) -> Decl:
     """Return an `Decl` with RapidStream pragma for the given `node`."""
     items = []
     if isinstance(node, Input | Output):
-        items.extend([get_rs_pragma(node), node])
+        items.extend([ioport.IOPort.create(node).rs_pragma, node])
     elif isinstance(node, Decl):
         for item in node.list:
             if isinstance(item, Input | Output):
-                items.append(get_rs_pragma(item))
+                items.append(ioport.IOPort.create(item).rs_pragma)
             # Decl with other node types is OK.
             items.append(item)
     else:

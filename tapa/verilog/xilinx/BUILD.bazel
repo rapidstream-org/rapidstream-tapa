@@ -45,6 +45,8 @@ py_library(
     deps = [
         ":ast_types",
         "//tapa/common:unique_attrs",
+        "//tapa/verilog",
+        "//tapa/verilog/xilinx",
         requirement("pyslang"),
         requirement("pyverilog"),
     ],

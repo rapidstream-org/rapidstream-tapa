@@ -6,6 +6,7 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import logging
 from typing import Literal, NamedTuple
 
 import pyslang
@@ -13,7 +14,13 @@ from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import ast
 
 from tapa.common.unique_attrs import UniqueAttrs
+from tapa.verilog.ast_utils import make_pragma
 from tapa.verilog.xilinx import ast_types
+from tapa.verilog.xilinx.axis import AXIS_PORTS
+from tapa.verilog.xilinx.const import HANDSHAKE_CLK, HANDSHAKE_RST_N
+from tapa.verilog.xilinx.m_axi import M_AXI_PORTS
+
+_logger = logging.getLogger().getChild(__name__)
 
 
 class IOPort(NamedTuple):
@@ -74,6 +81,32 @@ class IOPort(NamedTuple):
         }[self.direction]
         return ast_type(self.name, self.width)
 
+    @property
+    def rs_pragma(self) -> ast.Pragma | None:
+        if self.name == HANDSHAKE_CLK:
+            return make_pragma("RS_CLK")
+
+        if self.name == HANDSHAKE_RST_N:
+            return make_pragma("RS_RST", "ff")
+
+        if self.name == "interrupt":
+            return make_pragma("RS_FF", self.name)
+
+        for channel, ports in M_AXI_PORTS.items():
+            for port, _ in ports:
+                if self.name.endswith(f"_{channel}{port}"):
+                    return make_pragma(
+                        "RS_HS",
+                        f"{self.name[: -len(port)]}.{_get_rs_port(port)}",
+                    )
+
+        for suffix, role in AXIS_PORTS.items():
+            if self.name.endswith(suffix):
+                return make_pragma("RS_HS", f"{self.name[: -len(suffix)]}.{role}")
+
+        _logger.error("not adding pragma for unknown port '%s'", self.name)
+        return None
+
     def __str__(self) -> str:
         return codegen.ASTCodeGenerator().visit(self.ast_port)
 
@@ -82,3 +115,10 @@ class IOPort(NamedTuple):
 
     def __hash__(self) -> int:
         return hash(str(self))
+
+
+def _get_rs_port(port: str) -> str:
+    """Return the RapidStream port for the given m_axi `port`."""
+    if port in {"READY", "VALID"}:
+        return port.lower()
+    return "data"
