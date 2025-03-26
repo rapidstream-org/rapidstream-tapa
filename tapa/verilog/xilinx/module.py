@@ -87,6 +87,7 @@ FIFO_INFIXES = ("_V", "_r", "_s", "")
 
 _CODEGEN = ASTCodeGenerator()
 _SIGNAL_SYNTAX = pyslang.DataDeclarationSyntax | pyslang.NetDeclarationSyntax
+_LOGIC_SYNTAX = pyslang.ContinuousAssignSyntax | pyslang.ProceduralBlockSyntax
 
 
 class Module:  # noqa: PLR0904  # TODO: refactor this class
@@ -605,7 +606,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self
 
     def _add_ast_nodes(  # noqa: C901
-        self, nodes: Iterable[InstanceList | Signal | Parameter]
+        self, nodes: Iterable[Parameter | Signal | InstanceList | Logic]
     ) -> "Module":
         class Context:
             range: pyslang.SourceRange
@@ -617,6 +618,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         param_context = Context()
         signal_context = Context()
         instance_context = Context()
+        logic_context = Context()
 
         def visitor(node: object) -> pyslang.VisitAction:
             if isinstance(
@@ -625,13 +627,19 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 param_context.range = node.sourceRange
                 signal_context.range = node.sourceRange
                 instance_context.range = node.sourceRange
+                logic_context.range = node.sourceRange
                 return pyslang.VisitAction.Skip
             if isinstance(node, _SIGNAL_SYNTAX | pyslang.PortDeclarationSyntax):
                 signal_context.range = node.sourceRange
                 instance_context.range = node.sourceRange
+                logic_context.range = node.sourceRange
                 return pyslang.VisitAction.Skip
             if isinstance(node, pyslang.HierarchyInstantiationSyntax):
                 instance_context.range = node.sourceRange
+                logic_context.range = node.sourceRange
+                return pyslang.VisitAction.Skip
+            if isinstance(node, _LOGIC_SYNTAX):
+                logic_context.range = node.sourceRange
                 return pyslang.VisitAction.Skip
             return pyslang.VisitAction.Advance
 
@@ -644,7 +652,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 signal_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
             elif isinstance(node, InstanceList):
                 instance_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
-        for context in param_context, signal_context, instance_context:
+            elif isinstance(node, Logic):
+                logic_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
+        for context in [
+            param_context,
+            signal_context,
+            instance_context,
+            logic_context,
+        ]:
             self._rewriter.add_before(context.range.end, context.pieces)
         self._syntax_tree = self._rewriter.commit()
 
@@ -755,6 +770,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self
 
     def add_logics(self, logics: Iterable[Logic]) -> "Module":
+        if Options.enable_pyslang:
+            return self._add_ast_nodes(logics)
+
         logic_tuple = tuple(logics)
         self._module_def.items = (
             self._module_def.items[: self._next_logic_idx]
@@ -765,10 +783,24 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self
 
     def del_logics(self) -> None:
+        if Options.enable_pyslang:
+            self._del_logics_pyslang()
+            return
+
         def func(item: Node) -> bool:
             return not isinstance(item, Logic)
 
         self._filter(func, "param")
+
+    def _del_logics_pyslang(self) -> None:
+        def visitor(node: object) -> pyslang.VisitAction:
+            if isinstance(node, _LOGIC_SYNTAX):
+                self._rewriter.remove(node.sourceRange)
+                return pyslang.VisitAction.Skip
+            return pyslang.VisitAction.Advance
+
+        self._syntax_tree.root.visit(visitor)
+        self._syntax_tree = self._rewriter.commit()
 
     def del_instances(self, prefix: str = "", suffix: str = "") -> None:
         """Deletes instances with a matching *module* name."""

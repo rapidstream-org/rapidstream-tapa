@@ -16,7 +16,11 @@ from pyverilog.vparser import ast
 from tapa.util import Options
 from tapa.verilog import ast_utils
 from tapa.verilog.xilinx import ast_types
-from tapa.verilog.xilinx.const import HANDSHAKE_CLK, HANDSHAKE_RST_N
+from tapa.verilog.xilinx.const import (
+    CLK_SENS_LIST,
+    HANDSHAKE_CLK,
+    HANDSHAKE_RST_N,
+)
 from tapa.verilog.xilinx.module import Module
 
 _CODEGEN = ASTCodeGenerator()
@@ -342,6 +346,48 @@ def test_del_nonexistent_instance_succeeds() -> None:
     module = Module(name="foo")
 
     module.del_instances(prefix="Bar")
+
+
+@pytest.mark.usefixtures("options")
+def test_add_logics_succeeds() -> None:
+    module = Module(name="foo")
+
+    module.add_logics([ast.Assign(ast.Identifier("bar"), ast.IntConst(0))])
+    module.add_logics(
+        [
+            ast.Always(CLK_SENS_LIST, ast_utils.make_block(())),
+            ast.Initial(ast_utils.make_block(())),
+        ]
+    )
+
+    assert "assign bar = 0;" in module.code
+    assert "always @(posedge ap_clk) begin" in module.code
+    assert "initial " in module.code
+
+
+@pytest.mark.usefixtures("options")
+def test_del_logics_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_logics(
+        [
+            ast.Assign(ast.Identifier("bar"), ast.IntConst(0)),
+            ast.Always(CLK_SENS_LIST, ast_utils.make_block(())),
+            ast.Initial(ast_utils.make_block(())),
+        ]
+    )
+
+    module.del_logics()
+
+    assert "assign" not in module.code
+    assert "always" not in module.code
+    assert "initial" not in module.code
+
+
+@pytest.mark.usefixtures("options")
+def test_del_nonexistent_logic_succeeds() -> None:
+    module = Module(name="foo")
+
+    module.del_logics()
 
 
 @pytest.mark.usefixtures("options")
