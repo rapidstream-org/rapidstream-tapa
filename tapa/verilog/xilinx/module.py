@@ -16,19 +16,16 @@ from types import UnionType
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
-    Always,
     Assign,
     Constant,
     Decl,
     Description,
     Identifier,
-    Initial,
     Inout,
     Input,
     Instance,
     InstanceList,
     Ioport,
-    Lvalue,
     ModuleDef,
     Node,
     Output,
@@ -68,7 +65,6 @@ from tapa.verilog.xilinx.const import (
     FIFO_WRITE_PORTS,
     HANDSHAKE_DONE,
     HANDSHAKE_IDLE,
-    HANDSHAKE_OUTPUT_PORTS,
     HANDSHAKE_READY,
     HANDSHAKE_RST,
     ISTREAM_SUFFIXES,
@@ -103,8 +99,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     ----------
       ast: The Source node.
       directives: Tuple of Directives.
-      _handshake_output_ports: A mapping from ap_done, ap_idle, ap_ready signal
-          names to their Assign nodes.
       _next_io_port_idx: Next index of an IOPort in module_def.items.
       _next_signal_idx: Next index of Wire or Reg in module_def.items.
       _next_param_idx: Next index of Parameter in module_def.items.
@@ -137,7 +131,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 Description([ModuleDef(name, Paramlist(()), Portlist(()), items=())]),
             )
             self.directives = ()
-            self._handshake_output_ports: dict[str, Assign] = {}
             self._calculate_indices()
             return
         with tempfile.TemporaryDirectory(prefix="pyverilog-") as output_dir:
@@ -177,10 +170,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 self._rewriter = PyslangRewriter(self._syntax_tree)
             self.ast: Source = codeparser.parse()
             self.directives: tuple[Directive, ...] = codeparser.get_directives()
-        self._handshake_output_ports = {}
         self._calculate_indices()
 
-    def _calculate_indices(self) -> None:  # noqa: C901,PLR0912
+    def _calculate_indices(self) -> None:
         for idx, item in enumerate(self._module_def.items):
             if isinstance(item, Decl):
                 if any(isinstance(x, Input | Output) for x in item.list):
@@ -189,18 +181,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                     self._next_signal_idx = idx + 1
                 elif any(isinstance(x, Parameter) for x in item.list):
                     self._next_param_idx = idx + 1
-            elif isinstance(item, Assign | Always):
+            elif isinstance(item, Logic):
                 self._next_logic_idx = idx + 1
-                if isinstance(item, Assign):
-                    if isinstance(item.left, Lvalue):
-                        name = item.left.var.name
-                    elif isinstance(item.left, Identifier):
-                        name = item.left.name
-                    else:
-                        msg = f"unexpected left-hand side {item.left}"
-                        raise ValueError(msg)
-                    if name in HANDSHAKE_OUTPUT_PORTS:
-                        self._handshake_output_ports[name] = item
             elif isinstance(item, InstanceList):
                 self._next_instance_idx = idx + 1
 
@@ -784,7 +766,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def del_logics(self) -> None:
         def func(item: Node) -> bool:
-            return not isinstance(item, Assign | Always | Initial)
+            return not isinstance(item, Logic)
 
         self._filter(func, "param")
 
