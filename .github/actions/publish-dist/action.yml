@@ -42,6 +42,7 @@ runs:
         run: |
           cp install.sh .github/actions/publish-dist/installer/tapa.rapidstream.sh
           retry -- wrangler pages deploy \
+            --commit-dirty=true \
             --project-name ${{ inputs.cloudflarePagesProjectName }} \
             .github/actions/publish-dist/installer
         dockerOptions: >-
@@ -56,10 +57,10 @@ runs:
           bucket="${{ inputs.cloudflareR2BucketName }}"
           channel="${{ inputs.channel }}"
           version="$(cat VERSION)"
-          retry -- wrangler r2 object put \
+          retry -- wrangler r2 --remote object put \
             \$bucket/rapidstream-tapa-\$channel-latest.tar.gz \
             --file=/workspace/artifacts.out/tapa.tar.gz
-          retry -- wrangler r2 object put \
+          retry -- wrangler r2 --remote object put \
             \$bucket/rapidstream-tapa-\$channel-\$version.tar.gz \
             --file=/workspace/artifacts.out/tapa.tar.gz
         dockerOptions: >-
