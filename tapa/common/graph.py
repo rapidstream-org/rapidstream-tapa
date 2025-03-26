@@ -205,6 +205,24 @@ class Graph(Base):
 
         return TaskDefinition(self.get_top_task_name(), new_top_obj, self)
 
+    def get_floorplan_graph(self, slot_to_insts: dict[str, list[str]]) -> "Graph":
+        """Generate floorplanned graph."""
+        new_obj = self.to_dict()
+
+        assert isinstance(new_obj["tasks"], dict)
+        slot_defs = {}
+        for slot_name, insts in slot_to_insts.items():
+            slot_def = self.get_floorplan_slot(slot_name, insts, self)
+            assert slot_name not in new_obj["tasks"]
+            new_obj["tasks"][slot_name] = slot_def.to_dict()
+            slot_defs[slot_name] = slot_def
+
+        top_name = self.get_top_task_name()
+        assert top_name in new_obj["tasks"]
+        new_obj["tasks"][top_name] = self.get_floorplan_top(slot_defs).to_dict()
+
+        return Graph(self.name, new_obj)
+
 
 def _get_used_ports(new_insts: list[TaskInstance], fifo_ports: list[str]) -> list:
     """Find the port on inst that connects to the fifo."""
