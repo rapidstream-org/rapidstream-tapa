@@ -142,13 +142,16 @@ void XilinxAIETarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
                                 llvm::join(lines, "\n"));
 }
-
+void XilinxAIETarget::RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF) {
+  // For other function, remove target label and function body
+  if (auto attr = func->getAttr<TapaTargetAttr>()) {
+    auto myRange = attr->getRange();
+    rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, myRange));
+  }
+  rewriter.RemoveText(func->getSourceRange());
+}
 void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
                                             bool IsTapaTopLevel) {
-  // Remove the TapaTargetAttr defintion.
-  auto attr = func->getAttr<TapaTargetAttr>();
-  rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
-
   // Remove the function directly.
   if (IsTapaTopLevel == true) {
     rewriter.ReplaceText(func->getBody()->getSourceRange(), ";\n");
@@ -158,6 +161,18 @@ void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
     rewriter.RemoveText(func->getSourceRange());
     ::aie_log_out("aielog.txt", func->getNameAsString() + " is not top task",
                   true);
+  }
+
+  if (auto attr = func->getAttr<TapaTargetAttr>()) {
+    // Remove the TapaTargetAttr defintion if the function has one.
+    rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
+    // If target is not AIE, remove function definition.
+    if (attr->getTarget() != TapaTargetAttr::TargetType::AIE) {
+      rewriter.RemoveText(func->getSourceRange());
+    }
+  } else {
+    // If target is not defined, remove function definition.
+    rewriter.RemoveText(func->getSourceRange());
   }
 }
 void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
