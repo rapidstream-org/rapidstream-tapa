@@ -5,7 +5,7 @@ Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
-
+import copy
 from collections import defaultdict
 from functools import lru_cache
 from typing import TYPE_CHECKING
@@ -99,6 +99,7 @@ class Graph(Base):
         """Return the task grouping the tasks floorplanned in the given slot."""
         # Construct obj of the slot by modifying the top task
         new_obj = self.get_top_task_def().to_dict()
+
         new_obj["level"] = "upper"
 
         # Find all task instances
@@ -169,6 +170,40 @@ class Graph(Base):
         new_obj["ports"] = new_ports
 
         return TaskDefinition(slot_name, new_obj, top)
+
+    def get_floorplan_top(self, slot_defs: dict[str, TaskDefinition]) -> TaskDefinition:
+        """Return the new top level by grouping slot instances."""
+        top_obj = self.get_top_task_def().to_dict()
+        assert top_obj["level"] != "lower"
+        new_top_obj = copy.deepcopy(top_obj)
+
+        # obj['tasks']:
+        # construct slot instances
+        new_top_insts = defaultdict(list)
+        for slot_name, slot_def in slot_defs.items():
+            assert isinstance(slot_def.obj["ports"], list)
+            ports: dict[str, dict] = {p["name"]: p for p in slot_def.obj["ports"]}
+            args = {}
+            for port_name, port_obj in ports.items():
+                args[port_name] = {"arg": port_name, "cat": port_obj["cat"]}
+            new_top_insts[slot_name].append({"args": args, "step": 0})
+        new_top_obj["tasks"] = new_top_insts
+
+        # obj['fifos']:
+        # remove all fifos except the ones connecting the slots
+        in_slot_fifos = []
+        for slot_def in slot_defs.values():
+            assert isinstance(slot_def.obj["fifos"], dict)
+            in_slot_fifos += slot_def.obj["fifos"].keys()
+
+        assert isinstance(top_obj["fifos"], dict)
+        new_top_obj["fifos"] = {
+            name: fifo
+            for name, fifo in top_obj["fifos"].items()
+            if name not in in_slot_fifos
+        }
+
+        return TaskDefinition(self.get_top_task_name(), new_top_obj, self)
 
 
 def _get_used_ports(new_insts: list[TaskInstance], fifo_ports: list[str]) -> list:
