@@ -51,6 +51,10 @@ def _tapa_xo_impl(ctx):
     if ctx.attr.flatten_hierarchy:
         tapa_cmd.extend(["--flatten-hierarchy"])
 
+    # Add floorplan path, if specified.
+    if ctx.file.floorplan_path:
+        tapa_cmd.extend(["--floorplan-path", ctx.file.floorplan_path.path])
+
     # Build the command for tapa-cli synth.
     tapa_cmd.extend(["synth", "--platform", platform_name])
 
@@ -83,9 +87,12 @@ def _tapa_xo_impl(ctx):
         tapa_cmd.extend(["--custom-rtl", rtl_file.path])
 
     # Define a custom action to run the synthesized command.
+    inputs = [src] + ctx.files.hdrs + ctx.files.custom_rtl_files
+    if ctx.file.floorplan_path:
+        inputs.append(ctx.file.floorplan_path)
     ctx.actions.run(
         outputs = outputs,
-        inputs = [src] + ctx.files.hdrs + ctx.files.custom_rtl_files,
+        inputs = inputs,
         tools = [tapa_cli, ctx.executable.vitis_hls_env],
         executable = ctx.executable.vitis_hls_env,
         arguments = tapa_cmd,
@@ -135,6 +142,7 @@ tapa_xo = rule(
         "enable_synth_util": attr.bool(),
         "gen_ab_graph": attr.bool(),
         "flatten_hierarchy": attr.bool(),
+        "floorplan_path": attr.label(allow_single_file = True),
         "vitis_hls_env": attr.label(
             cfg = "exec",
             default = Label("//bazel:vitis_hls_env"),
