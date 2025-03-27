@@ -16,7 +16,6 @@ from typing import ClassVar, NamedTuple
 from pyverilog.vparser.ast import (
     Assign,
     Constant,
-    Decl,
     Identifier,
     Input,
     IntConst,
@@ -666,6 +665,6 @@ class Task:  # noqa: PLR0904
             else:
                 scalar_pragma = f" scalar={instance.get_instance_arg('.*')}"
             pragma_list.append(f"ap-ctrl {port_map_str}{scalar_pragma}")
-        self.fsm_module.add_ports(
-            [Decl([Identifier(f"// pragma RS {pragma}\n") for pragma in pragma_list])]
+        self.fsm_module.add_comment_lines(
+            f"// pragma RS {pragma}" for pragma in pragma_list
         )

@@ -591,6 +591,39 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             raise ValueError(msg)
         self._syntax_tree = self._rewriter.commit()
 
+    def add_comment_lines(self, lines: Iterable[str]) -> "Module":
+        """Add comment lines after the module header.
+
+        Each line must start with `// ` and must not contain the new line character.
+        """
+        pieces = ["\n"]
+        for line in lines:
+            if not line.startswith("// "):
+                msg = f"line must start with `// `, got `{line}`"
+                raise ValueError(msg)
+            if "\n" in line:
+                msg = f"line must not contain newlines`, got `{line}`"
+                raise ValueError(msg)
+            pieces.append(line)
+            pieces.append("\n")
+
+        if not Options.enable_pyslang:
+            return self.add_ports([Decl([Identifier("".join(pieces))])])
+
+        @functools.singledispatch
+        def visitor(node: object) -> pyslang.VisitAction:  # noqa: ARG001
+            return pyslang.VisitAction.Advance
+
+        @visitor.register
+        def _(node: pyslang.ModuleHeaderSyntax) -> pyslang.VisitAction:
+            # Append the comment lines after the module header.
+            self._rewriter.add_before(node.sourceRange.end, pieces)
+            return pyslang.VisitAction.Interrupt
+
+        self._syntax_tree.root.visit(visitor)
+        self._syntax_tree = self._rewriter.commit()
+        return self
+
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
         if Options.enable_pyslang:
             return self._add_ast_nodes(signals)

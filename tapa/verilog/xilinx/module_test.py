@@ -295,6 +295,27 @@ def test_del_nonexistent_port_fails() -> None:
 
 
 @pytest.mark.usefixtures("options")
+def test_add_comment_lines_succeeds() -> None:
+    module = Module(name="foo")
+    module.add_ports([ast_types.Input("bar")])
+
+    module.add_comment_lines(["// pragma 123"])
+
+    assert "// pragma 123" in [line.strip() for line in module.code.splitlines()]
+
+
+@pytest.mark.usefixtures("options")
+def test_add_invalid_comment_lines_fails() -> None:
+    module = Module(name="foo")
+
+    with pytest.raises(ValueError, match="line must start with `// `"):
+        module.add_comment_lines(["not a comment"])
+
+    with pytest.raises(ValueError, match="line must not contain newlines"):
+        module.add_comment_lines(["// line with\n newline"])
+
+
+@pytest.mark.usefixtures("options")
 def test_add_signals_succeeds() -> None:
     module = Module(name="foo")
     assert module.signals == {}
