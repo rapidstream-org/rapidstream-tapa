@@ -13,7 +13,9 @@
                 "current_slot": null,
                 "name": "chan_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "chan_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -27,7 +29,9 @@
                 "current_slot": null,
                 "name": "Copy_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_0"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -45,7 +49,9 @@
                 "current_slot": null,
                 "name": "Copy_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -59,7 +65,9 @@
                 "current_slot": null,
                 "name": "chan_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "chan_0"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -77,7 +85,9 @@
                 "current_slot": null,
                 "name": "chan_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "chan_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -91,7 +101,9 @@
                 "current_slot": null,
                 "name": "Copy_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_1"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -109,7 +121,9 @@
                 "current_slot": null,
                 "name": "Copy_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -123,7 +137,9 @@
                 "current_slot": null,
                 "name": "chan_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "chan_1"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -141,7 +157,9 @@
                 "current_slot": null,
                 "name": "chan_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "chan_2"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -155,7 +173,9 @@
                 "current_slot": null,
                 "name": "Copy_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_2"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -173,7 +193,9 @@
                 "current_slot": null,
                 "name": "Copy_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_2"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -187,7 +209,9 @@
                 "current_slot": null,
                 "name": "chan_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "chan_2"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -205,7 +229,9 @@
                 "current_slot": null,
                 "name": "chan_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "chan_3"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -219,7 +245,9 @@
                 "current_slot": null,
                 "name": "Copy_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_3"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -237,7 +265,9 @@
                 "current_slot": null,
                 "name": "Copy_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_3"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -251,7 +281,9 @@
                 "current_slot": null,
                 "name": "chan_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "chan_3"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -269,7 +301,9 @@
                 "current_slot": null,
                 "name": "Bandwidth_fsm",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Bandwidth_fsm"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -283,7 +317,9 @@
                 "current_slot": null,
                 "name": "Copy_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_3"
+                ],
                 "target_slot": null
             },
             "width": 64
@@ -301,7 +337,9 @@
                 "current_slot": null,
                 "name": "Bandwidth_fsm",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Bandwidth_fsm"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -315,7 +353,9 @@
                 "current_slot": null,
                 "name": "Copy_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Copy_3"
+                ],
                 "target_slot": null
             },
             "width": 64
@@ -333,7 +373,9 @@
             "current_slot": null,
             "name": "Copy_0",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Copy_0"
+            ],
             "target_slot": null
         },
         {
@@ -347,7 +389,9 @@
             "current_slot": null,
             "name": "Copy_1",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Copy_1"
+            ],
             "target_slot": null
         },
         {
@@ -361,7 +405,9 @@
             "current_slot": null,
             "name": "Copy_2",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Copy_2"
+            ],
             "target_slot": null
         },
         {
@@ -375,7 +421,9 @@
             "current_slot": null,
             "name": "Copy_3",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Copy_3"
+            ],
             "target_slot": null
         },
         {
@@ -389,7 +437,9 @@
             "current_slot": null,
             "name": "chan_0",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "chan_0"
+            ],
             "target_slot": null
         },
         {
@@ -403,7 +453,9 @@
             "current_slot": null,
             "name": "chan_1",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "chan_1"
+            ],
             "target_slot": null
         },
         {
@@ -417,7 +469,9 @@
             "current_slot": null,
             "name": "chan_2",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "chan_2"
+            ],
             "target_slot": null
         },
         {
@@ -431,7 +485,9 @@
             "current_slot": null,
             "name": "chan_3",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "chan_3"
+            ],
             "target_slot": null
         },
         {
@@ -445,7 +501,9 @@
             "current_slot": null,
             "name": "Bandwidth_fsm",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Bandwidth_fsm"
+            ],
             "target_slot": null
         }
     ]

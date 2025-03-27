@@ -6,14 +6,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 965,
-                    "lut": 631,
+                    "ff": 966,
+                    "lut": 664,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Mmap2Stream_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Mmap2Stream_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -21,13 +23,15 @@
                     "bram_18k": 0,
                     "dsp": 2,
                     "ff": 496,
-                    "lut": 258,
+                    "lut": 259,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Add_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Add_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -38,14 +42,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 965,
-                    "lut": 631,
+                    "ff": 966,
+                    "lut": 664,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Mmap2Stream_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Mmap2Stream_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -53,13 +59,15 @@
                     "bram_18k": 0,
                     "dsp": 2,
                     "ff": 496,
-                    "lut": 258,
+                    "lut": 259,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Add_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Add_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -71,27 +79,31 @@
                     "bram_18k": 0,
                     "dsp": 2,
                     "ff": 496,
-                    "lut": 258,
+                    "lut": 259,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Add_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Add_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1203,
-                    "lut": 855,
+                    "ff": 1185,
+                    "lut": 868,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Stream2Mmap_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Stream2Mmap_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -109,21 +121,25 @@
                 "current_slot": null,
                 "name": "a",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "a"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 965,
-                    "lut": 631,
+                    "ff": 966,
+                    "lut": 664,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Mmap2Stream_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Mmap2Stream_0"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -134,14 +150,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 965,
-                    "lut": 631,
+                    "ff": 966,
+                    "lut": 664,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Mmap2Stream_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Mmap2Stream_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -155,7 +173,9 @@
                 "current_slot": null,
                 "name": "a",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "a"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -173,21 +193,25 @@
                 "current_slot": null,
                 "name": "b",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "b"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 965,
-                    "lut": 631,
+                    "ff": 966,
+                    "lut": 664,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Mmap2Stream_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Mmap2Stream_1"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -198,14 +222,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 965,
-                    "lut": 631,
+                    "ff": 966,
+                    "lut": 664,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Mmap2Stream_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Mmap2Stream_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -219,7 +245,9 @@
                 "current_slot": null,
                 "name": "b",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "b"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -237,21 +265,25 @@
                 "current_slot": null,
                 "name": "c",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "c"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1203,
-                    "lut": 855,
+                    "ff": 1185,
+                    "lut": 868,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Stream2Mmap_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Stream2Mmap_0"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -262,14 +294,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1203,
-                    "lut": 855,
+                    "ff": 1185,
+                    "lut": 868,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Stream2Mmap_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Stream2Mmap_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -283,7 +317,9 @@
                 "current_slot": null,
                 "name": "c",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "c"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -301,21 +337,25 @@
                 "current_slot": null,
                 "name": "VecAdd_fsm",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "VecAdd_fsm"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1203,
-                    "lut": 855,
+                    "ff": 1185,
+                    "lut": 868,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Stream2Mmap_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Stream2Mmap_0"
+                ],
                 "target_slot": null
             },
             "width": 64
@@ -327,55 +367,63 @@
                 "bram_18k": 0,
                 "dsp": 2,
                 "ff": 496,
-                "lut": 258,
+                "lut": 259,
                 "uram": 0
             },
             "current_slot": null,
             "name": "Add_0",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Add_0"
+            ],
             "target_slot": null
         },
         {
             "area": {
                 "bram_18k": 1,
                 "dsp": 0,
-                "ff": 965,
-                "lut": 631,
+                "ff": 966,
+                "lut": 664,
                 "uram": 0
             },
             "current_slot": null,
             "name": "Mmap2Stream_0",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Mmap2Stream_0"
+            ],
             "target_slot": null
         },
         {
             "area": {
                 "bram_18k": 1,
                 "dsp": 0,
-                "ff": 965,
-                "lut": 631,
+                "ff": 966,
+                "lut": 664,
                 "uram": 0
             },
             "current_slot": null,
             "name": "Mmap2Stream_1",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Mmap2Stream_1"
+            ],
             "target_slot": null
         },
         {
             "area": {
                 "bram_18k": 1,
                 "dsp": 0,
-                "ff": 1203,
-                "lut": 855,
+                "ff": 1185,
+                "lut": 868,
                 "uram": 0
             },
             "current_slot": null,
             "name": "Stream2Mmap_0",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Stream2Mmap_0"
+            ],
             "target_slot": null
         },
         {
@@ -389,7 +437,9 @@
             "current_slot": null,
             "name": "a",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "a"
+            ],
             "target_slot": null
         },
         {
@@ -403,7 +453,9 @@
             "current_slot": null,
             "name": "b",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "b"
+            ],
             "target_slot": null
         },
         {
@@ -417,7 +469,9 @@
             "current_slot": null,
             "name": "c",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "c"
+            ],
             "target_slot": null
         },
         {
@@ -431,7 +485,9 @@
             "current_slot": null,
             "name": "VecAdd_fsm",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "VecAdd_fsm"
+            ],
             "target_slot": null
         }
     ]

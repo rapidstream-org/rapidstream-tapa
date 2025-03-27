@@ -80,7 +80,7 @@ def get_basic_ab_graph(
         vertices[inst.name] = ABVertex(
             name=inst.name,
             area=convert_area(areas[inst.task.name]),
-            sub_cells=(),
+            sub_cells=(inst.name,),
             target_slot=None,
             reserved_slot=None,
             current_slot=None,
@@ -146,7 +146,7 @@ def add_port_iface_connections(
         dummy_vertex = ABVertex(
             name=port.name,
             area=Area(lut=0, ff=0, bram_18k=0, dsp=0, uram=0),
-            sub_cells=(),
+            sub_cells=(port.name,),
             target_slot=None,
             reserved_slot=None,
             current_slot=None,
@@ -199,7 +199,7 @@ def add_scalar_connections(
     fsm_vertex = ABVertex(
         name=top.fsm_module.name,
         area=Area(lut=0, ff=0, bram_18k=0, dsp=0, uram=0),
-        sub_cells=(),
+        sub_cells=(top.fsm_module.name,),
         target_slot=None,
         reserved_slot=None,
         current_slot=None,

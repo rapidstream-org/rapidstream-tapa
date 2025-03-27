@@ -6,14 +6,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -27,7 +29,9 @@
                 "current_slot": null,
                 "name": "ProcElem_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -38,14 +42,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -59,7 +65,9 @@
                 "current_slot": null,
                 "name": "ProcElem_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_1"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -70,14 +78,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -91,7 +101,9 @@
                 "current_slot": null,
                 "name": "ProcElem_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_2"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -102,14 +114,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -123,7 +137,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -134,14 +150,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -155,7 +173,9 @@
                 "current_slot": null,
                 "name": "ProcElem_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -166,14 +186,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -187,7 +209,9 @@
                 "current_slot": null,
                 "name": "ProcElem_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_1"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -198,14 +222,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -219,7 +245,9 @@
                 "current_slot": null,
                 "name": "ProcElem_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_2"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -230,14 +258,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -251,7 +281,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -269,21 +301,25 @@
                 "current_slot": null,
                 "name": "ProcElem_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1346,
-                    "lut": 977,
+                    "ff": 1024,
+                    "lut": 797,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Gather_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Gather_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -301,21 +337,25 @@
                 "current_slot": null,
                 "name": "ProcElem_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1346,
-                    "lut": 977,
+                    "ff": 1024,
+                    "lut": 797,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Gather_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Gather_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -333,21 +373,25 @@
                 "current_slot": null,
                 "name": "ProcElem_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_2"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1346,
-                    "lut": 977,
+                    "ff": 1024,
+                    "lut": 797,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Gather_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Gather_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -365,21 +409,25 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1346,
-                    "lut": 977,
+                    "ff": 1024,
+                    "lut": 797,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Gather_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Gather_0"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -397,7 +445,9 @@
                 "current_slot": null,
                 "name": "ProcElem_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -411,7 +461,9 @@
                 "current_slot": null,
                 "name": "ProcElem_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_1"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -429,7 +481,9 @@
                 "current_slot": null,
                 "name": "ProcElem_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_2"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -443,7 +497,9 @@
                 "current_slot": null,
                 "name": "ProcElem_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_2"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -461,7 +517,9 @@
                 "current_slot": null,
                 "name": "ProcElem_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -475,7 +533,9 @@
                 "current_slot": null,
                 "name": "ProcElem_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_1"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -493,7 +553,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -507,7 +569,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -525,7 +589,9 @@
                 "current_slot": null,
                 "name": "ProcElem_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_2"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -539,7 +605,9 @@
                 "current_slot": null,
                 "name": "ProcElem_2",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_2"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -557,7 +625,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -571,7 +641,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -589,7 +661,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -603,7 +677,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -621,7 +697,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -635,7 +713,9 @@
                 "current_slot": null,
                 "name": "ProcElem_3",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "ProcElem_3"
+                ],
                 "target_slot": null
             },
             "width": 33
@@ -653,21 +733,25 @@
                 "current_slot": null,
                 "name": "a_vec",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "a_vec"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_0"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -678,14 +762,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -699,7 +785,9 @@
                 "current_slot": null,
                 "name": "a_vec",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "a_vec"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -717,21 +805,25 @@
                 "current_slot": null,
                 "name": "b_vec",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "b_vec"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_1"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -742,14 +834,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1136,
-                    "lut": 714,
+                    "ff": 803,
+                    "lut": 559,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Scatter_1",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Scatter_1"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -763,7 +857,9 @@
                 "current_slot": null,
                 "name": "b_vec",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "b_vec"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -781,21 +877,25 @@
                 "current_slot": null,
                 "name": "c_vec",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "c_vec"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1346,
-                    "lut": 977,
+                    "ff": 1024,
+                    "lut": 797,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Gather_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Gather_0"
+                ],
                 "target_slot": null
             },
             "width": 43
@@ -806,14 +906,16 @@
                 "area": {
                     "bram_18k": 1,
                     "dsp": 0,
-                    "ff": 1346,
-                    "lut": 977,
+                    "ff": 1024,
+                    "lut": 797,
                     "uram": 0
                 },
                 "current_slot": null,
                 "name": "Gather_0",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "Gather_0"
+                ],
                 "target_slot": null
             },
             "target_vertex": {
@@ -827,7 +929,9 @@
                 "current_slot": null,
                 "name": "c_vec",
                 "reserved_slot": null,
-                "sub_cells": [],
+                "sub_cells": [
+                    "c_vec"
+                ],
                 "target_slot": null
             },
             "width": 405
@@ -838,14 +942,16 @@
             "area": {
                 "bram_18k": 1,
                 "dsp": 0,
-                "ff": 1346,
-                "lut": 977,
+                "ff": 1024,
+                "lut": 797,
                 "uram": 0
             },
             "current_slot": null,
             "name": "Gather_0",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Gather_0"
+            ],
             "target_slot": null
         },
         {
@@ -859,7 +965,9 @@
             "current_slot": null,
             "name": "ProcElem_0",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "ProcElem_0"
+            ],
             "target_slot": null
         },
         {
@@ -873,7 +981,9 @@
             "current_slot": null,
             "name": "ProcElem_1",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "ProcElem_1"
+            ],
             "target_slot": null
         },
         {
@@ -887,7 +997,9 @@
             "current_slot": null,
             "name": "ProcElem_2",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "ProcElem_2"
+            ],
             "target_slot": null
         },
         {
@@ -901,35 +1013,41 @@
             "current_slot": null,
             "name": "ProcElem_3",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "ProcElem_3"
+            ],
             "target_slot": null
         },
         {
             "area": {
                 "bram_18k": 1,
                 "dsp": 0,
-                "ff": 1136,
-                "lut": 714,
+                "ff": 803,
+                "lut": 559,
                 "uram": 0
             },
             "current_slot": null,
             "name": "Scatter_0",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Scatter_0"
+            ],
             "target_slot": null
         },
         {
             "area": {
                 "bram_18k": 1,
                 "dsp": 0,
-                "ff": 1136,
-                "lut": 714,
+                "ff": 803,
+                "lut": 559,
                 "uram": 0
             },
             "current_slot": null,
             "name": "Scatter_1",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "Scatter_1"
+            ],
             "target_slot": null
         },
         {
@@ -943,7 +1061,9 @@
             "current_slot": null,
             "name": "a_vec",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "a_vec"
+            ],
             "target_slot": null
         },
         {
@@ -957,7 +1077,9 @@
             "current_slot": null,
             "name": "b_vec",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "b_vec"
+            ],
             "target_slot": null
         },
         {
@@ -971,7 +1093,9 @@
             "current_slot": null,
             "name": "c_vec",
             "reserved_slot": null,
-            "sub_cells": [],
+            "sub_cells": [
+                "c_vec"
+            ],
             "target_slot": null
         }
     ]
