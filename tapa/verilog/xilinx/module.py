@@ -127,6 +127,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                     f"module {name}(); endmodule",
                 )
                 self._rewriter = PyslangRewriter(self._syntax_tree)
+                return
             self.ast = Source(
                 name,
                 Description([ModuleDef(name, Paramlist(()), Portlist(()), items=())]),
@@ -169,6 +170,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             if Options.enable_pyslang:
                 self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
                 self._rewriter = PyslangRewriter(self._syntax_tree)
+                return
             self.ast: Source = codeparser.parse()
             self.directives: tuple[Directive, ...] = codeparser.get_directives()
         self._calculate_indices()

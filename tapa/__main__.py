@@ -100,6 +100,12 @@ def entry_point(  # noqa: PLR0913,PLR0917
     # Print version information
     _logger.info("tapa version: %s", __version__)
 
+    if Options.enable_pyslang:
+        _logger.info("using pyslang parser")
+        return
+
+    _logger.info("using pyverilog parser")
+
     # RTL parsing may require a deep stack
     sys.setrecursionlimit(recursion_limit)
     _logger.info("Python recursion limit set to %d", recursion_limit)
