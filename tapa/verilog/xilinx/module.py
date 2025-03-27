@@ -400,40 +400,36 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         ) + _CODEGEN.visit(self.ast)
 
     def get_template_code(self) -> str:
-        module = None
-        # Find the module definition
-        for description in self.ast.description.definitions:
-            if isinstance(description, ModuleDef):
-                module = description
-                break
-        assert module is not None
-
-        template_module_items = []
-        for item in module.items:
-            if isinstance(item, Decl):
-                for decl_item in item.list:
-                    if isinstance(decl_item, Input | Output | Inout | Parameter):
-                        template_module_items.append(item)
-                        continue
+        portlist = []
+        items = []
+        for port in self.ports.values():
+            ast_port = port.ast_port
+            portlist.append(
+                Port(
+                    name=ast_port.name,
+                    width=None,
+                    dimensions=None,
+                    type=None,
+                )
+            )
+            items.append(Decl((ast_port,)))
 
         # Create the module definition
         template_ast = Source(
-            self.ast.name,
+            self.name,
             Description(
                 [
                     ModuleDef(
-                        name=module.name,
-                        paramlist=module.paramlist,
-                        portlist=module.portlist,
-                        items=template_module_items,
+                        name=self.name,
+                        paramlist=Paramlist(()),
+                        portlist=Portlist(tuple(portlist)),
+                        items=tuple(items),
                     )
                 ]
             ),
         )
 
-        return "\n".join(
-            directive for _, directive in self.directives
-        ) + _CODEGEN.visit(template_ast)
+        return _CODEGEN.visit(template_ast)
 
     def _increment_idx(self, length: int, target: str) -> None:
         attr_map = {attr: priority for priority, attr in enumerate(self._ATTRS)}

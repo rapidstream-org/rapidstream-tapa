@@ -114,6 +114,52 @@ def test_lower_level_task_module() -> None:
 
     assert module.find_port(prefix="istream", suffix="_dout") == "istream_s_dout"
 
+    assert (
+        module.get_template_code()
+        == """
+
+module LowerLevelTask
+(
+  ap_clk,
+  ap_rst_n,
+  ap_start,
+  ap_done,
+  ap_idle,
+  ap_ready,
+  istream_s_dout,
+  istream_s_empty_n,
+  istream_s_read,
+  istream_peek_empty_n,
+  istream_peek_read,
+  ostreams_s_din,
+  ostreams_s_full_n,
+  ostreams_s_write,
+  ostreams_peek,
+  scalar
+);
+
+  input ap_clk;
+  input ap_rst_n;
+  input ap_start;
+  output ap_done;
+  output ap_idle;
+  output ap_ready;
+  input [64:0] istream_s_dout;
+  input istream_s_empty_n;
+  output istream_s_read;
+  input istream_peek_empty_n;
+  output istream_peek_read;
+  output [64:0] ostreams_s_din;
+  input ostreams_s_full_n;
+  output ostreams_s_write;
+  input [64:0] ostreams_peek;
+  input [31:0] scalar;
+
+endmodule
+
+"""
+    )
+
 
 @pytest.mark.usefixtures("options")
 def test_upper_level_task_module() -> None:
@@ -162,6 +208,54 @@ def test_upper_level_task_module() -> None:
     ]
     assert module.params == {}
     assert "fsm_encoding" not in module.code
+
+    assert (
+        module.get_template_code()
+        == """
+
+module UpperLevelTask
+(
+  ap_clk,
+  ap_rst_n,
+  ap_start,
+  ap_done,
+  ap_idle,
+  ap_ready,
+  istream_s_dout,
+  istream_s_empty_n,
+  istream_s_read,
+  istream_peek_dout,
+  istream_peek_empty_n,
+  istream_peek_read,
+  ostreams_s_din,
+  ostreams_s_full_n,
+  ostreams_s_write,
+  ostreams_peek,
+  scalar
+);
+
+  input ap_clk;
+  input ap_rst_n;
+  input ap_start;
+  output ap_done;
+  output ap_idle;
+  output ap_ready;
+  input [64:0] istream_s_dout;
+  input istream_s_empty_n;
+  output istream_s_read;
+  input [64:0] istream_peek_dout;
+  input istream_peek_empty_n;
+  output istream_peek_read;
+  output [64:0] ostreams_s_din;
+  input ostreams_s_full_n;
+  output ostreams_s_write;
+  input [64:0] ostreams_peek;
+  input [31:0] scalar;
+
+endmodule
+
+"""
+    )
 
 
 @pytest.mark.usefixtures("options")
