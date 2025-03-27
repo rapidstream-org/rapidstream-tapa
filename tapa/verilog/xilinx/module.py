@@ -1025,7 +1025,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self.del_signals(HANDSHAKE_READY)
         self.del_logics()
         self.del_instances(suffix="_regslice_both")
-        self.del_pragmas("fsm_encoding")
+        if not Options.enable_pyslang:
+            self.del_pragmas("fsm_encoding")
         self.add_signals(
             map(
                 Wire,

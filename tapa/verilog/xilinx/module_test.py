@@ -161,6 +161,7 @@ def test_upper_level_task_module() -> None:
         "ap_ready",
     ]
     assert module.params == {}
+    assert "fsm_encoding" not in module.code
 
 
 @pytest.mark.usefixtures("options")
