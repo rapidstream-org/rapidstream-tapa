@@ -6,23 +6,22 @@ Does RapidStream support Alveo U55C?
 
 Yes, RapidStream fully supports the Alveo U55C FPGA accelerator card.
 For detailed information on how to use RapidStream with the Alveo U55C,
-please refer to our RapidStream Cookbook. You can find a specific example
-in the `digit recognizer benchmark`_.
+please refer to our `Examples`_. You can find a specific example
+in the `Sextans benchmark`_.
 
-.. _digit recognizer benchmark: https://github.com/rapidstream-org/rapidstream-cookbook/tree/main/benchmarks/tapa_flow/digit_recognizer
+.. _Examples: https://github.com/rapidstream-org/rapidstream-tapa/tree/main/tests
+.. _Sextans benchmark: https://github.com/rapidstream-org/rapidstream-tapa/tree/main/tests/regression/spmm/sextans-u55c-3x3floorplan
 
 How can I incorporate floorplan information into RapidStream TAPA?
 ------------------------------------------------------------------
 
-The floorplanning feature has been moved from TAPA and is now integrated
-into RapidStream. You should use ``rapidstream-tapaopt`` instead of the
-original ``tapac`` command argument to enable floorplanning.
-`RapidStream Cookbook`_ and :ref:`Optimization with RapidStream
-<user/rapidstream:Optimization with RapidStream>` provide comprehensive
+The floorplanning feature has been integrated into RapidStream.
+You should use ``rapidstream-tapaopt`` instead of the original
+``tapac`` command argument to enable floorplanning.
+:ref:`Optimization with RapidStream
+<rapidstream/floorplan:Controlling the Floorplanning>` provide comprehensive
 guidance and examples for effectively utilizing floorplanning in your
 projects.
-
-.. _RapidStream Cookbook: https://github.com/rapidstream-org/rapidstream-cookbook
 
 Where is ``tapac`` in RapidStream?
 ----------------------------------
