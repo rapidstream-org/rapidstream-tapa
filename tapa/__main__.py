@@ -71,7 +71,7 @@ _logger = logging.getLogger().getChild(__name__)
     "--enable-pyslang / --disable-pyslang",
     type=bool,
     default=Options.enable_pyslang,
-    help="Enable or disable pyslang (experimental).",
+    help="Enable or disable pyslang as RTL parser.",
 )
 @click.version_option(__version__, prog_name="tapa")
 @click.pass_context
