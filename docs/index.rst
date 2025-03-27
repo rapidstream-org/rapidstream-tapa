@@ -29,7 +29,6 @@ those contributing to or extending the TAPA framework itself.
   user/vitis
   user/tasks
   user/data
-  user/rapidstream
 
 .. toctree::
   :maxdepth: 1
@@ -37,6 +36,16 @@ those contributing to or extending the TAPA framework itself.
   user/cheatsheet
 
 .. _Tutorials:
+
+.. toctree::
+  :caption: Optimization with RapidStream
+  :maxdepth: 2
+
+  rapidstream/getting_started
+  rapidstream/device
+  rapidstream/floorplan
+  rapidstream/pipeline
+  rapidstream/dse
 
 .. toctree::
   :caption: Tutorials
