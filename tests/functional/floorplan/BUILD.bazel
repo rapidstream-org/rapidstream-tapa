@@ -1,0 +1,157 @@
+"""Tests TAPA floorplan."""
+
+# Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+
+# vadd xo
+tapa_xo(
+    name = "vadd-floorplan-xo",
+    src = "//tests/apps/vadd:vadd.cpp",
+    hdrs = ["//tests/apps/vadd:vadd.h"],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/vadd.json",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "VecAdd",
+)
+
+# bandwidth xo
+tapa_xo(
+    name = "bandwidth-floorplan-xo",
+    src = "//tests/apps/bandwidth:bandwidth.cpp",
+    hdrs = [
+        "//tests/apps/bandwidth:bandwidth.h",
+        "//tests/apps/bandwidth:lfsr.h",
+    ],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/bandwidth.json",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Bandwidth",
+)
+
+# cannon xo
+tapa_xo(
+    name = "cannon-floorplan-xo",
+    src = "//tests/apps/cannon:cannon.cpp",
+    hdrs = ["//tests/apps/cannon:cannon.h"],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/cannon.json",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Cannon",
+)
+
+# network xo
+tapa_xo(
+    name = "network-floorplan-xo",
+    src = "//tests/apps/network:network.cpp",
+    hdrs = ["//tests/apps/network:network.h"],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/network.json",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Network",
+)
+
+# jacobi xo
+tapa_xo(
+    name = "jacobi-floorplan-xo",
+    src = "//tests/apps/jacobi:jacobi.cpp",
+    hdrs = ["//tests/apps/jacobi:jacobi.h"],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/jacobi.json",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Jacobi",
+)
+
+# graph xo
+tapa_xo(
+    name = "graph-floorplan-xo",
+    src = "//tests/apps/graph:graph.cpp",
+    hdrs = [
+        "//tests/apps/graph:graph.h",
+        "//tests/apps/graph:nxgraph.hpp",
+    ],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/graph.json",
+    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+    top_name = "Graph",
+)
+
+[
+    sh_test(
+        name = "{name}-xosim".format(name = test),
+        size = "enormous",
+        timeout = "moderate",
+        srcs = ["//bazel:v++_env.sh"],
+        args = [
+            "$(location //tests/apps/{name}:{name}-host)".format(name = test),
+            "--bitstream=$(location {name}-floorplan-xo)".format(name = test),
+            "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+            "1000",
+        ],
+        data = [
+            "//tests/apps/{name}:{name}-host".format(name = test),
+            ":{name}-floorplan-xo".format(name = test),
+            "//tapa/cosim:tapa-fast-cosim",
+        ],
+        tags = [
+            "cpu:2",
+        ],
+    )
+    for test in [
+        "vadd",
+        "network",
+        "bandwidth",
+        "cannon",
+    ]
+]
+
+sh_test(
+    name = "jacobi-xosim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location //tests/apps/jacobi:jacobi-host)",
+        "--bitstream=$(location jacobi-floorplan-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+    ],
+    data = [
+        ":jacobi-floorplan-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+        "//tests/apps/jacobi:jacobi-host",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)
+
+sh_test(
+    name = "graph-xosim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location //tests/apps/graph:graph-host)",
+        "--bitstream=$(location graph-floorplan-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "$(location //tests/apps/graph:graph.txt)",
+    ],
+    data = [
+        ":graph-floorplan-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+        "//tests/apps/graph:graph.txt",
+        "//tests/apps/graph:graph-host",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)

@@ -9,6 +9,17 @@ load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//bazel:tapa_rules.bzl", "tapa_xo")
 load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
+exports_files(
+    [
+        ".",
+        "graph.cpp",
+        "graph.h",
+        "nxgraph.hpp",
+        "graph.txt",
+    ],
+    visibility = ["//tests/functional:__subpackages__"],
+)
+
 sh_test(
     name = "graph",
     size = "medium",
@@ -90,6 +101,7 @@ cc_binary(
         "*.h",
         "*.hpp",
     ]),
+    visibility = ["//tests/functional:__subpackages__"],
     deps = [
         "//tapa-lib:tapa",
         "@gflags",

@@ -9,6 +9,16 @@ load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//bazel:tapa_rules.bzl", "tapa_xo")
 load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
+exports_files(
+    [
+        ".",
+        "jacobi-host.cpp",
+        "jacobi.cpp",
+        "jacobi.h",
+    ],
+    visibility = ["//tests/functional:__subpackages__"],
+)
+
 sh_test(
     name = "jacobi",
     size = "medium",
@@ -63,6 +73,7 @@ cc_binary(
         "*.cpp",
         "*.h",
     ]),
+    visibility = ["//tests/functional:__subpackages__"],
     deps = [
         "//tapa-lib:tapa",
         "@gflags",
