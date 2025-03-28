@@ -574,21 +574,62 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         )
 
     def _del_port_pyslang(self, port_name: str) -> None:
-        removed_ports = []
+        class Attrs(UniqueAttrs):
+            non_ansi_port_list: pyslang.NonAnsiPortListSyntax | None
 
-        def visitor(node: object) -> pyslang.VisitAction:
-            if not isinstance(node, pyslang.PortDeclarationSyntax):
-                return pyslang.VisitAction.Advance
-            if ioport.IOPort.create(node).name != port_name:
-                return pyslang.VisitAction.Skip
-            self._rewriter.remove(node.sourceRange)
-            removed_ports.append(node)
-            return pyslang.VisitAction.Interrupt
+        attrs = Attrs()
+        attrs.non_ansi_port_list = None
+
+        @functools.singledispatch
+        def visitor(node: object) -> pyslang.VisitAction:  # noqa: ARG001
+            return pyslang.VisitAction.Advance
+
+        @visitor.register
+        def _(node: pyslang.NonAnsiPortListSyntax) -> pyslang.VisitAction:
+            attrs.non_ansi_port_list = node
+            return pyslang.VisitAction.Skip
+
+        @visitor.register
+        def _(node: pyslang.PortDeclarationSyntax) -> pyslang.VisitAction:
+            if ioport.IOPort.create(node).name == port_name:
+                self._rewriter.remove(node.sourceRange)
+            return pyslang.VisitAction.Skip
 
         self._syntax_tree.root.visit(visitor)
-        if not removed_ports:
+        assert attrs.non_ansi_port_list is not None
+
+        # `ports` is a list of alternating `SyntaxNode`s and `Token`s; find the
+        # port in header that to delete, and the corresponding comma token.
+        nodes = []
+        tokens = []
+        index_to_del = -1
+        for i, node_or_token in enumerate(attrs.non_ansi_port_list.ports):
+            if i % 2 == 0:
+                assert isinstance(node_or_token, pyslang.ImplicitNonAnsiPortSyntax)
+                assert isinstance(node_or_token.expr, pyslang.PortReferenceSyntax)
+                nodes.append(node_or_token)
+                if node_or_token.expr.name.valueText == port_name:
+                    index_to_del = i // 2
+            else:
+                assert isinstance(node_or_token, pyslang.Token)
+                assert node_or_token.valueText == ","
+                tokens.append(node_or_token)
+        assert len(nodes) == len(tokens) + 1
+
+        if index_to_del == -1:
             msg = f"no port {port_name} found in module {self.name}"
             raise ValueError(msg)
+
+        # Remove the `SyntaxNode` of port in header.
+        self._rewriter.remove(nodes[index_to_del].sourceRange)
+
+        # If the removed `SyntaxNode` is the last in the list, remove the last
+        # comma which is right before the removed `SyntaxNode`. Otherwise,
+        # remove the comma right after.
+        if index_to_del == len(nodes) - 1:
+            index_to_del = -1
+        self._rewriter.remove(tokens[index_to_del].range)
+
         self._syntax_tree = self._rewriter.commit()
 
     def add_comment_lines(self, lines: Iterable[str]) -> "Module":

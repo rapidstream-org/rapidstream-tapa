@@ -278,11 +278,13 @@ def test_add_ports_succeeds() -> None:
 @pytest.mark.usefixtures("options")
 def test_del_port_succeeds() -> None:
     module = Module(name="foo")
-    module.add_ports([ast_types.Input("bar")])
+    module.add_ports([ast.Input("bar"), ast.Input("baz")])
 
-    module.del_port("bar")
+    module.del_port("baz")
 
-    assert module.ports == {}
+    assert list(module.ports) == ["bar"]
+    assert "baz" not in module.code
+    assert "," not in module.code
 
 
 @pytest.mark.usefixtures("options")
