@@ -637,7 +637,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self
 
     def _add_ast_nodes(  # noqa: C901
-        self, nodes: Iterable[Parameter | Signal | InstanceList | Logic]
+        self, nodes: Iterable[Parameter | Signal | Logic | InstanceList]
     ) -> "Module":
         class Context:
             range: pyslang.SourceRange
@@ -648,8 +648,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         param_context = Context()
         signal_context = Context()
-        instance_context = Context()
         logic_context = Context()
+        instance_context = Context()
 
         def visitor(node: object) -> pyslang.VisitAction:
             if isinstance(
@@ -657,20 +657,20 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             ):
                 param_context.range = node.sourceRange
                 signal_context.range = node.sourceRange
-                instance_context.range = node.sourceRange
                 logic_context.range = node.sourceRange
+                instance_context.range = node.sourceRange
                 return pyslang.VisitAction.Skip
             if isinstance(node, _SIGNAL_SYNTAX | pyslang.PortDeclarationSyntax):
                 signal_context.range = node.sourceRange
-                instance_context.range = node.sourceRange
                 logic_context.range = node.sourceRange
-                return pyslang.VisitAction.Skip
-            if isinstance(node, pyslang.HierarchyInstantiationSyntax):
                 instance_context.range = node.sourceRange
-                logic_context.range = node.sourceRange
                 return pyslang.VisitAction.Skip
             if isinstance(node, _LOGIC_SYNTAX):
                 logic_context.range = node.sourceRange
+                instance_context.range = node.sourceRange
+                return pyslang.VisitAction.Skip
+            if isinstance(node, pyslang.HierarchyInstantiationSyntax):
+                instance_context.range = node.sourceRange
                 return pyslang.VisitAction.Skip
             return pyslang.VisitAction.Advance
 
@@ -681,15 +681,15 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 param_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
             elif isinstance(node, Signal):
                 signal_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
-            elif isinstance(node, InstanceList):
-                instance_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
             elif isinstance(node, Logic):
                 logic_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
+            elif isinstance(node, InstanceList):
+                instance_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
         for context in [
             param_context,
             signal_context,
-            instance_context,
             logic_context,
+            instance_context,
         ]:
             self._rewriter.add_before(context.range.end, context.pieces)
         self._syntax_tree = self._rewriter.commit()
