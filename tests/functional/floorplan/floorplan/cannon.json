@@ -1,0 +1,12 @@
+{
+    "Gather_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "ProcElem_0": "SLOT_X1Y2:SLOT_X1Y2",
+    "ProcElem_1": "SLOT_X1Y2:SLOT_X1Y2",
+    "ProcElem_2": "SLOT_X0Y0:SLOT_X0Y0",
+    "ProcElem_3": "SLOT_X1Y2:SLOT_X1Y2",
+    "Scatter_0": "SLOT_X1Y3:SLOT_X1Y3",
+    "Scatter_1": "SLOT_X1Y3:SLOT_X1Y3",
+    "a_vec": "SLOT_X1Y2:SLOT_X1Y2",
+    "b_vec": "SLOT_X1Y2:SLOT_X1Y2",
+    "c_vec": "SLOT_X0Y0:SLOT_X0Y0"
+}
