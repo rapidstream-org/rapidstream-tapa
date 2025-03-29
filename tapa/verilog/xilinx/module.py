@@ -694,7 +694,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         def visitor(node: object) -> pyslang.VisitAction:
             if isinstance(
-                node, pyslang.ModuleHeaderSyntax | pyslang.ParameterDeclarationSyntax
+                node,
+                pyslang.ModuleHeaderSyntax
+                | pyslang.ParameterDeclarationStatementSyntax,
             ):
                 param_context.range = node.sourceRange
                 signal_context.range = node.sourceRange
@@ -794,7 +796,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def del_params(self, prefix: str = "", suffix: str = "") -> None:
         if Options.enable_pyslang:
-            self._del_matching(pyslang.ParameterDeclarationSyntax, prefix, suffix)
+            self._del_matching(
+                pyslang.ParameterDeclarationStatementSyntax, prefix, suffix
+            )
             return
 
         def func(item: Node) -> bool:
@@ -1224,6 +1228,11 @@ def with_rs_pragma(node: Input | Output | Decl) -> Decl:
 @functools.singledispatch
 def _get_name(node: object) -> str:
     raise TypeError(type(node))
+
+
+@_get_name.register
+def _(node: pyslang.ParameterDeclarationStatementSyntax) -> str:
+    return _get_name(node.parameter)
 
 
 @_get_name.register

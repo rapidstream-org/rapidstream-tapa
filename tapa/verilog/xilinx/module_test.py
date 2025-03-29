@@ -392,6 +392,7 @@ def test_del_params_succeeds() -> None:
     module.del_params(prefix="bar")
 
     assert module.params == {}
+    assert module.code.count(";") == 1  # from `module foo();`
 
 
 @pytest.mark.usefixtures("options")
