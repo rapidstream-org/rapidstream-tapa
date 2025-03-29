@@ -17,7 +17,6 @@ ARG DOCKER_GROUP_ID
 
 # Required by us:
 #   - g++
-#   - iverilog
 #   - ocl-icd-libopencl1
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -30,7 +29,6 @@ RUN apt-get update && \
         g++ \
         gcc-multilib \
         git \
-        iverilog \
         libtinfo5 \
         libx11-6 \
         locales \

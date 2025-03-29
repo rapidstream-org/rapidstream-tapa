@@ -27,7 +27,7 @@ _CODEGEN = ASTCodeGenerator()
 _TESTDATA_PATH = (Path(__file__).parent / "testdata").resolve()
 
 
-@pytest.fixture(params=["pyslang", "pyverilog"])
+@pytest.fixture(params=["pyslang"])
 def options(request: pytest.FixtureRequest) -> Iterator[None]:
     enable_pyslang_saved = Options.enable_pyslang
     Options.enable_pyslang = request.param == "pyslang"

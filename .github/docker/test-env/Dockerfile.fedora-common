@@ -17,7 +17,6 @@ ARG DOCKER_GROUP_ID
 
 # Required by us:
 #   - gcc-c++
-#   - iverilog
 #   - ocl-icd
 
 RUN yum update -y && \
@@ -28,7 +27,6 @@ RUN yum update -y && \
         git \
         glibc-langpack-en \
         hostname \
-        iverilog \
         libX11 \
         libxcrypt-compat \
         ocl-icd \
