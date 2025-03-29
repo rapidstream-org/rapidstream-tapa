@@ -24,6 +24,10 @@ inputs:
     description: "Project name of the Cloudflare Pages"
     required: false
     default: "rapidstream-tapa"
+  cloudflarePagesProjectNameGui:
+    description: "Project name of TAPA Visualizer's Cloudflare Pages"
+    required: false
+    default: "tapa-gui"
 
 runs:
   using: "composite"
@@ -65,6 +69,20 @@ runs:
             \$bucket/rapidstream-tapa-\$channel-\$version.tar.gz \
             --remote \
             --file=/workspace/artifacts.out/tapa.tar.gz
+        dockerOptions: >-
+          -e CLOUDFLARE_API_TOKEN=${{ inputs.cloudflareToken }}
+          -e CLOUDFLARE_ACCOUNT_ID=${{ inputs.cloudflareAccountID }}
+
+    - name: Build & publish the GUI to Cloudflare Pages
+      uses: ./.github/actions/run-docker
+      with:
+        image: rapidstream/cloudflare:local
+        run: |
+          cd tapa-visualizer
+          npm i --save=false
+          npm run build
+          retry -- wrangler pages deploy ./dist/ \
+            --project-name ${{ inputs.cloudflarePagesProjectNameGui }}
         dockerOptions: >-
           -e CLOUDFLARE_API_TOKEN=${{ inputs.cloudflareToken }}
           -e CLOUDFLARE_ACCOUNT_ID=${{ inputs.cloudflareAccountID }}
