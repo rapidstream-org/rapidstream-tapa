@@ -17,7 +17,6 @@ ARG DOCKER_GROUP_ID
 
 # Required by us:
 #   - gcc-c++
-#   - iverilog (from source)
 #   - ocl-icd
 #   - tar (for installation)
 
@@ -46,12 +45,6 @@ RUN yum update -y && \
       git clone https://github.com/bats-core/bats-core.git bats-core && \
       cd bats-core && \
       ./install.sh /usr/local && \
-    cd /tmp && \
-      curl -sSL https://github.com/steveicarus/iverilog/archive/refs/tags/v12_0.tar.gz | tar -xz && \
-      cd iverilog-* && \
-      autoconf && \
-      ./configure && \
-      make install -j $(nproc) && \
     cd /tmp && \
       curl -sSL https://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2 | tar -xj && \
       cd parallel-* && \

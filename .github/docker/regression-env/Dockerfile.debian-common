@@ -16,7 +16,6 @@ RUN apt-get update && \
         curl \
         default-jre \
         git \
-        iverilog \
         libtinfo5 \
         libx11-6 \
         locales \

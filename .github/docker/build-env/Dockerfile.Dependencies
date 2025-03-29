@@ -10,7 +10,6 @@ ARG UBUNTU_PRO_TOKEN
 RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 
 # Update the system and install build dependencies
-# FIXME: The iverilog dependency should be removed when pyverilog is removed
 
 # Required by apt-add-repository:
 #   - apt-transport-https
@@ -30,9 +29,6 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 
 # Required by pre-commit:
 #   - git
-
-# Required by PyVerilog:
-#   - iverilog
 
 # Required by Vivado:
 #   - libtinfo5
@@ -55,7 +51,6 @@ RUN apt-get update && \
         curl \
         git \
         gnupg \
-        iverilog \
         libtinfo5 \
         libx11-6 \
         locales \
