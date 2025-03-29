@@ -40,7 +40,7 @@ performance and productivity.
 
 ```bash
 # Install dependencies (Ubuntu/Debian example)
-sudo apt-get install g++ iverilog ocl-icd-libopencl1
+sudo apt-get install g++ ocl-icd-libopencl1
 
 # Install RapidStream TAPA
 # You may rerun this command to update to the latest version.

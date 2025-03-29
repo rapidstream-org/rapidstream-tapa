@@ -42,8 +42,6 @@ RapidStream TAPA requires the following dependencies:
 +===================+=================+==============================================+
 | GNU C++ Compiler  | 7.5.0 or newer  | For simulation and deployment only           |
 +-------------------+-----------------+----------------------------------------------+
-| Icarus Verilog    | 10.1.0 or newer |                                              |
-+-------------------+-----------------+----------------------------------------------+
 | OpenCL            | 1.2             | For simulation and deployment only           |
 +-------------------+-----------------+----------------------------------------------+
 | Xilinx Vitis      | 2022.1 or newer |                                              |
@@ -63,7 +61,7 @@ Ubuntu / Debian
 
 .. code-block:: bash
 
-  sudo apt-get install g++ iverilog ocl-icd-libopencl1
+  sudo apt-get install g++ ocl-icd-libopencl1
 
 RHEL / Amazon Linux
 ^^^^^^^^^^^^^^^^^^^
@@ -78,26 +76,6 @@ RHEL / Amazon Linux
 
   sudo yum install gcc-c++ libxcrypt-compat ocl-icd
 
-Install `Icarus Verilog`_ manually:
-
-.. code-block:: bash
-
-  # Install build dependencies
-  sudo yum install autoconf bison bzip2 flex git gperf
-
-  # Download and install Icarus Verilog
-  curl -sSL https://github.com/steveicarus/iverilog/archive/refs/tags/v12_0.tar.gz \
-    | tar -xz && \
-  cd iverilog-* && \
-  autoconf && \
-  ./configure && \
-  make install -j $(nproc)
-
-For Icarus Verilog installation issues, refer to the official
-`Icarus Verilog`_ documentation.
-
-.. _Icarus Verilog: https://steveicarus.github.io/iverilog/usage/installation.html
-
 Fedora
 ^^^^^^
 
@@ -108,7 +86,7 @@ Fedora
 
 .. code-block:: bash
 
-  sudo yum install gcc-c++ iverilog libxcrypt-compat ocl-icd
+  sudo yum install gcc-c++ libxcrypt-compat ocl-icd
 
 RapidStream License
 ~~~~~~~~~~~~~~~~~~~
