@@ -6,35 +6,140 @@
 
 "use strict";
 
-import { sidebarContainers, updateSidebar } from "./sidebar.js";
+import { antvDagre, dagre, forceAtlas2, graphOptions } from "./graph-options.js";
+import {
+  resetInstance,
+  resetSidebar,
+  updateExplorer,
+  updateSidebarForCombo,
+  updateSidebarForEdge,
+  updateSidebarForNode,
+} from "./sidebar.js";
+import { getComboId } from "./helper.js";
 import { getGraphData } from "./praser.js";
 
-/** @type {$} */
-export const $ = (tagName, props) => Object.assign(
-	document.createElement(tagName), props
-);
+/** Used in "Save Image" button
+ * @type {string | undefined} */
+let filename;
 
-/** @type {(comboId: string) => string} */
-export const getComboName = comboId => comboId.replace(/^combo:/, "");
-
-
-/** @type {GraphJSON} */
-let graphJson;
+/** @type {GraphJSON | undefined} */
+let graphJSON;
 
 /** Data for G6.Graph()
  * @type {GraphData} */
-let graphData = {
-  nodes: [],
-  edges: [],
-  combos: [],
+let graphData = { nodes: [], edges: [], combos: [] };
+
+
+// Form and options + graph rendering for new option
+
+/** Grouping radios' form in header
+ * @satisfies {GroupingForm | null} */
+const groupingForm = document.querySelector(".grouping");
+
+/** Options sidebar's form, contains all the options other than grouping.
+ *
+ * For convenience, it's the only sidebar managed outside of `sidebar.js`.
+ * @satisfies {OptionsForm | null} */
+const optionsForm = document.querySelector(".sidebar-content-options");
+
+const getLayout = (layout = optionsForm?.elements.layout.value) => {
+  switch (layout) {
+    case "force-atlas2": return forceAtlas2;
+    case "antv-dagre": return antvDagre;
+    case "dagre": return dagre;
+    default: return forceAtlas2;
+  }
 };
 
-// Grouping radios in header
+const getOptions = () => ({
+  flat: groupingForm?.elements.grouping.value === "flat",
+  expand: optionsForm?.elements.expand.value === "true",
+  port: optionsForm?.elements.port.value === "true",
+});
 
-/** @satisfies { HTMLFormElement & { elements: { grouping: { value: string; } } } | null } } */
-const grouping = document.querySelector(".grouping");
+let options = getOptions();
 
-// File Input
+/** Render graph when file or grouping changed.
+ * @type {(graph: Graph, graphData: GraphData) => Promise<void>} */
+const renderGraph = async (graph, graphData) => {
+  // Update sortByCombo by combo amount
+  antvDagre.sortByCombo = graphData.combos.length > 1;
+
+  // Reset zoom if it's not 100% (1)
+  if (graph.rendered && graph.getZoom() !== 1) {
+    graph.setData({});
+    await graph.draw();
+    await graph.zoomTo(1, false);
+  }
+
+  graph.setData(graphData);
+  await graph.render();
+};
+
+/** Update options & re-render graph when option changed.
+ * @type {(graph: Graph, newOption: GetGraphDataOptions) => Promise<void>} */
+const renderGraphWithNewOption = async (graph, newOption) => {
+  Object.assign(options, newOption);
+
+  // Only re-render if graph exist
+  if (!graphJSON) return;
+  graphData = getGraphData(graphJSON, options);
+  console.debug(
+    "\ngraphData:\n", graphData,
+    "\ngetGraphData() options:", options,
+  );
+
+  resetSidebar("Loading...");
+  await renderGraph(graph, graphData);
+  resetInstance();
+};
+
+/** @param {Graph} graph */
+const setupRadioToggles = graph => {
+  // Rerender when grouping method changed
+  if (groupingForm) {
+    for (let i = 0; i < groupingForm.elements.length; i++) {
+      groupingForm.elements[i].addEventListener(
+        "change",
+        ({ target }) =>
+          target instanceof HTMLInputElement &&
+          void renderGraphWithNewOption(
+            graph,
+            { flat: target.value === "flat" }
+          ),
+      )
+    }
+  }
+
+  if (optionsForm) {
+    for (let i = 0; i < optionsForm.elements.length; i++) {
+      const element = optionsForm.elements[i];
+      if (!(element instanceof HTMLInputElement)) continue;
+      if (element.name === "layout") {
+        element.addEventListener(
+          "change", () => {
+            graph.setLayout(getLayout());
+            void graph.layout().then(() => graph.fitView());
+          }
+        );
+        continue;
+      }
+
+      element.addEventListener(
+        "change",
+        ({ target }) =>
+          target instanceof HTMLInputElement &&
+          void renderGraphWithNewOption(
+            graph,
+            { [target.name]: target.value === "true" },
+          ),
+      )
+    }
+  }
+};
+
+
+// File Input + graph rendering for new file
 
 /** @satisfies {HTMLInputElement & { files: FileList } | null} */
 const fileInput = document.querySelector("input.fileInput");
@@ -42,49 +147,124 @@ if (fileInput === null) {
   throw new TypeError("Element input.fileInput not found!");
 }
 
-/** @param {import("@antv/g6").Graph} graph */
+/** @param {Graph} graph */
 const setupFileInput = (graph) => {
-  const reader = new FileReader();
-  reader.addEventListener("load", e => {
-    const result = e.target?.result;
-    if (typeof result !== "string") return;
-
-    const flat = grouping?.elements.grouping.value === "flat";
-
-    /** @satisfies {GraphJSON} */
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    graphJson = JSON.parse(result);
-    graphData = getGraphData(graphJson, flat);
-
-    console.debug("graph.json\n", graphJson);
-    console.debug("graphData\n", graphData);
-
-    graph.setData(graphData);
-    void graph.render();
-
-    // render twice for medium-sized graphs
-    // (large enough for a better 2nd render, small enough for performance)
-    graphData.nodes.length > 50 &&
-    graphData.nodes.length < 1000 &&
-    void graph.render();
-  });
 
   const readFile = () => {
+
+    /** @type {File | undefined} */
     const file = fileInput.files[0];
-    if (file) reader.readAsText(file);
+
+    if (!file) return false;
+    if (file.type !== "application/json") {
+      console.warn("File type is not application/json!");
+    }
+
+    // Update filename and graph
+    filename = file.name;
+
+    resetSidebar("Loading...");
+    file.text().then(async text => {
+
+      /** @satisfies {GraphJSON} */
+      graphJSON = JSON.parse(text);
+      if (!graphJSON?.tasks) {
+        resetInstance("Invalid graph.json, please retry.");
+        return;
+      }
+      updateExplorer(graphJSON);
+
+      options = getOptions();
+      graphData = getGraphData(graphJSON, options);
+      Object.assign(globalThis, { graphJSON, graphData });
+
+      // Update options form's className for hint about only one combo
+      const classListMethod = graphData.combos.length <= 1 ? "add" : "remove";
+      optionsForm?.classList[classListMethod]("only-one-combo");
+
+      console.debug(
+        `${filename}:\n`, graphJSON,
+        "\ngraphData:\n", graphData,
+        "\ngetGraphData() options:", options,
+      );
+
+      // Render graph
+      resetInstance("Rendering...");
+      await renderGraph(graph, graphData);
+
+      const expand = optionsForm?.elements.expand.value === "true";
+      const topChildren = graph.getChildrenData(getComboId(graphJSON.top));
+      const visibleElements = expand ? graphData.nodes : topChildren;
+
+      // Run a 2nd layout if amount of visible elements is acceptable
+      visibleElements.length >= 10 &&
+      visibleElements.length <= 500 &&
+      await graph.layout(getLayout());
+
+      // Run translateElementTo() twice to reset position for collapsed combo
+      !expand &&
+      graph.getChildrenData(getComboId(graphJSON.top)).forEach(item => {
+        if (item.type === "circle" && item.style?.collapsed) {
+          const position = graph.getElementPosition(item.id);
+          void (async () => {
+            await graph.translateElementTo(item.id, position, false);
+            await graph.translateElementTo(item.id, position, false);
+          })();
+        }
+      });
+
+      resetInstance();
+
+    }).catch(error => {
+      console.error(error);
+      resetInstance(String(error));
+    });
+
+    return true;
+
   };
-  readFile();
+
+  readFile() ||
+  resetInstance("Please load the graph.json file.");
+
   fileInput.addEventListener("change", readFile);
 };
 
 // Buttons
 
-/** @param {import("@antv/g6").Graph} graph */
-const setupGraphButtons = (graph) => {
-  /**
-   * @typedef {EventListenerOrEventListenerObject} Listener
-   * @type {(selector: string, listener: Listener) => void} */
-  const setButton = (selector, callback) => {
+/** Button selector and click event callback
+ * @param {Graph} graph
+ * @returns {[string, EventListenerOrEventListenerObject][]} */
+const getGraphButtons = (graph) => [[
+  ".btn-clearGraph",
+  () => void graph.clear().then(() => {
+    filename = "";
+    graphJSON = undefined;
+    graphData = { nodes: [], edges: [], combos: [] };
+    resetSidebar("Please load a file.");
+  })
+], [
+  ".btn-rerenderGraph",
+  () => void graph.layout().then(() => graph.fitView())
+], [
+  ".btn-fitCenter",
+  () => void graph.fitCenter()
+], [
+  ".btn-fitView",
+  () => void graph.fitView()
+], [
+  ".btn-saveImage",
+  () => void graph.toDataURL({ mode: "overall" }).then(
+    href => Object.assign(
+      document.createElement("a"),
+      { href, download: filename, rel: "noopener" },
+    ).click(),
+  )
+]];
+
+/** @param {Graph} graph */
+const setupGraphButtons = graph => getGraphButtons(graph).forEach(
+  ([selector, callback]) => {
     /** @satisfies { HTMLButtonElement | null } */
     const button = document.querySelector(selector);
     if (button) {
@@ -93,142 +273,99 @@ const setupGraphButtons = (graph) => {
     } else {
       console.warn(`setButton(): "${selector}" don't match any element!`);
     }
-  };
-
-  setButton(".btn-clearGraph", () => void graph.clear());
-  setButton(".btn-refreshGraph", () => void graph.render());
-  setButton(".btn-fitCenter", () => void graph.fitCenter());
-  setButton(".btn-fitView", () => void graph.fitView());
-}
+  }
+);
 
 // G6.Graph()
 
 (() => {
 
-  const container = document.querySelector(".graph-container");
-  if (!(container instanceof HTMLElement)) {
-    throw new TypeError("container is not a HTMLElement!");
+  /** @type {((states: Record<string, string[]>) => Record<string, string[]>)} */
+  const showSelectedNodes = states => {
+    const selected = Object.keys(states);
+    selected.length > 0 &&
+    resetSidebar(`Selected nodes: ${selected.join(", ")}`);
+    return states;
   }
 
   // https://g6.antv.antgroup.com/api/graph/option
   const graph = new G6.Graph({
-    container,
-    autoResize: true,
-    autoFit: "view",
-    padding: 10,
-    theme: "light",
+    ...graphOptions,
 
-    animation: {
-      duration: 250, // ms
-    },
-
-    // https://g6.antv.antgroup.com/api/elements/nodes/base-node
-    node: {
-      style: {
-        labelText: node => node.id,
-      },
-    },
-    edge: {
-      style: {
-        endArrow: true,
-        labelFontFamily: "monospace",
-        labelText: ({ id }) => {
-          // Trim the prefix part
-          id = id?.slice(id.indexOf("/") + 1);
-          // If still very long, then cap each part's length to 15
-          if (id && id.length > 20) {
-            id = id.split("/").map(
-              part => part.length <= 15 ? part : `${part.slice(1, 12)}...`
-            ).join("/");
-          }
-          return id;
-        },
-      }
-    },
-    combo: {
-      // type: "rect",
-      style: {
-        labelFill: "gray",
-        labelFontSize: 10,
-        labelPlacement: "top",
-        strokeWidth: 2,
-        labelText: ({id}) => getComboName(id),
-      }
-    },
-
-    /** @type {BuiltInLayoutOptions} */
-    layout: {
-      type: "force-atlas2",
-      kr: 200,
-      kg: 20,
-      tao: 10,
-      nodeSize: [60, 40],
-      preventOverlap: true,
-      padding: 10,
-      // mode: "linlog",
-      // dissuadeHubs: true,
-    },
-
-    transforms: ["process-parallel-edges"],
+    layout: getLayout(),
 
     behaviors: [
-      "drag-canvas",
+      // "auto-adapt-label",
       "zoom-canvas",
       "drag-element",
+
+      /** drag canvas when Shift or Ctrl are not pressed
+       * @type {import("@antv/g6").DragCanvasOptions} */
+      ({
+        type: "drag-canvas",
+        enable: event => !event.ctrlKey && !event.shiftKey,
+      }),
+      /** Shift + drag: brush select (box selection)
+       * @type {import("@antv/g6").BrushSelectOptions} */
+      ({
+        type: "brush-select",
+        trigger: ["shift"],
+        mode: "diff",
+        enableElements: ["node"],
+        onSelect: showSelectedNodes,
+      }),
+      /** Ctrl + drag: lasso select
+       * @type {import("@antv/g6").LassoSelectOptions} */
+      ({
+        type: "lasso-select",
+        trigger: ["control"],
+        mode: "diff",
+        enableElements: ["node"],
+        onSelect: showSelectedNodes,
+      }),
+
+      /** Double click to collapse / expand combo
+       * @type {import("@antv/g6").CollapseExpandOptions} */
+      ({
+        type: "collapse-expand",
+        animation: false,
+        // If combo contains more than 1 children, layout again to avoid G6 bug
+        // TODO: fix node with identical position
+        onExpand: id =>
+          graph.getComboData(id) &&
+          graph.getChildrenData(id).length > 1 &&
+          void graph.layout(),
+      }),
+
       /** @type {import("@antv/g6").ClickSelectOptions} */
       ({
         type: "click-select",
         degree: 1,
-        // TODO: update sidebar for combo (UpperTask)
+        neighborState: "highlight",
         onClick: ({ target: item }) => {
-          if (item.type !== "node") {
-            const p = $("p", { textContent: "Please select a node." });
-            sidebarContainers.forEach(
-              element => element.replaceChildren(p.cloneNode(true)),
-            );
-            return;
+          if (!("type" in item)) { resetSidebar(); return; }
+          switch (item.type) {
+            case "node":  updateSidebarForNode(item.id, graph); break;
+            case "combo": updateSidebarForCombo(item.id, graph); break;
+            case "edge":  updateSidebarForEdge(item.id); break;
+            default: resetSidebar(); break;
           }
-
-          const node = graph.getNodeData(item.id);
-          updateSidebar(item.id, node, graphData);
-        }
-      })
-    ],
-
-    plugins: [
-      /** @type {import("@antv/g6").TooltipOptions} */
-      ({
-        type: "tooltip",
-        getContent: (_event, items) => Promise.resolve(
-          items.map(
-            item => `ID: <code>${item.id}</code>`
-          ).join("<br>")
-        ),
+        },
       }),
+
     ],
+
   });
+  // graph.on();
 
-  if (grouping) {
-    for (let i = 0; i < grouping.elements.length; i++) {
-      grouping.elements[i].addEventListener("change", ({target}) => {
-        if (!(target instanceof HTMLInputElement)) return;
-        if (graphJson) {
-          const flat = target.value === "flat";
-          graphData = getGraphData(graphJson, flat);
-          graph.setData(graphData);
-          void graph.render();
-        }
-      })
-    }
-  }
+  globalThis.graph = graph;
 
-  // Override the default "Loading..."
-  sidebarContainers[0].replaceChildren(
-    $("p", { textContent: "Please select a node." }),
-  );
+  // Graph loading finished, remove loading status in instance sidebar
+  resetInstance();
 
   setupFileInput(graph);
   setupGraphButtons(graph);
+  setupRadioToggles(graph);
 
-  console.debug("graph object\n", graph);
+  console.debug("graph object:\n", graph);
 })();
