@@ -57,11 +57,13 @@ runs:
           bucket="${{ inputs.cloudflareR2BucketName }}"
           channel="${{ inputs.channel }}"
           version="$(cat VERSION)"
-          retry -- wrangler r2 --remote object put \
+          retry -- wrangler r2 object put \
             \$bucket/rapidstream-tapa-\$channel-latest.tar.gz \
+            --remote \
             --file=/workspace/artifacts.out/tapa.tar.gz
-          retry -- wrangler r2 --remote object put \
+          retry -- wrangler r2 object put \
             \$bucket/rapidstream-tapa-\$channel-\$version.tar.gz \
+            --remote \
             --file=/workspace/artifacts.out/tapa.tar.gz
         dockerOptions: >-
           -e CLOUDFLARE_API_TOKEN=${{ inputs.cloudflareToken }}
