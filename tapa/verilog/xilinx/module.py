@@ -830,13 +830,13 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     ) -> "Module":
         item = InstanceList(
             module=module_name,
-            parameterlist=params,
+            parameterlist=tuple(params),
             instances=(
                 Instance(
                     module=None,
                     name=instance_name,
                     parameterlist=None,
-                    portlist=ports,
+                    portlist=tuple(ports),
                 ),
             ),
         )
