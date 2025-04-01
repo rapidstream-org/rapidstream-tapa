@@ -17,7 +17,10 @@ package(
 py_library(
     name = "common",
     srcs = glob(
-        ["*.py"],
+        [
+            "*.py",
+            "floorplan/*.py",
+        ],
         exclude = [
             "paths.py",
             "pyslang_rewriter.py",

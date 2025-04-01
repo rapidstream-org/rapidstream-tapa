@@ -11,6 +11,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from tapa.common.base import Base
+from tapa.common.floorplan.gen_slot_cpp import gen_slot_cpp
 from tapa.common.task_definition import TaskDefinition
 from tapa.common.task_instance import TaskInstance
 from tapa.util import get_instance_name
@@ -168,6 +169,15 @@ class Graph(Base):
         new_ports += _get_used_ports(new_insts, fifo_ports)
 
         new_obj["ports"] = new_ports
+
+        top_code = new_obj["code"]
+        assert isinstance(top_code, str)
+        new_obj["code"] = gen_slot_cpp(
+            slot_name,
+            self.get_top_task_name(),
+            new_ports,
+            top_code,
+        )
 
         return TaskDefinition(slot_name, new_obj, top)
 
