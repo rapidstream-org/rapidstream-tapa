@@ -17,13 +17,20 @@ package(
 py_library(
     name = "common",
     srcs = glob(
-        ["*.py"],
+        [
+            "*.py",
+            "floorplan/*.py",
+        ],
         exclude = [
             "pyslang_rewriter.py",
             "unique_attrs.py",
             "*_test.py",
         ],
     ),
+    data = [
+        ":floorplan/template/slot_decl_template.txt",
+        ":floorplan/template/slot_def_template.txt",
+    ],
 )
 
 py_library(
