@@ -54,9 +54,9 @@ void Mmap2Stream_internal(tapa::async_mmap<float>& mmap_int, uint64_t n_int,
   stream_int.close();
 }
 
-void Mmap2Stream(tapa::mmap<float> mmap_ext, uint64_t n_ext,
+void Mmap2Stream(tapa::mmap<float> a, uint64_t n_ext,
                  tapa::ostream<float>& stream_ext) {
-  tapa::task().invoke(Mmap2Stream_internal, mmap_ext, n_ext, stream_ext);
+  tapa::task().invoke(Mmap2Stream_internal, a, n_ext, stream_ext);
 }
 
 void Load(tapa::mmap<float> a_array, tapa::mmap<float> b_array,
