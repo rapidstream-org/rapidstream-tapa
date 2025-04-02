@@ -6,6 +6,7 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 import copy
+import re
 from collections import defaultdict
 from functools import lru_cache
 from typing import TYPE_CHECKING
@@ -262,15 +263,17 @@ def _get_used_ports(new_insts: list[TaskInstance], fifo_ports: list[str]) -> lis
         args = inst.obj["args"]
         assert isinstance(args, dict)
         for port_name, arg in args.items():
+            port_name_no_idx = re.sub(r"\[[^\]]+\]$", "", port_name)
             if arg["arg"] not in fifo_ports:
                 continue
             ports = inst.definition.obj["ports"]
             assert isinstance(ports, list)
             for port in ports:
-                if port["name"] != port_name:
+                if port["name"] != port_name_no_idx:
                     continue
                 new_port = port.copy()
                 new_port["name"] = arg["arg"]
                 new_ports.append(new_port)
 
+    assert len(new_ports) == len(fifo_ports), f"{new_ports}, {fifo_ports}"
     return new_ports
