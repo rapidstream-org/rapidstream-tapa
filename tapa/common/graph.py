@@ -194,8 +194,13 @@ class Graph(Base):
             assert isinstance(slot_def.obj["ports"], list)
             ports: dict[str, dict] = {p["name"]: p for p in slot_def.obj["ports"]}
             args = {}
-            for port_name, port_obj in ports.items():
-                args[port_name] = {"arg": port_name, "cat": port_obj["cat"]}
+            slot_subtasks = slot_def.obj["tasks"]
+            assert isinstance(slot_subtasks, dict)
+            for port_name in ports:
+                args[port_name] = {
+                    "arg": port_name,
+                    "cat": _infer_arg_cat_from_subinst(port_name, slot_subtasks),
+                }
             new_top_insts[slot_name].append({"args": args, "step": 0})
         new_top_obj["tasks"] = new_top_insts
 
@@ -232,6 +237,21 @@ class Graph(Base):
         new_obj["tasks"][top_name] = self.get_floorplan_top(slot_defs).to_dict()
 
         return Graph(self.name, new_obj)
+
+
+def _infer_arg_cat_from_subinst(port_name: str, tasks: dict[str, dict]) -> str:
+    """Infer port arg category from child instance connecting to the port."""
+    cat: set[str] = set()
+    for task_insts in tasks.values():
+        for inst in task_insts:
+            assert isinstance(inst["args"], dict)
+            args = inst["args"]
+            assert isinstance(args, dict)
+            for arg in args.values():
+                if arg["arg"] == port_name:
+                    cat.add(arg["cat"])
+    assert len(cat) == 1
+    return cat.pop()
 
 
 def _get_used_ports(new_insts: list[TaskInstance], fifo_ports: list[str]) -> list:
