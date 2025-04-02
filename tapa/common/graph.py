@@ -9,16 +9,13 @@ import copy
 import re
 from collections import defaultdict
 from functools import lru_cache
-from typing import TYPE_CHECKING
 
 from tapa.common.base import Base
 from tapa.common.floorplan.gen_slot_cpp import gen_slot_cpp
+from tapa.common.interconnect_instance import InterconnectInstance
 from tapa.common.task_definition import TaskDefinition
 from tapa.common.task_instance import TaskInstance
 from tapa.util import get_instance_name
-
-if TYPE_CHECKING:
-    from tapa.common.interconnect_instance import InterconnectInstance
 
 
 class Graph(Base):
@@ -121,9 +118,20 @@ class Graph(Base):
 
         # obj['tasks']:
         # construct the task insts of the slot
+        top_to_slot_inst_idx_map = defaultdict(dict)
+        top_tasks = self.get_top_task_def().to_dict()["tasks"]
+        assert isinstance(top_tasks, dict)
+
         new_obj["tasks"] = defaultdict(list)
         for inst in new_insts:
-            new_obj["tasks"][inst.definition.name].append(inst.to_dict())
+            assert isinstance(top_tasks[inst.definition.name], list)
+
+            top_idx = top_tasks[inst.definition.name].index(inst.obj)
+            top_to_slot_inst_idx_map[inst.definition.name][top_idx] = len(
+                new_obj["tasks"][inst.definition.name]
+            )
+
+            new_obj["tasks"][inst.definition.name].append(inst.obj)
 
         # obj['fifos']:
         # construct the fifos of the slot
@@ -147,7 +155,12 @@ class Graph(Base):
                 or get_instance_name((dst[0], dst[1])) in task_inst_in_slot
             ):
                 fifo_ports.append(fifo.name)
-        new_obj["fifos"] = {fifo.name: fifo.to_dict() for fifo in new_fifos}
+
+        new_obj["fifos"] = {}
+        for fifo in new_fifos:
+            new_obj["fifos"][fifo.name] = _update_fifo_inst_idx(
+                fifo, top_to_slot_inst_idx_map
+            )
 
         # obj['ports']:
         # Reconstruct the ports of the slot
@@ -182,7 +195,11 @@ class Graph(Base):
 
         return TaskDefinition(slot_name, new_obj, top)
 
-    def get_floorplan_top(self, slot_defs: dict[str, TaskDefinition]) -> TaskDefinition:
+    def get_floorplan_top(
+        self,
+        slot_defs: dict[str, TaskDefinition],
+        task_inst_to_slot: dict[str, str],
+    ) -> TaskDefinition:
         """Return the new top level by grouping slot instances."""
         top_obj = self.get_top_task_def().to_dict()
         assert top_obj["level"] != "lower"
@@ -213,11 +230,26 @@ class Graph(Base):
             in_slot_fifos += slot_def.obj["fifos"].keys()
 
         assert isinstance(top_obj["fifos"], dict)
-        new_top_obj["fifos"] = {
-            name: fifo
-            for name, fifo in top_obj["fifos"].items()
-            if name not in in_slot_fifos
-        }
+        new_top_obj["fifos"] = {}
+        for name, fifo in top_obj["fifos"].items():
+            if name in in_slot_fifos:
+                continue
+            updated_fifo = copy.deepcopy(fifo)
+            consumer_name = fifo["consumed_by"][0]
+            consumer_top_idx = fifo["consumed_by"][1]
+            updated_fifo["consumed_by"] = (
+                task_inst_to_slot[get_instance_name((consumer_name, consumer_top_idx))],
+                0,
+            )
+
+            producer_name = fifo["produced_by"][0]
+            producer_top_idx = fifo["produced_by"][1]
+            updated_fifo["produced_by"] = (
+                task_inst_to_slot[get_instance_name((producer_name, producer_top_idx))],
+                0,
+            )
+
+            new_top_obj["fifos"][name] = updated_fifo
 
         return TaskDefinition(self.get_top_task_name(), new_top_obj, self)
 
@@ -233,9 +265,17 @@ class Graph(Base):
             new_obj["tasks"][slot_name] = slot_def.to_dict()
             slot_defs[slot_name] = slot_def
 
+        inst_to_slot = {}
+        for slot_name, insts in slot_to_insts.items():
+            for inst in insts:
+                assert isinstance(inst, str)
+                inst_to_slot[inst] = slot_name
+
         top_name = self.get_top_task_name()
         assert top_name in new_obj["tasks"]
-        new_obj["tasks"][top_name] = self.get_floorplan_top(slot_defs).to_dict()
+        new_obj["tasks"][top_name] = self.get_floorplan_top(
+            slot_defs, inst_to_slot
+        ).to_dict()
 
         return Graph(self.name, new_obj)
 
@@ -277,3 +317,27 @@ def _get_used_ports(new_insts: list[TaskInstance], fifo_ports: list[str]) -> lis
 
     assert len(new_ports) == len(fifo_ports), f"{new_ports}, {fifo_ports}"
     return new_ports
+
+
+def _update_fifo_inst_idx(
+    fifo: InterconnectInstance, top_to_slot_inst_idx_map: dict[str, dict]
+) -> dict:
+    """Update top fifo consumer and producer index to slot index."""
+    fifo_obj = fifo.to_dict()
+
+    consumer_name = fifo_obj["consumed_by"][0]
+    consumer_top_idx = fifo_obj["consumed_by"][1]
+    fifo_obj["consumed_by"] = (
+        consumer_name,
+        top_to_slot_inst_idx_map[consumer_name][consumer_top_idx],
+    )
+
+    producer_name = fifo_obj["produced_by"][0]
+    producer_top_idx = fifo_obj["produced_by"][1]
+    assert producer_top_idx in top_to_slot_inst_idx_map[producer_name]
+    fifo_obj["produced_by"] = (
+        producer_name,
+        top_to_slot_inst_idx_map[producer_name][producer_top_idx],
+    )
+
+    return fifo_obj
