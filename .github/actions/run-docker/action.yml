@@ -33,11 +33,13 @@ runs:
         if (( ${#containers[@]} )); then
           docker stop "${containers[@]}"
         fi
+        cp /etc/bazel.bazelrc ~/.bazelrc
         docker run \
           --rm \
           --init \
           --label="${label}" \
           --mac-address=${{ env.MAC_ADDRESS }} \
+          -v ~/.bazelrc:/etc/bazel.bazelrc:ro \
           -v /share/software/licenses:/opt/licenses:ro \
           -v /share/software/tools:/opt/tools:ro \
           -v /share/software/xilinx/platforms:/opt/xilinx/platforms:ro \
