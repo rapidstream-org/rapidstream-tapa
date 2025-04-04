@@ -161,7 +161,7 @@ class executable {
   executable& operator=(const executable& other) = delete;
 
  private:
-  friend class task;
+  friend struct task;
   const std::string path_;
 };
 
