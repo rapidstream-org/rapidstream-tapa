@@ -23,7 +23,7 @@ struct task {
                         std::forward<Args>(args)...);
   }
 
-  template <int mode, typename Func, typename... Args>
+  template <internal::InvokeMode mode, typename Func, typename... Args>
   task& invoke(Func&& func, Args&&... args) {
     return invoke<mode>(std::forward<Func>(func), "",
                         std::forward<Args>(args)...);
@@ -35,19 +35,21 @@ struct task {
                         std::forward<Args>(args)...);
   }
 
-  template <int mode, typename Func, typename... Args, size_t name_size>
+  template <internal::InvokeMode mode, typename Func, typename... Args,
+            size_t name_size>
   task& invoke(Func&& func, const char (&name)[name_size], Args&&... args) {
     func(std::forward<Args>(args)...);
     return *this;
   }
 
-  template <int mode, int n, typename Func, typename... Args>
+  template <internal::InvokeMode mode, int n, typename Func, typename... Args>
   task& invoke(Func&& func, Args&&... args) {
     return invoke<mode, n>(std::forward<Func>(func), "",
                            std::forward<Args>(args)...);
   }
 
-  template <int mode, int n, typename Func, typename... Args, size_t name_size>
+  template <internal::InvokeMode mode, int n, typename Func, typename... Args,
+            size_t name_size>
   task& invoke(Func&& func, const char (&name)[name_size], Args&&... args) {
     for (int i = 0; i < n; ++i) {
       invoke<mode>(std::forward<Func>(func), std::forward<Args>(args)...);

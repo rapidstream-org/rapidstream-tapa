@@ -64,15 +64,15 @@ struct invoker {
       "task function must return void");
 
   template <typename... Args>
-  static void invoke(int mode, F&& f, Args&&... args) {
+  static void invoke(InvokeMode mode, F&& f, Args&&... args) {
     // Create a functor that captures args by value
     auto functor = invoker::functor_with_accessors(
-        mode > 0, std::forward<F>(f), std::index_sequence_for<Args...>{},
-        std::forward<Args>(args)...);
-    if (mode > 0) {  // Sequential scheduling.
+        mode == InvokeMode::kSequential, std::forward<F>(f),
+        std::index_sequence_for<Args...>{}, std::forward<Args>(args)...);
+    if (mode == InvokeMode::kSequential) {  // Sequential scheduling.
       std::move(functor)();
     } else {
-      internal::schedule(/*detach=*/mode < 0, std::move(functor));
+      schedule(mode == InvokeMode::kDetach, std::move(functor));
     }
   }
 
@@ -210,7 +210,7 @@ struct task {
   /// @param func  Task function definition of the instantiated child.
   /// @param args  Arguments passed to @c func.
   /// @return      Reference to the caller @c tapa::task.
-  template <int mode, typename Func, typename... Args>
+  template <internal::InvokeMode mode, typename Func, typename... Args>
   task& invoke(Func&& func, Args&&... args) {
     return invoke<mode>(std::forward<Func>(func), "",
                         std::forward<Args>(args)...);
@@ -222,7 +222,8 @@ struct task {
                         std::forward<Args>(args)...);
   }
 
-  template <int mode, typename Func, typename... Args, size_t name_size>
+  template <internal::InvokeMode mode, typename Func, typename... Args,
+            size_t name_size>
   task& invoke(Func&& func, const char (&name)[name_size], Args&&... args) {
     static_assert(
         internal::is_callable_v<typename std::remove_reference_t<Func>>,
@@ -263,13 +264,14 @@ struct task {
   /// @param func  Task function definition of the instantiated child.
   /// @param args  Arguments passed to @c func.
   /// @return      Reference to the caller @c tapa::task.
-  template <int mode, int n, typename Func, typename... Args>
+  template <internal::InvokeMode mode, int n, typename Func, typename... Args>
   task& invoke(Func&& func, Args&&... args) {
     return invoke<mode, n>(std::forward<Func>(func), "",
                            std::forward<Args>(args)...);
   }
 
-  template <int mode, int n, typename Func, typename... Args, size_t name_size>
+  template <internal::InvokeMode mode, int n, typename Func, typename... Args,
+            size_t name_size>
   task& invoke(Func&& func, const char (&name)[name_size], Args&&... args) {
     for (int i = 0; i < n; ++i) {
       invoke<mode>(std::forward<Func>(func), std::forward<Args>(args)...);
@@ -278,7 +280,7 @@ struct task {
   }
 
  protected:
-  std::optional<int> mode_override;
+  std::optional<internal::InvokeMode> mode_override;
 
  private:
   task& invoke_frt(std::shared_ptr<fpga::Instance> instance);

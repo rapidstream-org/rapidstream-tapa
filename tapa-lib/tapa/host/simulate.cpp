@@ -4,8 +4,10 @@
 
 #include "tapa/host/simulate.h"
 
+#include "tapa/base/task.h"
+
 namespace tapa::hls_simulate {
 
-task::task() { this->mode_override = 1; }
+task::task() { this->mode_override = internal::InvokeMode::kSequential; }
 
 }  // namespace tapa::hls_simulate

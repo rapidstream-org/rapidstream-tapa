@@ -7,8 +7,21 @@
 
 namespace tapa {
 
-inline constexpr int join = 0;
-inline constexpr int detach = -1;
+namespace internal {
+enum class InvokeMode {
+  // Forks new task in background, and joins it before current task finishes.
+  kJoin = 0,
+
+  // Forks new task in background without joining.
+  kDetach = -1,
+
+  // Runs new task inline, before current invocation completes.
+  kSequential = 1,
+};
+}  // namespace internal
+
+inline constexpr auto join = internal::InvokeMode::kJoin;
+inline constexpr auto detach = internal::InvokeMode::kDetach;
 
 /// Class that generates a sequence of integers as task arguments.
 ///
