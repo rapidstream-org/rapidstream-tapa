@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <string>
+
 #include "tapa/base/task.h"
 
 namespace tapa {

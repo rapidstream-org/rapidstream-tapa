@@ -5,6 +5,9 @@
 #ifndef TAPA_XILINX_HLS_TASK_H_
 #define TAPA_XILINX_HLS_TASK_H_
 
+#include <string>
+#include <utility>
+
 #include "tapa/base/task.h"
 
 namespace tapa {
