@@ -196,7 +196,11 @@ class Graph(Base):
             slot_subtasks = slot_def.obj["tasks"]
             assert isinstance(slot_subtasks, dict)
             for port_name in ports:
-                args[port_name] = {
+                # format port[idx] to port_idx for array
+                port_name_formated = re.sub(
+                    r"\[([^\]]+)\]$", lambda m: f"_{m.group(1)}", port_name
+                )
+                args[port_name_formated] = {
                     "arg": port_name,
                     "cat": _infer_arg_cat_from_subinst(port_name, slot_subtasks),
                 }
