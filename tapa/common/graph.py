@@ -136,31 +136,12 @@ class Graph(Base):
         # obj['fifos']:
         # construct the fifos of the slot
         fifos = self.get_top_task_inst().get_interconnect_insts()
-        new_fifos: list[InterconnectInstance] = []
         fifo_ports: list[str] = []
-        for fifo in fifos:
-            fifo_obj = fifo.to_dict()
-            src = fifo_obj["consumed_by"]
-            dst = fifo_obj["produced_by"]
-            # For fifo connecting task insts inside the slot, keep it
-            if (
-                get_instance_name((src[0], src[1])) in task_inst_in_slot
-                and get_instance_name((dst[0], dst[1])) in task_inst_in_slot
-            ):
-                new_fifos.append(fifo)
-            # For fifo connecting a task inst inside and an inst outside the slot,
-            # put it to ports later
-            elif (
-                get_instance_name((src[0], src[1])) in task_inst_in_slot
-                or get_instance_name((dst[0], dst[1])) in task_inst_in_slot
-            ):
-                fifo_ports.append(fifo.name)
-
-        new_obj["fifos"] = {}
-        for fifo in new_fifos:
-            new_obj["fifos"][fifo.name] = _update_fifo_inst_idx(
-                fifo, top_to_slot_inst_idx_map
-            )
+        new_obj["fifos"], fifo_ports = _get_slot_fifos(
+            fifos,
+            top_to_slot_inst_idx_map,
+            task_inst_in_slot,
+        )
 
         # obj['ports']:
         # Reconstruct the ports of the slot
@@ -223,11 +204,16 @@ class Graph(Base):
         new_top_obj["tasks"] = new_top_insts
 
         # obj['fifos']:
-        # remove all fifos except the ones connecting the slots
+        # remove all fifos except external fifo and the ones connecting the slots
         in_slot_fifos = []
         for slot_def in slot_defs.values():
             assert isinstance(slot_def.obj["fifos"], dict)
-            in_slot_fifos += slot_def.obj["fifos"].keys()
+            for fifo_name, fifo in slot_def.obj["fifos"].items():
+                assert isinstance(fifo, dict)
+                # keep external fifos
+                if "depth" not in fifo:
+                    continue
+                in_slot_fifos.append(fifo_name)
 
         assert isinstance(top_obj["fifos"], dict)
         new_top_obj["fifos"] = {}
@@ -235,19 +221,25 @@ class Graph(Base):
             if name in in_slot_fifos:
                 continue
             updated_fifo = copy.deepcopy(fifo)
-            consumer_name = fifo["consumed_by"][0]
-            consumer_top_idx = fifo["consumed_by"][1]
-            updated_fifo["consumed_by"] = (
-                task_inst_to_slot[get_instance_name((consumer_name, consumer_top_idx))],
-                0,
-            )
+            if "consumed_by" in updated_fifo:
+                consumer_name = fifo["consumed_by"][0]
+                consumer_top_idx = fifo["consumed_by"][1]
+                updated_fifo["consumed_by"] = (
+                    task_inst_to_slot[
+                        get_instance_name((consumer_name, consumer_top_idx))
+                    ],
+                    0,
+                )
 
-            producer_name = fifo["produced_by"][0]
-            producer_top_idx = fifo["produced_by"][1]
-            updated_fifo["produced_by"] = (
-                task_inst_to_slot[get_instance_name((producer_name, producer_top_idx))],
-                0,
-            )
+            if "produced_by" in updated_fifo:
+                producer_name = fifo["produced_by"][0]
+                producer_top_idx = fifo["produced_by"][1]
+                updated_fifo["produced_by"] = (
+                    task_inst_to_slot[
+                        get_instance_name((producer_name, producer_top_idx))
+                    ],
+                    0,
+                )
 
             new_top_obj["fifos"][name] = updated_fifo
 
@@ -320,24 +312,75 @@ def _get_used_ports(new_insts: list[TaskInstance], fifo_ports: list[str]) -> lis
 
 
 def _update_fifo_inst_idx(
-    fifo: InterconnectInstance, top_to_slot_inst_idx_map: dict[str, dict]
+    fifo: dict, top_to_slot_inst_idx_map: dict[str, dict]
 ) -> dict:
     """Update top fifo consumer and producer index to slot index."""
-    fifo_obj = fifo.to_dict()
+    fifo_obj = copy.deepcopy(fifo)
 
-    consumer_name = fifo_obj["consumed_by"][0]
-    consumer_top_idx = fifo_obj["consumed_by"][1]
-    fifo_obj["consumed_by"] = (
-        consumer_name,
-        top_to_slot_inst_idx_map[consumer_name][consumer_top_idx],
-    )
+    if "consumed_by" in fifo_obj:
+        consumer_name = fifo_obj["consumed_by"][0]
+        consumer_top_idx = fifo_obj["consumed_by"][1]
+        fifo_obj["consumed_by"] = (
+            consumer_name,
+            top_to_slot_inst_idx_map[consumer_name][consumer_top_idx],
+        )
 
-    producer_name = fifo_obj["produced_by"][0]
-    producer_top_idx = fifo_obj["produced_by"][1]
-    assert producer_top_idx in top_to_slot_inst_idx_map[producer_name]
-    fifo_obj["produced_by"] = (
-        producer_name,
-        top_to_slot_inst_idx_map[producer_name][producer_top_idx],
-    )
+    if "produced_by" in fifo_obj:
+        producer_name = fifo_obj["produced_by"][0]
+        producer_top_idx = fifo_obj["produced_by"][1]
+        assert producer_top_idx in top_to_slot_inst_idx_map[producer_name]
+        fifo_obj["produced_by"] = (
+            producer_name,
+            top_to_slot_inst_idx_map[producer_name][producer_top_idx],
+        )
 
     return fifo_obj
+
+
+def _get_slot_fifos(
+    fifos: list[InterconnectInstance],
+    top_to_slot_inst_idx_map: dict[str, dict],
+    task_inst_in_slot: list[str],
+) -> tuple[dict, list[str]]:
+    """Get the fifos of the slot.
+
+    returns:
+    - new_fifos: dict of updated slot fifos
+    - fifo_ports: list of external fifo names.
+    """
+    new_fifos: dict[str, dict] = defaultdict(dict)
+    fifo_ports: list[str] = []
+    for fifo in fifos:
+        assert fifo.name
+        fifo_obj = fifo.to_dict()
+        # Remove original external fifos
+        if "depth" not in fifo_obj:
+            continue
+        src = fifo_obj["consumed_by"]
+        dst = fifo_obj["produced_by"]
+        # For fifo connecting task insts inside the slot, keep it
+        if (
+            get_instance_name((src[0], src[1])) in task_inst_in_slot
+            and get_instance_name((dst[0], dst[1])) in task_inst_in_slot
+        ):
+            new_fifos[fifo.name] = fifo_obj
+        # For fifo connecting a task inst inside and an inst outside the slot,
+        # modify to an external fifo and put it to ports later
+        elif get_instance_name((src[0], src[1])) in task_inst_in_slot:
+            new_fifos[fifo.name] = {
+                "consumed_by": src,
+            }
+            fifo_ports.append(fifo.name)
+        elif get_instance_name((dst[0], dst[1])) in task_inst_in_slot:
+            new_fifos[fifo.name] = {
+                "produced_by": dst,
+            }
+            fifo_ports.append(fifo.name)
+
+    new_fifos_obj = {}
+    for fifo_name, fifo_obj in new_fifos.items():
+        new_fifos_obj[fifo_name] = _update_fifo_inst_idx(
+            fifo_obj, top_to_slot_inst_idx_map
+        )
+
+    return new_fifos_obj, fifo_ports
