@@ -18,8 +18,8 @@ namespace internal {
 class SharedMemoryStream {
  public:
   struct Options {
-    int64_t depth = 0;
-    int64_t width = 0;
+    uint64_t depth = 0;
+    uint64_t width = 0;
 
     // This will be consumed by `shm_open`.
     std::string path_template = "/shared_memory_queue.XXXXXX";

@@ -22,7 +22,7 @@ namespace internal {
 template <typename T>
 class StreamBase : public StreamArg {
  public:
-  explicit StreamBase(int64_t depth)
+  explicit StreamBase(uint64_t depth)
       : StreamArg(
             std::make_shared<SharedMemoryStream>(SharedMemoryStream::Options{
                 .depth = depth,
