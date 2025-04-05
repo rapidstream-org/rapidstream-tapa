@@ -1,7 +1,7 @@
 """Core logic of TAPA."""
 
 __copyright__ = """
-Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
@@ -341,6 +341,7 @@ int main(int argc, char ** argv)
         vitis_mode: bool,
         work_dir: str | None = None,
         gen_templates: tuple[str, ...] = (),
+        floorplan_slots: list[str] = [],
     ) -> None:
         """Construct Program object from a json file.
 
@@ -372,9 +373,9 @@ int main(int argc, char ** argv)
             {k: set(v.get("tasks", ())) for k, v in obj["tasks"].items()},
         )
         for template in gen_templates:
-            assert template in task_names, (
-                f"template task {template} not found in design"
-            )
+            assert (
+                template in task_names
+            ), f"template task {template} not found in design"
         self.gen_templates = gen_templates
 
         for name in task_names:
@@ -387,6 +388,7 @@ int main(int argc, char ** argv)
                 fifos=task_properties.get("fifos", {}),
                 ports=task_properties.get("ports", []),
                 target_type=task_properties["target"],
+                is_slot=(name in floorplan_slots),
             )
             if not task.is_upper or task.tasks:
                 self._tasks[name] = task
@@ -541,9 +543,9 @@ int main(int argc, char ** argv)
         top_aie_task_is_done = False
         for task in self._tasks.values():
             if task.name == self.top and target == "aie":
-                assert top_aie_task_is_done is False, (
-                    "There should be exactly one top-level task"
-                )
+                assert (
+                    top_aie_task_is_done is False
+                ), "There should be exactly one top-level task"
                 top_aie_task_is_done = True
                 code_content = self.get_aie_graph(task)
                 with open(
@@ -1180,6 +1182,8 @@ int main(int argc, char ** argv)
                         PortArg(portname=arg.port, argname=arg_table[arg.name][-1]),
                     )
                 elif arg.cat.is_istream:
+                    if instance.task.is_slot:
+                        ignore_peeks_fifos += (arg.port,)
                     portargs.extend(
                         instance.task.module.generate_istream_ports(
                             port=arg.port,

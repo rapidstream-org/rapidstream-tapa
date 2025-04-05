@@ -1,5 +1,5 @@
 __copyright__ = """
-Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
@@ -414,9 +414,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 port=self.get_port_of(port, suffix).name,
                 arg=arg_name,
             )
-
+            # peek port
             if STREAM_PORT_DIRECTION[suffix] == "input":
-                # peek port
                 if port in ignore_peek_fifos:
                     continue
                 match = match_array_name(port)

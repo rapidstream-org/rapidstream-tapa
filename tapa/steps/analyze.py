@@ -125,12 +125,22 @@ def analyze(
     tapa_graph = TapaGraph(None, graph_dict)
     if flatten_hierarchy:
         tapa_graph = tapa_graph.get_flatten_graph()
+
+    fp_slots = []
     if floorplan_path:
         assert flatten_hierarchy, "Floorplan can only be applied to a flattened graph"
         slot_to_insts = get_slot_to_inst(floorplan_path, tapa_graph)
         tapa_graph = tapa_graph.get_floorplan_graph(slot_to_insts)
+        fp_slots = list(slot_to_insts.keys())
     graph_dict = tapa_graph.to_dict()
-    store_tapa_program(Program(graph_dict, vitis_mode, work_dir))
+    store_tapa_program(
+        Program(
+            obj=graph_dict,
+            vitis_mode=vitis_mode,
+            work_dir=work_dir,
+            floorplan_slots=fp_slots,
+        )
+    )
 
     store_persistent_context("graph", graph_dict)
     store_persistent_context("settings", {"vitis-mode": vitis_mode})

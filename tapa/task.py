@@ -1,7 +1,7 @@
 """TAPA Tasks."""
 
 __copyright__ = """
-Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
@@ -81,6 +81,7 @@ class Task:  # noqa: PLR0904
       ports: A dict mapping port names to Port objects for the current task.
       module: rtl.Module, should be attached after RTL code is generated.
       fsm_module: rtl.Module of the finite state machine (upper-level only).
+      is_slot: bool, True if this task is a floorplan slot.
 
     Properties:
       is_upper: bool, True if this task is an upper-level task.
@@ -107,6 +108,7 @@ class Task:  # noqa: PLR0904
         fifos: dict[str, dict[str, dict[str, object]]] | None = None,
         ports: list[dict[str, str]] | None = None,
         target_type: str | None = None,
+        is_slot: bool = False,
     ) -> None:
         if isinstance(level, str):
             if level == "lower":
@@ -121,6 +123,7 @@ class Task:  # noqa: PLR0904
         self.tasks = {}
         self.fifos = {}
         self.target_type = target_type
+        self.is_slot = is_slot
         port_dict = {i.name: i for i in map(Port, ports or [])}
         if self.is_upper:
             self.tasks = dict(
