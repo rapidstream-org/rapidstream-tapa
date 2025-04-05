@@ -297,6 +297,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self,
         port: str,
         arg: str,
+        enable_peek: bool = True,
         ignore_peek_fifos: Iterable[str] = (),
     ) -> Iterator[PortArg]:
         for suffix in ISTREAM_SUFFIXES:
@@ -309,9 +310,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 port=self.get_port_of(port, suffix).name,
                 arg=arg_name,
             )
-
+            # peek port
+            if not enable_peek:
+                continue
             if STREAM_PORT_DIRECTION[suffix] == "input":
-                # peek port
                 if port in ignore_peek_fifos:
                     continue
                 match = match_array_name(port)
