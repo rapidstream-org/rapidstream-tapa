@@ -90,7 +90,7 @@ const elementOptions = {
   },
   edge: {
     style: {
-      stroke: "#A3CFBB", // Bootstrap $green-200
+      stroke: ({ style }) => style?.stroke ?? "#A3CFBB", // Bootstrap $green-200
       endArrow: true,
 
       labelBackground: true,
