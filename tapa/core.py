@@ -769,7 +769,11 @@ int main(int argc, char ** argv)
 
         return self
 
-    def generate_top_rtl(self, print_fifo_ops: bool) -> "Program":
+    def generate_top_rtl(
+        self,
+        print_fifo_ops: bool,
+        override_report_schema_version: str,
+    ) -> "Program":
         """Instrument HDL files generated from HLS.
 
         Args:
@@ -794,6 +798,8 @@ int main(int argc, char ** argv)
 
         _logger.info("generating report")
         task_report = self.top_task.report
+        if override_report_schema_version:
+            task_report["schema"] = override_report_schema_version
         with open(self.report.yaml, "w", encoding="utf-8") as fp:
             yaml.dump(task_report, fp, default_flow_style=False, sort_keys=False)
         with open(self.report.json, "w", encoding="utf-8") as fp:

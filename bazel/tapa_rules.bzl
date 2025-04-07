@@ -54,6 +54,9 @@ def _tapa_xo_impl(ctx):
     # Build the command for tapa-cli synth.
     tapa_cmd.extend(["synth", "--platform", platform_name])
 
+    # Redact report schema version for better cache hit.
+    tapa_cmd.extend(["--override-report-schema-version", "redacted"])
+
     # Limit the number of jobs to reduce excessive amount of processes.
     # Launch 2 workers to avoid wasting time on I/O.
     tapa_cmd.extend(["--jobs", "2"])

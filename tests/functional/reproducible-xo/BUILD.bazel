@@ -46,9 +46,11 @@ $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
     synth --platform "$${platform}" \
+    --override-report-schema-version=redacted \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
     synth --platform "$${platform}" --skip-hls-based-on-mtime \
+    --override-report-schema-version=redacted \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
     pack --output $@ \

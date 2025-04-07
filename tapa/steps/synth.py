@@ -78,6 +78,12 @@ from tapa.steps.common import (
     help="Print all FIFO operations in cosim.",
 )
 @click.option(
+    "--override-report-schema-version",
+    type=str,
+    default="",
+    help="If non-empty, overrides the schema version in generated reports.",
+)
+@click.option(
     "--flow-type",
     type=click.Choice(["hls", "aie"], case_sensitive=False),
     default="hls",
@@ -113,6 +119,7 @@ def synth(  # noqa: PLR0913,PLR0917
     other_hls_configs: str,
     enable_synth_util: bool,
     print_fifo_ops: bool,
+    override_report_schema_version: str,
     flow_type: str,
     nonpipeline_fifos: Path | None,
     gen_ab_graph: bool,
@@ -146,7 +153,7 @@ def synth(  # noqa: PLR0913,PLR0917
         program.generate_task_rtl(print_fifo_ops)
         if enable_synth_util:
             program.generate_post_synth_util(part_num, jobs)
-        program.generate_top_rtl(print_fifo_ops)
+        program.generate_top_rtl(print_fifo_ops, override_report_schema_version)
 
         if nonpipeline_fifos:
             with open(nonpipeline_fifos, encoding="utf-8") as fifo_file:
