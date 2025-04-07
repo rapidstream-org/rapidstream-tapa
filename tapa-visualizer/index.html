@@ -63,14 +63,14 @@ body > header {
 
 		<form class="grouping flex">
 			<label class="btn" tabindex="0">
-				<input type="radio" name="grouping" value="default" hidden checked>
+				<input type="radio" name="grouping" value="merge" hidden checked>
 				<svg use="square-square"></svg>
-				<span class="btn-text">Default Grouping</span>
+				<span class="btn-text">Merge Sub-task</span>
 			</label>
 			<label class="btn" tabindex="0">
-				<input type="radio" name="grouping" value="flat" hidden>
+				<input type="radio" name="grouping" value="separate" hidden>
 				<svg use="network"></svg>
-				<span class="btn-text">No Grouping</span>
+				<span class="btn-text">Separate Sub-task</span>
 			</label>
 		</form>
 
@@ -209,13 +209,17 @@ body > header {
 				<label><input type="radio" name="layout" value="dagre"> Dagre</label>
 			</fieldset>
 			<p>Graph Options</p>
+			<!--
 			<fieldset>
 				<legend>Color scheme: TODO</legend>
 			</fieldset>
+			-->
 			<fieldset class="only-one-combo">
 				<legend>Expand other upper tasks:</legend>
 				<label><input type="radio" name="expand" value="false"> Collapse</label>
 				<label><input type="radio" name="expand" value="true" checked> Expand</label>
+				<p class="hint">The graph can be buggy when Collapse is selected.
+					See <a href="https://github.com/antvis/G6/issues/6723">this AntV G6 bug</a>.</p>
 				<p class="hint">Top task will always expand by default.</p>
 				<p class="hint only-one-combo">Current graph has no other upper tasks than top task.</p>
 			</fieldset>

@@ -89,7 +89,7 @@ const setPortsToStyle = (ioPorts, style) => {
 
 /** @type {Readonly<Required<GetGraphDataOptions>>} */
 const defaultOptions = {
-  flat: false,
+  separate: false,
   expand: false,
   port: false,
 };
@@ -98,7 +98,7 @@ const defaultOptions = {
 export const getGraphData = (json, options = defaultOptions) => {
 
   /** Rename `port` option to a meaningful one */
-  const { flat, port: showPorts } = options;
+  const { separate, port: showPorts } = options;
   /** Convert `expand` option to combo's `collapsed` style */
   const collapsed = !options.expand;
 
@@ -215,7 +215,7 @@ export const getGraphData = (json, options = defaultOptions) => {
       }
 
       // Add node for subTask
-      if (flat) {
+      if (separate) {
         subTasks.forEach((subTask, i) => {
           if (showPorts) {
           /** @type {IOPorts} */
