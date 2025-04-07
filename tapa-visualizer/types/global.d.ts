@@ -44,12 +44,14 @@ type GetGraphDataOptions = {
 
 // Ports
 type Placements = {
-  istream: import("@antv/g6").Placement[];
-  ostream: import("@antv/g6").Placement[];
+  x: number[][];
+  istream: number;
+  ostream: number;
 };
+/** istream ports and ostream ports from one sub-task */
 type IOPorts = {
-  istream: string[];
-  ostream: string[];
+  istream: [name: string, arg: string][];
+  ostream: [name: string, arg: string][];
 };
 
 // Forms

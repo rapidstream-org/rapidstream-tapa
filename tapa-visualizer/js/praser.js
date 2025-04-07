@@ -48,8 +48,15 @@ const getIndexRange = indexes => {
  */
 /** @type {Placements} */
 const placements = {
-  istream: ["top",    [0.25, 0], [0.75, 0], [0, 0], [1, 0]],
-  ostream: ["bottom", [0.25, 1], [0.75, 1], [0, 1], [1, 1]],
+  x: [
+    [0.5],
+    [0.25, 0.75],
+    [0, 0.5, 1],
+    [0, 0.25, 0.75, 1],
+    [0, 0.25, 0.5, 0.75, 1],
+  ],
+  istream: 0,
+  ostream: 1,
 };
 
 /** @type {5} */
@@ -61,8 +68,8 @@ const setIOPorts = (subTask, ioPorts) => {
   for (const argName in subTask.args) {
     const { arg, cat } = subTask.args[argName];
     switch (cat) {
-      case "istream": ioPorts.istream.push(arg); break;
-      case "ostream": ioPorts.ostream.push(arg); break;
+      case "istream": ioPorts.istream.push([argName, arg]); break;
+      case "ostream": ioPorts.ostream.push([argName, arg]); break;
     }
   }
 };
@@ -70,16 +77,20 @@ const setIOPorts = (subTask, ioPorts) => {
 /** ioPorts -> style.ports
  * @typedef {import("@antv/g6/lib/spec/element/node.js").NodeStyle} NodeStyle
  * @type {(ioPorts: IOPorts, style: NodeStyle) => void} */
-const setPortsToStyle = (ioPorts, style) => {
+const setPortsStyle = (ioPorts, style) => {
   /** @type {import("@antv/g6").NodePortStyleProps[]} */
   let ports = [];
   /** @type {["istream", "ostream"]} */
   (["istream", "ostream"]).forEach(stream => {
-    if (ioPorts[stream].length <= ioPortsLength) {
+    const amount = ioPorts[stream].length;
+    if (amount <= ioPortsLength) {
       ports = ports.concat(
-        ports,
         ioPorts[stream].map(
-          (key, j) => ({ key, placement: placements[stream][j] })
+          ([name, key], i) => {
+            /** @type {import("@antv/g6").Placement} */
+            const placement = [placements.x[amount - 1][i], placements[stream]];
+            return { name, key, placement };
+          }
         ),
       );
     }
@@ -221,7 +232,7 @@ export const getGraphData = (json, options = defaultOptions) => {
           /** @type {IOPorts} */
             const ioPorts = { istream: [], ostream: [] };
             setIOPorts(subTask, ioPorts);
-            setPortsToStyle(ioPorts, style);
+            setPortsStyle(ioPorts, style);
           }
 
           const id = `${subTaskName}/${i}`;
@@ -232,7 +243,7 @@ export const getGraphData = (json, options = defaultOptions) => {
           /** @type {IOPorts} */
           const ioPorts = { istream: [], ostream: [] };
           subTasks.forEach(subTask => setIOPorts(subTask, ioPorts));
-          setPortsToStyle(ioPorts, style);
+          setPortsStyle(ioPorts, style);
         }
 
         nodes.push({ id: subTaskName, combo, style, data: { task, subTasks } });
@@ -241,16 +252,100 @@ export const getGraphData = (json, options = defaultOptions) => {
     }
   });
 
+  /** fifo groups, for fifos like fifo_xx[0], fifo_xx[1]...
+   * @type {Map<string, Set<number>>} */
+  const fifoGroups = new Map();
+
+  /** @type {(fifoname: string, source: string, target: string) => boolean} */
+  const matchFifoGroup = (fifoName, source, target) => {
+    const matchResult = fifoName.match(/^(.*)\[(\d+)\]$/);
+    const matched = matchResult !== null;
+    if (matched) {
+      // Add to fifo group map
+      const name = matchResult[1];
+      const key = [name, source, target].join("\n");
+      const index = Number.parseInt(matchResult[2]);
+      addToMappedSet(fifoGroups, key, index);
+    }
+    return matched;
+  }
+
+  /** get port's key for missing produced_by or consumed_by
+   * @type {(node: import("@antv/g6").NodeData | undefined, fifoName: string) => string} */
+  const getPortKey = (node, fifoName) => node?.style?.ports
+    ?.find(port => "name" in port && port.name === fifoName)?.key ?? fifoName;
+
   // Loop 2: fifo -> edges
   upperTasks.forEach((upperTask, upperTaskName) => {
 
-    /** fifo groups, for fifos like fifo_xx[0], fifo_xx[1]...
-     * @type {Map<string, Set<number>>} */
-    const fifoGroups = new Map();
+    fifoGroups.clear();
 
     for (const fifoName in upperTask.fifos) {
       const fifo = upperTask.fifos[fifoName];
-      if (!fifo.produced_by && !fifo.consumed_by) {
+      const id = `${upperTaskName}/${fifoName}`;
+
+      /**
+       * @typedef {() => import("@antv/g6/lib/spec/element/edge").EdgeStyle} GetStyle
+       * @type {(source: string, target: string, id: string, getStyle: GetStyle) => void} */
+      const parseFifo = (source, target, id, getStyle) => void (
+        matchFifoGroup(fifoName, source, target) ||
+        addEdge({ source, target, id, style: getStyle(), data: fifo })
+      );
+
+      if (fifo.produced_by && fifo.consumed_by) {
+        /** @type {(by: [string, number]) => string} */
+        const getSubTask = by => separate ? by.join("/") : by[0];
+        const source = getSubTask(fifo.produced_by);
+        const target = getSubTask(fifo.consumed_by);
+
+        const style = { sourcePort: fifoName, targetPort: fifoName };
+        parseFifo(source, target, id, () => style);
+      } else if (!fifo.produced_by && fifo.consumed_by) {
+
+        // produced_by is missing
+        /** @type {(node: import("@antv/g6").NodeData | undefined) => GetStyle} */
+        const getStyle = node => () => {
+          const sourcePort = getPortKey(node, fifoName);
+          return { sourcePort, targetPort: fifoName, stroke: "#198754" };
+        };
+
+        if (separate) {
+          const target = fifo.consumed_by.join("/");
+          nodes
+            .filter(node => node.id.startsWith(`${upperTaskName}/`))
+            .forEach(node => {
+              // avoid duplicate id
+              const edgeId = `${id}${node.id.slice(node.id.indexOf("/"))}`;
+              parseFifo(node.id, target, edgeId, getStyle(node));
+            });
+        } else {
+          const node = nodes.find(node => node.id === upperTaskName);
+          parseFifo(upperTaskName, fifo.consumed_by[0], id, getStyle(node));
+        }
+
+      } else if (fifo.produced_by && !fifo.consumed_by) {
+
+        // consumed_by is missing
+        /** @type {(node: import("@antv/g6").NodeData | undefined) => GetStyle} */
+        const getStyle = node => () => {
+          const targetPort = getPortKey(node, fifoName);
+          return { sourcePort: fifoName, targetPort, stroke: "#198754" };
+        };
+
+        if (separate) {
+          const source = fifo.produced_by.join("/");
+          nodes
+            .filter(node => node.id.startsWith(`${upperTaskName}/`))
+            .forEach(node => {
+              const edgeId = `${id}${node.id.slice(node.id.indexOf("/"))}`;
+              parseFifo(source, node.id, edgeId, getStyle(node));
+            });
+        } else {
+          const node = nodes.find(node => node.id === upperTaskName);
+          parseFifo( fifo.produced_by[0], upperTaskName, id, getStyle(node));
+        }
+
+      } else {
         console.warn(
           `fifo ${fifoName} without produced_by and consumed_by in ${upperTaskName}:`,
           upperTask,
@@ -258,32 +353,6 @@ export const getGraphData = (json, options = defaultOptions) => {
         continue;
       }
 
-    /** get source / target sub-task with fallback to the upper task
-     *
-     * TODO: connect to upperTaskName/1 upperTaskName/2 if they exist
-     * @type {(by: [string, number] | undefined) => string}
-     * @param by fifo.produced_by / fifo.consumed_by */
-     const getSubTask = by => flat
-      ? by?.join("/") ?? `${upperTaskName}/0`
-      : by?.[0] ?? upperTaskName;
-
-      const source = getSubTask(fifo.produced_by);
-      const target = getSubTask(fifo.consumed_by);
-
-      // Match fifo groups
-      const matchResult = fifoName.match(/^(.*)\[(\d+)\]$/);
-      if (matchResult === null) {
-        // Not fifo groups, add edge directly
-        const id = `${upperTaskName}/${fifoName}`;
-        const style = { sourcePort: fifoName, targetPort: fifoName };
-        addEdge({ source, target, id, style, data: fifo });
-      } else {
-        // Add to fifo group map
-        const name = matchResult[1];
-        const key = [name, source, target].join("\n");
-        const index = Number.parseInt(matchResult[2]);
-        addToMappedSet(fifoGroups, key, index);
-      }
     }
 
     // Add fifo groups
