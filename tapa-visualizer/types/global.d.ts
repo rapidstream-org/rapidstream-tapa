@@ -28,7 +28,7 @@ type GraphData = Required<import("@antv/g6").GraphData>;
 type GetGraphDataOptions = {
   /** Whether expand sub-task to sub-task/0, sub-task/1, ...
    * @default false */
-  flat?: boolean;
+  separate?: boolean;
   /** Whether expand non-top upper task's combo by default
    * @default false */
   expand?: boolean;
@@ -54,11 +54,15 @@ type IOPorts = {
 
 // Forms
 interface GroupingFormControls extends HTMLFormControlsCollection {
-  grouping: { value: "flat" | "default"; },
+  /** Sub-task grouping */
+  grouping: { value: "merge" | "separate"; },
 }
 interface OptionsFormControls extends HTMLFormControlsCollection {
+  /** Layout algorithm */
   layout: { value: "force-atlas2" | "antv-dagre"| "dagre"; },
+  /** Expand other upper tasks (on graph load) */
   expand: { value: "true" | "false"; },
+  /** Show connection ports */
   port: { value: "true" | "false"; },
 }
 interface GroupingForm extends HTMLFormElement {

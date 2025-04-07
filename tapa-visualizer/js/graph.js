@@ -52,7 +52,7 @@ const getLayout = (layout = optionsForm?.elements.layout.value) => {
 };
 
 const getOptions = () => ({
-  flat: groupingForm?.elements.grouping.value === "flat",
+  separate: groupingForm?.elements.grouping.value === "separate",
   expand: optionsForm?.elements.expand.value === "true",
   port: optionsForm?.elements.port.value === "true",
 });
@@ -105,7 +105,7 @@ const setupRadioToggles = graph => {
           target instanceof HTMLInputElement &&
           void renderGraphWithNewOption(
             graph,
-            { flat: target.value === "flat" }
+            { separate: target.value === "separate" }
           ),
       )
     }
@@ -303,7 +303,17 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
        * @type {import("@antv/g6").DragCanvasOptions} */
       ({
         type: "drag-canvas",
-        enable: event => !event.ctrlKey && !event.shiftKey,
+        enable: event => {
+          if (event.ctrlKey || event.shiftKey) {
+            return false;
+          } else {
+            const defaultEnable = G6.DragCanvas.defaultOptions.enable;
+            return typeof defaultEnable === "function"
+              ? defaultEnable(event)
+              : true;
+          }
+        }
+
       }),
       /** Shift + drag: brush select (box selection)
        * @type {import("@antv/g6").BrushSelectOptions} */
