@@ -70,9 +70,6 @@ def _tapa_xo_impl(ctx):
         tapa_cmd.extend(["--gen-ab-graph"])
         ab_graph_file = ctx.actions.declare_file(ctx.attr.name + ".json")
 
-    # Build the command for tapa-cli link.
-    tapa_cmd.extend(["link"])
-
     # Complete the command sequence with the pack command.
     if output_file != None:
         tapa_cmd.extend(["pack", "--output", output_file.path])

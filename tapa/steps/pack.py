@@ -90,10 +90,6 @@ def pack(
     if flow_type == "aie":
         return
 
-    if not settings.get("linked", False):
-        msg = "You must run `link` before you can `pack`."
-        raise click.BadArgumentUsage(msg)
-
     if custom_rtl:
         templates_info = load_persistent_context("templates_info")
         program.replace_custom_rtl(custom_rtl, templates_info)

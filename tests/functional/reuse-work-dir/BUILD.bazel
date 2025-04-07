@@ -27,7 +27,6 @@ $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
     synth --platform "$${platform}" --skip-hls-based-on-mtime \
-    link \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
     pack --output $@ \
