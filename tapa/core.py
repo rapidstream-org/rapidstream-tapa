@@ -835,7 +835,7 @@ int main(int argc, char ** argv)
                 packed_obj.write(filename, arcname)
 
             # redact timestamp, source location etc. to make xo reproducible
-            for info in packed_obj.infolist():
+            for info in sorted(packed_obj.infolist(), key=lambda x: x.filename):
                 redacted_info = zipfile.ZipInfo(info.filename)
                 redacted_info.compress_type = zipfile.ZIP_DEFLATED
                 redacted_info.external_attr = info.external_attr
