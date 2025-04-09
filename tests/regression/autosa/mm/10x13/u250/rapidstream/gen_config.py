@@ -15,7 +15,6 @@ from rapidstream import get_u250_vitis_device_factory
 from rapidstream.assets.floorplan.floorplan_config import FloorplanConfig
 from rapidstream.assets.utilities.impl import ImplConfig
 from rapidstream.assets.utilities.pipeline_config import PipelineConfig
-from rapidstream.utilities.click import command
 
 VITIS_PLATFORM = "xilinx_u250_gen3x16_xdma_4_1_202210_1"
 TEMP_DIR = Path(".")
@@ -91,7 +90,7 @@ def gen_impl_config(max_workers: int, max_synth_jobs: int) -> None:
     impl_config.save_to_file(IMPL_CONFIG)
 
 
-@command
+@click.command
 @click.option(
     "--max-workers",
     type=int,
