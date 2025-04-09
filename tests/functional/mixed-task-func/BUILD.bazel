@@ -14,7 +14,8 @@ sh_test(
     srcs = ["//bazel:v++_env.sh"],
     args = ["$(location mixed-task-func-host)"],
     data = [":mixed-task-func-host"],
-    env = {"TAPA_CONCURRENCY": "1"},
+    env = {"TAPA_CONCURRENCY": "2"},
+    tags = ["cpu:2"],
 )
 
 sh_test(

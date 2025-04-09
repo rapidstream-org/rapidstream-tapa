@@ -14,6 +14,8 @@ sh_test(
     srcs = ["//bazel:v++_env.sh"],
     args = ["$(location detached-host)"],
     data = [":detached-host"],
+    env = {"TAPA_CONCURRENCY": "2"},
+    tags = ["cpu:2"],
 )
 
 sh_test(

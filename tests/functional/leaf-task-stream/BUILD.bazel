@@ -17,7 +17,8 @@ sh_test(
         "1000",
     ],
     data = [":leaf-task-stream-host"],
-    env = {"TAPA_CONCURRENCY": "1"},
+    env = {"TAPA_CONCURRENCY": "2"},
+    tags = ["cpu:2"],
 )
 
 sh_test(
