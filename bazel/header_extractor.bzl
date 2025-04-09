@@ -4,6 +4,8 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+
 # Define the implementation function for the custom header extractor rule.
 def _header_extractor_impl(ctx):
     # Collect headers from CcInfo dependencies

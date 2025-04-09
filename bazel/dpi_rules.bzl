@@ -5,6 +5,7 @@
 # RapidStream Contributor License Agreement.
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 def _dpi_library_impl(ctx):
     compile_options = [

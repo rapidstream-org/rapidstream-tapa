@@ -208,11 +208,13 @@ def find_tapacc_cflags(
     #       the produce the pattern that HLS likes.
     #       For now, newer versions of glibc will not be supported.
     return (
-        cflags[:]
-        # Use the stdc++ library from the HLS toolchain.
-        + ("-nostdinc++",)
-        + get_tapa_cflags()
-        + vendor_include_paths,
+        (
+            *cflags,
+            # Use the stdc++ library from the HLS toolchain.
+            "-nostdinc++",
+            *get_tapa_cflags(),
+            *vendor_include_paths,
+        ),
         tuple(system_includes),
     )
 

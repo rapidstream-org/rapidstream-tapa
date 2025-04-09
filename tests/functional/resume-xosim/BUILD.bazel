@@ -4,6 +4,8 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+
 sh_test(
     name = "resume-xosim-test",
     srcs = ["//bazel:v++_env.sh"],

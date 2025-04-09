@@ -1,4 +1,4 @@
-# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
@@ -8,7 +8,7 @@ ARG DOCKER_GROUP_ID
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
       # Update the following line to the latest date for retriggering the docker build
-      echo "Installing system dependencies as of 20250325" && \
+      echo "Installing system dependencies as of 20250409" && \
       apt-get upgrade -y && \
       apt-get install --no-install-recommends -y \
         build-essential \

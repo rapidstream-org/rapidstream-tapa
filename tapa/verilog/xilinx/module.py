@@ -670,9 +670,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             return self._add_ast_nodes(signals)
         decl = Decl(list=tuple(signals))
         self._module_def.items = (
-            self._module_def.items[: self._next_signal_idx]
-            + (decl,)
-            + self._module_def.items[self._next_signal_idx :]
+            *self._module_def.items[: self._next_signal_idx],
+            decl,
+            *self._module_def.items[self._next_signal_idx :],
         )
         self._increment_idx(len(decl.list), "signal")
         return self
@@ -787,9 +787,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             return self._add_ast_nodes(params)
         decl = Decl(list=tuple(params))
         self._module_def.items = (
-            self._module_def.items[: self._next_param_idx]
-            + (decl,)
-            + self._module_def.items[self._next_param_idx :]
+            *self._module_def.items[: self._next_param_idx],
+            decl,
+            *self._module_def.items[self._next_param_idx :],
         )
         self._increment_idx(len(decl.list), "param")
         return self
@@ -814,9 +814,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def _add_instancelist(self, item: InstanceList) -> "Module":
         self._module_def.items = (
-            self._module_def.items[: self._next_instance_idx]
-            + (item,)
-            + self._module_def.items[self._next_instance_idx :]
+            *self._module_def.items[: self._next_instance_idx],
+            item,
+            *self._module_def.items[self._next_instance_idx :],
         )
         self._increment_idx(1, "instance")
         return self

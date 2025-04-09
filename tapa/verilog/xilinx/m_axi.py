@@ -184,9 +184,11 @@ def rename_m_axi_name(mapping: dict[str, str], name: str, idx1: int, idx2: int) 
     name_snippets = name.split("_")
     try:
         return "_".join(
-            name_snippets[:idx1]
-            + [mapping["_".join(name_snippets[idx1:idx2])]]
-            + name_snippets[idx2:],
+            [
+                *name_snippets[:idx1],
+                mapping["_".join(name_snippets[idx1:idx2])],
+                *name_snippets[idx2:],
+            ],
         )
     except KeyError:
         pass
