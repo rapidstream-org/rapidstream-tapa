@@ -33,7 +33,7 @@ runs:
         if (( ${#containers[@]} )); then
           docker stop "${containers[@]}"
         fi
-        cp /etc/bazel.bazelrc ~/.bazelrc || true
+        cp /etc/bazel.bazelrc ~/.bazelrc || touch ~/.bazelrc
         docker run \
           --rm \
           --init \
