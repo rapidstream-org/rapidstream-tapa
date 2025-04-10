@@ -76,31 +76,6 @@ Utility Library
 .. doxygenfunction:: tapa::widthof()
 .. doxygenfunction:: tapa::widthof(T)
 
-HLS-Simulate Library
-::::::::::::::::::::
-
-The HLS-simulate library provides a set of APIs compatible with Vitis HLS stream
-behavior for simulation to ease migration from Vitis HLS.
-
-.. warning::
-
-  ``tapa::hls_simulate`` APIs are software simulation only and are NOT
-  synthesizable.
-  Before synthesis, remove ``#include <tapa/host/simulate.h>`` and replace any
-  ``tapa::hls_simulate`` API with their synthesizable equivalent.
-
-.. _api hls_simulate_stream:
-
-.. doxygentypedef:: tapa::hls_simulate::stream
-
-.. _api hls_simulate_stream_interface:
-
-.. doxygentypedef:: tapa::hls_simulate::stream_interface
-
-.. _api hls_simulate_task:
-
-.. doxygenstruct:: tapa::hls_simulate::task
-
 TAPA Compiler (tapa)
 --------------------
 
