@@ -48,7 +48,7 @@ static void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {
     if (qdma) {
       add_line("#error istreams not supported for qdma-based tasks");
     } else {
-      for (int i = 0; i < GetArraySize(param); ++i) {
+      for (size_t i = 0; i < GetArraySize(param); ++i) {
         add_dummy_read(ArrayNameAt(param_name, i));
       }
     }
@@ -57,7 +57,7 @@ static void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {
     if (qdma) {
       add_line("#error ostreams not supported for qdma-based tasks");
     } else {
-      for (int i = 0; i < GetArraySize(param); ++i) {
+      for (size_t i = 0; i < GetArraySize(param); ++i) {
         add_dummy_write(ArrayNameAt(param_name, i), GetStreamElemType(param));
       }
     }
@@ -67,7 +67,7 @@ static void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {
 static void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {
   auto param_name = param->getNameAsString();
   if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
-    for (int i = 0; i < GetArraySize(param); ++i) {
+    for (size_t i = 0; i < GetArraySize(param); ++i) {
       add_line("{ auto val = reinterpret_cast<volatile uint8_t&>(" +
                GetArrayElem(param_name, i) + "); }");
     }
@@ -146,7 +146,7 @@ void XilinxHLSTarget::AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
   }
   auto param_name = param->getNameAsString();
   if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
-    for (int i = 0; i < GetArraySize(param); ++i) {
+    for (size_t i = 0; i < GetArraySize(param); ++i) {
       add_pragma({"HLS interface s_axilite port =", GetArrayElem(param_name, i),
                   "bundle = control"});
     }
@@ -368,7 +368,7 @@ void XilinxHLSTarget::RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {
           "uint64_t");
     } else if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
       std::string rewritten_text;
-      for (int i = 0; i < GetArraySize(param); ++i) {
+      for (size_t i = 0; i < GetArraySize(param); ++i) {
         if (!rewritten_text.empty()) rewritten_text += ", ";
         rewritten_text += "uint64_t " + GetArrayElem(param_name, i);
       }

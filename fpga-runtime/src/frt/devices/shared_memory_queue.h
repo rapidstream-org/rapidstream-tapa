@@ -38,9 +38,9 @@ class SharedMemoryQueue {
   SharedMemoryQueue(const SharedMemoryQueue&) = delete;
   SharedMemoryQueue* operator=(const SharedMemoryQueue&) = delete;
 
-  int64_t size() const;
-  int64_t capacity() const;
-  int64_t width() const;
+  size_t size() const;
+  size_t capacity() const;
+  size_t width() const;
   bool empty() const;
   bool full() const;
   std::string front() const;
@@ -54,10 +54,10 @@ class SharedMemoryQueue {
 
   char magic_[4] = {};
   int32_t version_ = 0;
-  int32_t depth_ = 0;
-  int32_t width_ = 0;
-  std::atomic<int64_t> tail_{};
-  std::atomic<int64_t> head_{};
+  uint32_t depth_ = 0;
+  uint32_t width_ = 0;
+  std::atomic<uint64_t> tail_{};
+  std::atomic<uint64_t> head_{};
   char data_[];
 };
 

@@ -59,7 +59,7 @@ init:
 outer:
   for (int l = 0; l < p; ++l) {
   compute:
-    [[tapa::pipeline(1)]] for (int ij = 0; ij < kNumElems; ++ij) {
+    [[tapa::pipeline(1)]] for (uint64_t ij = 0; ij < kNumElems; ++ij) {
 #pragma HLS dependence false variable = c
       float tmp = 0.f;
       const int i = ij / (kN / p);

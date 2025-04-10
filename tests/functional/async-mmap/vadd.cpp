@@ -8,7 +8,7 @@
 
 template <typename T, typename R>
 inline void async_read(tapa::async_mmap<T>& mem, tapa::ostream<T>& strm, R n) {
-  for (int i_req = 0, i_resp = 0; i_resp < n;) {
+  for (R i_req = 0, i_resp = 0; i_resp < n;) {
 #pragma HLS loop_tripcount min = 1 max = 800
 #pragma HLS pipeline II = 1
     if ((i_req < n) && !mem.read_addr.full()) {
@@ -26,7 +26,7 @@ inline void async_read(tapa::async_mmap<T>& mem, tapa::ostream<T>& strm, R n) {
 
 template <typename T, typename R>
 inline void async_write(tapa::async_mmap<T>& mem, tapa::istream<T>& strm, R n) {
-  for (int i_req = 0, i_resp = 0; i_resp < n;) {
+  for (R i_req = 0, i_resp = 0; i_resp < n;) {
 #pragma HLS loop_tripcount min = 1 max = 800
 #pragma HLS pipeline II = 1
     if ((i_req < n) && !strm.empty() && !mem.write_addr.full() &&

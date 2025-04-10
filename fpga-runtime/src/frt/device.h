@@ -22,10 +22,10 @@ class Device {
  public:
   virtual ~Device() = default;
 
-  virtual void SetScalarArg(int index, const void* arg, int size) = 0;
-  virtual void SetBufferArg(int index, Tag tag, const BufferArg& arg) = 0;
-  virtual void SetStreamArg(int index, Tag tag, StreamArg& arg) = 0;
-  virtual size_t SuspendBuffer(int index) = 0;
+  virtual void SetScalarArg(size_t index, const void* arg, int size) = 0;
+  virtual void SetBufferArg(size_t index, Tag tag, const BufferArg& arg) = 0;
+  virtual void SetStreamArg(size_t index, Tag tag, StreamArg& arg) = 0;
+  virtual size_t SuspendBuffer(size_t index) = 0;
 
   virtual void WriteToDevice() = 0;
   virtual void ReadFromDevice() = 0;

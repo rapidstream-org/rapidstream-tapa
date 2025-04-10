@@ -135,7 +135,7 @@ DPI_DLLESPEC void istream(
     /* input */ const char* id) {
   SharedMemoryQueue* istream = GetStream(id);
   CHECK(istream != nullptr);
-  CHECK_EQ(istream->width(), svSize(dout, 1));
+  CHECK_EQ(istream->width(), size_t(svSize(dout, 1)));
 
   static std::unordered_map<std::string, bool> last_empty_n;
 
@@ -166,7 +166,7 @@ DPI_DLLESPEC void ostream(
     /* input */ const char* id) {
   SharedMemoryQueue* ostream = GetStream(id);
   CHECK(ostream != nullptr);
-  CHECK_EQ(ostream->width(), svSize(din, 1));
+  CHECK_EQ(ostream->width(), size_t(svSize(din, 1)));
 
   static std::unordered_map<std::string, bool> last_full_n;
 

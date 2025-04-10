@@ -25,7 +25,7 @@ bool IsTapaType(const RecordDecl* decl, const string& type_name) {
                                         regex{"tapa::" + type_name});
 }
 
-const TemplateArgument* GetTemplateArg(QualType qual_type, int idx) {
+const TemplateArgument* GetTemplateArg(QualType qual_type, size_t idx) {
   auto type = qual_type->getAs<TemplateSpecializationType>();
   if (type == nullptr) {
     if (auto lv_ref = qual_type->getAs<LValueReferenceType>()) {

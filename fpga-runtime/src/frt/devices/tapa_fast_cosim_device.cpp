@@ -130,7 +130,8 @@ void TapaFastCosimDevice::LoadArgsFromKernelXml() {
        xml_arg != nullptr; xml_arg = xml_arg->NextSiblingElement("arg")) {
     ArgInfo arg;
     arg.index = atoi(xml_arg->Attribute("id"));
-    LOG_IF(FATAL, arg.index != args_.size())
+    LOG_IF(FATAL, arg.index < 0) << "Invalid argument index: " << arg.index;
+    LOG_IF(FATAL, size_t(arg.index) != args_.size())
         << "Expecting argument #" << args_.size() << ", got argument #"
         << arg.index << " in the metadata";
     arg.name = xml_arg->Attribute("name");
@@ -194,7 +195,8 @@ std::unique_ptr<Device> TapaFastCosimDevice::New(std::string_view path,
   return std::make_unique<TapaFastCosimDevice>(path);
 }
 
-void TapaFastCosimDevice::SetScalarArg(int index, const void* arg, int size) {
+void TapaFastCosimDevice::SetScalarArg(size_t index, const void* arg,
+                                       int size) {
   LOG_IF(FATAL, index >= args_.size())
       << "Cannot set argument #" << index << "; there are only " << args_.size()
       << " arguments";
@@ -212,7 +214,7 @@ void TapaFastCosimDevice::SetScalarArg(int index, const void* arg, int size) {
   scalars_[index] = ss.str();
 }
 
-void TapaFastCosimDevice::SetBufferArg(int index, Tag tag,
+void TapaFastCosimDevice::SetBufferArg(size_t index, Tag tag,
                                        const BufferArg& arg) {
   LOG_IF(FATAL, index >= args_.size())
       << "Cannot set argument #" << index << "; there are only " << args_.size()
@@ -229,11 +231,11 @@ void TapaFastCosimDevice::SetBufferArg(int index, Tag tag,
   }
 }
 
-void TapaFastCosimDevice::SetStreamArg(int index, Tag tag, StreamArg& arg) {
+void TapaFastCosimDevice::SetStreamArg(size_t index, Tag tag, StreamArg& arg) {
   stream_table_[index] = arg.get<std::shared_ptr<SharedMemoryStream>>();
 }
 
-size_t TapaFastCosimDevice::SuspendBuffer(int index) {
+size_t TapaFastCosimDevice::SuspendBuffer(size_t index) {
   return load_indices_.erase(index) + store_indices_.erase(index);
 }
 

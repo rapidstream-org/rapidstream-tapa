@@ -34,7 +34,7 @@ void Mmap2Stream(tapa::mmap<const float> mmap, uint64_t n,
 
 void Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,
                  uint64_t n) {
-  int i = 0;
+  uint64_t i = 0;
   bool eot;
   while (1) {
     if (stream.try_eot(eot)) {

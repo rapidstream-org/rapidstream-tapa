@@ -26,9 +26,9 @@ namespace internal {
 
 class OpenclDevice : public Device {
  public:
-  void SetScalarArg(int index, const void* arg, int size) override;
-  void SetBufferArg(int index, Tag tag, const BufferArg& arg) override;
-  size_t SuspendBuffer(int index) override;
+  void SetScalarArg(size_t index, const void* arg, int size) override;
+  void SetBufferArg(size_t index, Tag tag, const BufferArg& arg) override;
+  size_t SuspendBuffer(size_t index) override;
 
   void Exec() override;
   void Finish() override;
@@ -47,12 +47,12 @@ class OpenclDevice : public Device {
                   const OpenclDeviceMatcher& device_matcher,
                   const std::vector<std::string>& kernel_names,
                   const std::vector<int>& kernel_arg_counts);
-  virtual cl::Buffer CreateBuffer(int index, cl_mem_flags flags, void* host_ptr,
-                                  size_t size);
+  virtual cl::Buffer CreateBuffer(size_t index, cl_mem_flags flags,
+                                  void* host_ptr, size_t size);
 
   std::vector<cl::Memory> GetLoadBuffers() const;
   std::vector<cl::Memory> GetStoreBuffers() const;
-  std::pair<int, cl::Kernel> GetKernel(int index) const;
+  std::pair<int, cl::Kernel> GetKernel(size_t index) const;
 
   cl::Device device_;
   cl::Context context_;

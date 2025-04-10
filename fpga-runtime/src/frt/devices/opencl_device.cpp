@@ -55,12 +55,12 @@ int64_t Latest(const std::vector<cl::Event>& events,
 
 }  // namespace
 
-void OpenclDevice::SetScalarArg(int index, const void* arg, int size) {
+void OpenclDevice::SetScalarArg(size_t index, const void* arg, int size) {
   auto pair = GetKernel(index);
   pair.second.setArg(pair.first, size, arg);
 }
 
-void OpenclDevice::SetBufferArg(int index, Tag tag, const BufferArg& arg) {
+void OpenclDevice::SetBufferArg(size_t index, Tag tag, const BufferArg& arg) {
   cl_mem_flags flags = 0;
   switch (tag) {
     case Tag::kPlaceHolder:
@@ -86,7 +86,7 @@ void OpenclDevice::SetBufferArg(int index, Tag tag, const BufferArg& arg) {
   pair.second.setArg(pair.first, buffer);
 }
 
-size_t OpenclDevice::SuspendBuffer(int index) {
+size_t OpenclDevice::SuspendBuffer(size_t index) {
   return load_indices_.erase(index) + store_indices_.erase(index);
 }
 
@@ -191,7 +191,7 @@ void OpenclDevice::Initialize(const cl::Program::Binaries& binaries,
           }
           CL_CHECK(err);
           CL_CHECK(program_.build());
-          for (int i = 0; i < kernel_names.size(); ++i) {
+          for (size_t i = 0; i < kernel_names.size(); ++i) {
             kernels_[kernel_arg_counts[i]] =
                 cl::Kernel(program_, kernel_names[i].c_str(), &err);
             CL_CHECK(err);
@@ -206,7 +206,7 @@ void OpenclDevice::Initialize(const cl::Program::Binaries& binaries,
   LOG(FATAL) << "Target platform '" + vendor_name + "' not found";
 }
 
-cl::Buffer OpenclDevice::CreateBuffer(int index, cl_mem_flags flags,
+cl::Buffer OpenclDevice::CreateBuffer(size_t index, cl_mem_flags flags,
                                       void* host_ptr, size_t size) {
   cl_int err;
   auto buffer = cl::Buffer(context_, flags, size, host_ptr, &err);
@@ -233,7 +233,7 @@ std::vector<cl::Memory> OpenclDevice::GetStoreBuffers() const {
   return buffers;
 }
 
-std::pair<int, cl::Kernel> OpenclDevice::GetKernel(int index) const {
+std::pair<int, cl::Kernel> OpenclDevice::GetKernel(size_t index) const {
   auto it = std::prev(kernels_.upper_bound(index));
   return {index - it->first, it->second};
 }

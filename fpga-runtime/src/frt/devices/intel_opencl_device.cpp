@@ -146,7 +146,7 @@ std::unique_ptr<Device> IntelOpenclDevice::New(
   return std::make_unique<IntelOpenclDevice>(binaries);
 }
 
-void IntelOpenclDevice::SetStreamArg(int index, Tag tag, StreamArg& arg) {
+void IntelOpenclDevice::SetStreamArg(size_t index, Tag tag, StreamArg& arg) {
   LOG(FATAL) << "Intel OpenCL device does not support streaming";
 };
 
@@ -176,7 +176,7 @@ void IntelOpenclDevice::ReadFromDevice() {
   }
 }
 
-cl::Buffer IntelOpenclDevice::CreateBuffer(int index, cl_mem_flags flags,
+cl::Buffer IntelOpenclDevice::CreateBuffer(size_t index, cl_mem_flags flags,
                                            void* host_ptr, size_t size) {
   flags |= /* CL_MEM_HETEROGENEOUS_INTELFPGA = */ 1 << 19;
   host_ptr_table_[index] = host_ptr;

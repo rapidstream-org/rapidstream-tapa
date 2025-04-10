@@ -22,9 +22,9 @@ int main(int argc, char* argv[]) {
   const uint64_t flags = argc > 2 ? atoll(argv[2]) : 6LL;
 
   vector<float> chan[kBankCount];
-  for (int64_t i = 0; i < kBankCount; ++i) {
+  for (uint64_t i = 0; i < kBankCount; ++i) {
     chan[i].resize(n * Elem::length);
-    for (int64_t j = 0; j < n * Elem::length; ++j) {
+    for (uint64_t j = 0; j < n * Elem::length; ++j) {
       chan[i][j] = i ^ j;
     }
   }
@@ -38,8 +38,8 @@ int main(int argc, char* argv[]) {
 
   int64_t num_errors = 0;
   const int64_t threshold = 10;  // only report up to these errors
-  for (int64_t i = 0; i < kBankCount; ++i) {
-    for (int64_t j = 0; j < n * Elem::length; ++j) {
+  for (uint64_t i = 0; i < kBankCount; ++i) {
+    for (uint64_t j = 0; j < n * Elem::length; ++j) {
       int64_t expected = i ^ j;
       int64_t actual = chan[i][j];
       if (actual != expected) {

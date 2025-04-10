@@ -110,11 +110,11 @@ int SharedMemoryQueue::CreateFile(std::string& path, int32_t depth,
   return rc;
 }
 
-int64_t SharedMemoryQueue::size() const { return head_ - tail_; }
+size_t SharedMemoryQueue::size() const { return head_ - tail_; }
 
-int64_t SharedMemoryQueue::capacity() const { return depth_; }
+size_t SharedMemoryQueue::capacity() const { return depth_; }
 
-int64_t SharedMemoryQueue::width() const { return width_; }
+size_t SharedMemoryQueue::width() const { return width_; }
 
 bool SharedMemoryQueue::empty() const { return size() <= 0; }
 
@@ -125,7 +125,7 @@ std::string SharedMemoryQueue::front() const {
 }
 
 std::string SharedMemoryQueue::pop() {
-  CHECK_GT(size(), 0) << "pop called on an empty queue";
+  CHECK_GT(size(), 0U) << "pop called on an empty queue";
   std::string val = front();
   ++tail_;
   return val;

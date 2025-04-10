@@ -286,7 +286,7 @@ void Visitor::ProcessTaskPorts(const FunctionDecl* func,
         IsTapaType(param, "ommap")) {
       add_mmap_meta(param_name);
     } else if (IsTapaType(param, "mmaps")) {
-      for (int i = 0; i < GetArraySize(param); ++i) {
+      for (size_t i = 0; i < GetArraySize(param); ++i) {
         add_mmap_meta(param_name + "[" + to_string(i) + "]");
       }
     } else if (IsTapaType(param, "hmap")) {
@@ -347,7 +347,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
           const auto args = decl->getTemplateArgs().asArray();
           const string elem_type = GetTemplateArgName(args[0]);
           const uint64_t fifo_depth = *args[2].getAsIntegral().getRawData();
-          for (int i = 0; i < GetArraySize(decl); ++i) {
+          for (size_t i = 0; i < GetArraySize(decl); ++i) {
             const string var_name = ArrayNameAt(var_decl->getNameAsString(), i);
             metadata["fifos"][var_name]["depth"] = fifo_depth;
             fifo_decls[var_name] = var_decl;
@@ -403,7 +403,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
         const auto ts_args = ts_type->template_arguments();
         assert(ts_args.size() > 1);
         const auto length = this->EvalAsInt(ts_args[1].getAsExpr());
-        if (i >= length) {
+        if (length < 0 || i >= size_t(length)) {
           auto& diagnostics = context_.getDiagnostics();
           static const auto diagnostic_id =
               diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Remark,
@@ -572,7 +572,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
               register_arg(arg);
             } else if (IsTapaType(param, "istreams")) {
               param_cat = "istream";
-              for (int i = 0; i < GetArraySize(param); ++i) {
+              for (size_t i = 0; i < GetArraySize(param); ++i) {
                 auto arg = get_name(arg_name, istreams_access_pos[arg_name]++,
                                     decl_ref);
                 register_consumer(arg);
@@ -580,7 +580,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
               }
             } else if (IsTapaType(param, "ostreams")) {
               param_cat = "ostream";
-              for (int i = 0; i < GetArraySize(param); ++i) {
+              for (size_t i = 0; i < GetArraySize(param); ++i) {
                 auto arg = get_name(arg_name, ostreams_access_pos[arg_name]++,
                                     decl_ref);
                 register_producer(arg);

@@ -23,12 +23,12 @@ class IntelOpenclDevice : public OpenclDevice {
 
   static std::unique_ptr<Device> New(const cl::Program::Binaries& binaries);
 
-  void SetStreamArg(int index, Tag tag, StreamArg& arg) override;
+  void SetStreamArg(size_t index, Tag tag, StreamArg& arg) override;
   void WriteToDevice() override;
   void ReadFromDevice() override;
 
  private:
-  cl::Buffer CreateBuffer(int index, cl_mem_flags flags, void* host_ptr,
+  cl::Buffer CreateBuffer(size_t index, cl_mem_flags flags, void* host_ptr,
                           size_t size) override;
 
   std::unordered_map<int, void*> host_ptr_table_;

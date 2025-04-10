@@ -36,10 +36,10 @@ class TapaFastCosimDevice : public Device {
   void LoadArgsFromKernelXml();
   void LoadArgsFromTapaYaml();
 
-  void SetScalarArg(int index, const void* arg, int size) override;
-  void SetBufferArg(int index, Tag tag, const BufferArg& arg) override;
-  void SetStreamArg(int index, Tag tag, StreamArg& arg) override;
-  size_t SuspendBuffer(int index) override;
+  void SetScalarArg(size_t index, const void* arg, int size) override;
+  void SetBufferArg(size_t index, Tag tag, const BufferArg& arg) override;
+  void SetStreamArg(size_t index, Tag tag, StreamArg& arg) override;
+  size_t SuspendBuffer(size_t index) override;
 
   void WriteToDevice() override;
   void ReadFromDevice() override;

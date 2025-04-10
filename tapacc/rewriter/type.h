@@ -73,7 +73,7 @@ inline uint64_t GetArraySize(Args... args) {
   return GetIntegralTemplateArg<1>(std::forward<Args>(args)...);
 }
 
-const clang::TemplateArgument* GetTemplateArg(clang::QualType type, int idx);
+const clang::TemplateArgument* GetTemplateArg(clang::QualType type, size_t idx);
 
 inline std::string GetTemplateArgName(const clang::TemplateArgument& arg) {
   std::string name;
