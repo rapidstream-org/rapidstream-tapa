@@ -1,7 +1,10 @@
+build --copt=-Wall
+build --copt=-Wextra
+build --copt=-Werror
 build --copt=-Wno-attributes
 build --copt=-Wno-unknown-pragmas
 build --copt=-Wno-unused-label
-build --copt=-Werror
+build --copt=-Wno-unused-parameter
 build --incompatible_autoload_externally=+@rules_python,+@rules_shell
 build --incompatible_default_to_explicit_init_py # Don't overwrite __init__.py files
 build --incompatible_strict_action_env
