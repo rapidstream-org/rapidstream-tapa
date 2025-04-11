@@ -78,7 +78,9 @@ runs:
       with:
         image: rapidstream/cloudflare:local
         run: |
-          cd tapa-visualizer
+          rm -rf /tmp/.npm
+          cp -r tapa-visualizer /tmp/tapa-visualizer
+          cd /tmp/tapa-visualizer
           npm i --save=false
           npm run build
           retry -- wrangler pages deploy ./dist/ \

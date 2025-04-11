@@ -9,9 +9,6 @@ FROM node:23.11.0-bookworm
 # Setup environment
 ENV HOME=/tmp
 
-# Install Cloudflare Wrangler
-RUN npm install -g wrangler@4.9.1
-
 # Install retry
 RUN apt-get update && \
     apt-get upgrade -y --auto-remove && \
@@ -19,5 +16,8 @@ RUN apt-get update && \
         retry && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Cloudflare Wrangler
+RUN npm install -g wrangler@4.9.1
+
 # Clear the cache to avoid permission issues for GitHub Actions users
-RUN rm -rf /tmp/*
+RUN rm -rf /tmp/.npm
