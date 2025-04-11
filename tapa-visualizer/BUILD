@@ -41,6 +41,7 @@ webpack_bundle(
     entry_point = ENTRY,
     node_modules = ":node_modules",
     output_dir = True,
+    visibility = ["//visibility:public"],
     webpack_config = WEBPACK_CONFIG,
     deps = NODE_MODULES,
 )

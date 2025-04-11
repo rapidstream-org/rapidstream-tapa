@@ -13,7 +13,7 @@ inputs:
   dockerfile:
     description: "Path to the dockerfile to build"
     required: false
-    default: "./.github/docker/build-env/Dockerfile"
+    default: "./.github/docker/build-env/Dockerfile.binary"
   context:
     description: "Path to the build context"
     required: false

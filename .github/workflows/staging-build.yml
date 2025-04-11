@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tapa
-          path: ${{ github.workspace }}/artifacts.out/tapa.tar.gz
+          path: ${{ github.workspace }}/artifacts.out/*.tar.gz
           retention-days: 7
 
   test-staging:

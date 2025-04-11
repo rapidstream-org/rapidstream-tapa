@@ -22,6 +22,11 @@ pkg_tar(
     allow_duplicates_with_different_content = False,
 )
 
+pkg_tar(
+    name = "tapa-visualizer-tar",
+    srcs = ["//tapa-visualizer"],
+)
+
 # Usage: `bazel run :refresh_compile_commands`
 refresh_compile_commands(
     name = "refresh_compile_commands",

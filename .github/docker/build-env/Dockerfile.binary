@@ -10,7 +10,7 @@ ARG DOCKER_USER_ID
 ARG DOCKER_GROUP_ID
 
 # Install system dependencies
-INCLUDE+ Dockerfile.Dependencies
+INCLUDE+ Dockerfile.binary-dependencies
 
 # Clean up
 RUN rm -rf /tmp/* /var/tmp/*

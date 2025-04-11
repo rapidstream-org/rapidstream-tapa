@@ -73,17 +73,14 @@ runs:
           -e CLOUDFLARE_API_TOKEN=${{ inputs.cloudflareToken }}
           -e CLOUDFLARE_ACCOUNT_ID=${{ inputs.cloudflareAccountID }}
 
-    - name: Build & publish the GUI to Cloudflare Pages
+    - name: Publish the GUI to Cloudflare Pages
       uses: ./.github/actions/run-docker
       with:
         image: rapidstream/cloudflare:local
         run: |
-          rm -rf /tmp/.npm
-          cp -r tapa-visualizer /tmp/tapa-visualizer
-          cd /tmp/tapa-visualizer
-          npm i --save=false
-          npm run build
-          retry -- wrangler pages deploy ./dist/ \
+          cp /workspace/artifacts.out/tapa-visualizer.tar.gz /tmp/tapa-visualizer.tar.gz
+          tar -xzf /tmp/tapa-visualizer.tar.gz -C /tmp
+          retry -- wrangler pages deploy /tmp/tapa-visualizer \
             --project-name ${{ inputs.cloudflarePagesProjectNameGui }}
         dockerOptions: >-
           -e CLOUDFLARE_API_TOKEN=${{ inputs.cloudflareToken }}

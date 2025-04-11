@@ -8,7 +8,7 @@ description: "Build the release distributions for the TAPA using Bazel"
 runs:
   using: "composite"
   steps:
-    - name: Run bazel
+    - name: Run bazel for the software release
       uses: ./.github/actions/run-command
       with:
         run: |
@@ -16,3 +16,13 @@ runs:
           bazel build --config=release //:tapa-pkg-tar
           cp -L bazel-bin/tapa-pkg-tar.tar /workspace/artifacts.out/tapa.tar
           gzip /workspace/artifacts.out/tapa.tar
+
+    - name: Run bazel for the visualizer release
+      uses: ./.github/actions/run-command
+      with:
+        run: |
+          bazel build --config=release //:tapa-visualizer-tar
+          cp -L bazel-bin/tapa-visualizer-tar.tar /workspace/artifacts.out/tapa-visualizer.tar
+          gzip /workspace/artifacts.out/tapa-visualizer.tar
+        imageTag: rapidstream/tapa-visualizer-buildenv:local
+        dockerfile: ./.github/docker/build-env/Dockerfile.visualizer
