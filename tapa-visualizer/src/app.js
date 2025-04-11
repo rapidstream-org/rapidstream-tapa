@@ -6,7 +6,12 @@
 
 "use strict";
 
-import { antvDagre, dagre, forceAtlas2, graphOptions } from "./graph-options.js";
+import { Graph, DragCanvas } from "@antv/g6";
+import { createIcons, icons } from 'lucide';
+
+createIcons({icons});
+
+import { antvDagre, dagre, forceAtlas2, graphOptions } from "./graph-config.js";
 import {
   resetInstance,
   resetSidebar,
@@ -16,7 +21,9 @@ import {
   updateSidebarForNode,
 } from "./sidebar.js";
 import { getComboId } from "./helper.js";
-import { getGraphData } from "./praser.js";
+import { getGraphData } from "./parser.js";
+
+import "../css/style.css";
 
 /** Used in "Save Image" button
  * @type {string | undefined} */
@@ -279,6 +286,32 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
 // G6.Graph()
 
 (() => {
+	const sidebar = document.querySelector("aside");
+	/** @type { HTMLButtonElement | null } */
+	const toggleSidebar = document.querySelector(".btn-toggleSidebar");
+	if (sidebar && toggleSidebar) {
+		// FIXME: expand main after hide sidebar
+		toggleSidebar.addEventListener("click", () => {
+			const newValue = sidebar.style.display !== "none" ? "none" : null;
+			sidebar.style.setProperty("display", newValue);
+		});
+		toggleSidebar.disabled = false;
+	}
+
+	const dialog = document.querySelector("dialog");
+	if (dialog) {
+		const closeBtn = dialog.querySelector(":scope .btn-close");
+		closeBtn?.addEventListener("click", () => dialog.close());
+
+		const code = dialog.querySelector(":scope > pre > code");
+		if (code) {
+			const copyBtn = dialog.querySelector(":scope .btn-copy");
+			copyBtn?.addEventListener(
+				"click",
+				() => void navigator.clipboard.writeText(code.textContent)
+			);
+		}
+	}
 
   /** @type {((states: Record<string, string[]>) => Record<string, string[]>)} */
   const showSelectedNodes = states => {
@@ -289,7 +322,7 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
   }
 
   // https://g6.antv.antgroup.com/api/graph/option
-  const graph = new G6.Graph({
+  const graph = new Graph({
     ...graphOptions,
 
     layout: getLayout(),
@@ -307,7 +340,7 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
           if (event.ctrlKey || event.shiftKey) {
             return false;
           } else {
-            const defaultEnable = G6.DragCanvas.defaultOptions.enable;
+            const defaultEnable = DragCanvas.defaultOptions.enable;
             return typeof defaultEnable === "function"
               ? defaultEnable(event)
               : true;

@@ -1,295 +1,243 @@
 <!DOCTYPE html>
-
 <!--
 Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 -->
-
-<!-- Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as
-part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide
-Contributors 2022. -->
-
 <html lang="en">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>TAPA Visualizer</title>
-
-<link rel="icon" href="https://rapidstream-da.com/favicon.ico"/>
-<link rel="author" href="https://rapidstream-da.com/"/>
-<meta name="author" content="RapidStream Design Automation, Inc."/>
-<meta name="description" content="Visualize TAPA task structures. Easily overview and inspect your TAPA design." />
-<meta name="source" content="Visualize TAPA task structures. Easily overview and inspect your TAPA design." />
-
-<script src="https://unpkg.com/@antv/g6@5.0.44/dist/g6.min.js"></script>
-
-<link rel="stylesheet" href="./css/style.css">
-<style>
-/* basic layout & reset */
-html, body, .graph-container { height: 100%; }
-body {
-	margin: 0;
-	display: grid;
-	grid-template: auto 1fr / minmax(min(42em, 100%), auto) auto 1fr;
-}
-body > header,
-body > header .flex { display: flex; }
-body > aside { display: contents; }
-body > header {
-	grid-column: 1 / -1;
-	border-bottom: 1px solid #BEBEBE;
-}
-.sidebar-tabs {
-	border-left: 1px solid #BEBEBE;
-	border-right: 1px solid #BEBEBE;
-}
-
-:root { font-family: system-ui, sans-serif; line-height: 1.368; }
-.lucide { width: 1rem; height: 1rem; }
-</style>
-
-<header>
-
-	<div class="file flex">
-		<input class="fileInput" type="file" accept=".json,application/json">
-		<button class="btn btn-clearGraph" disabled="">
-			<svg use="x"></svg>
-			<span class="btn-text">Clear Graph</span>
-		</button>
-	</div>
-
-	<div class="tools flex">
-
-		<form class="grouping flex">
-			<label class="btn" tabindex="0">
-				<input type="radio" name="grouping" value="merge" hidden checked>
-				<svg use="square-square"></svg>
-				<span class="btn-text">Merge Sub-task</span>
-			</label>
-			<label class="btn" tabindex="0">
-				<input type="radio" name="grouping" value="separate" hidden>
-				<svg use="network"></svg>
-				<span class="btn-text">Separate Sub-task</span>
-			</label>
-		</form>
-
-		<hr>
-
-		<button class="btn btn-rerenderGraph" disabled="">
-			<svg use="refresh-cw"></svg>
-			<span class="btn-text">Rerender Graph</span>
-		</button>
-		<button class="btn btn-fitCenter" disabled="">
-			<svg use="fullscreen"></svg>
-			<span class="btn-text">Fit Center</span>
-		</button>
-		<button class="btn btn-fitView" disabled="">
-			<svg use="expand"></svg>
-			<span class="btn-text">Fit View</span>
-		</button>
-
-		<button class="btn btn-saveImage" disabled="">
-			<svg use="image-down"></svg>
-			<span class="btn-text">Save Image</span>
-		</button>
-		<hr>
-
-		<button class="btn btn-toggleSidebar" disabled="">
-			<svg use="panel-right"></svg>
-			<span class="btn-text">Toggle Sidebar</span>
-		</button>
-
-	</div>
-
-</header>
-
-<main>
-	<div class="graph-container"></div>
-</main>
-
-<aside>
-
-<div class="sidebar-tabs">
-
-	<label class="btn btn-explorer" tabindex="0">
-		<input type="radio" name="sidebar" value="explorer" hidden>
-		<svg use="list-tree"></svg>
-		<span class="btn-text">Explorer</span>
-	</label>
-
-	<label class="btn btn-details" tabindex="0">
-		<input type="radio" name="sidebar" value="details" hidden checked>
-		<svg use="info"></svg>
-		<span class="btn-text">Details</span>
-	</label>
-
-	<label class="btn btn-connections" tabindex="0">
-		<input type="radio" name="sidebar" value="connections" hidden>
-		<svg use="waypoints"></svg>
-		<span class="btn-text">Connections</span>
-	</label>
-
-	<label class="btn btn-options" tabindex="0">
-		<input type="radio" name="sidebar" value="options" hidden>
-		<svg use="settings-2"></svg>
-		<span class="btn-text">Options</span>
-	</label>
-
-</div>
-
-<div class="sidebar-contents">
-
-	<section class="explorer">
-		<div class="summary">Explorer</div>
-		<div class="sidebar-content-explorer">
-			<p>Please load the graph.</p>
-		</div>
-	</section>
-
-	<section class="details">
-		<!-- TODO: add a "Task" block for task infomations -->
-		<details class="instance" open="">
-			<summary>
-				<svg use="layout-list"></svg>
-				Instance
-				<svg use="chevron-down"></svg>
-			</summary>
-			<div class="sidebar-content-instance">
-				<p>Loading...</p>
-			</div>
-		</details>
-		<details class="task" open="">
-			<summary>
-				<svg use="scroll-text"></svg>
-				Task
-				<svg use="chevron-down"></svg>
-			</summary>
-			<div class="sidebar-content-task">
-				<p>Please select a node or combo.</p>
-			</div>
-		</details>
-	</section>
-
-	<section class="connections">
-
-		<details class="neighbors" open="">
-			<summary>
-				<svg use="workflow"></svg>
-				Neighbors
-				<svg use="chevron-down"></svg>
-			</summary>
-			<div class="sidebar-content-neighbors">
-				<p>Please select a node.</p>
-			</div>
-		</details>
-
-		<details class="connections" open="">
-			<summary>
-				<svg use="cable"></svg>
-				Connections
-				<svg use="chevron-down"></svg>
-			</summary>
-			<div class="sidebar-content-connections">
-				<p>Please select a node.</p>
-			</div>
-		</details>
-
-	</section>
-
-	<section class="options">
-		<div class="summary">Options</div>
-		<form class="sidebar-content-options">
-
-			<p>Layout Options</p>
-			<fieldset>
-				<legend>Layout algorithm:</legend>
-				<label><input type="radio" name="layout" value="force-atlas2" checked> ForceAtlas2</label>
-				<label><input type="radio" name="layout" value="antv-dagre"> AntvDagre</label>
-				<label><input type="radio" name="layout" value="dagre"> Dagre</label>
-			</fieldset>
-			<p>Graph Options</p>
-			<!--
-			<fieldset>
-				<legend>Color scheme: TODO</legend>
-			</fieldset>
-			-->
-			<fieldset class="only-one-combo">
-				<legend>Expand other upper tasks:</legend>
-				<label><input type="radio" name="expand" value="false"> Collapse</label>
-				<label><input type="radio" name="expand" value="true" checked> Expand</label>
-				<p class="hint">The graph can be buggy when Collapse is selected.
-					See <a href="https://github.com/antvis/G6/issues/6723">this AntV G6 bug</a>.</p>
-				<p class="hint">Top task will always expand by default.</p>
-				<p class="hint only-one-combo">Current graph has no other upper tasks than top task.</p>
-			</fieldset>
-			<fieldset>
-				<legend>Show connection ports:</legend>
-				<label><input type="radio" name="port" value="false" checked> Hide</label>
-				<label><input type="radio" name="port" value="true"> Show</label>
-			</fieldset>
-			<p>Save Image Options</p>
-			<p>TODO</p>
-			<fieldset disabled>
-				<legend>Image file type:</legend>
-				<label><input type="radio" name="type" value="png" checked> PNG</label>
-				<label><input type="radio" name="type" value="jpeg"> JPEG</label>
-				<label><input type="radio" name="type" value="webp"> WebP</label>
-			</fieldset>
-			<fieldset disabled>
-				<legend>Image quality:</legend>
-				<label><input type="checkbox" name="quality" value="webp"> Use default</label><br>
-				<label style="display: block; margin: .25rem .25rem 0;">
-					Quality: <input type="range" name="quality" min="0" max="1" step="0.05"
-					style="vertical-align: bottom; margin: 0 .5ch;" />
-				</label>
-			</fieldset>
-		</form>
-	</section>
-
-</div>
-
-</aside>
-
-<dialog>
-	<header>
-		<h2>C++ Code</h2>
-		<button class="btn-copy">Copy</button>
-		<button class="btn-close" autofocus>Close</button>
-	</header>
-	<pre><code class="language-cpp line-numbers"></code></pre>
-</dialog>
-
-<script>
-// Inline scripts aren't covered by ESlint & TypeScript, be careful
-(() => {
-	const sidebar = document.querySelector("aside");
-	/** @type { HTMLButtonElement | null } */
-	const toggleSidebar = document.querySelector(".btn-toggleSidebar");
-	if (sidebar && toggleSidebar) {
-		// FIXME: expand main after hide sidebar
-		toggleSidebar.addEventListener("click", () => {
-			const newValue = sidebar.style.display !== "none" ? "none" : null;
-			sidebar.style.setProperty("display", newValue);
-		});
-		toggleSidebar.disabled = false;
-	}
-
-	const dialog = document.querySelector("dialog");
-	if (dialog) {
-		const closeBtn = dialog.querySelector(":scope .btn-close");
-		closeBtn?.addEventListener("click", () => dialog.close());
-
-		const code = dialog.querySelector(":scope > pre > code");
-		if (code) {
-			const copyBtn = dialog.querySelector(":scope .btn-copy");
-			copyBtn?.addEventListener(
-				"click",
-				() => void navigator.clipboard.writeText(code.textContent)
-			);
-		}
-	}
-})();
-</script>
-<script type="module" src="./js/graph.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TAPA Visualizer</title>
+    <link rel="icon" href="https://rapidstream-da.com/favicon.ico" />
+    <link rel="author" href="https://rapidstream-da.com/" />
+    <meta name="author" content="RapidStream Design Automation, Inc." />
+    <meta name="description"
+          content="Visualize TAPA task structures. Easily overview and inspect your TAPA design." />
+    <meta name="source"
+          content="Visualize TAPA task structures. Easily overview and inspect your TAPA design." />
+    <header>
+        <div class="file flex">
+            <input class="fileInput" type="file" accept=".json,application/json">
+            <button class="btn btn-clearGraph" disabled="">
+                <i data-lucide="x"></i>
+                <span class="btn-text">Clear Graph</span>
+            </button>
+        </div>
+        <div class="tools flex">
+            <form class="grouping flex">
+                <label class="btn" tabindex="0">
+                    <input type="radio" name="grouping" value="merge" hidden checked>
+                    <i data-lucide="square-square"></i>
+                    <span class="btn-text">Merge Sub-task</span>
+                </label>
+                <label class="btn" tabindex="0">
+                    <input type="radio" name="grouping" value="separate" hidden>
+                    <i data-lucide="network"></i>
+                    <span class="btn-text">Separate Sub-task</span>
+                </label>
+            </form>
+            <hr>
+            <button class="btn btn-rerenderGraph" disabled="">
+                <i data-lucide="refresh-cw"></i>
+                <span class="btn-text">Rerender Graph</span>
+            </button>
+            <button class="btn btn-fitCenter" disabled="">
+                <i data-lucide="fullscreen"></i>
+                <span class="btn-text">Fit Center</span>
+            </button>
+            <button class="btn btn-fitView" disabled="">
+                <i data-lucide="expand"></i>
+                <span class="btn-text">Fit View</span>
+            </button>
+            <button class="btn btn-saveImage" disabled="">
+                <i data-lucide="image-down"></i>
+                <span class="btn-text">Save Image</span>
+            </button>
+            <hr>
+            <button class="btn btn-toggleSidebar" disabled="">
+                <i data-lucide="panel-right"></i>
+                <span class="btn-text">Toggle Sidebar</span>
+            </button>
+        </div>
+    </header>
+    <main>
+        <div class="graph-container"></div>
+    </main>
+    <aside>
+        <div class="sidebar-tabs">
+            <label class="btn btn-explorer" tabindex="0">
+                <input type="radio" name="sidebar" value="explorer" hidden>
+                <i data-lucide="list-tree"></i>
+                <span class="btn-text">Explorer</span>
+            </label>
+            <label class="btn btn-details" tabindex="0">
+                <input type="radio" name="sidebar" value="details" hidden checked>
+                <i data-lucide="info"></i>
+                <span class="btn-text">Details</span>
+            </label>
+            <label class="btn btn-connections" tabindex="0">
+                <input type="radio" name="sidebar" value="connections" hidden>
+                <i data-lucide="waypoints"></i>
+                <span class="btn-text">Connections</span>
+            </label>
+            <label class="btn btn-options" tabindex="0">
+                <input type="radio" name="sidebar" value="options" hidden>
+                <i data-lucide="settings-2"></i>
+                <span class="btn-text">Options</span>
+            </label>
+        </div>
+        <div class="sidebar-contents">
+            <section class="explorer">
+                <div class="summary">Explorer</div>
+                <div class="sidebar-content-explorer">
+                    <p>Please load the graph.</p>
+                </div>
+            </section>
+            <section class="details">
+                <!-- TODO: add a "Task" block for task infomations -->
+                <details class="instance" open="">
+                    <summary>
+                        <i data-lucide="layout-list"></i>
+                        Instance
+                        <i data-lucide="chevron-down"></i>
+                    </summary>
+                    <div class="sidebar-content-instance">
+                        <p>Loading...</p>
+                    </div>
+                </details>
+                <details class="task" open="">
+                    <summary>
+                        <i data-lucide="scroll-text"></i>
+                        Task
+                        <i data-lucide="chevron-down"></i>
+                    </summary>
+                    <div class="sidebar-content-task">
+                        <p>Please select a node or combo.</p>
+                    </div>
+                </details>
+            </section>
+            <section class="connections">
+                <details class="neighbors" open="">
+                    <summary>
+                        <i data-lucide="workflow"></i>
+                        Neighbors
+                        <i data-lucide="chevron-down"></i>
+                    </summary>
+                    <div class="sidebar-content-neighbors">
+                        <p>Please select a node.</p>
+                    </div>
+                </details>
+                <details class="connections" open="">
+                    <summary>
+                        <i data-lucide="cable"></i>
+                        Connections
+                        <i data-lucide="chevron-down"></i>
+                    </summary>
+                    <div class="sidebar-content-connections">
+                        <p>Please select a node.</p>
+                    </div>
+                </details>
+            </section>
+            <section class="options">
+                <div class="summary">Options</div>
+                <form class="sidebar-content-options">
+                    <p>Layout Options</p>
+                    <fieldset>
+                        <legend>Layout algorithm:</legend>
+                        <label>
+                            <input type="radio" name="layout" value="force-atlas2" checked>
+                            ForceAtlas2
+                        </label>
+                        <label>
+                            <input type="radio" name="layout" value="antv-dagre">
+                            AntvDagre
+                        </label>
+                        <label>
+                            <input type="radio" name="layout" value="dagre">
+                            Dagre
+                        </label>
+                    </fieldset>
+                    <p>Graph Options</p>
+                    <!--
+										<fieldset>
+											<legend>Color scheme: TODO</legend>
+										</fieldset>
+										-->
+                    <fieldset class="only-one-combo">
+                        <legend>Expand other upper tasks:</legend>
+                        <label>
+                            <input type="radio" name="expand" value="false">
+                            Collapse
+                        </label>
+                        <label>
+                            <input type="radio" name="expand" value="true" checked>
+                            Expand
+                        </label>
+                        <p class="hint">
+                            The graph can be buggy when Collapse is selected.
+                            See <a href="https://github.com/antvis/G6/issues/6723">this AntV G6 bug</a>.
+                        </p>
+                        <p class="hint">Top task will always expand by default.</p>
+                        <p class="hint only-one-combo">Current graph has no other upper tasks than top task.</p>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Show connection ports:</legend>
+                        <label>
+                            <input type="radio" name="port" value="false" checked>
+                            Hide
+                        </label>
+                        <label>
+                            <input type="radio" name="port" value="true">
+                            Show
+                        </label>
+                    </fieldset>
+                    <!--
+                    <p>Save Image Options</p>
+                    <p>TODO</p>
+										-->
+                    <fieldset disabled>
+                        <legend>Image file type:</legend>
+                        <label>
+                            <input type="radio" name="type" value="png" checked>
+                            PNG
+                        </label>
+                        <label>
+                            <input type="radio" name="type" value="jpeg">
+                            JPEG
+                        </label>
+                        <label>
+                            <input type="radio" name="type" value="webp">
+                            WebP
+                        </label>
+                    </fieldset>
+                    <fieldset disabled>
+                        <legend>Image quality:</legend>
+                        <label>
+                            <input type="checkbox" name="quality" value="webp">
+                            Use default
+                        </label>
+                        <br>
+                        <label style="display: block; margin: .25rem .25rem 0;">
+                            Quality:
+                            <input type="range"
+                                   name="quality"
+                                   min="0"
+                                   max="1"
+                                   step="0.05"
+                                   style="vertical-align: bottom;
+                                          margin: 0 .5ch" />
+                        </label>
+                    </fieldset>
+                </form>
+            </section>
+        </div>
+    </aside>
+    <dialog>
+        <header>
+            <h2>C++ Code</h2>
+            <button class="btn-copy">Copy</button>
+            <button class="btn-close" autofocus>Close</button>
+        </header>
+        <pre><code class="language-cpp line-numbers"></code></pre>
+    </dialog>
 </html>

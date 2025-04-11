@@ -6,11 +6,16 @@
 
 .btn {
 	/* https://github.com/emilk/egui/blob/cf965aaa/crates/egui/src/style.rs#L1453 */
-	--btn-txt: #3C3C3C; /* rgb(60, 60, 60) */
-	--btn-bg: #E6E6E6; /* rgb(230, 230, 230) */
-	--btn-bg-hover: #DCDCDC; /* rgb(220, 220, 220) */
-	--btn-bg-active: #A5A5A5; /* rgb(165, 165, 165) */
-	--btn-bg-select: #90D1FF; /* rgb(144, 209, 255) */
+	--btn-txt: #3C3C3C;
+	/* rgb(60, 60, 60) */
+	--btn-bg: #E6E6E6;
+	/* rgb(230, 230, 230) */
+	--btn-bg-hover: #DCDCDC;
+	/* rgb(220, 220, 220) */
+	--btn-bg-active: #A5A5A5;
+	/* rgb(165, 165, 165) */
+	--btn-bg-select: #90D1FF;
+	/* rgb(144, 209, 255) */
 
 	position: relative;
 	box-sizing: border-box;
@@ -19,19 +24,24 @@
 	border-radius: 3px;
 	color: var(--btn-txt);
 	background-color: var(--btn-bg);
-	font-size: smaller; /* for non-<button> .btn element like <label> */
+	font-size: smaller;
+	/* for non-<button> .btn element like <label> */
 	cursor: pointer;
 }
 
-.btn:hover, .btn:focus {
+.btn:hover,
+.btn:focus {
 	background-color: var(--btn-bg-hover);
 }
+
 .btn:active {
 	background-color: var(--btn-bg-active);
 }
+
 .btn:has(:checked) {
 	background-color: var(--btn-bg-select);
 }
+
 .btn:disabled {
 	color: gray;
 	background-color: transparent;
@@ -40,7 +50,7 @@
 /* button text tooltip
 	set top / right / bottom / left to position the text tooltip;
 	Center .btn-text in the parent element, instead of translate(-50%) */
-.btn > .btn-text {
+.btn>.btn-text {
 	position: absolute;
 	z-index: 10;
 	padding: .5rem .4rem;
@@ -53,7 +63,7 @@
 /* triangle of the tooltip
 	set top / right / bottom / left to position triangle of the tooltip;
 	set transform: rotate(xxxdeg) to rotate the triangle. */
-.btn > .btn-text::before {
+.btn>.btn-text::before {
 	content: "";
 	position: absolute;
 	box-sizing: border-box;
@@ -64,25 +74,29 @@
 	border-color: currentColor transparent transparent currentColor;
 	background: linear-gradient(-45deg, transparent 33%, white 33%);
 }
+
 /* hide when not hover or focus */
-.btn:not(:hover):not(:focus) > .btn-text {
+.btn:not(:hover):not(:focus)>.btn-text {
 	display: none;
 }
+
 /* opacity when not hover, only focus */
-.btn:focus:not(:hover) > .btn-text {
+.btn:focus:not(:hover)>.btn-text {
 	opacity: .75;
 }
 
 /* btn in header */
-body > header .btn {
+body>header .btn {
 	display: inline-flex;
 	flex-direction: column;
 	align-items: center;
 }
-body > header .btn > .btn-text {
+
+body>header .btn>.btn-text {
 	top: 2rem;
 }
-body > header .btn > .btn-text::before {
+
+body>header .btn>.btn-text::before {
 	top: -4px;
 	left: calc(50% - 4px);
 	transform: rotate(45deg);
@@ -93,10 +107,12 @@ body > header .btn > .btn-text::before {
 	display: flex;
 	align-items: center;
 }
-.sidebar-tabs .btn > .btn-text {
+
+.sidebar-tabs .btn>.btn-text {
 	right: 2rem;
 }
-.sidebar-tabs .btn > .btn-text::before {
+
+.sidebar-tabs .btn>.btn-text::before {
 	top: calc(50% - 4px);
 	right: -4px;
 	transform: rotate(135deg);

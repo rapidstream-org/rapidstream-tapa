@@ -7,7 +7,7 @@
 "use strict";
 
 import { $, $text, append, getComboId, getComboName } from "./helper.js";
-import Prism from "virtual:prismjs";
+import Prism from './prism-config';
 
 // sidebar content container elements
 const sidebarContainers = [

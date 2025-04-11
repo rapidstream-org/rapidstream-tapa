@@ -7,62 +7,128 @@
 @import url("./button.css");
 @import url("./sidebar.css");
 
+/* basic layout & reset */
+html,
+body,
+.graph-container {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	display: grid;
+	grid-template: auto 1fr / minmax(min(42em, 100%), auto) auto 1fr;
+}
+
+body>header,
+body>header .flex {
+	display: flex;
+}
+
+body>aside {
+	display: contents;
+}
+
+body>header {
+	grid-column: 1 / -1;
+	border-bottom: 1px solid #BEBEBE;
+}
+
+.sidebar-tabs {
+	border-left: 1px solid #BEBEBE;
+	border-right: 1px solid #BEBEBE;
+}
+
+:root {
+	font-family: system-ui, sans-serif;
+	line-height: 1.368;
+}
+
+.lucide {
+	width: 1rem;
+	height: 1rem;
+}
+
+
 /* Ref: light theme of egui
 https://github.com/emilk/egui/blob/cf965aaa/crates/egui/src/style.rs#L1339 */
 :root {
-	--fg1: #3C3C3C; /* rgb(60, 60, 60) */
-	--fg2: #505050; /* rgb(80, 80, 80) */
-	--bg1: #FCFCFC; /* rgb(252, 252, 252) ≈ from_additive_luminance(5) */
-	--bg2: #F8F8F8; /* rgb(248, 248, 248) */
-	--border: #BEBEBE; /* rgb(190, 190, 190) */
-	--select: #90D1FF; /* rgb(144, 209, 255) */
-	--warn:   #FF6400; /* rgb(255, 100, 0) */
-	--error:  #FF0000; /* rgb(255, 0, 0) */
+	--fg1: #3C3C3C;
+	/* rgb(60, 60, 60) */
+	--fg2: #505050;
+	/* rgb(80, 80, 80) */
+	--bg1: #FCFCFC;
+	/* rgb(252, 252, 252) ≈ from_additive_luminance(5) */
+	--bg2: #F8F8F8;
+	/* rgb(248, 248, 248) */
+	--border: #BEBEBE;
+	/* rgb(190, 190, 190) */
+	--select: #90D1FF;
+	/* rgb(144, 209, 255) */
+	--warn: #FF6400;
+	/* rgb(255, 100, 0) */
+	--error: #FF0000;
+	/* rgb(255, 0, 0) */
 
 	color: var(--fg1);
 	background-color: var(--bg1);
 }
 
 :link {
-	color: #009BFF; /* rgb(0, 155, 255) */
+	color: #009BFF;
+	/* rgb(0, 155, 255) */
 }
+
 ::selection {
 	background-color: #90D1FF;
 }
 
-body > header,
+body>header,
 .sidebar-tabs,
-.sidebar-contents details > summary {
+.sidebar-contents details>summary {
 	color: var(--fg2);
 	background-color: var(--bg2);
 }
 
 /* header */
-body > header {
+body>header {
 	box-sizing: border-box;
 	min-height: 2rem;
 	padding: .1rem 1.5rem;
 }
 
 /* Don't wrap btn tooltip like "Toggle Sidebar" on wide screen */
-@media (min-width: 75rem) { /* 75rem * 16px = 1200px = xl in Bootstrap */
-	body > header { padding: .1rem 2.75rem; }
-	body > header .btn > .btn-text { white-space: pre; }
+@media (min-width: 75rem) {
+
+	/* 75rem * 16px = 1200px = xl in Bootstrap */
+	body>header {
+		padding: .1rem 2.75rem;
+	}
+
+	body>header .btn>.btn-text {
+		white-space: pre;
+	}
 }
 
-body > header,
-body > header .flex {
+body>header,
+body>header .flex {
 	display: flex;
 	align-items: center;
 	gap: .5rem;
 }
 
-body > header .tools { margin-left: auto; }
-body > header .tools hr { height: 1rem; margin: 0; }
+body>header .tools {
+	margin-left: auto;
+}
+
+body>header .tools hr {
+	height: 1rem;
+	margin: 0;
+}
 
 
 /* main */
-body > main {
+body>main {
 	width: 75vw;
 	min-width: 40vw;
 	max-width: 85vw;
@@ -70,7 +136,7 @@ body > main {
 	resize: horizontal;
 }
 
-body > main > .graph-container > .tooltip {
+body>main>.graph-container>.tooltip {
 	overflow-wrap: anywhere;
 }
 
@@ -98,16 +164,19 @@ dialog {
 	border-width: 1px;
 	margin: 1rem auto;
 }
-dialog > header {
+
+dialog>header {
 	display: flex;
 	gap: .5rem;
 }
-dialog > header > h2 {
+
+dialog>header>h2 {
 	margin-block: 0;
 	margin-inline-end: auto;
 }
-dialog > pre,
-dialog > pre[class*="language-"] {
+
+dialog>pre,
+dialog>pre[class*="language-"] {
 	max-height: calc(100vh - 12rem);
 	width: calc(100% - 4rem);
 	margin-left: -3px;

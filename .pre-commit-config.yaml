@@ -95,7 +95,7 @@ repos:
             RapidStream Contributor License Agreement.
           - --skip_pattern
           - "(?:\
-            LICENSE|VERSION|requirements_lock.txt|_redirects|\
+            LICENSE|VERSION|requirements_lock.txt|_redirects|pnpm-lock.yaml|\
             \\.(?:ico|json|v|sv|vhd|bin|tcl|rst|xci|xml|csv|rpt|bd|ini|ipynb|lock|gitignore|pptx|svg|in|td|txt|bazelrc|actrc)\
             )$"
           - --custom_format
