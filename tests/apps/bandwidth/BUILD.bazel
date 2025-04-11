@@ -75,6 +75,7 @@ cc_binary(
         "*.cpp",
         "*.h",
     ]),
+    visibility = ["//tests/functional:__subpackages__"],
     deps = [
         "//tapa-lib:tapa",
         "@gflags",

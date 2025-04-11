@@ -116,9 +116,11 @@ AIE_DEPTH = 64
 def gen_declarations(task: Task) -> tuple[list[str], list[str], list[str]]:
     """Generates kernel and port declarations."""
     port_decl = [
-        f"input_plio p_{port.name};"
-        if port.is_immap or port.is_istream
-        else f"output_plio p_{port.name};"
+        (
+            f"input_plio p_{port.name};"
+            if port.is_immap or port.is_istream
+            else f"output_plio p_{port.name};"
+        )
         for port in task.ports.values()
     ]
     kernel_decl = [
@@ -161,11 +163,13 @@ def gen_definitions(task: Task) -> tuple[list[str], ...]:
     ]
 
     port_def = [
-        f'p_{port.name} = input_plio::create("{port.name}",'
-        f' plio_{port.width}_bits, "{port.name}.txt");'
-        if port.is_immap or port.is_istream
-        else f'p_{port.name} = output_plio::create("{port.name}",'
-        f' plio_{port.width}_bits, "{port.name}.txt");'
+        (
+            f'p_{port.name} = input_plio::create("{port.name}",'
+            f' plio_{port.width}_bits, "{port.name}.txt");'
+            if port.is_immap or port.is_istream
+            else f'p_{port.name} = output_plio::create("{port.name}",'
+            f' plio_{port.width}_bits, "{port.name}.txt");'
+        )
         for port in task.ports.values()
     ]
     return (
@@ -1186,6 +1190,7 @@ int main(int argc, char ** argv)
                         instance.task.module.generate_istream_ports(
                             port=arg.port,
                             arg=arg.name,
+                            enable_peek=(not instance.name.startswith("SLOT")),
                             ignore_peek_fifos=ignore_peeks_fifos,
                         ),
                     )
