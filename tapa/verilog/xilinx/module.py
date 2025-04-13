@@ -161,16 +161,16 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 for idx, file in enumerate(files):
                     new_files.append(gen_trimmed_file(file, idx))
                 files = new_files
+            if Options.enable_pyslang:
+                self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
+                self._rewriter = PyslangRewriter(self._syntax_tree)
+                return
             codeparser = VerilogCodeParser(
                 files,
                 preprocess_output=os.path.join(output_dir, "preprocess.output"),
                 outputdir=output_dir,
                 debug=False,
             )
-            if Options.enable_pyslang:
-                self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
-                self._rewriter = PyslangRewriter(self._syntax_tree)
-                return
             self.ast: Source = codeparser.parse()
             self.directives: tuple[Directive, ...] = codeparser.get_directives()
         self._calculate_indices()
