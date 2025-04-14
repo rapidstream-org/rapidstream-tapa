@@ -127,6 +127,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                     f"module {name}(); endmodule",
                 )
                 self._rewriter = PyslangRewriter(self._syntax_tree)
+                self._parse_syntax_tree()
                 return
             self.ast = Source(
                 name,
@@ -164,6 +165,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             if Options.enable_pyslang:
                 self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
                 self._rewriter = PyslangRewriter(self._syntax_tree)
+                self._parse_syntax_tree()
                 return
             codeparser = VerilogCodeParser(
                 files,
@@ -198,6 +200,32 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             else:
                 last_idx = idx
 
+    def _parse_syntax_tree(self) -> None:
+        """Parse syntax tree and memorize relevant nodes.
+
+        The following attributes will be created/updated:
+
+        _module_decl: ModuleDeclarationSyntax
+        """
+
+        class Attrs(UniqueAttrs):
+            module_decl: pyslang.ModuleDeclarationSyntax
+
+        attrs = Attrs()
+
+        @functools.singledispatch
+        def visitor(_: object) -> pyslang.VisitAction:
+            return pyslang.VisitAction.Advance
+
+        @visitor.register
+        def _(node: pyslang.ModuleDeclarationSyntax) -> pyslang.VisitAction:
+            attrs.module_decl = node
+            return pyslang.VisitAction.Advance
+
+        self._syntax_tree.root.visit(visitor)
+
+        self._module_decl = attrs.module_decl
+
     @property
     def _module_def(self) -> ModuleDef:
         module_defs = [
@@ -211,20 +239,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     @property
     def name(self) -> str:
         if Options.enable_pyslang:
-            return self._name_pyslang
+            return self._module_decl.header.name.valueText
         return self._module_def.name
-
-    @property
-    def _name_pyslang(self) -> str:
-        attrs = UniqueAttrs()
-
-        def visitor(node: object) -> None:
-            if isinstance(node, pyslang.ModuleDeclarationSyntax):
-                attrs.module_def = node
-
-        self._syntax_tree.root.visit(visitor)
-        assert isinstance(attrs.module_def, pyslang.ModuleDeclarationSyntax)
-        return attrs.module_def.header.name.valueText
 
     @property
     def ports(self) -> dict[str, ioport.IOPort]:
@@ -536,6 +552,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             body_pieces,
         )
         self._syntax_tree = self._rewriter.commit()
+        self._parse_syntax_tree()
         return self
 
     def del_port(self, port_name: str) -> None:
@@ -631,6 +648,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._rewriter.remove(tokens[index_to_del].range)
 
         self._syntax_tree = self._rewriter.commit()
+        self._parse_syntax_tree()
 
     def add_comment_lines(self, lines: Iterable[str]) -> "Module":
         """Add comment lines after the module header.
@@ -663,6 +681,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         self._syntax_tree.root.visit(visitor)
         self._syntax_tree = self._rewriter.commit()
+        self._parse_syntax_tree()
         return self
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
@@ -736,6 +755,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         ]:
             self._rewriter.add_before(context.range.end, context.pieces)
         self._syntax_tree = self._rewriter.commit()
+        self._parse_syntax_tree()
 
         return self
 
@@ -781,6 +801,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         self._syntax_tree.root.visit(visitor)
         self._syntax_tree = self._rewriter.commit()
+        self._parse_syntax_tree()
 
     def add_params(self, params: Iterable[Parameter]) -> "Module":
         if Options.enable_pyslang:
@@ -877,6 +898,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         self._syntax_tree.root.visit(visitor)
         self._syntax_tree = self._rewriter.commit()
+        self._parse_syntax_tree()
 
     def del_instances(self, prefix: str = "", suffix: str = "") -> None:
         """Deletes instances with a matching *module* name."""
@@ -930,6 +952,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         self._syntax_tree.root.visit(visitor)
         self._syntax_tree = self._rewriter.commit()
+        self._parse_syntax_tree()
         return self
 
     def del_pragmas(self, pragma: Iterable[str]) -> None:
