@@ -15,9 +15,13 @@
 
 .sidebar-tabs:has(.btn-explorer > input:checked)+.sidebar-contents>.explorer,
 .sidebar-tabs:has(.btn-details > input:checked)+.sidebar-contents>.details,
-.sidebar-tabs:has(.btn-connections > input:checked)+.sidebar-contents>.connections,
-.sidebar-tabs:has(.btn-options > input:checked)+.sidebar-contents>.options {
+.sidebar-tabs:has(.btn-connections > input:checked)+.sidebar-contents>.connections {
 	display: block;
+}
+.sidebar-tabs:has(.btn-options > input:checked)+.sidebar-contents>.options {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
 }
 
 .sidebar-contents .summary,
@@ -170,8 +174,11 @@
 }
 
 .sidebar-content-options {
+	flex-grow: 1;
 	max-width: 24em;
 	padding: 1rem;
+	overflow: auto;
+	border-bottom: 1px solid #CCC;
 }
 
 .sidebar-content-options fieldset>legend {
