@@ -110,6 +110,7 @@ body>header .btn>.btn-text::before {
 
 .sidebar-tabs .btn>.btn-text {
 	right: 2rem;
+	white-space: nowrap;
 }
 
 .sidebar-tabs .btn>.btn-text::before {
