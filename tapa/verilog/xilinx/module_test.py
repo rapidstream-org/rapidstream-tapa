@@ -388,6 +388,7 @@ def test_add_params_succeeds() -> None:
 def test_del_params_succeeds() -> None:
     module = Module(name="foo")
     module.add_params([ast.Parameter("bar", ast.Constant(0))])
+    module.code  # TODO: support deleting added params
 
     module.del_params(prefix="bar")
 

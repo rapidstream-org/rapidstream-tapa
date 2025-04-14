@@ -206,12 +206,21 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         The following attributes will be created/updated:
 
         _module_decl: ModuleDeclarationSyntax
+
+        _params: dict[str, Parameter]
+        _param_name_to_decl: dict[str, ParameterDeclarationSyntax]
+        _param_source_range: SourceRange
         """
 
         class Attrs(UniqueAttrs):
             module_decl: pyslang.ModuleDeclarationSyntax
 
         attrs = Attrs()
+
+        self._params: dict[str, Parameter] = {}
+        self._param_name_to_decl: dict[str, pyslang.ParameterDeclarationStatementSyntax]
+        self._param_name_to_decl = {}
+        self._param_source_range: pyslang.SourceRange
 
         @functools.singledispatch
         def visitor(_: object) -> pyslang.VisitAction:
@@ -220,7 +229,22 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         @visitor.register
         def _(node: pyslang.ModuleDeclarationSyntax) -> pyslang.VisitAction:
             attrs.module_decl = node
+            # Append after the header by default.
+            self._param_source_range = node.header.sourceRange
             return pyslang.VisitAction.Advance
+
+        @visitor.register
+        def _(node: pyslang.ParameterDeclarationStatementSyntax) -> pyslang.VisitAction:
+            assert isinstance(node.parameter, pyslang.ParameterDeclarationSyntax)
+            param = Parameter(
+                _get_name(node.parameter),
+                Constant(str(node.parameter.declarators[0].initializer.expr).strip()),
+                _get_width(node.parameter.type),
+            )
+            self._params[param.name] = param
+            self._param_name_to_decl[param.name] = node
+            self._param_source_range = node.sourceRange
+            return pyslang.VisitAction.Skip
 
         self._syntax_tree.root.visit(visitor)
 
@@ -383,7 +407,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     @property
     def params(self) -> dict[str, Parameter]:
         if Options.enable_pyslang:
-            return self._params_pyslang
+            return self._params
         param_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
         return {
             x.name: x
@@ -392,26 +416,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         }
 
     @property
-    def _params_pyslang(self) -> dict[str, Parameter]:
-        params = {}
-
-        def visitor(node: object) -> pyslang.VisitAction:
-            if isinstance(node, pyslang.ParameterDeclarationSyntax):
-                param = Parameter(
-                    _get_name(node),
-                    Constant(str(node.declarators[0].initializer.expr).strip()),
-                    _get_width(node.type),
-                )
-                params[param.name] = param
-                return pyslang.VisitAction.Skip
-            return pyslang.VisitAction.Advance
-
-        self._syntax_tree.root.visit(visitor)
-        return params
-
-    @property
     def code(self) -> str:
         if Options.enable_pyslang:
+            self._syntax_tree = self._rewriter.commit()
+            self._parse_syntax_tree()
             return str(self._syntax_tree.root)
         return "\n".join(
             directive for _, directive in self.directives
@@ -805,7 +813,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def add_params(self, params: Iterable[Parameter]) -> "Module":
         if Options.enable_pyslang:
-            return self._add_ast_nodes(params)
+            return self._add_params_pyslang(params)
         decl = Decl(list=tuple(params))
         self._module_def.items = (
             *self._module_def.items[: self._next_param_idx],
@@ -815,11 +823,17 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._increment_idx(len(decl.list), "param")
         return self
 
+    def _add_params_pyslang(self, params: Iterable[Parameter]) -> "Module":
+        for param in params:
+            self._params[param.name] = param
+            self._rewriter.add_before(
+                self._param_source_range.end, ["\n  ", _CODEGEN.visit(param)]
+            )
+        return self
+
     def del_params(self, prefix: str = "", suffix: str = "") -> None:
         if Options.enable_pyslang:
-            self._del_matching(
-                pyslang.ParameterDeclarationStatementSyntax, prefix, suffix
-            )
+            self._del_params_pyslang(prefix, suffix)
             return
 
         def func(item: Node) -> bool:
@@ -832,6 +846,16 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             return True
 
         self._filter(func, "param")
+
+    def _del_params_pyslang(self, prefix: str, suffix: str) -> None:
+        new_params = {}
+        for name, param in self._params.items():
+            if name.startswith(prefix) and name.endswith(suffix):
+                # TODO: support deleting added params
+                self._rewriter.remove(self._param_name_to_decl[name].sourceRange)
+            else:
+                new_params[name] = param
+        self._params = new_params
 
     def _add_instancelist(self, item: InstanceList) -> "Module":
         self._module_def.items = (
