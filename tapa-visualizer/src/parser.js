@@ -42,13 +42,6 @@ const getIndexRange = indexes => {
   ).join(",");
 };
 
-/** TODO: Better placement per port amount
- * - 1 port:           0.5
- * - 2 ports:    0.25,      0.75
- * - 3 ports: 0,       0.5,       1
- * - 4 ports: 0, 0.25,      0.75, 1
- * - 5 ports: 0, 0.25, 0.5, 0.75, 1
- */
 /** @type {Placements} */
 const placements = {
   x: [
@@ -58,6 +51,7 @@ const placements = {
     [0, 0.25, 0.75, 1],
     [0, 0.25, 0.5, 0.75, 1],
   ],
+  // y:
   istream: 0,
   ostream: 1,
 };
@@ -239,7 +233,7 @@ export const getGraphData = (json, options = defaultOptions) => {
 
           const id = `${subTaskName}/${i}`;
           nodes.push({ id, combo, style, data: { task, subTask } });
-        })
+        });
       } else {
         if (showPorts) {
           /** @type {IOPorts} */
