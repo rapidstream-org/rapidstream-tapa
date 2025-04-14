@@ -24,6 +24,8 @@ declare var graphJSON: GraphJSON;
 type Graph = import("@antv/g6").Graph;
 type GraphData = Required<import("@antv/g6").GraphData>;
 
+type NodeStyle = import("@antv/g6/lib/spec/element/node").NodeStyle;
+
 /** Options of getGraphData() */
 type GetGraphDataOptions = {
   /** Whether expand sub-task to sub-task/0, sub-task/1, ...

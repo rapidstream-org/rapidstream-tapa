@@ -9,7 +9,10 @@
 import { getComboId } from "./helper.js";
 
 /** Color for node with more than 1 connection */
-const majorNodeColor = "#0F5132"; // Bootstrap $green-700
+const altNodeColor = "#0F5132"; // Bootstrap $green-700
+
+/* Color for edge connecting parent and children */
+const altEdgeColor = "#479f76"; //  Bootstrap $green-400
 
 /** @type {<K, V>(map: Map<K, Set<V>>, key: K, value: V) => void} */
 const addToMappedSet = (map, key, value) => {
@@ -75,7 +78,6 @@ const setIOPorts = (subTask, ioPorts) => {
 };
 
 /** ioPorts -> style.ports
- * @typedef {import("@antv/g6/lib/spec/element/node.js").NodeStyle} NodeStyle
  * @type {(ioPorts: IOPorts, style: NodeStyle) => void} */
 const setPortsStyle = (ioPorts, style) => {
   /** @type {import("@antv/g6").NodePortStyleProps[]} */
@@ -154,7 +156,7 @@ export const getGraphData = (json, options = defaultOptions) => {
                 break;
               case 0: { // fill and set to 1
                 const node = nodes.find(node => node.id === id);
-                if (node) node.style = { ...node.style, fill: majorNodeColor };
+                if (node) node.style = { ...node.style, fill: altNodeColor };
                 counts.set(id, 1);
                 break;
               }
@@ -218,7 +220,7 @@ export const getGraphData = (json, options = defaultOptions) => {
           : combos.push(newCombo);
 
         // Upper 2: If there is more than 1 upper task, color node by task level
-        if (colorByTaskLevel) style.fill = majorNodeColor;
+        if (colorByTaskLevel) style.fill = altNodeColor;
 
         // Put combo's node under it
         // TODO: make it an option?
@@ -306,7 +308,7 @@ export const getGraphData = (json, options = defaultOptions) => {
         /** @type {(node: import("@antv/g6").NodeData | undefined) => GetStyle} */
         const getStyle = node => () => {
           const sourcePort = getPortKey(node, fifoName);
-          return { sourcePort, targetPort: fifoName, stroke: "#198754" };
+          return { sourcePort, targetPort: fifoName, stroke: altEdgeColor };
         };
 
         if (separate) {
@@ -329,7 +331,7 @@ export const getGraphData = (json, options = defaultOptions) => {
         /** @type {(node: import("@antv/g6").NodeData | undefined) => GetStyle} */
         const getStyle = node => () => {
           const targetPort = getPortKey(node, fifoName);
-          return { sourcePort: fifoName, targetPort, stroke: "#198754" };
+          return { sourcePort: fifoName, targetPort, stroke: altEdgeColor };
         };
 
         if (separate) {

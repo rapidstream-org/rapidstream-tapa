@@ -5,16 +5,18 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 -->
 <html lang="en">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TAPA Visualizer</title>
-    <link rel="icon" href="https://rapidstream-da.com/favicon.ico" />
-    <link rel="author" href="https://rapidstream-da.com/" />
-    <meta name="author" content="RapidStream Design Automation, Inc." />
-    <meta name="description"
-          content="Visualize TAPA task structures. Easily overview and inspect your TAPA design." />
-    <meta name="source"
-          content="Visualize TAPA task structures. Easily overview and inspect your TAPA design." />
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>TAPA Visualizer</title>
+        <link rel="icon" href="https://rapidstream-da.com/favicon.ico" />
+        <link rel="author" href="https://rapidstream-da.com/" />
+        <meta name="author" content="RapidStream Design Automation, Inc." />
+        <meta name="description"
+              content="Visualize TAPA task structures. Easily overview and inspect your TAPA design." />
+        <meta name="source"
+              content="https://github.com/rapidstream-org/rapidstream-tapa" />
+    </head>
     <header>
         <div class="file flex">
             <input class="fileInput" type="file" accept=".json,application/json">
@@ -94,7 +96,6 @@ RapidStream Contributor License Agreement.
                 </div>
             </section>
             <section class="details">
-                <!-- TODO: add a "Task" block for task infomations -->
                 <details class="instance" open="">
                     <summary>
                         <i data-lucide="layout-list"></i>
@@ -158,11 +159,6 @@ RapidStream Contributor License Agreement.
                         </label>
                     </fieldset>
                     <p>Graph Options</p>
-                    <!--
-										<fieldset>
-											<legend>Color scheme: TODO</legend>
-										</fieldset>
-										-->
                     <fieldset class="only-one-combo">
                         <legend>Expand other upper tasks:</legend>
                         <label>
@@ -194,7 +190,7 @@ RapidStream Contributor License Agreement.
                     <!--
                     <p>Save Image Options</p>
                     <p>TODO</p>
-										-->
+                    -->
                     <fieldset disabled>
                         <legend>Image file type:</legend>
                         <label>
@@ -208,24 +204,6 @@ RapidStream Contributor License Agreement.
                         <label>
                             <input type="radio" name="type" value="webp">
                             WebP
-                        </label>
-                    </fieldset>
-                    <fieldset disabled>
-                        <legend>Image quality:</legend>
-                        <label>
-                            <input type="checkbox" name="quality" value="webp">
-                            Use default
-                        </label>
-                        <br>
-                        <label style="display: block; margin: .25rem .25rem 0;">
-                            Quality:
-                            <input type="range"
-                                   name="quality"
-                                   min="0"
-                                   max="1"
-                                   step="0.05"
-                                   style="vertical-align: bottom;
-                                          margin: 0 .5ch" />
                         </label>
                     </fieldset>
                 </form>

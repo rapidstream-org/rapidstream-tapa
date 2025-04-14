@@ -203,6 +203,13 @@ const setupFileInput = (graph) => {
       const topChildren = graph.getChildrenData(getComboId(graphJSON.top));
       const visibleElements = expand ? graphData.nodes : topChildren;
 
+      // Put edges in front of nodes
+      graph.frontElement(
+        graph.getEdgeData()
+        .map(({id}) => id)
+        .filter(id => typeof id === "string")
+      );
+
       // Run a 2nd layout if amount of visible elements is acceptable
       visibleElements.length >= 10 &&
       visibleElements.length <= 500 &&
@@ -308,7 +315,8 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
 			const copyBtn = dialog.querySelector(":scope .btn-copy");
 			copyBtn?.addEventListener(
 				"click",
-				() => void navigator.clipboard.writeText(code.textContent)
+				() => code.textContent &&
+          void navigator.clipboard.writeText(code.textContent),
 			);
 		}
 	}
@@ -386,7 +394,7 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
         degree: 1,
         neighborState: "highlight",
         onClick: ({ target: item }) => {
-          if (!("type" in item)) { resetSidebar(); return; }
+          if (!("type" in item) || !("id" in item)) { resetSidebar(); return; }
           switch (item.type) {
             case "node":  updateSidebarForNode(item.id, graph); break;
             case "combo": updateSidebarForCombo(item.id, graph); break;
