@@ -279,6 +279,7 @@ def test_add_ports_succeeds() -> None:
 def test_del_port_succeeds() -> None:
     module = Module(name="foo")
     module.add_ports([ast.Input("bar"), ast.Input("baz")])
+    module.code  # TODO: support deleting added port
 
     module.del_port("baz")
 

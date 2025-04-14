@@ -222,6 +222,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._param_name_to_decl = {}
         self._param_source_range: pyslang.SourceRange
 
+        self._ports: dict[str, ioport.IOPort] = {}
+        self._port_name_to_decl: dict[str, pyslang.PortDeclarationSyntax] = {}
+        self._port_source_range: pyslang.SourceRange
+
         @functools.singledispatch
         def visitor(_: object) -> pyslang.VisitAction:
             return pyslang.VisitAction.Advance
@@ -231,6 +235,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             attrs.module_decl = node
             # Append after the header by default.
             self._param_source_range = node.header.sourceRange
+            self._port_source_range = node.header.sourceRange
             return pyslang.VisitAction.Advance
 
         @visitor.register
@@ -244,6 +249,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             self._params[param.name] = param
             self._param_name_to_decl[param.name] = node
             self._param_source_range = node.sourceRange
+            return pyslang.VisitAction.Skip
+
+        @visitor.register
+        def _(node: pyslang.PortDeclarationSyntax) -> pyslang.VisitAction:
+            port = ioport.IOPort.create(node)
+            self._ports[port.name] = port
+            self._port_name_to_decl[port.name] = node
+            self._port_source_range = node.sourceRange
             return pyslang.VisitAction.Skip
 
         self._syntax_tree.root.visit(visitor)
@@ -269,7 +282,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     @property
     def ports(self) -> dict[str, ioport.IOPort]:
         if Options.enable_pyslang:
-            return self._ports_pyslang
+            return self._ports
         port_lists = [
             # ANSI style: ports declared in header
             (x.first for x in self._module_def.portlist.ports if isinstance(x, Ioport)),
@@ -281,18 +294,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             for x in itertools.chain.from_iterable(port_lists)
             if isinstance(x, Input | Output | Inout)
         }
-
-    @property
-    def _ports_pyslang(self) -> dict[str, ioport.IOPort]:
-        ports = {}
-
-        def visitor(node: object) -> None:
-            if isinstance(node, pyslang.PortDeclarationSyntax):
-                port = ioport.IOPort.create(node)
-                ports[port.name] = port
-
-        self._syntax_tree.root.visit(visitor)
-        return ports
 
     class NoMatchingPortError(ValueError):
         """No matching port being found exception."""
@@ -513,23 +514,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self
 
     def _add_ports_pyslang(self, ports: Iterable[IOPort | Decl]) -> "Module":
-        attrs = UniqueAttrs()
-
-        # Source range of the last port declaration in the module body.
-        # If found, new ports will be appended after it. Otherwise, new ports
-        # are appended after the header.
-        # Typed as a singleton list so the visitor can update it.
-        last_port_decl_range: list[pyslang.SourceRange | None] = [None]
-
-        def visitor(node: object) -> None:
-            if isinstance(node, pyslang.ModuleHeaderSyntax):
-                attrs.module_header = node
-            elif isinstance(node, pyslang.PortDeclarationSyntax):
-                last_port_decl_range[0] = node.sourceRange
-
-        self._syntax_tree.root.visit(visitor)
-        assert isinstance(attrs.module_header, pyslang.ModuleHeaderSyntax)
-
         def flatten(ports: Iterable[IOPort | Decl]) -> Generator[ioport.IOPort]:
             for port in ports:
                 if isinstance(port, Decl):
@@ -542,25 +526,25 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         header_pieces = []
         body_pieces = []
+        is_ports_empty = len(self._ports) == 0
         for port in flatten(ports):
+            self._ports[port.name] = port
             header_pieces.extend([",\n  ", port.name])
             body_pieces.extend(["\n  ", str(port)])
-        if len(attrs.module_header.ports[1]) == 0 and header_pieces:
+        if is_ports_empty and header_pieces:
             # Remove the first `,` if there is no preceding ports.
             header_pieces[0] = "  "
 
         self._rewriter.add_before(
             # Append new ports before token `)` of the port list in header.
-            attrs.module_header.ports.getLastToken().location,
+            self._module_decl.header.ports.getLastToken().location,
             header_pieces,
         )
         self._rewriter.add_before(
             # If module has no existing port, append new ports after the header.
-            (last_port_decl_range[0] or attrs.module_header.sourceRange).end,
+            self._port_source_range.end,
             body_pieces,
         )
-        self._syntax_tree = self._rewriter.commit()
-        self._parse_syntax_tree()
         return self
 
     def del_port(self, port_name: str) -> None:
@@ -599,36 +583,21 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         )
 
     def _del_port_pyslang(self, port_name: str) -> None:
-        class Attrs(UniqueAttrs):
-            non_ansi_port_list: pyslang.NonAnsiPortListSyntax | None
+        if self._ports.pop(port_name, None) is None:
+            msg = f"no port {port_name} found in module {self.name}"
+            raise ValueError(msg)
 
-        attrs = Attrs()
-        attrs.non_ansi_port_list = None
+        self._rewriter.remove(self._port_name_to_decl[port_name].sourceRange)
 
-        @functools.singledispatch
-        def visitor(node: object) -> pyslang.VisitAction:  # noqa: ARG001
-            return pyslang.VisitAction.Advance
-
-        @visitor.register
-        def _(node: pyslang.NonAnsiPortListSyntax) -> pyslang.VisitAction:
-            attrs.non_ansi_port_list = node
-            return pyslang.VisitAction.Skip
-
-        @visitor.register
-        def _(node: pyslang.PortDeclarationSyntax) -> pyslang.VisitAction:
-            if ioport.IOPort.create(node).name == port_name:
-                self._rewriter.remove(node.sourceRange)
-            return pyslang.VisitAction.Skip
-
-        self._syntax_tree.root.visit(visitor)
-        assert attrs.non_ansi_port_list is not None
+        non_ansi_port_list = self._module_decl.header.ports
+        assert isinstance(non_ansi_port_list, pyslang.NonAnsiPortListSyntax)
 
         # `ports` is a list of alternating `SyntaxNode`s and `Token`s; find the
         # port in header that to delete, and the corresponding comma token.
         nodes = []
         tokens = []
         index_to_del = -1
-        for i, node_or_token in enumerate(attrs.non_ansi_port_list.ports):
+        for i, node_or_token in enumerate(non_ansi_port_list.ports):
             if i % 2 == 0:
                 assert isinstance(node_or_token, pyslang.ImplicitNonAnsiPortSyntax)
                 assert isinstance(node_or_token.expr, pyslang.PortReferenceSyntax)
@@ -654,9 +623,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         if index_to_del == len(nodes) - 1:
             index_to_del = -1
         self._rewriter.remove(tokens[index_to_del].range)
-
-        self._syntax_tree = self._rewriter.commit()
-        self._parse_syntax_tree()
 
     def add_comment_lines(self, lines: Iterable[str]) -> "Module":
         """Add comment lines after the module header.
@@ -962,21 +928,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self
 
     def _add_rs_pragmas_pyslang(self) -> "Module":
-        @functools.singledispatch
-        def visitor(node: object) -> pyslang.VisitAction:  # noqa: ARG001
-            return pyslang.VisitAction.Advance
-
-        @visitor.register
-        def _(node: pyslang.PortDeclarationSyntax) -> pyslang.VisitAction:
-            if (pragma := ioport.IOPort.create(node).rs_pragma) is not None:
-                self._rewriter.add_before(
-                    node.sourceRange.start, _CODEGEN.visit(pragma)
-                )
-            return pyslang.VisitAction.Skip
-
-        self._syntax_tree.root.visit(visitor)
         self._syntax_tree = self._rewriter.commit()
         self._parse_syntax_tree()
+        for port in self._ports.values():
+            if port.rs_pragma is not None:
+                self._rewriter.add_before(
+                    self._port_name_to_decl[port.name].sourceRange.start,
+                    _CODEGEN.visit(port.rs_pragma),
+                )
         return self
 
     def del_pragmas(self, pragma: Iterable[str]) -> None:
