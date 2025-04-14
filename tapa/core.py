@@ -335,6 +335,7 @@ int main(int argc, char ** argv)
 }}
 """
 
+    # ruff: noqa: PLR0913,PLR0917
     def __init__(
         self,
         obj: dict,
@@ -342,6 +343,7 @@ int main(int argc, char ** argv)
         work_dir: str | None = None,
         gen_templates: tuple[str, ...] = (),
         floorplan_slots: list[str] = [],
+        flattened: bool = False,
     ) -> None:
         """Construct Program object from a json file.
 
@@ -377,6 +379,7 @@ int main(int argc, char ** argv)
                 template in task_names
             ), f"template task {template} not found in design"
         self.gen_templates = gen_templates
+        self.flattened = flattened
 
         for name in task_names:
             task_properties = obj["tasks"][name]
@@ -593,7 +596,7 @@ int main(int argc, char ** argv)
                 header_fp.write(content)
         return self
 
-    def run_hls_or_aie(  # noqa: PLR0913,PLR0917,C901  # TODO: refactor this method
+    def run_hls_or_aie(  # noqa: C901  # TODO: refactor this method
         self,
         clock_period: float | str,
         part_num: str,

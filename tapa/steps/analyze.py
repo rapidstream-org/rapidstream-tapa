@@ -73,12 +73,6 @@ _logger = logging.getLogger().getChild(__name__)
     ),
 )
 @click.option(
-    "--floorplan-path",
-    type=Path,
-    default=None,
-    help="Path to the floorplan file. If specified, the floorplan will be applied.",
-)
-@click.option(
     "--vitis-mode / --no-vitis-mode",
     type=bool,
     default=True,
@@ -95,7 +89,6 @@ def analyze(
     top: str,
     cflags: tuple[str, ...],
     flatten_hierarchy: bool,
-    floorplan_path: Path | None,
     vitis_mode: bool,
 ) -> None:
     """Analyze TAPA program and store the program description."""
@@ -127,11 +120,6 @@ def analyze(
         tapa_graph = tapa_graph.get_flatten_graph()
 
     fp_slots = []
-    if floorplan_path:
-        assert flatten_hierarchy, "Floorplan can only be applied to a flattened graph"
-        slot_to_insts = get_slot_to_inst(floorplan_path, tapa_graph)
-        tapa_graph = tapa_graph.get_floorplan_graph(slot_to_insts)
-        fp_slots = list(slot_to_insts.keys())
     graph_dict = tapa_graph.to_dict()
     store_tapa_program(
         Program(
@@ -139,6 +127,7 @@ def analyze(
             vitis_mode=vitis_mode,
             work_dir=work_dir,
             floorplan_slots=fp_slots,
+            flattened=flatten_hierarchy,
         )
     )
 

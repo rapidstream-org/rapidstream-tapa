@@ -1,6 +1,6 @@
 """Custom rule to add TAPA target to the target list."""
 
-# Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+# Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
@@ -50,6 +50,9 @@ def _tapa_xo_impl(ctx):
     # Add flatten hierarchy, if specified.
     if ctx.attr.flatten_hierarchy:
         tapa_cmd.extend(["--flatten-hierarchy"])
+
+    # Build the command for tapa-cli floorplan.
+    tapa_cmd.extend(["floorplan"])
 
     # Add floorplan path, if specified.
     if ctx.file.floorplan_path:

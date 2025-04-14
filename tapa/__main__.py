@@ -1,7 +1,7 @@
 """The main entry point for TAPA compiler."""
 
 __copyright__ = """
-Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
@@ -15,6 +15,7 @@ import click
 from tapa import __version__
 from tapa.steps.analyze import analyze
 from tapa.steps.common import switch_work_dir
+from tapa.steps.floorplan import floorplan
 from tapa.steps.gcc import gcc
 from tapa.steps.link import link
 from tapa.steps.meta import compile_entry
@@ -112,6 +113,7 @@ def entry_point(  # noqa: PLR0913,PLR0917
 
 
 entry_point.add_command(analyze)
+entry_point.add_command(floorplan)
 entry_point.add_command(synth)
 entry_point.add_command(link)
 entry_point.add_command(pack)
