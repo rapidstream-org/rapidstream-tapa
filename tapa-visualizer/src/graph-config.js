@@ -10,9 +10,17 @@ import { getComboName } from "./helper.js";
 
 /** @satisfies {HTMLElement | null} */
 const container = document.querySelector(".graph-container");
-if (container === null) {
-  throw new TypeError("container is null!");
-}
+if (container === null) throw new TypeError("container is null!");
+
+// Based on Bootstrap Color; H = Highlight
+export const color = Object.freeze({
+  nodeA: "#198754", // $green-500
+  nodeB: "#0F5132", // $green-700
+  nodeH: "#20c997", // $teal-500
+  edgeA: "#A3CFBB", // $green-200
+  edgeB: "#479f76", // $green-400
+  edgeH: "#20c997",
+});
 
 /** @type {import("@antv/g6").CanvasOptions} */
 const canvasOptions = {
@@ -28,12 +36,12 @@ const viewportOptions = {
     animation: { duration: 100 }, // ms
   },
   padding: 20, // px
-  zoomRange: [0.1, 2.5], // %
+  zoomRange: [0.1, 2.5], // * 100%
 };
 
 /** @type {(id: string | undefined) => string | undefined} */
 const trimEdgeId = id => {
-  // Trim the prefix part
+  // Remove the prefix part
   id = id?.slice(id.indexOf("/") + 1);
   // If still very long, then cap each part's length to 15
   if (id && id.length > 20) {
@@ -44,18 +52,26 @@ const trimEdgeId = id => {
   return id;
 };
 
-/** @type {Required<Pick<import("@antv/g6").GraphOptions, "node" | "edge" | "combo">>} */
+/** @type {NodeStyle} */
+const nodeActiveState = {
+  halo: true,
+  strokeOpacity: 1,
+  stroke: color.nodeH,
+  haloStroke: color.nodeH,
+};
+
+/** @type {Pick<import("@antv/g6").GraphOptions, "node" | "edge" | "combo">} */
 const elementOptions = {
   // https://g6.antv.antgroup.com/api/elements/nodes/base-node
   node: {
     type: "rect",
     style: {
       size: [120, 40],
-      fill: ({ style }) => style?.fill ?? "#198754", // Bootstrap $green-500
       radius: 2,
+      fill: ({ style }) => style?.fill ?? color.nodeA,
 
       portR: 5,
-      portFill: "#198754",
+      portFill: ({ style }) => style?.fill ?? color.nodeA,
 
       labelPlacement: "center",
       labelWordWrap: true, // enable label ellipsis
@@ -70,19 +86,13 @@ const elementOptions = {
     state: {
       // selected (degree 0): stroke + halo
       selected: {
-        halo: true,
-        strokeOpacity: 1,
-        stroke: "#20c997", // Bootstrap $teal-500
-        haloStroke: "#20c997",
+        ...nodeActiveState,
         lineWidth: 4,
         haloLineWidth: 12,
       },
       // highlight (degree 1): stroke only
       highlight: {
-        halo: true,
-        strokeOpacity: 1,
-        stroke: "#20c997",
-        haloStroke: "#20c997",
+        ...nodeActiveState,
         lineWidth: 2,
         haloLineWidth: 6,
       },
@@ -90,8 +100,12 @@ const elementOptions = {
   },
   edge: {
     style: {
-      stroke: ({ style }) => style?.stroke ?? "#A3CFBB", // Bootstrap $green-200
+      stroke: ({ style }) => style?.stroke ?? color.edgeA,
       endArrow: true,
+
+      halo: true,
+      haloStrokeOpacity: .25,
+      haloLineWidth: 2,
 
       labelBackground: true,
       labelBackgroundFill: "white",
@@ -104,17 +118,15 @@ const elementOptions = {
       selected: {
         labelFontSize: 12,
         labelFontWeight: "normal",
-        stroke: "#20c997",
+        stroke: color.edgeH,
         lineWidth: 3,
         haloLineWidth: 9,
       },
       highlight: {
-        halo: true,
         labelFontWeight: "normal",
-        stroke: "#20c997",
+        stroke: color.edgeH,
         lineWidth: 2,
         haloLineWidth: 6,
-        haloStrokeOpacity: .25,
       },
     }
   },
@@ -126,8 +138,6 @@ const elementOptions = {
       haloStroke: "#13795B",
       collapsedFillOpacity: 0.75,
       collapsedMarkerFontSize: 16,
-      halo: true,
-      haloStrokeOpacity: 0,
 
       labelFill: "gray",
       labelPlacement: "top",
@@ -139,6 +149,7 @@ const elementOptions = {
       selected: {
         labelFontSize: 12,
         lineWidth: 3,
+        halo: true,
         haloLineWidth: 9,
         haloStrokeOpacity: 0.25,
       },
@@ -206,9 +217,10 @@ export const graphOptions = {
     ({
       type: "tooltip",
       getContent: (_event, items) => Promise.resolve(
-        items.map(
-          item => `ID: <code>${item.id}</code>`
-        ).join("<br>")
+        items
+        .filter(item => !item.id?.startsWith("combo:"))
+        .map(item => `${ item.source ? "Edge" : "Node"} ID: <code>${item.id}</code>`)
+        .join("<br>")
       ),
     }),
   ],
