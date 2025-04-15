@@ -339,6 +339,7 @@ def test_add_signals_succeeds() -> None:
 def test_del_signals_succeeds() -> None:
     module = Module(name="foo")
     module.add_signals([ast_types.Wire("bar")])
+    module.code  # TODO: support deleting added signals
 
     module.del_signals(prefix="bar")
 

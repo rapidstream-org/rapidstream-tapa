@@ -210,6 +210,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         _params: dict[str, Parameter]
         _param_name_to_decl: dict[str, ParameterDeclarationSyntax]
         _param_source_range: SourceRange
+
+        _ports: dict[str, IOPort]
+        _port_name_to_decl: dict[str, PortDeclarationSyntax]
+        _port_source_range: SourceRange
+
+        _signals: dict[str, Signal]
+        _signal_name_to_decl: dict[str, DataDeclarationSyntax | NetDeclarationSyntax]
+        _signal_source_range: SourceRange
         """
 
         class Attrs(UniqueAttrs):
@@ -226,6 +234,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._port_name_to_decl: dict[str, pyslang.PortDeclarationSyntax] = {}
         self._port_source_range: pyslang.SourceRange
 
+        self._signals: dict[str, Signal] = {}
+        self._signal_name_to_decl: dict[str, _SIGNAL_SYNTAX] = {}
+        self._signal_source_range: pyslang.SourceRange
+
         @functools.singledispatch
         def visitor(_: object) -> pyslang.VisitAction:
             return pyslang.VisitAction.Advance
@@ -236,6 +248,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             # Append after the header by default.
             self._param_source_range = node.header.sourceRange
             self._port_source_range = node.header.sourceRange
+            self._signal_source_range = node.header.sourceRange
             return pyslang.VisitAction.Advance
 
         @visitor.register
@@ -249,6 +262,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             self._params[param.name] = param
             self._param_name_to_decl[param.name] = node
             self._param_source_range = node.sourceRange
+            self._signal_source_range = node.sourceRange
             return pyslang.VisitAction.Skip
 
         @visitor.register
@@ -257,6 +271,18 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             self._ports[port.name] = port
             self._port_name_to_decl[port.name] = node
             self._port_source_range = node.sourceRange
+            self._signal_source_range = node.sourceRange
+            return pyslang.VisitAction.Skip
+
+        @visitor.register
+        def _(node: _SIGNAL_SYNTAX) -> pyslang.VisitAction:
+            signal = {
+                pyslang.DataDeclarationSyntax: Reg,
+                pyslang.NetDeclarationSyntax: Wire,
+            }[type(node)](_get_name(node), _get_width(node.type))
+            self._signals[signal.name] = signal
+            self._signal_name_to_decl[signal.name] = node
+            self._signal_source_range = node.sourceRange
             return pyslang.VisitAction.Skip
 
         self._syntax_tree.root.visit(visitor)
@@ -380,30 +406,13 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     @property
     def signals(self) -> dict[str, Wire | Reg]:
         if Options.enable_pyslang:
-            return self._signals_pyslang
+            return self._signals
         signal_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
         return {
             x.name: x
             for x in itertools.chain.from_iterable(signal_lists)
             if isinstance(x, Wire | Reg)
         }
-
-    @property
-    def _signals_pyslang(self) -> dict[str, Wire | Reg]:
-        signals = {}
-
-        def visitor(node: object) -> pyslang.VisitAction:
-            if isinstance(node, _SIGNAL_SYNTAX):
-                signal = {
-                    pyslang.DataDeclarationSyntax: Reg,
-                    pyslang.NetDeclarationSyntax: Wire,
-                }[type(node)](_get_name(node), _get_width(node.type))
-                signals[signal.name] = signal
-                return pyslang.VisitAction.Skip
-            return pyslang.VisitAction.Advance
-
-        self._syntax_tree.root.visit(visitor)
-        return signals
 
     @property
     def params(self) -> dict[str, Parameter]:
@@ -660,7 +669,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
         if Options.enable_pyslang:
-            return self._add_ast_nodes(signals)
+            return self._add_signals_pyslang(signals)
         decl = Decl(list=tuple(signals))
         self._module_def.items = (
             *self._module_def.items[: self._next_signal_idx],
@@ -668,6 +677,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             *self._module_def.items[self._next_signal_idx :],
         )
         self._increment_idx(len(decl.list), "signal")
+        return self
+
+    def _add_signals_pyslang(self, signals: Iterable[Signal]) -> "Module":
+        for signal in signals:
+            self._signals[signal.name] = signal
+            self._rewriter.add_before(
+                self._signal_source_range.end, ["\n  ", _CODEGEN.visit(signal)]
+            )
         return self
 
     def _add_ast_nodes(  # noqa: C901
@@ -747,7 +764,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def del_signals(self, prefix: str = "", suffix: str = "") -> None:
         if Options.enable_pyslang:
-            self._del_matching(_SIGNAL_SYNTAX, prefix, suffix)
+            self._del_signals_pyslang(prefix, suffix)
             return
 
         def func(item: Node) -> bool:
@@ -760,6 +777,16 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             return True
 
         self._filter(func, "signal")
+
+    def _del_signals_pyslang(self, prefix: str, suffix: str) -> None:
+        new_signals = {}
+        for name, signal in self._signals.items():
+            if name.startswith(prefix) and name.endswith(suffix):
+                # TODO: support deleting added signals
+                self._rewriter.remove(self._signal_name_to_decl[name].sourceRange)
+            else:
+                new_signals[name] = signal
+        self._signals = new_signals
 
     def _del_matching(
         self, node_type: type | UnionType, prefix: str, suffix: str
