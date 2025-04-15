@@ -23,7 +23,6 @@ from pyverilog.vparser.ast import (
     IfStatement,
     IntConst,
     Node,
-    Operator,
     PortArg,
     Pragma,
     PragmaEntry,
@@ -75,30 +74,6 @@ def make_if_with_block(
 
 def make_int(value: int, width: int = 0) -> IntConst:
     return IntConst(f"{width or value.bit_length() or 1}'d{value}")
-
-
-def make_operation(operator: type[Operator], nodes: Iterable[Node]) -> Operator | Node:
-    """Make a multi-operand operation node out of an iterable of Nodes.
-
-    Note that the nodes appears in the reverse order of the iterable (to avoid
-    unnecessary parentheses).
-
-    Args:
-    ----
-      op: Operator.
-      nodes: Iterable of Node. If empty, raises StopIteration.
-
-    Returns:
-    -------
-      Operator of the result.
-
-    """
-    iterator = iter(nodes)
-    node = next(iterator)
-    try:
-        return operator(make_operation(operator, iterator), node)
-    except StopIteration:
-        return node
 
 
 def make_pragma(name: str, value: str | None = None) -> Pragma:

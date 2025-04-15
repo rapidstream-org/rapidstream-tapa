@@ -37,7 +37,6 @@ from pyverilog.vparser.ast import (
     IfStatement,
     Input,
     IntConst,
-    Land,
     Minus,
     Node,
     NonblockingSubstitution,
@@ -69,7 +68,6 @@ from tapa.verilog.ast_utils import (
     make_block,
     make_case_with_block,
     make_if_with_block,
-    make_operation,
     make_port_arg,
     make_width,
 )
@@ -1276,10 +1274,7 @@ int main(int argc, char ** argv)
         state01_action = set_state(STATE10)
         if is_done_signals:
             state01_action = make_if_with_block(
-                cond=make_operation(
-                    operator=Land,
-                    nodes=(x[-1] for x in reversed(is_done_signals)),
-                ),
+                cond=Identifier(" && ".join(str(x[-1]) for x in is_done_signals)),
                 true=state01_action,
             )
 
