@@ -9,7 +9,7 @@ RapidStream Contributor License Agreement.
 import re
 from collections.abc import Iterator
 
-from pyverilog.vparser.ast import Identifier, Pragma, Reg, Width, Wire
+from pyverilog.vparser.ast import Identifier, Reg, Width, Wire
 
 from tapa.verilog.ast_utils import make_width
 
@@ -39,7 +39,7 @@ class Pipeline:
         return iter(self._ids)
 
     @property
-    def signals(self) -> Iterator[Reg | Wire | Pragma]:
+    def signals(self) -> Iterator[Reg | Wire]:
         yield Wire(name=self[0].name, width=self._width)
 
 

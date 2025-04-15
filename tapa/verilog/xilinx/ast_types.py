@@ -11,7 +11,6 @@ from pyverilog.vparser.ast import (
     Inout,
     Input,
     Output,
-    Pragma,
     Reg,
     Wire,
 )
@@ -25,5 +24,5 @@ __all__ = [
 
 Directive = tuple[int, str]
 IOPort = Input | Output | Inout
-Signal = Reg | Wire | Pragma
+Signal = Reg | Wire
 Logic = Assign | Always | Initial
