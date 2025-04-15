@@ -497,6 +497,7 @@ def test_del_logics_succeeds() -> None:
             ast.Initial(ast_utils.make_block(())),
         ]
     )
+    module.code  # TODO: support deleting added logics
 
     module.del_logics()
 

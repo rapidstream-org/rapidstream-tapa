@@ -218,6 +218,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         _signals: dict[str, Signal]
         _signal_name_to_decl: dict[str, DataDeclarationSyntax | NetDeclarationSyntax]
         _signal_source_range: SourceRange
+
+        _logics: list[ContinuousAssignSyntax | ProceduralBlockSyntax]
+        _logic_source_range: SourceRange
         """
 
         class Attrs(UniqueAttrs):
@@ -238,6 +241,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._signal_name_to_decl: dict[str, _SIGNAL_SYNTAX] = {}
         self._signal_source_range: pyslang.SourceRange
 
+        self._logics: list[_LOGIC_SYNTAX] = []
+        self._logic_source_range: pyslang.SourceRange
+
         @functools.singledispatch
         def visitor(_: object) -> pyslang.VisitAction:
             return pyslang.VisitAction.Advance
@@ -249,6 +255,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             self._param_source_range = node.header.sourceRange
             self._port_source_range = node.header.sourceRange
             self._signal_source_range = node.header.sourceRange
+            self._logic_source_range = node.header.sourceRange
             return pyslang.VisitAction.Advance
 
         @visitor.register
@@ -263,6 +270,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             self._param_name_to_decl[param.name] = node
             self._param_source_range = node.sourceRange
             self._signal_source_range = node.sourceRange
+            self._logic_source_range = node.sourceRange
             return pyslang.VisitAction.Skip
 
         @visitor.register
@@ -272,6 +280,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             self._port_name_to_decl[port.name] = node
             self._port_source_range = node.sourceRange
             self._signal_source_range = node.sourceRange
+            self._logic_source_range = node.sourceRange
             return pyslang.VisitAction.Skip
 
         @visitor.register
@@ -283,6 +292,13 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             self._signals[signal.name] = signal
             self._signal_name_to_decl[signal.name] = node
             self._signal_source_range = node.sourceRange
+            self._logic_source_range = node.sourceRange
+            return pyslang.VisitAction.Skip
+
+        @visitor.register
+        def _(node: _LOGIC_SYNTAX) -> pyslang.VisitAction:
+            self._logics.append(node)
+            self._logic_source_range = node.sourceRange
             return pyslang.VisitAction.Skip
 
         self._syntax_tree.root.visit(visitor)
@@ -885,7 +901,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def add_logics(self, logics: Iterable[Logic]) -> "Module":
         if Options.enable_pyslang:
-            return self._add_ast_nodes(logics)
+            return self._add_logics_pyslang(logics)
 
         logic_tuple = tuple(logics)
         self._module_def.items = (
@@ -894,6 +910,13 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             + self._module_def.items[self._next_logic_idx :]
         )
         self._increment_idx(len(logic_tuple), "logic")
+        return self
+
+    def _add_logics_pyslang(self, logics: Iterable[Logic]) -> "Module":
+        for logic in logics:
+            self._rewriter.add_before(
+                self._logic_source_range.end, ["\n  ", _CODEGEN.visit(logic)]
+            )
         return self
 
     def del_logics(self) -> None:
@@ -907,15 +930,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._filter(func, "param")
 
     def _del_logics_pyslang(self) -> None:
-        def visitor(node: object) -> pyslang.VisitAction:
-            if isinstance(node, _LOGIC_SYNTAX):
-                self._rewriter.remove(node.sourceRange)
-                return pyslang.VisitAction.Skip
-            return pyslang.VisitAction.Advance
-
-        self._syntax_tree.root.visit(visitor)
-        self._syntax_tree = self._rewriter.commit()
-        self._parse_syntax_tree()
+        for logic in self._logics:
+            self._rewriter.remove(logic.sourceRange)
 
     def del_instances(self, prefix: str = "", suffix: str = "") -> None:
         """Deletes instances with a matching *module* name."""
