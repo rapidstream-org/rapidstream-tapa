@@ -7,6 +7,7 @@
 load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_filegroup", "pkg_files", "pkg_mklink", "strip_prefix")
 load("@rules_python//python:defs.bzl", "py_library")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@tapa_deps//:requirements.bzl", "requirement")
 load("//bazel:nuitka_rules.bzl", "nuitka_binary")
 
 nuitka_binary(
@@ -30,18 +31,11 @@ py_binary(
     main = "__main__.py",
     visibility = ["//visibility:public"],
     deps = [
-        ":tapa-cosim-py-libs",
-        "//tapa:tapa-py-libs",
-    ],
-)
-
-py_library(
-    name = "tapa-cosim-py-libs",
-    srcs = [
         ":common",
         ":config_preprocess",
         ":templates",
         ":vivado",
+        "//tapa:__init__",
     ],
 )
 
@@ -53,6 +47,9 @@ py_library(
 py_library(
     name = "config_preprocess",
     srcs = ["config_preprocess.py"],
+    deps = [
+        requirement("pyyaml"),
+    ],
 )
 
 py_library(
@@ -64,6 +61,9 @@ py_library(
 py_library(
     name = "vivado",
     srcs = ["vivado.py"],
+    deps = [
+        "//tapa/common:paths",
+    ],
 )
 
 pkg_files(

@@ -17,6 +17,7 @@ py_library(
         "//tapa/abgraph",
         "//tapa/backend",
         "//tapa/common",
+        "//tapa/common:paths",
         requirement("click"),
     ],
 )
