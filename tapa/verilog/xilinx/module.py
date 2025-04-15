@@ -690,19 +690,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         if not Options.enable_pyslang:
             return self.add_ports([Decl([Identifier("".join(pieces))])])
 
-        @functools.singledispatch
-        def visitor(node: object) -> pyslang.VisitAction:  # noqa: ARG001
-            return pyslang.VisitAction.Advance
-
-        @visitor.register
-        def _(node: pyslang.ModuleHeaderSyntax) -> pyslang.VisitAction:
-            # Append the comment lines after the module header.
-            self._rewriter.add_before(node.sourceRange.end, pieces)
-            return pyslang.VisitAction.Interrupt
-
-        self._syntax_tree.root.visit(visitor)
-        self._syntax_tree = self._rewriter.commit()
-        self._parse_syntax_tree()
+        # Append the comment lines after the module header.
+        self._rewriter.add_before(self._module_decl.header.sourceRange.end, pieces)
         return self
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
