@@ -457,6 +457,7 @@ def test_del_instances_succeeds() -> None:
         instance_name="bar",
         ports=[ast.PortArg("port", ast.Constant("42"))],
     )
+    module.code  # TODO: support deleting added instances
 
     module.del_instances(prefix="Bar")
 

@@ -11,7 +11,6 @@ import os.path
 import re
 import tempfile
 from collections.abc import Callable, Generator, Iterable, Iterator
-from types import UnionType
 
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
@@ -221,6 +220,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         _logics: list[ContinuousAssignSyntax | ProceduralBlockSyntax]
         _logic_source_range: SourceRange
+
+        _instances: list[HierarchyInstantiationSyntax]
+        _instance_source_range: SourceRange
         """
 
         class Attrs(UniqueAttrs):
@@ -244,6 +246,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._logics: list[_LOGIC_SYNTAX] = []
         self._logic_source_range: pyslang.SourceRange
 
+        self._instances: list[pyslang.HierarchyInstantiationSyntax] = []
+        self._instance_source_range: pyslang.SourceRange
+
         @functools.singledispatch
         def visitor(_: object) -> pyslang.VisitAction:
             return pyslang.VisitAction.Advance
@@ -252,10 +257,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         def _(node: pyslang.ModuleDeclarationSyntax) -> pyslang.VisitAction:
             attrs.module_decl = node
             # Append after the header by default.
-            self._param_source_range = node.header.sourceRange
-            self._port_source_range = node.header.sourceRange
-            self._signal_source_range = node.header.sourceRange
-            self._logic_source_range = node.header.sourceRange
+            self._update_source_range_for_param(node.header)
             return pyslang.VisitAction.Advance
 
         @visitor.register
@@ -268,9 +270,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             )
             self._params[param.name] = param
             self._param_name_to_decl[param.name] = node
-            self._param_source_range = node.sourceRange
-            self._signal_source_range = node.sourceRange
-            self._logic_source_range = node.sourceRange
+            self._update_source_range_for_param(node)
             return pyslang.VisitAction.Skip
 
         @visitor.register
@@ -278,9 +278,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             port = ioport.IOPort.create(node)
             self._ports[port.name] = port
             self._port_name_to_decl[port.name] = node
-            self._port_source_range = node.sourceRange
-            self._signal_source_range = node.sourceRange
-            self._logic_source_range = node.sourceRange
+            self._update_source_range_for_port(node)
             return pyslang.VisitAction.Skip
 
         @visitor.register
@@ -291,19 +289,43 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             }[type(node)](_get_name(node), _get_width(node.type))
             self._signals[signal.name] = signal
             self._signal_name_to_decl[signal.name] = node
-            self._signal_source_range = node.sourceRange
-            self._logic_source_range = node.sourceRange
+            self._update_source_range_for_signal(node)
             return pyslang.VisitAction.Skip
 
         @visitor.register
         def _(node: _LOGIC_SYNTAX) -> pyslang.VisitAction:
             self._logics.append(node)
-            self._logic_source_range = node.sourceRange
+            self._update_source_range_for_logic(node)
+            return pyslang.VisitAction.Skip
+
+        @visitor.register
+        def _(node: pyslang.HierarchyInstantiationSyntax) -> pyslang.VisitAction:
+            self._instances.append(node)
+            self._update_source_range_for_instance(node)
             return pyslang.VisitAction.Skip
 
         self._syntax_tree.root.visit(visitor)
 
         self._module_decl = attrs.module_decl
+
+    def _update_source_range_for_param(self, node: pyslang.SyntaxNode) -> None:
+        self._param_source_range = node.sourceRange
+        self._update_source_range_for_port(node)
+
+    def _update_source_range_for_port(self, node: pyslang.SyntaxNode) -> None:
+        self._port_source_range = node.sourceRange
+        self._update_source_range_for_signal(node)
+
+    def _update_source_range_for_signal(self, node: pyslang.SyntaxNode) -> None:
+        self._signal_source_range = node.sourceRange
+        self._update_source_range_for_logic(node)
+
+    def _update_source_range_for_logic(self, node: pyslang.SyntaxNode) -> None:
+        self._logic_source_range = node.sourceRange
+        self._update_source_range_for_instance(node)
+
+    def _update_source_range_for_instance(self, node: pyslang.SyntaxNode) -> None:
+        self._instance_source_range = node.sourceRange
 
     @property
     def _module_def(self) -> ModuleDef:
@@ -703,69 +725,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             )
         return self
 
-    def _add_ast_nodes(  # noqa: C901
-        self, nodes: Iterable[Parameter | Signal | Logic | InstanceList]
-    ) -> "Module":
-        class Context:
-            range: pyslang.SourceRange
-            pieces: list[str]
-
-            def __init__(self) -> None:
-                self.pieces = []
-
-        param_context = Context()
-        signal_context = Context()
-        logic_context = Context()
-        instance_context = Context()
-
-        def visitor(node: object) -> pyslang.VisitAction:
-            if isinstance(
-                node,
-                pyslang.ModuleHeaderSyntax
-                | pyslang.ParameterDeclarationStatementSyntax,
-            ):
-                param_context.range = node.sourceRange
-                signal_context.range = node.sourceRange
-                logic_context.range = node.sourceRange
-                instance_context.range = node.sourceRange
-                return pyslang.VisitAction.Skip
-            if isinstance(node, _SIGNAL_SYNTAX | pyslang.PortDeclarationSyntax):
-                signal_context.range = node.sourceRange
-                logic_context.range = node.sourceRange
-                instance_context.range = node.sourceRange
-                return pyslang.VisitAction.Skip
-            if isinstance(node, _LOGIC_SYNTAX):
-                logic_context.range = node.sourceRange
-                instance_context.range = node.sourceRange
-                return pyslang.VisitAction.Skip
-            if isinstance(node, pyslang.HierarchyInstantiationSyntax):
-                instance_context.range = node.sourceRange
-                return pyslang.VisitAction.Skip
-            return pyslang.VisitAction.Advance
-
-        self._syntax_tree.root.visit(visitor)
-
-        for node in nodes:
-            if isinstance(node, Parameter):
-                param_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
-            elif isinstance(node, Signal):
-                signal_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
-            elif isinstance(node, Logic):
-                logic_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
-            elif isinstance(node, InstanceList):
-                instance_context.pieces.extend(["\n  ", _CODEGEN.visit(node)])
-        for context in [
-            param_context,
-            signal_context,
-            logic_context,
-            instance_context,
-        ]:
-            self._rewriter.add_before(context.range.end, context.pieces)
-        self._syntax_tree = self._rewriter.commit()
-        self._parse_syntax_tree()
-
-        return self
-
     def add_pipeline(self, q: Pipeline, init: Node) -> None:
         """Add registered signals and logics for q initialized by init.
 
@@ -803,22 +762,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             else:
                 new_signals[name] = signal
         self._signals = new_signals
-
-    def _del_matching(
-        self, node_type: type | UnionType, prefix: str, suffix: str
-    ) -> None:
-        def visitor(node: object) -> pyslang.VisitAction:
-            if isinstance(node, node_type):
-                name = _get_name(node)
-                if name.startswith(prefix) and name.endswith(suffix):
-                    assert isinstance(node, pyslang.SyntaxNode)
-                    self._rewriter.remove(node.sourceRange)
-                return pyslang.VisitAction.Skip
-            return pyslang.VisitAction.Advance
-
-        self._syntax_tree.root.visit(visitor)
-        self._syntax_tree = self._rewriter.commit()
-        self._parse_syntax_tree()
 
     def add_params(self, params: Iterable[Parameter]) -> "Module":
         if Options.enable_pyslang:
@@ -895,8 +838,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             ),
         )
         if Options.enable_pyslang:
-            return self._add_ast_nodes([item])
+            return self._add_instancelist_pyslang(item)
         self._add_instancelist(item)
+        return self
+
+    def _add_instancelist_pyslang(self, item: InstanceList) -> "Module":
+        self._rewriter.add_before(
+            self._instance_source_range.end, ["\n  ", _CODEGEN.visit(item)]
+        )
         return self
 
     def add_logics(self, logics: Iterable[Logic]) -> "Module":
@@ -936,7 +885,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     def del_instances(self, prefix: str = "", suffix: str = "") -> None:
         """Deletes instances with a matching *module* name."""
         if Options.enable_pyslang:
-            self._del_matching(pyslang.HierarchyInstantiationSyntax, prefix, suffix)
+            self._del_instances_pyslang(prefix, suffix)
             return
 
         def func(item: Node) -> bool:
@@ -947,6 +896,12 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             )
 
         self._filter(func, "instance")
+
+    def _del_instances_pyslang(self, prefix: str, suffix: str) -> None:
+        for instance in self._instances:
+            module_name = instance.type.valueText
+            if module_name.startswith(prefix) and module_name.endswith(suffix):
+                self._rewriter.remove(instance.sourceRange)
 
     def add_rs_pragmas(self) -> "Module":
         """Add RapidStream pragmas for existing ports.
@@ -1283,12 +1238,6 @@ def _(
     ),
 ) -> str:
     return node.declarators[0].name.valueText
-
-
-@_get_name.register
-def _(node: pyslang.HierarchyInstantiationSyntax) -> str:
-    """Returns the *module* name of an instance list."""
-    return node.type.valueText
 
 
 def _get_width(node: pyslang.DataTypeSyntax) -> Width | None:
