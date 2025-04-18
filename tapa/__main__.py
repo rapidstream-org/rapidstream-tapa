@@ -17,7 +17,6 @@ from tapa.steps.analyze import analyze
 from tapa.steps.common import switch_work_dir
 from tapa.steps.floorplan import floorplan
 from tapa.steps.gcc import gcc
-from tapa.steps.link import link
 from tapa.steps.meta import compile_entry
 from tapa.steps.pack import pack
 from tapa.steps.synth import synth
@@ -115,7 +114,6 @@ def entry_point(  # noqa: PLR0913,PLR0917
 entry_point.add_command(analyze)
 entry_point.add_command(floorplan)
 entry_point.add_command(synth)
-entry_point.add_command(link)
 entry_point.add_command(pack)
 entry_point.add_command(compile_entry)
 entry_point.add_command(version)
