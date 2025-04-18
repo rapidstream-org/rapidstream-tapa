@@ -415,10 +415,6 @@ int main(int argc, char ** argv)
             shutil.rmtree(self.work_dir)
 
     @property
-    def tasks(self) -> tuple[Task, ...]:
-        return tuple(self._tasks.values())
-
-    @property
     def top_task(self) -> Task:
         return self._tasks[self.top]
 
