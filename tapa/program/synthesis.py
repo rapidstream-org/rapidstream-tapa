@@ -12,12 +12,12 @@ from concurrent import futures
 
 import psutil
 
-from tapa.abc import ProgramInterface
 from tapa.backend.report.xilinx.rtl.generator import ReportDirUtil
 from tapa.backend.report.xilinx.rtl.parser import (
     HierarchicalUtilization,
     parse_hierarchical_utilization_report,
 )
+from tapa.program.abc import ProgramInterface
 
 _logger = logging.getLogger().getChild(__name__)
 

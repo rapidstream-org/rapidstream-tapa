@@ -54,8 +54,8 @@ from pyverilog.vparser.parser import ParseError
 from tapa.backend.xilinx import RunAie, RunHls
 from tapa.common.paths import find_resource
 from tapa.instance import Instance, Port
+from tapa.program.synthesis import ProgramSynthesisMixin
 from tapa.safety_check import check_mmap_arg_name
-from tapa.synthesis import ProgramSynthesisMixin
 from tapa.task import Task
 from tapa.util import (
     Options,
