@@ -758,8 +758,13 @@ int main(int argc, char ** argv)
             task.module = module
             task.self_area = self.get_area(task.name)
             task.clock_period = self.get_clock_period(task.name)
+
             _logger.debug("populating %s", task.name)
-            self._populate_task(task)
+            task.instances = tuple(
+                Instance(self.get_task(name), instance_id=idx, **obj)
+                for name, objs in task.tasks.items()
+                for idx, obj in enumerate(objs)
+            )
 
         # instrument the upper-level RTL except the top-level
         _logger.info("instrumenting upper-level RTL")
@@ -852,13 +857,6 @@ int main(int argc, char ** argv)
 
         _logger.info("generated the v++ xo file at %s", output_file)
         return self
-
-    def _populate_task(self, task: Task) -> None:
-        task.instances = tuple(
-            Instance(self.get_task(name), instance_id=idx, **obj)
-            for name, objs in task.tasks.items()
-            for idx, obj in enumerate(objs)
-        )
 
     def _connect_fifos(self, task: Task) -> None:
         _logger.debug("  connecting %s's children tasks", task.name)
