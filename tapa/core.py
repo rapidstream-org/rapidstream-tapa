@@ -461,7 +461,7 @@ int main(int argc, char ** argv)
         xml = self._get_hls_report_xml(name)
         part = xml.find("./UserAssignments/Part")
         assert part is not None
-        assert part.text
+        assert part.text is not None
         return part.text
 
     def get_area(self, name: str) -> dict[str, int]:
@@ -475,7 +475,7 @@ int main(int argc, char ** argv)
             "./PerformanceEstimates/SummaryOfTimingAnalysis/EstimatedClockPeriod",
         )
         assert period is not None
-        assert period.text
+        assert period.text is not None
         return decimal.Decimal(period.text)
 
     def extract_cpp(self, target: str = "hls") -> "Program":
