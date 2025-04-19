@@ -67,15 +67,9 @@ class ProgramDirectoryMixin:
         os.makedirs(os.path.join(self.work_dir, "tar"), exist_ok=True)
         return os.path.join(self.work_dir, "tar", name + ".tar")
 
-    def get_rtl_path(self, name: str, prefix: bool = True) -> str:
-        return os.path.join(
-            self.rtl_dir,
-            (get_module_name(name) if prefix else name) + RTL_SUFFIX,
-        )
+    def get_rtl_path(self, name: str) -> str:
+        return os.path.join(self.rtl_dir, get_module_name(name) + RTL_SUFFIX)
 
     def get_rtl_template_path(self, name: str) -> str:
         os.makedirs(self.template_dir, exist_ok=True)
-        return os.path.join(
-            self.template_dir,
-            name + RTL_SUFFIX,
-        )
+        return os.path.join(self.template_dir, name + RTL_SUFFIX)
