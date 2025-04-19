@@ -8,6 +8,7 @@ RapidStream Contributor License Agreement.
 
 import contextlib
 import decimal
+import functools
 import glob
 import itertools
 import json
@@ -409,7 +410,6 @@ int main(int argc, char ** argv)
                 self.gen_templates += (name,)
 
         self.files: dict[str, str] = {}
-        self._hls_report_xmls: dict[str, ET.ElementTree] = {}
 
     def __del__(self) -> None:
         if self.is_temp:
@@ -450,12 +450,10 @@ int main(int argc, char ** argv)
     def get_task(self, name: str) -> Task:
         return self._tasks[name]
 
+    @functools.cache
     def _get_hls_report_xml(self, name: str) -> ET.ElementTree:
-        tree = self._hls_report_xmls.get(name)
-        if tree is None:
-            filename = os.path.join(self.report_dir, f"{name}_csynth.xml")
-            self._hls_report_xmls[name] = tree = ET.parse(filename)
-        return tree
+        filename = os.path.join(self.report_dir, f"{name}_csynth.xml")
+        return ET.parse(filename)
 
     def _get_part_num(self, name: str) -> str:
         xml = self._get_hls_report_xml(name)
