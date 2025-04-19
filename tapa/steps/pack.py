@@ -236,7 +236,7 @@ def pack_zip(program: Program, output: str | None) -> None:
                 _logger.debug("added %s to the zip file", file)
 
         _logger.info("adding the TAPA information to the zip file")
-        for filename in program.report:
+        for filename in program.report_paths:
             file = Path(filename)
             # filter out unreadable json files
             if file.suffix == ".json":

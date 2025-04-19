@@ -557,12 +557,12 @@ int main(int argc, char ** argv)
             os.nice(idx % 19)
             try:
                 if skip_based_on_mtime and os.path.getmtime(
-                    self.get_tar(task.name),
+                    self.get_tar_path(task.name),
                 ) > os.path.getmtime(self.get_cpp_path(task.name)):
                     _logger.info(
                         "skipping HLS for %s since %s is newer than %s",
                         task.name,
-                        self.get_tar(task.name),
+                        self.get_tar_path(task.name),
                         self.get_cpp_path(task.name),
                     )
                     return
@@ -574,7 +574,7 @@ int main(int argc, char ** argv)
             hls_cflags = f"{self.cflags} {hls_defines} {hls_includes}"
             if flow_type == "hls":
                 with (
-                    open(self.get_tar(task.name), "wb") as tarfileobj,
+                    open(self.get_tar_path(task.name), "wb") as tarfileobj,
                     RunHls(
                         tarfileobj,
                         kernel_files=[(self.get_cpp_path(task.name), hls_cflags)],
@@ -595,7 +595,7 @@ int main(int argc, char ** argv)
                     return
                 assert platform is not None, "Platform must be specified for AIE flow."
                 with (
-                    open(self.get_tar(task.name), "wb") as tarfileobj,
+                    open(self.get_tar_path(task.name), "wb") as tarfileobj,
                     RunAie(
                         tarfileobj,
                         kernel_files=[self.get_cpp_path(task.name)],
@@ -655,7 +655,7 @@ int main(int argc, char ** argv)
         """Extract HDL files from tarballs generated from HLS."""
         _logger.info("extracting RTL files")
         for task in self._tasks.values():
-            with tarfile.open(self.get_tar(task.name), "r") as tarfileobj:
+            with tarfile.open(self.get_tar_path(task.name), "r") as tarfileobj:
                 tarfileobj.extractall(path=self.work_dir)
 
         for file_name in (
@@ -690,7 +690,7 @@ int main(int argc, char ** argv)
             self._tasks.values(),
             (map if Options.enable_pyslang else futures.ProcessPoolExecutor().map)(
                 Module,
-                ([self.get_rtl(x.name)] for x in self._tasks.values()),
+                ([self.get_rtl_path(x.name)] for x in self._tasks.values()),
                 (not x.is_upper for x in self._tasks.values()),
             ),
         ):
@@ -748,9 +748,9 @@ int main(int argc, char ** argv)
         task_report = self.top_task.report
         if override_report_schema_version:
             task_report["schema"] = override_report_schema_version
-        with open(self.report.yaml, "w", encoding="utf-8") as fp:
+        with open(self.report_paths.yaml, "w", encoding="utf-8") as fp:
             yaml.dump(task_report, fp, default_flow_style=False, sort_keys=False)
-        with open(self.report.json, "w", encoding="utf-8") as fp:
+        with open(self.report_paths.json, "w", encoding="utf-8") as fp:
             json.dump(task_report, fp, indent=2)
 
         # self.files won't be populated until all tasks are instrumented
@@ -777,7 +777,7 @@ int main(int argc, char ** argv)
             _logger.info("packaging HLS report")
             packed_obj = stack.enter_context(zipfile.ZipFile(tmp_fp, "a"))
             output_fp = stack.enter_context(zipfile.ZipFile(output_file, "w"))
-            for filename in self.report:
+            for filename in self.report_paths:
                 arcname = os.path.basename(filename)
                 _logger.debug("  packing %s", arcname)
                 packed_obj.write(filename, arcname)
@@ -1316,7 +1316,7 @@ int main(int argc, char ** argv)
             _logger.info("skip instrumenting template task %s", task.name)
             if task.name in self.gen_templates:
                 with open(
-                    self.get_rtl_template(task.name), "w", encoding="utf-8"
+                    self.get_rtl_template_path(task.name), "w", encoding="utf-8"
                 ) as rtl_code:
                     rtl_code.write(task.module.get_template_code())
         else:
@@ -1331,14 +1331,14 @@ int main(int argc, char ** argv)
             self._instantiate_global_fsm(task.fsm_module, is_done_signals)
 
             with open(
-                self.get_rtl(task.fsm_module.name),
+                self.get_rtl_path(task.fsm_module.name),
                 "w",
                 encoding="utf-8",
             ) as rtl_code:
                 rtl_code.write(task.fsm_module.code)
 
         # generate the top-level task
-        with open(self.get_rtl(task.name), "w", encoding="utf-8") as rtl_code:
+        with open(self.get_rtl_path(task.name), "w", encoding="utf-8") as rtl_code:
             rtl_code.write(task.module.code)
 
     def get_fifo_width(self, task: Task, fifo: str) -> Node:

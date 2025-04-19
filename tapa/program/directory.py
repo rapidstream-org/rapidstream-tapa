@@ -38,15 +38,15 @@ class ProgramDirectoryMixin:
         return cpp_dir
 
     @property
-    def report(self):
+    def report_paths(self):
         # ruff: noqa: ANN201
         """Returns all formats of TAPA report as a namedtuple."""
 
-        class Report(NamedTuple):
+        class ReportPaths(NamedTuple):
             json: str
             yaml: str
 
-        return Report(
+        return ReportPaths(
             json=os.path.join(self.work_dir, "report.json"),
             yaml=os.path.join(self.work_dir, "report.yaml"),
         )
@@ -63,17 +63,17 @@ class ProgramDirectoryMixin:
     def get_post_syn_rpt_path(self, module_name: str) -> str:
         return os.path.join(self.report_dir, f"{module_name}.hier.util.rpt")
 
-    def get_tar(self, name: str) -> str:
+    def get_tar_path(self, name: str) -> str:
         os.makedirs(os.path.join(self.work_dir, "tar"), exist_ok=True)
         return os.path.join(self.work_dir, "tar", name + ".tar")
 
-    def get_rtl(self, name: str, prefix: bool = True) -> str:
+    def get_rtl_path(self, name: str, prefix: bool = True) -> str:
         return os.path.join(
             self.rtl_dir,
             (get_module_name(name) if prefix else name) + RTL_SUFFIX,
         )
 
-    def get_rtl_template(self, name: str) -> str:
+    def get_rtl_template_path(self, name: str) -> str:
         os.makedirs(self.template_dir, exist_ok=True)
         return os.path.join(
             self.template_dir,
