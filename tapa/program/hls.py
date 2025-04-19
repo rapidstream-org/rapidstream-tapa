@@ -92,7 +92,6 @@ class ProgramHlsMixin(
 ):
     """Mixin class providing HLS (AIE included) functionalities."""
 
-    headers: dict[str, str]
     top: str
     _tasks: dict[str, Task]
 
@@ -145,11 +144,6 @@ class ProgramHlsMixin(
                     self.get_cpp_path(task.name), "w", encoding="utf-8"
                 ) as src_code:
                     src_code.write(code_content)
-        for name, content in self.headers.items():
-            header_path = os.path.join(self.cpp_dir, name)
-            os.makedirs(os.path.dirname(header_path), exist_ok=True)
-            with open(header_path, "w", encoding="utf-8") as header_fp:
-                header_fp.write(content)
 
     def _is_skippable_based_on_mtime(self, task_name: str) -> bool:
         try:

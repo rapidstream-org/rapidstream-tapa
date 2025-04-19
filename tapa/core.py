@@ -144,7 +144,6 @@ class Program(  # TODO: refactor this class
         """
         self.top: str = obj["top"]
         self.cflags = " ".join(obj.get("cflags", []))
-        self.headers: dict[str, str] = obj.get("headers", {})
         self.vitis_mode = vitis_mode
         if work_dir is None:
             self.work_dir = tempfile.mkdtemp(prefix="tapa-")
