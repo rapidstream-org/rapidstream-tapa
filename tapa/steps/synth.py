@@ -9,7 +9,7 @@ RapidStream Contributor License Agreement.
 import json
 import os
 from pathlib import Path
-from typing import NoReturn
+from typing import Literal, NoReturn
 
 import click
 
@@ -120,7 +120,7 @@ def synth(  # noqa: PLR0913,PLR0917
     enable_synth_util: bool,
     print_fifo_ops: bool,
     override_report_schema_version: str,
-    flow_type: str,
+    flow_type: Literal["aie", "hls"],
     nonpipeline_fifos: Path | None,
     gen_ab_graph: bool,
 ) -> None:
@@ -139,17 +139,23 @@ def synth(  # noqa: PLR0913,PLR0917
     settings["clock_period"] = clock_period
 
     # Generate RTL code
-    program.run_hls_or_aie(
-        clock_period,
-        part_num,
-        skip_hls_based_on_mtime,
-        other_hls_configs,
-        jobs=jobs,
-        keep_hls_work_dir=keep_hls_work_dir,
-        flow_type=flow_type,
-        platform=platform,
-    )
-    if flow_type != "aie":
+    if flow_type == "aie":
+        assert platform is not None, "Platform must be specified for AIE flow."
+        program.run_aie(
+            clock_period,
+            skip_hls_based_on_mtime,
+            keep_hls_work_dir,
+            platform,
+        )
+    elif flow_type == "hls":
+        program.run_hls(
+            clock_period,
+            part_num,
+            skip_hls_based_on_mtime,
+            other_hls_configs,
+            jobs,
+            keep_hls_work_dir,
+        )
         program.generate_task_rtl(print_fifo_ops)
         if enable_synth_util:
             program.generate_post_synth_util(part_num, jobs)

@@ -24,6 +24,7 @@ import zipfile
 from collections.abc import Generator
 from concurrent import futures
 from pathlib import Path
+from typing import Literal
 from xml.etree import ElementTree as ET
 
 import toposort
@@ -476,7 +477,7 @@ int main(int argc, char ** argv)
         assert period.text is not None
         return decimal.Decimal(period.text)
 
-    def extract_cpp(self, target: str = "hls") -> "Program":
+    def _extract_cpp(self, target: Literal["aie", "hls"]) -> None:
         """Extract HLS/AIE C++ files."""
         _logger.info("extracting %s C++ files", target)
         check_mmap_arg_name(list(self._tasks.values()))
@@ -532,9 +533,24 @@ int main(int argc, char ** argv)
             os.makedirs(os.path.dirname(header_path), exist_ok=True)
             with open(header_path, "w", encoding="utf-8") as header_fp:
                 header_fp.write(content)
-        return self
 
-    def run_hls_or_aie(  # noqa: C901  # TODO: refactor this method
+    def _is_skippable_based_on_mtime(self, task_name: str) -> bool:
+        try:
+            tar_path = self.get_tar_path(task_name)
+            cpp_path = self.get_cpp_path(task_name)
+            if os.path.getmtime(tar_path) > os.path.getmtime(cpp_path):
+                _logger.info(
+                    "skipping HLS for %s since %s is newer than %s",
+                    task_name,
+                    tar_path,
+                    cpp_path,
+                )
+                return True
+        except OSError:
+            pass
+        return False
+
+    def run_hls(
         self,
         clock_period: float | str,
         part_num: str,
@@ -542,71 +558,38 @@ int main(int argc, char ** argv)
         other_configs: str = "",
         jobs: int | None = None,
         keep_hls_work_dir: bool = False,
-        flow_type: str = "hls",
-        platform: str | None = None,
-    ) -> "Program":
+    ) -> None:
         """Run HLS with extracted HLS C++ files and generate tarballs."""
-        self.extract_cpp(flow_type)
+        self._extract_cpp("hls")
 
-        _logger.info("running %s", flow_type)
+        _logger.info("running hls")
+        work_dir = os.path.join(self.work_dir, "hls") if keep_hls_work_dir else None
 
         def worker(task: Task, idx: int) -> None:
             _logger.info("start worker for %s, target: %s", task.name, task.target_type)
             os.nice(idx % 19)
-            try:
-                if skip_based_on_mtime and os.path.getmtime(
-                    self.get_tar_path(task.name),
-                ) > os.path.getmtime(self.get_cpp_path(task.name)):
-                    _logger.info(
-                        "skipping HLS for %s since %s is newer than %s",
-                        task.name,
-                        self.get_tar_path(task.name),
-                        self.get_cpp_path(task.name),
-                    )
-                    return
-            except OSError:
-                pass
+            if skip_based_on_mtime and self._is_skippable_based_on_mtime(task.name):
+                return
             hls_defines = "-DTAPA_TARGET_DEVICE_ -DTAPA_TARGET_XILINX_HLS_"
             # WORKAROUND: Vitis HLS requires -I or gflags cannot be found...
             hls_includes = f"-I{find_resource('tapa-extra-runtime-include')}"
             hls_cflags = f"{self.cflags} {hls_defines} {hls_includes}"
-            if flow_type == "hls":
-                with (
-                    open(self.get_tar_path(task.name), "wb") as tarfileobj,
-                    RunHls(
-                        tarfileobj,
-                        kernel_files=[(self.get_cpp_path(task.name), hls_cflags)],
-                        work_dir=f"{self.work_dir}/hls" if keep_hls_work_dir else None,
-                        top_name=task.name,
-                        clock_period=str(clock_period),
-                        part_num=part_num,
-                        auto_prefix=True,
-                        hls="vitis_hls",
-                        std="c++14",
-                        other_configs=other_configs,
-                    ) as proc,
-                ):
-                    stdout, stderr = proc.communicate()
-            elif flow_type == "aie":
-                if task.name != self.top:
-                    # For AIE flow, only the top-level task is synthesized
-                    return
-                assert platform is not None, "Platform must be specified for AIE flow."
-                with (
-                    open(self.get_tar_path(task.name), "wb") as tarfileobj,
-                    RunAie(
-                        tarfileobj,
-                        kernel_files=[self.get_cpp_path(task.name)],
-                        work_dir=f"{self.work_dir}/aie" if keep_hls_work_dir else None,
-                        top_name=task.name,
-                        clock_period=str(clock_period),
-                        xpfm=get_xpfm_path(platform),
-                    ) as proc,
-                ):
-                    stdout, stderr = proc.communicate()
-            else:
-                msg = f"Unknown flow type: {flow_type}"
-                raise ValueError(msg)
+            with (
+                open(self.get_tar_path(task.name), "wb") as tarfileobj,
+                RunHls(
+                    tarfileobj,
+                    kernel_files=[(self.get_cpp_path(task.name), hls_cflags)],
+                    work_dir=work_dir,
+                    top_name=task.name,
+                    clock_period=str(clock_period),
+                    part_num=part_num,
+                    auto_prefix=True,
+                    hls="vitis_hls",
+                    std="c++14",
+                    other_configs=other_configs,
+                ) as proc,
+            ):
+                stdout, stderr = proc.communicate()
 
             if proc.returncode != 0:
                 if b"Pre-synthesis failed." in stdout and b"\nERROR:" not in stdout:
@@ -618,23 +601,17 @@ int main(int argc, char ** argv)
                     return
                 sys.stdout.write(stdout.decode("utf-8"))
                 sys.stderr.write(stderr.decode("utf-8"))
-                msg = f"{flow_type} failed for {task.name}"
-
-                # Neglect the dummy bug message from AIE 2022.2
-                aie_dummy_bug_msg = "/bin/sh: 1: [[: not found"
-                if aie_dummy_bug_msg not in stderr.decode("utf-8"):
-                    raise RuntimeError(msg)
+                msg = f"HLS failed for {task.name}"
+                raise RuntimeError(msg)
 
         jobs = jobs or cpu_count(logical=False)
-        _logger.info(
-            "spawn %d workers for parallel %s synthesis of the tasks", jobs, flow_type
-        )
+        _logger.info("spawn %d workers for parallel HLS synthesis of the tasks", jobs)
 
         try:
             with futures.ThreadPoolExecutor(max_workers=jobs) as executor:
                 any(executor.map(worker, self._tasks.values(), itertools.count(0)))
         except RuntimeError:
-            if not keep_hls_work_dir:
+            if keep_hls_work_dir:
                 _logger.error(
                     "HLS failed, see above for details. You may use "
                     "`--keep-hls-work-dir` to keep the HLS work directory "
@@ -643,11 +620,62 @@ int main(int argc, char ** argv)
             else:
                 _logger.error(
                     "HLS failed, see above for details. Please check the logs in %s",
-                    os.path.join(self.work_dir, "hls"),
+                    work_dir,
                 )
             sys.exit(1)
 
-        return self
+    def run_aie(
+        self,
+        clock_period: float | str,
+        skip_based_on_mtime: bool,
+        keep_hls_work_dir: bool,
+        platform: str,
+    ) -> None:
+        """Run HLS with extracted HLS C++ files and generate tarballs."""
+        self._extract_cpp("aie")
+
+        _logger.info("running aie")
+        work_dir = os.path.join(self.work_dir, "aie") if keep_hls_work_dir else None
+
+        # For AIE flow, only the top-level task is synthesized
+        task = self.top_task
+
+        if skip_based_on_mtime and self._is_skippable_based_on_mtime(task.name):
+            return
+        with (
+            open(self.get_tar_path(task.name), "wb") as tarfileobj,
+            RunAie(
+                tarfileobj,
+                kernel_files=[self.get_cpp_path(task.name)],
+                work_dir=work_dir,
+                top_name=task.name,
+                clock_period=str(clock_period),
+                xpfm=get_xpfm_path(platform),
+            ) as proc,
+        ):
+            stdout, stderr = proc.communicate()
+
+        if proc.returncode != 0:
+            sys.stdout.write(stdout.decode("utf-8"))
+            sys.stderr.write(stderr.decode("utf-8"))
+
+            # Neglect the dummy bug message from AIE 2022.2
+            aie_dummy_bug_msg = "/bin/sh: 1: [[: not found"
+            if aie_dummy_bug_msg in stderr.decode("utf-8"):
+                return
+
+            if work_dir is None:
+                _logger.error(
+                    "HLS failed, see above for details. You may use "
+                    "`--keep-hls-work-dir` to keep the HLS work directory "
+                    "for debugging."
+                )
+            else:
+                _logger.error(
+                    "HLS failed, see above for details. Please check the logs in %s",
+                    work_dir,
+                )
+            sys.exit(1)
 
     def generate_task_rtl(self, print_fifo_ops: bool) -> "Program":
         """Extract HDL files from tarballs generated from HLS."""
