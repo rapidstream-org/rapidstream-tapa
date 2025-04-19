@@ -78,9 +78,6 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
                         nlohmann::json& metadata);
   void ProcessLowerLevelTask(const clang::FunctionDecl* func);
   void ProcessOtherFunc(const clang::FunctionDecl* func);
-#ifdef TAPA_ENABLE_LEGACY_FRT_INTERFACE
-  std::string GetFrtInterface(const clang::FunctionDecl* func);
-#endif  // TAPA_ENABLE_LEGACY_FRT_INTERFACE
 
   clang::CharSourceRange GetCharSourceRange(const clang::Stmt* stmt);
   clang::CharSourceRange GetCharSourceRange(clang::SourceRange range);
