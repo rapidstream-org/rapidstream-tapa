@@ -24,6 +24,22 @@ py_library(
 )
 
 py_library(
+    name = "hls",
+    srcs = ["hls.py"],
+    deps = [
+        "//tapa:safety_check",
+        "//tapa:task",
+        "//tapa:util",
+        "//tapa/backend",
+        "//tapa/common:paths",
+        "//tapa/program:abc",
+        "//tapa/program:directory",
+        "//tapa/verilog/xilinx",
+        requirement("psutil"),
+    ],
+)
+
+py_library(
     name = "synthesis",
     srcs = ["synthesis.py"],
     deps = [

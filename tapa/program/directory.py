@@ -8,16 +8,79 @@ RapidStream Contributor License Agreement.
 
 import os
 import os.path
+from abc import abstractmethod
 from typing import NamedTuple
 
 from tapa.util import get_module_name
 from tapa.verilog.xilinx.const import RTL_SUFFIX
 
 
-class ProgramDirectoryMixin:
-    """Mixin class providing the work directory structure definition."""
+class ReportPaths(NamedTuple):
+    json: str
+    yaml: str
+
+
+class ProgramDirectoryInterface:
+    """Interface class of the work directory structure definition."""
 
     work_dir: str  # Concrete class must instantiate this attribute
+
+    @property
+    @abstractmethod
+    def rtl_dir(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def template_dir(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def report_dir(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def cpp_dir(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def report_paths(self) -> ReportPaths:
+        pass
+
+    @abstractmethod
+    def get_cpp_path(self, name: str) -> str:
+        pass
+
+    @abstractmethod
+    def get_common_path(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_header_path(self, name: str) -> str:
+        pass
+
+    @abstractmethod
+    def get_post_syn_rpt_path(self, module_name: str) -> str:
+        pass
+
+    @abstractmethod
+    def get_tar_path(self, name: str) -> str:
+        pass
+
+    @abstractmethod
+    def get_rtl_path(self, name: str) -> str:
+        pass
+
+    @abstractmethod
+    def get_rtl_template_path(self, name: str) -> str:
+        pass
+
+
+class ProgramDirectoryMixin(ProgramDirectoryInterface):
+    """Mixin class providing the work directory structure definition."""
 
     @property
     def rtl_dir(self) -> str:
@@ -38,14 +101,8 @@ class ProgramDirectoryMixin:
         return cpp_dir
 
     @property
-    def report_paths(self):
-        # ruff: noqa: ANN201
+    def report_paths(self) -> ReportPaths:
         """Returns all formats of TAPA report as a namedtuple."""
-
-        class ReportPaths(NamedTuple):
-            json: str
-            yaml: str
-
         return ReportPaths(
             json=os.path.join(self.work_dir, "report.json"),
             yaml=os.path.join(self.work_dir, "report.yaml"),
