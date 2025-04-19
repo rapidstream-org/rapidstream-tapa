@@ -15,10 +15,20 @@ py_library(
 )
 
 py_library(
+    name = "directory",
+    srcs = ["directory.py"],
+    deps = [
+        "//tapa:util",
+        "//tapa/verilog/xilinx",
+    ],
+)
+
+py_library(
     name = "synthesis",
     srcs = ["synthesis.py"],
     deps = [
         ":abc",
+        ":directory",
         "//tapa/backend",
         requirement("psutil"),
     ],

@@ -21,20 +21,7 @@ if TYPE_CHECKING:
 class ProgramInterface:
     @property
     @abstractmethod
-    def rtl_dir(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
     def top_task(self) -> "Task":
-        pass
-
-    @abstractmethod
-    def get_cpp_path(self, name: str) -> str:
-        pass
-
-    @abstractmethod
-    def get_post_syn_rpt_path(self, module_name: str) -> str:
         pass
 
     @abstractmethod

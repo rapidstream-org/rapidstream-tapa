@@ -18,11 +18,15 @@ from tapa.backend.report.xilinx.rtl.parser import (
     parse_hierarchical_utilization_report,
 )
 from tapa.program.abc import ProgramInterface
+from tapa.program.directory import ProgramDirectoryMixin
 
 _logger = logging.getLogger().getChild(__name__)
 
 
-class ProgramSynthesisMixin(ProgramInterface):
+class ProgramSynthesisMixin(
+    ProgramDirectoryMixin,
+    ProgramInterface,
+):
     """Mixin class providing RTL synthesis functionalities."""
 
     def generate_post_synth_util(

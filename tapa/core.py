@@ -23,7 +23,6 @@ import zipfile
 from collections.abc import Generator
 from concurrent import futures
 from pathlib import Path
-from typing import NamedTuple
 from xml.etree import ElementTree as ET
 
 import toposort
@@ -54,6 +53,7 @@ from pyverilog.vparser.parser import ParseError
 from tapa.backend.xilinx import RunAie, RunHls
 from tapa.common.paths import find_resource
 from tapa.instance import Instance, Port
+from tapa.program.directory import ProgramDirectoryMixin
 from tapa.program.synthesis import ProgramSynthesisMixin
 from tapa.safety_check import check_mmap_arg_name
 from tapa.task import Task
@@ -91,7 +91,6 @@ from tapa.verilog.xilinx.const import (
     READY,
     RST,
     RST_N,
-    RTL_SUFFIX,
     START,
     STATE,
     TRUE,
@@ -269,7 +268,9 @@ def gen_connections(task: Task) -> list[str]:  # noqa: C901 PLR0912
     return connect_def
 
 
-class Program(ProgramSynthesisMixin):  # noqa: PLR0904  # TODO: refactor this class
+class Program(  # TODO: refactor this class
+    ProgramSynthesisMixin, ProgramDirectoryMixin
+):
     """Describes a TAPA program.
 
     Attributes
@@ -426,38 +427,6 @@ int main(int argc, char ** argv)
     def done_q(self) -> Pipeline:
         return Pipeline(DONE.name)
 
-    @property
-    def rtl_dir(self) -> str:
-        return os.path.join(self.work_dir, "hdl")
-
-    @property
-    def template_dir(self) -> str:
-        return os.path.join(self.work_dir, "template")
-
-    @property
-    def report_dir(self) -> str:
-        return os.path.join(self.work_dir, "report")
-
-    @property
-    def cpp_dir(self) -> str:
-        cpp_dir = os.path.join(self.work_dir, "cpp")
-        os.makedirs(cpp_dir, exist_ok=True)
-        return cpp_dir
-
-    @property
-    def report(self):
-        # ruff: noqa: ANN201
-        """Returns all formats of TAPA report as a namedtuple."""
-
-        class Report(NamedTuple):
-            json: str
-            yaml: str
-
-        return Report(
-            json=os.path.join(self.work_dir, "report.json"),
-            yaml=os.path.join(self.work_dir, "report.yaml"),
-        )
-
     @staticmethod
     def _get_custom_rtl_files(rtl_paths: tuple[Path, ...]) -> list[Path]:
         custom_rtl: list[Path] = []
@@ -480,35 +449,6 @@ int main(int argc, char ** argv)
 
     def get_task(self, name: str) -> Task:
         return self._tasks[name]
-
-    def get_cpp_path(self, name: str) -> str:
-        return os.path.join(self.cpp_dir, name + ".cpp")
-
-    def get_common_path(self) -> str:
-        return os.path.join(self.cpp_dir, "common.h")
-
-    def get_header_path(self, name: str) -> str:
-        return os.path.join(self.cpp_dir, name + ".h")
-
-    def get_post_syn_rpt_path(self, module_name: str) -> str:
-        return os.path.join(self.report_dir, f"{module_name}.hier.util.rpt")
-
-    def get_tar(self, name: str) -> str:
-        os.makedirs(os.path.join(self.work_dir, "tar"), exist_ok=True)
-        return os.path.join(self.work_dir, "tar", name + ".tar")
-
-    def get_rtl(self, name: str, prefix: bool = True) -> str:
-        return os.path.join(
-            self.rtl_dir,
-            (get_module_name(name) if prefix else name) + RTL_SUFFIX,
-        )
-
-    def get_rtl_template(self, name: str) -> str:
-        os.makedirs(self.template_dir, exist_ok=True)
-        return os.path.join(
-            self.template_dir,
-            name + RTL_SUFFIX,
-        )
 
     def _get_hls_report_xml(self, name: str) -> ET.ElementTree:
         tree = self._hls_report_xmls.get(name)
