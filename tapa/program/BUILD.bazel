@@ -57,5 +57,6 @@ py_library(
         ":abc",
         ":directory",
         "//tapa/verilog/xilinx",
+        requirement("pyyaml"),
     ],
 )

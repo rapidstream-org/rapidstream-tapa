@@ -12,6 +12,9 @@ import os.path
 import re
 import tempfile
 import zipfile
+from pathlib import Path
+
+from yaml import safe_dump
 
 from tapa.program.abc import ProgramInterface
 from tapa.program.directory import ProgramDirectoryInterface
@@ -56,13 +59,60 @@ class ProgramPackMixin(
                 packed_obj.write(filename, arcname)
 
             # redact timestamp, source location etc. to make xo reproducible
-            for info in sorted(packed_obj.infolist(), key=lambda x: x.filename):
-                redacted_info = zipfile.ZipInfo(info.filename)
-                redacted_info.compress_type = zipfile.ZIP_DEFLATED
-                redacted_info.external_attr = info.external_attr
-                output_fp.writestr(redacted_info, _redact(packed_obj, info))
+            _redact_and_zip(packed_obj, output_fp)
 
         _logger.info("generated the v++ xo file at %s", output_file)
+
+    def pack_zip(self, output: str, **contexts: object) -> None:
+        """Pack the generated RTL into a zip file.
+
+        Args:
+            output: The output zip file.
+            contexts: Dict mapping name to context suitable for serialization.
+        """
+        _logger.info("packing the design into a zip file: %s", output)
+
+        with (
+            tempfile.TemporaryFile() as tmp_file,
+            zipfile.ZipFile(tmp_file, "w") as tmp_zipf,
+        ):
+            _logger.info("adding the RTL to the zip file")
+            all_files = Path(self.rtl_dir).glob("**")
+            for file in all_files:
+                if file.is_file():
+                    tmp_zipf.write(file, f"rtl/{file.relative_to(self.rtl_dir)}")
+                    _logger.debug("added %s to the zip file", file)
+
+            _logger.info("adding the TAPA information to the zip file")
+            for filename in [self.report_paths.yaml]:
+                file = Path(filename)
+                tmp_zipf.write(file, f"{file.name}")
+                _logger.debug("added %s to the zip file", file)
+
+            for name, content in contexts.items():
+                tmp_zipf.writestr(f"{name}.yaml", safe_dump(content))
+                _logger.debug("added %s.yaml to the zip name", name)
+
+            _logger.info("adding the HLS reports to the zip file")
+            report_files = Path(self.report_dir).glob("**/*_csynth.rpt")
+            for file in report_files:
+                tmp_zipf.write(file, f"report/{file.relative_to(self.report_dir)}")
+                _logger.debug("added %s to the zip file", file)
+
+            # redact timestamp, source location etc. to make zip reproducible
+            _logger.info("generating the final zip file")
+            with zipfile.ZipFile(output, "w") as output_zipf:
+                _redact_and_zip(tmp_zipf, output_zipf)
+
+        _logger.info("packed the design into a zip file: %s", output)
+
+
+def _redact_and_zip(zip_in: zipfile.ZipFile, zip_out: zipfile.ZipFile) -> None:
+    for info in sorted(zip_in.infolist(), key=lambda x: x.filename):
+        redacted_info = zipfile.ZipInfo(info.filename)
+        redacted_info.compress_type = zipfile.ZIP_DEFLATED
+        redacted_info.external_attr = info.external_attr
+        zip_out.writestr(redacted_info, _redact(zip_in, info))
 
 
 def _redact(xo: zipfile.ZipFile, info: zipfile.ZipInfo) -> bytes:

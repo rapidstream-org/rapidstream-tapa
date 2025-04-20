@@ -8,15 +8,11 @@ RapidStream Contributor License Agreement.
 
 import logging
 import os
-import tempfile
-import zipfile
 from pathlib import Path
 from typing import Literal
 
 import click
-from yaml import safe_dump
 
-from tapa.core import Program
 from tapa.steps.common import is_pipelined, load_persistent_context, load_tapa_program
 
 _logger = logging.getLogger().getChild(__name__)
@@ -110,7 +106,11 @@ def pack(
         output = _enforce_path_suffix(
             output, suffix=".zip", reason="you are not in Vitis mode"
         )
-        pack_zip(program, output)
+        program.pack_zip(
+            output,
+            graph=load_persistent_context("graph"),
+            settings=load_persistent_context("settings"),
+        )
         if bitstream_script is not None:
             _logger.warning(
                 "you are not in Vitis mode, the bitstream script will not be generated."
@@ -200,58 +200,3 @@ def get_vitis_script(
     script += NEWLINE
 
     return "\n".join(script)
-
-
-def pack_zip(program: Program, output: str) -> None:
-    """Pack the generated RTL into a zip file.
-
-    Args:
-        program: The program object.
-        output: The output zip file.
-    """
-    _logger.info("packing the design into a zip file: %s", output)
-
-    with (
-        tempfile.TemporaryFile() as tmp_file,
-        zipfile.ZipFile(tmp_file, "w") as tmp_zipf,
-    ):
-        _logger.info("adding the RTL to the zip file")
-        all_files = Path(program.rtl_dir).glob("**")
-        for file in all_files:
-            if file.is_file():
-                tmp_zipf.write(file, f"rtl/{file.relative_to(program.rtl_dir)}")
-                _logger.debug("added %s to the zip file", file)
-
-        _logger.info("adding the TAPA information to the zip file")
-        for filename in program.report_paths:
-            file = Path(filename)
-            # filter out unreadable json files
-            if file.suffix == ".json":
-                continue
-            tmp_zipf.write(file, f"{file.name}")
-            _logger.debug("added %s to the zip file", file)
-
-        graph = load_persistent_context("graph")
-        tmp_zipf.writestr("graph.yaml", safe_dump(graph))
-        _logger.debug("added graph.yaml to the zip file")
-
-        settings = load_persistent_context("settings")
-        tmp_zipf.writestr("settings.yaml", safe_dump(settings))
-        _logger.debug("added settings.yaml to the zip file")
-
-        _logger.info("adding the HLS reports to the zip file")
-        report_files = Path(program.report_dir).glob("**/*_csynth.rpt")
-        for file in report_files:
-            tmp_zipf.write(file, f"report/{file.relative_to(program.report_dir)}")
-            _logger.debug("added %s to the zip file", file)
-
-        # redact timestamp, source location etc. to make zip reproducible
-        _logger.info("generating the final zip file")
-        with zipfile.ZipFile(output, "w") as output_zipf:
-            for info in tmp_zipf.infolist():
-                redacted_info = zipfile.ZipInfo(info.filename)
-                redacted_info.compress_type = zipfile.ZIP_DEFLATED
-                redacted_info.external_attr = info.external_attr
-                output_zipf.writestr(redacted_info, tmp_zipf.read(info))
-
-    _logger.info("packed the design into a zip file: %s", output)
