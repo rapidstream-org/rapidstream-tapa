@@ -93,6 +93,7 @@ class ProgramHlsMixin(
     """Mixin class providing HLS (AIE included) functionalities."""
 
     top: str
+    cflags: str
     _tasks: dict[str, Task]
 
     def _extract_cpp(self, target: Literal["aie", "hls"]) -> None:
