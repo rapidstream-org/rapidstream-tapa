@@ -137,6 +137,7 @@ def synth(  # noqa: PLR0913,PLR0917
     settings["part_num"] = part_num
     settings["platform"] = platform
     settings["clock_period"] = clock_period
+    settings["flow_type"] = flow_type
 
     # Generate RTL code
     if flow_type == "aie":
