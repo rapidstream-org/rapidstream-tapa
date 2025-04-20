@@ -28,7 +28,7 @@ class ProgramPackMixin(
 
     top: str
 
-    def pack_rtl(self, output_file: str) -> None:
+    def pack_xo(self, output_file: str) -> None:
         _logger.info("packaging RTL code")
         with contextlib.ExitStack() as stack:  # avoid nested with statement
             tmp_fp = stack.enter_context(tempfile.TemporaryFile())

@@ -11,6 +11,7 @@ import os
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Literal
 
 import click
 from yaml import safe_dump
@@ -89,8 +90,26 @@ def pack(
         program.replace_custom_rtl(custom_rtl, templates_info)
 
     if vitis_mode:
-        pack_xo(program, output, bitstream_script)
+        output = _enforce_path_suffix(
+            output, suffix=".xo", reason="you are in Vitis mode"
+        )
+        program.pack_xo(output)
+        if bitstream_script is not None:
+            with open(bitstream_script, "w", encoding="utf-8") as script:
+                script.write(
+                    get_vitis_script(
+                        program.top,
+                        output,
+                        settings.get("platform", None),
+                        settings.get("clock-period", None),
+                        settings.get("connectivity", None),
+                    )
+                )
+                _logger.info("generate the v++ script at %s", bitstream_script)
     else:
+        output = _enforce_path_suffix(
+            output, suffix=".zip", reason="you are not in Vitis mode"
+        )
         pack_zip(program, output)
         if bitstream_script is not None:
             _logger.warning(
@@ -100,45 +119,29 @@ def pack(
     is_pipelined("pack", True)
 
 
-def pack_xo(program: Program, output: str | None, bitstream_script: str | None) -> None:
-    """Pack the generated RTL into a Xilinx object file.
-
-    Args:
-        program: The program object.
-        output_file: The output .xo file.
-        bitstream_script: The script file to generate the bitstream.
-    """
-    if output is None:
-        output = "work.xo"
-    if not output.endswith(".xo"):
-        output = f"{output}.xo"
+def _enforce_path_suffix(
+    path: str | None,
+    suffix: Literal[".xo", ".zip"],
+    reason: str,
+) -> str:
+    if path is None:
+        path = f"work{suffix}"
+    if not path.endswith(suffix):
+        path = f"{path}{suffix}"
         _logger.warning(
-            "you are in Vitis mode, the generated RTL will be packed "
-            "into an .xo file: %s.",
-            output,
+            "%s, the generated RTL will be packed into a %s file: %s.",
+            reason,
+            suffix,
+            path,
         )
-    program.pack_rtl(output)
-
-    if bitstream_script is not None:
-        settings = load_persistent_context("settings")
-        with open(bitstream_script, "w", encoding="utf-8") as script:
-            script.write(
-                get_vitis_script(
-                    program.top,
-                    output,
-                    settings.get("platform", None),
-                    settings.get("clock-period", None),
-                    settings.get("connectivity", None),
-                )
-            )
-            _logger.info("generate the v++ script at %s", bitstream_script)
+    return path
 
 
 def get_vitis_script(
     top: str,
     output_file: str,
-    platform: str,
-    clock_period: str,
+    platform: str | None,
+    clock_period: str | None,
     connectivity: str | None,
 ) -> str:
     """Generate v++ commands to run implementation."""
@@ -199,23 +202,13 @@ def get_vitis_script(
     return "\n".join(script)
 
 
-def pack_zip(program: Program, output: str | None) -> None:
+def pack_zip(program: Program, output: str) -> None:
     """Pack the generated RTL into a zip file.
 
     Args:
         program: The program object.
         output: The output zip file.
     """
-    if output is None:
-        output = "work.zip"
-    if not output.endswith(".zip"):
-        output = f"{output}.zip"
-        _logger.warning(
-            "you are not in Vitis mode, the generated RTL will be packed "
-            "into a .zip file: %s",
-            output,
-        )
-
     _logger.info("packing the design into a zip file: %s", output)
 
     with (
