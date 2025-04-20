@@ -48,7 +48,7 @@ from pyverilog.vparser.ast import (
 )
 from pyverilog.vparser.parser import ParseError
 
-from tapa.instance import Instance, Port
+from tapa.instance import Instance
 from tapa.program.directory import ProgramDirectoryMixin
 from tapa.program.hls import ProgramHlsMixin
 from tapa.program.synthesis import ProgramSynthesisMixin
@@ -113,7 +113,6 @@ class Program(  # TODO: refactor this class
       top: Name of the top-level module.
       work_dir: Working directory.
       is_temp: Whether to delete the working directory after done.
-      toplevel_ports: Tuple of Port objects.
       _tasks: Dict mapping names of tasks to Task objects.
       files: Dict mapping file names to contents that appear in the HDL directory.
       vitis_mode: Whether the generated RTL should match Vitis XO requirements.
@@ -152,7 +151,6 @@ class Program(  # TODO: refactor this class
             self.work_dir = os.path.abspath(work_dir)
             os.makedirs(self.work_dir, exist_ok=True)
             self.is_temp = False
-        self.toplevel_ports = tuple(map(Port, obj["tasks"][self.top]["ports"]))
         self._tasks: dict[str, Task] = {}
 
         task_names = toposort.toposort_flatten(
@@ -370,7 +368,7 @@ class Program(  # TODO: refactor this class
             tmp_fp = stack.enter_context(tempfile.TemporaryFile())
             pack(
                 top_name=self.top,
-                ports=self.toplevel_ports,
+                ports=self.top_task.ports.values(),
                 rtl_dir=self.rtl_dir,
                 part_num=self._get_part_num(self.top),
                 output_file=tmp_fp,
