@@ -252,7 +252,7 @@ class Program(  # TODO: refactor this class
         assert period.text is not None
         return decimal.Decimal(period.text)
 
-    def generate_task_rtl(self, print_fifo_ops: bool) -> "Program":
+    def generate_task_rtl(self, print_fifo_ops: bool) -> None:
         """Extract HDL files from tarballs generated from HLS."""
         _logger.info("extracting RTL files")
         for task in self._tasks.values():
@@ -316,23 +316,17 @@ class Program(  # TODO: refactor this class
                 assert task.ports
                 self._instrument_upper_and_template_task(task, print_fifo_ops)
 
-        return self
-
     def generate_top_rtl(
         self,
         print_fifo_ops: bool,
         override_report_schema_version: str,
-    ) -> "Program":
+    ) -> None:
         """Instrument HDL files generated from HLS.
 
         Args:
-        ----
             print_fifo_ops: Whether to print debugging info for FIFO operations.
-
-        Returns:
-        -------
-            Program: Return self.
-
+            override_report_schema_version: Override the schema version with the
+                given string, if non-empty.
         """
         if self.top_task.name in self.gen_templates:
             msg = "top task cannot be a template"
@@ -360,9 +354,7 @@ class Program(  # TODO: refactor this class
             with open(os.path.join(self.rtl_dir, name), "w", encoding="utf-8") as fp:
                 fp.write(content)
 
-        return self
-
-    def pack_rtl(self, output_file: str) -> "Program":
+    def pack_rtl(self, output_file: str) -> None:
         _logger.info("packaging RTL code")
         with contextlib.ExitStack() as stack:  # avoid nested with statement
             tmp_fp = stack.enter_context(tempfile.TemporaryFile())
@@ -397,7 +389,6 @@ class Program(  # TODO: refactor this class
                 output_fp.writestr(redacted_info, _redact(packed_obj, info))
 
         _logger.info("generated the v++ xo file at %s", output_file)
-        return self
 
     def _connect_fifos(self, task: Task) -> None:
         _logger.debug("  connecting %s's children tasks", task.name)
