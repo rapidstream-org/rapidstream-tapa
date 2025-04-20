@@ -27,3 +27,7 @@ class ProgramInterface:
     @abstractmethod
     def get_task(self, name: str) -> "Task":
         pass
+
+    @abstractmethod
+    def _get_part_num(self, name: str) -> str:
+        pass

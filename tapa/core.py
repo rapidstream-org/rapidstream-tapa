@@ -6,19 +6,15 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import contextlib
 import decimal
 import functools
-import glob
 import json
 import logging
 import os
 import os.path
-import re
 import shutil
 import tarfile
 import tempfile
-import zipfile
 from collections.abc import Generator
 from concurrent import futures
 from pathlib import Path
@@ -51,6 +47,7 @@ from pyverilog.vparser.parser import ParseError
 from tapa.instance import Instance
 from tapa.program.directory import ProgramDirectoryMixin
 from tapa.program.hls import ProgramHlsMixin
+from tapa.program.pack import ProgramPackMixin
 from tapa.program.synthesis import ProgramSynthesisMixin
 from tapa.task import Task
 from tapa.util import (
@@ -66,7 +63,7 @@ from tapa.verilog.ast_utils import (
     make_width,
 )
 from tapa.verilog.util import Pipeline, match_array_name, wire_name
-from tapa.verilog.xilinx import generate_handshake_ports, pack
+from tapa.verilog.xilinx import generate_handshake_ports
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,
     generate_async_mmap_ioports,
@@ -104,6 +101,7 @@ FIFO_DIRECTIONS = ["consumed_by", "produced_by"]
 class Program(  # TODO: refactor this class
     ProgramDirectoryMixin,
     ProgramHlsMixin,
+    ProgramPackMixin,
     ProgramSynthesisMixin,
 ):
     """Describes a TAPA program.
@@ -353,42 +351,6 @@ class Program(  # TODO: refactor this class
         for name, content in self.files.items():
             with open(os.path.join(self.rtl_dir, name), "w", encoding="utf-8") as fp:
                 fp.write(content)
-
-    def pack_rtl(self, output_file: str) -> None:
-        _logger.info("packaging RTL code")
-        with contextlib.ExitStack() as stack:  # avoid nested with statement
-            tmp_fp = stack.enter_context(tempfile.TemporaryFile())
-            pack(
-                top_name=self.top,
-                ports=self.top_task.ports.values(),
-                rtl_dir=self.rtl_dir,
-                part_num=self._get_part_num(self.top),
-                output_file=tmp_fp,
-            )
-            tmp_fp.seek(0)
-
-            _logger.info("packaging HLS report")
-            packed_obj = stack.enter_context(zipfile.ZipFile(tmp_fp, "a"))
-            output_fp = stack.enter_context(zipfile.ZipFile(output_file, "w"))
-            for filename in self.report_paths:
-                arcname = os.path.basename(filename)
-                _logger.debug("  packing %s", arcname)
-                packed_obj.write(filename, arcname)
-
-            report_glob = os.path.join(glob.escape(self.report_dir), "*_csynth.xml")
-            for filename in glob.iglob(report_glob):
-                arcname = os.path.join("report", os.path.basename(filename))
-                _logger.debug("  packing %s", arcname)
-                packed_obj.write(filename, arcname)
-
-            # redact timestamp, source location etc. to make xo reproducible
-            for info in sorted(packed_obj.infolist(), key=lambda x: x.filename):
-                redacted_info = zipfile.ZipInfo(info.filename)
-                redacted_info.compress_type = zipfile.ZIP_DEFLATED
-                redacted_info.external_attr = info.external_attr
-                output_fp.writestr(redacted_info, _redact(packed_obj, info))
-
-        _logger.info("generated the v++ xo file at %s", output_file)
 
     def _connect_fifos(self, task: Task) -> None:
         _logger.debug("  connecting %s's children tasks", task.name)
@@ -1105,38 +1067,3 @@ class Program(  # TODO: refactor this class
                 )
 
         return grouping_constraints
-
-
-def _redact(xo: zipfile.ZipFile, info: zipfile.ZipInfo) -> bytes:
-    content = xo.read(info)
-    if not info.filename.endswith(".xml"):
-        return content
-
-    # Although we only redact xml files, regex substitution seems more readable
-    # than parsing and mutating xml. We'll add tests to prevent regression in
-    # case of file format change.
-    text = content.decode()
-
-    # Redact the timestamp stored in xml. The same timestamp is used by files in
-    # the xo zip file and is the earliest timestamp supported by the zip format.
-    text = re.sub(
-        r"<xilinx:coreCreationDateTime>....-..-..T..:..:..Z</xilinx:coreCreationDateTime>",
-        r"<xilinx:coreCreationDateTime>1980-01-01T00:00:00Z</xilinx:coreCreationDateTime>",
-        text,
-    )
-
-    # Redact the absolute path but keep the path relative to the work directory.
-    text = re.sub(
-        r"<SourceLocation>.*/(cpp/.*)</SourceLocation>",
-        r"<SourceLocation>\1</SourceLocation>",
-        text,
-    )
-
-    # Redact the random(?) project ID.
-    text = re.sub(
-        r'ProjectID="................................"',
-        r'ProjectID="0123456789abcdef0123456789abcdef"',
-        text,
-    )
-
-    return text.encode()

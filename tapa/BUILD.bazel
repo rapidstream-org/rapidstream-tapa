@@ -102,6 +102,7 @@ py_library(
         ":util",
         "//tapa/program:directory",
         "//tapa/program:hls",
+        "//tapa/program:pack",
         "//tapa/program:synthesis",
         "//tapa/verilog",
         "//tapa/verilog/xilinx:module",

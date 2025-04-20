@@ -49,3 +49,13 @@ py_library(
         requirement("psutil"),
     ],
 )
+
+py_library(
+    name = "pack",
+    srcs = ["pack.py"],
+    deps = [
+        ":abc",
+        ":directory",
+        "//tapa/verilog/xilinx",
+    ],
+)
