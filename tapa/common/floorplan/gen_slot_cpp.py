@@ -30,7 +30,9 @@ _FIFO_OUT_PRAGMA = (
 
 _PRAGMA = {
     "scalar": _SCALAR_PRAGMA,
+    "async_mmap": _SCALAR_PRAGMA,
     "mmap": _SCALAR_PRAGMA,
+    "hmap": _SCALAR_PRAGMA,
     "istream": _FIFO_IN_PRAGMA,
     "ostream": _FIFO_OUT_PRAGMA,
     "istreams": _FIFO_IN_PRAGMA,
@@ -45,6 +47,7 @@ _PORT_TEMPLATE = {
     "ostreams": "tapa::ostream<{type}>& {name}",
     "scalar": _SCALAR_PORT_TEMPLATE,
     "mmap": _SCALAR_PORT_TEMPLATE,
+    "hmap": _SCALAR_PORT_TEMPLATE,
     "async_mmap": _SCALAR_PORT_TEMPLATE,
 }
 _DEF_TEMPLATE = """void $name($ports) {
@@ -112,7 +115,7 @@ def gen_slot_cpp(slot_name: str, top_name: str, ports: list, top_cpp: str) -> st
                 type=port_type,
             )
         )
-        assert port_cat in _PRAGMA
+        assert port_cat in _PRAGMA, port_cat
         cpp_pragmas.append(_PRAGMA[port_cat].format(name=name, type=port_type))
         continue
 
