@@ -127,11 +127,16 @@ class Graph(Base):
             assert isinstance(top_tasks[inst.definition.name], list)
 
             top_idx = top_tasks[inst.definition.name].index(inst.obj)
-            top_to_slot_inst_idx_map[inst.definition.name][top_idx] = len(
-                new_obj["tasks"][inst.definition.name]
-            )
+            idx = len(new_obj["tasks"][inst.definition.name])
+            top_to_slot_inst_idx_map[inst.definition.name][top_idx] = idx
 
-            new_obj["tasks"][inst.definition.name].append(inst.obj)
+            # For mmap, we keep all crossbar at top level. Generate a port on slot
+            # for each subinst mmap port, and connect the subinst mmap to the slot
+            # port. At top level, we connect the slot port to either the top or the
+            # crossbar.
+            assert inst.name
+            new_inst_obj = _connect_subinst_mmap_to_slot_port(inst.obj, inst.name)
+            new_obj["tasks"][inst.definition.name].append(new_inst_obj)
 
         # obj['fifos']:
         # construct the fifos of the slot
@@ -162,6 +167,7 @@ class Graph(Base):
         # Find the port on inst that connects to the fifo and copy
         # the port to the slot
         new_ports += _get_used_ports(new_insts, fifo_ports)
+        new_ports += _infer_mmap_ports_from_subtasks(new_insts)
 
         new_obj["ports"] = new_ports
 
@@ -176,6 +182,7 @@ class Graph(Base):
 
         return TaskDefinition(slot_name, new_obj, top)
 
+    # ruff: noqa: C901
     def get_floorplan_top(
         self,
         slot_defs: dict[str, TaskDefinition],
@@ -195,7 +202,10 @@ class Graph(Base):
             args = {}
             slot_subtasks = slot_def.obj["tasks"]
             assert isinstance(slot_subtasks, dict)
-            for port_name in ports:
+            for port_name, port in ports.items():
+                if port["cat"] in {"mmap", "hmap", "async_mmap"}:
+                    # mmap ports needs to be deal separately
+                    continue
                 # format port[idx] to port_idx for array
                 port_name_formated = re.sub(
                     r"\[([^\]]+)\]$", lambda m: f"_{m.group(1)}", port_name
@@ -204,6 +214,11 @@ class Graph(Base):
                     "arg": port_name,
                     "cat": _infer_arg_cat_from_subinst(port_name, slot_subtasks),
                 }
+
+            # add mmap args
+            args |= _get_slot_inst_mmap_port_args(
+                slot_name, top_obj["tasks"], task_inst_to_slot
+            )
             new_top_insts[slot_name].append({"args": args, "step": 0})
         new_top_obj["tasks"] = new_top_insts
 
@@ -299,6 +314,9 @@ def _get_used_ports(new_insts: list[TaskInstance], fifo_ports: list[str]) -> lis
         args = inst.obj["args"]
         assert isinstance(args, dict)
         for port_name, arg in args.items():
+            # Skip mmap ports as they are generated separately
+            if arg["cat"] in {"mmap", "async_mmap"}:
+                continue
             port_name_no_idx = re.sub(r"\[[^\]]+\]$", "", port_name)
             if arg["arg"] not in fifo_ports:
                 continue
@@ -388,3 +406,63 @@ def _get_slot_fifos(
         )
 
     return new_fifos_obj, fifo_ports
+
+
+def _get_mmap_slot_port_name(port_name: str, inst_name: str) -> str:
+    return f"{port_name}_{inst_name}"
+
+
+def _connect_subinst_mmap_to_slot_port(inst_obj: dict, inst_name: str) -> dict:
+    """Connect mmap port on task inst to slot."""
+    new_inst_obj = copy.deepcopy(inst_obj)
+    for port_name, arg in inst_obj["args"].items():
+        if arg["cat"] in {"mmap", "async_mmap"}:
+            new_inst_obj["args"][port_name] = {
+                "arg": _get_mmap_slot_port_name(port_name, inst_name),
+                "cat": arg["cat"],
+            }
+    return new_inst_obj
+
+
+def _get_slot_inst_mmap_port_args(
+    slot_name: str, top_subtasks: dict, task_inst_to_slot: dict[str, str]
+) -> dict:
+    """Get slot instance mmap port args."""
+    new_args = {}
+    for task_name, insts in top_subtasks.items():
+        for idx, inst in enumerate(insts):
+            inst_name_with_idx = get_instance_name((task_name, idx))
+            if task_inst_to_slot[inst_name_with_idx] != slot_name:
+                continue
+            assert isinstance(inst, dict)
+            for port_name, arg in inst["args"].items():
+                if arg["cat"] in {"mmap", "async_mmap"}:
+                    new_args[
+                        _get_mmap_slot_port_name(port_name, inst_name_with_idx)
+                    ] = {
+                        "arg": arg["arg"],
+                        "cat": arg["cat"],
+                    }
+    return new_args
+
+
+def _infer_mmap_ports_from_subtasks(subtask_insts: list[TaskInstance]) -> list:
+    """Infer mmap port name from child instance connecting to the port."""
+    new_ports = []
+    for inst in subtask_insts:
+        inst_def_obj = inst.definition.obj
+        assert isinstance(inst_def_obj, dict)
+        assert isinstance(inst_def_obj["ports"], list)
+        for port in inst_def_obj["ports"]:
+            assert isinstance(port, dict)
+            if port["cat"] in {"mmap", "async_mmap"}:
+                assert inst.name
+                new_ports.append(
+                    {
+                        "cat": port["cat"],
+                        "name": _get_mmap_slot_port_name(port["name"], inst.name),
+                        "type": port["type"],
+                        "width": port["width"],
+                    }
+                )
+    return new_ports
