@@ -1,4 +1,3 @@
-# ruff: noqa: PLR0917,PLR0913
 """Analyze TAPA program and store the program description."""
 
 __copyright__ = """
