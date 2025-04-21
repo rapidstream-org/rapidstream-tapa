@@ -4,119 +4,186 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
+load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//bazel:tapa_rules.bzl", "tapa_xo")
 
-# vadd xo
-tapa_xo(
-    name = "vadd-floorplan-xo",
-    src = "//tests/apps/vadd:vadd.cpp",
-    hdrs = ["//tests/apps/vadd:vadd.h"],
-    include = ["."],
-    flatten_hierarchy = True,
-    floorplan_path = ":floorplan/vadd.json",
-    top_name = "VecAdd",
+py_binary(
+    name = "gen_random_floorplan",
+    srcs = ["gen_random_floorplan.py"],
 )
+
+APPS = [
+    "bandwidth",
+    "cannon",
+    "gemv",
+    "graph",
+    "jacobi",
+    "network",
+    "shared_mmap",
+    "vadd",
+]
+
+[
+    genrule(
+        name = "gen_random_floorplan_{}_{}".format(app, i),
+        outs = ["floorplan_{}_{}.json".format(app, i)],
+        cmd = "$(location :gen_random_floorplan) {} {} $@".format(i, app),
+        tools = [":gen_random_floorplan"],
+    )
+    for app in APPS
+    for i in range(5)
+]
+
+# vadd xo
+[
+    tapa_xo(
+        name = "vadd-floorplan-{}-xo".format(idx),
+        src = "//tests/apps/vadd:vadd.cpp",
+        hdrs = ["//tests/apps/vadd:vadd.h"],
+        include = ["."],
+        flatten_hierarchy = True,
+        floorplan_path = ":gen_random_floorplan_vadd_{}".format(idx),
+        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        top_name = "VecAdd",
+    )
+    for idx in range(5)
+]
 
 # bandwidth xo
-tapa_xo(
-    name = "bandwidth-floorplan-xo",
-    src = "//tests/apps/bandwidth:bandwidth.cpp",
-    hdrs = [
-        "//tests/apps/bandwidth:bandwidth.h",
-        "//tests/apps/bandwidth:lfsr.h",
-    ],
-    include = ["."],
-    flatten_hierarchy = True,
-    floorplan_path = ":floorplan/bandwidth.json",
-    top_name = "Bandwidth",
-)
+[
+    tapa_xo(
+        name = "bandwidth-floorplan-{}-xo".format(idx),
+        src = "//tests/apps/bandwidth:bandwidth.cpp",
+        hdrs = [
+            "//tests/apps/bandwidth:bandwidth.h",
+            "//tests/apps/bandwidth:lfsr.h",
+        ],
+        include = ["."],
+        flatten_hierarchy = True,
+        floorplan_path = ":gen_random_floorplan_bandwidth_{}".format(idx),
+        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        top_name = "Bandwidth",
+    )
+    for idx in range(5)
+]
 
 # cannon xo
-tapa_xo(
-    name = "cannon-floorplan-xo",
-    src = "//tests/apps/cannon:cannon.cpp",
-    hdrs = ["//tests/apps/cannon:cannon.h"],
-    include = ["."],
-    flatten_hierarchy = True,
-    floorplan_path = ":floorplan/cannon.json",
-    top_name = "Cannon",
-)
+[
+    tapa_xo(
+        name = "cannon-floorplan-{}-xo".format(idx),
+        src = "//tests/apps/cannon:cannon.cpp",
+        hdrs = ["//tests/apps/cannon:cannon.h"],
+        include = ["."],
+        flatten_hierarchy = True,
+        floorplan_path = ":gen_random_floorplan_cannon_{}".format(idx),
+        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        top_name = "Cannon",
+    )
+    for idx in range(5)
+]
 
 # network xo
-tapa_xo(
-    name = "network-floorplan-xo",
-    src = "//tests/apps/network:network.cpp",
-    hdrs = ["//tests/apps/network:network.h"],
-    include = ["."],
-    flatten_hierarchy = True,
-    floorplan_path = ":floorplan/network.json",
-    top_name = "Network",
-)
+[
+    tapa_xo(
+        name = "network-floorplan-{}-xo".format(idx),
+        src = "//tests/apps/network:network.cpp",
+        hdrs = ["//tests/apps/network:network.h"],
+        include = ["."],
+        flatten_hierarchy = True,
+        floorplan_path = ":gen_random_floorplan_network_{}".format(idx),
+        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        top_name = "Network",
+    )
+    for idx in range(5)
+]
 
 # gemv xo
-tapa_xo(
-    name = "gemv-floorplan-xo",
-    src = "//tests/apps/gemv:gemv.cpp",
-    hdrs = ["//tests/apps/gemv:gemv.h"],
-    include = ["."],
-    flatten_hierarchy = True,
-    floorplan_path = ":floorplan/gemv.json",
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
-    top_name = "Gemv",
-)
+[
+    tapa_xo(
+        name = "gemv-floorplan-{}-xo".format(idx),
+        src = "//tests/apps/gemv:gemv.cpp",
+        hdrs = ["//tests/apps/gemv:gemv.h"],
+        include = ["."],
+        flatten_hierarchy = True,
+        floorplan_path = ":gen_random_floorplan_gemv_{}".format(idx),
+        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        top_name = "Gemv",
+    )
+    for idx in range(5)
+]
 
 # jacobi xo
-tapa_xo(
-    name = "jacobi-floorplan-xo",
-    src = "//tests/apps/jacobi:jacobi.cpp",
-    hdrs = ["//tests/apps/jacobi:jacobi.h"],
-    include = ["."],
-    flatten_hierarchy = True,
-    floorplan_path = ":floorplan/jacobi.json",
-    top_name = "Jacobi",
-)
+[
+    tapa_xo(
+        name = "jacobi-floorplan-{}-xo".format(idx),
+        src = "//tests/apps/jacobi:jacobi.cpp",
+        hdrs = ["//tests/apps/jacobi:jacobi.h"],
+        include = ["."],
+        flatten_hierarchy = True,
+        floorplan_path = ":gen_random_floorplan_jacobi_{}".format(idx),
+        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        top_name = "Jacobi",
+    )
+    for idx in range(5)
+]
 
 # graph xo
-tapa_xo(
-    name = "graph-floorplan-xo",
-    src = "//tests/apps/graph:graph.cpp",
-    hdrs = [
-        "//tests/apps/graph:graph.h",
-        "//tests/apps/graph:nxgraph.hpp",
-    ],
-    include = ["."],
-    flatten_hierarchy = True,
-    floorplan_path = ":floorplan/graph.json",
-    top_name = "Graph",
-)
+[
+    tapa_xo(
+        name = "graph-floorplan-{}-xo".format(idx),
+        src = "//tests/apps/graph:graph.cpp",
+        hdrs = [
+            "//tests/apps/graph:graph.h",
+            "//tests/apps/graph:nxgraph.hpp",
+        ],
+        include = ["."],
+        flatten_hierarchy = True,
+        floorplan_path = ":gen_random_floorplan_graph_{}".format(idx),
+        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        top_name = "Graph",
+    )
+    for idx in range(5)
+]
 
 # shared-mmap xo
-tapa_xo(
-    name = "shared-mmap-floorplan-xo",
-    src = "//tests/functional/shared-mmap:vadd.cpp",
-    include = ["."],
-    flatten_hierarchy = True,
-    # floorplan_path = ":floorplan/shared-mmap.json",
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
-    top_name = "VecAddShared",
-)
+[
+    tapa_xo(
+        name = "shared-mmap-floorplan-{}-xo".format(idx),
+        src = "//tests/functional/shared-mmap:vadd.cpp",
+        include = ["."],
+        flatten_hierarchy = True,
+        # floorplan_path = ":gen_random_floorplan_shared_mmap_{}".format(idx),
+        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
+        top_name = "VecAddShared",
+    )
+    for idx in range(5)
+]
 
 [
     sh_test(
-        name = "{name}-xosim".format(name = test),
+        name = "{name}-{idx}-xosim".format(
+            name = test,
+            idx = idx,
+        ),
         size = "enormous",
-        timeout = "moderate",
+        timeout = "long",
         srcs = ["//bazel:v++_env.sh"],
         args = [
             "$(location //tests/apps/{name}:{name}-host)".format(name = test),
-            "--bitstream=$(location {name}-floorplan-xo)".format(name = test),
+            "--bitstream=$(location {name}-floorplan-{idx}-xo)".format(
+                name = test,
+                idx = idx,
+            ),
             "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
             "1000",
         ],
         data = [
             "//tests/apps/{name}:{name}-host".format(name = test),
-            ":{name}-floorplan-xo".format(name = test),
+            ":{name}-floorplan-{idx}-xo".format(
+                name = test,
+                idx = idx,
+            ),
             "//tapa/cosim:tapa-fast-cosim",
         ],
         tags = [
@@ -129,87 +196,100 @@ tapa_xo(
         "bandwidth",
         "cannon",
     ]
+    for idx in range(5)
 ]
 
-sh_test(
-    name = "jacobi-xosim",
-    size = "enormous",
-    timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
-    args = [
-        "$(location //tests/apps/jacobi:jacobi-host)",
-        "--bitstream=$(location jacobi-floorplan-xo)",
-        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
-    ],
-    data = [
-        ":jacobi-floorplan-xo",
-        "//tapa/cosim:tapa-fast-cosim",
-        "//tests/apps/jacobi:jacobi-host",
-    ],
-    tags = [
-        "cpu:2",
-    ],
-)
+[
+    sh_test(
+        name = "jacobi-{}-xosim".format(idx),
+        size = "enormous",
+        timeout = "moderate",
+        srcs = ["//bazel:v++_env.sh"],
+        args = [
+            "$(location //tests/apps/jacobi:jacobi-host)",
+            "--bitstream=$(location jacobi-floorplan-{}-xo)".format(idx),
+            "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        ],
+        data = [
+            ":jacobi-floorplan-{}-xo".format(idx),
+            "//tapa/cosim:tapa-fast-cosim",
+            "//tests/apps/jacobi:jacobi-host",
+        ],
+        tags = [
+            "cpu:2",
+        ],
+    )
+    for idx in range(5)
+]
 
-sh_test(
-    name = "graph-xosim",
-    size = "enormous",
-    timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
-    args = [
-        "$(location //tests/apps/graph:graph-host)",
-        "--bitstream=$(location graph-floorplan-xo)",
-        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
-        "$(location //tests/apps/graph:graph.txt)",
-    ],
-    data = [
-        ":graph-floorplan-xo",
-        "//tapa/cosim:tapa-fast-cosim",
-        "//tests/apps/graph:graph.txt",
-        "//tests/apps/graph:graph-host",
-    ],
-    tags = [
-        "cpu:2",
-    ],
-)
+[
+    sh_test(
+        name = "graph-{}-xosim".format(idx),
+        size = "enormous",
+        timeout = "moderate",
+        srcs = ["//bazel:v++_env.sh"],
+        args = [
+            "$(location //tests/apps/graph:graph-host)",
+            "--bitstream=$(location graph-floorplan-{}-xo)".format(idx),
+            "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+            "$(location //tests/apps/graph:graph.txt)",
+        ],
+        data = [
+            ":graph-floorplan-{}-xo".format(idx),
+            "//tapa/cosim:tapa-fast-cosim",
+            "//tests/apps/graph:graph.txt",
+            "//tests/apps/graph:graph-host",
+        ],
+        tags = [
+            "cpu:2",
+        ],
+    )
+    for idx in range(5)
+]
 
-sh_test(
-    name = "shared-mmap-xosim",
-    size = "enormous",
-    timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
-    args = [
-        "$(location //tests/functional/shared-mmap:shared-mmap-host)",
-        "--bitstream=$(location shared-mmap-floorplan-xo)",
-        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
-        "1000",
-    ],
-    data = [
-        ":shared-mmap-floorplan-xo",
-        "//tapa/cosim:tapa-fast-cosim",
-        "//tests/functional/shared-mmap:shared-mmap-host",
-    ],
-    tags = [
-        "cpu:2",
-    ],
-)
+[
+    sh_test(
+        name = "shared-mmap-{}-xosim".format(idx),
+        size = "enormous",
+        timeout = "moderate",
+        srcs = ["//bazel:v++_env.sh"],
+        args = [
+            "$(location //tests/functional/shared-mmap:shared-mmap-host)",
+            "--bitstream=$(location shared-mmap-floorplan-{}-xo)".format(idx),
+            "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+            "1000",
+        ],
+        data = [
+            ":shared-mmap-floorplan-{}-xo".format(idx),
+            "//tapa/cosim:tapa-fast-cosim",
+            "//tests/functional/shared-mmap:shared-mmap-host",
+        ],
+        tags = [
+            "cpu:2",
+        ],
+    )
+    for idx in range(5)
+]
 
-sh_test(
-    name = "gemv-xosim",
-    size = "enormous",
-    timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
-    args = [
-        "$(location //tests/apps/gemv:gemv-host)",
-        "--bitstream=$(location gemv-floorplan-xo)",
-        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
-    ],
-    data = [
-        ":gemv-floorplan-xo",
-        "//tapa/cosim:tapa-fast-cosim",
-        "//tests/apps/gemv:gemv-host",
-    ],
-    tags = [
-        "cpu:2",
-    ],
-)
+[
+    sh_test(
+        name = "gemv-{}-xosim".format(idx),
+        size = "enormous",
+        timeout = "moderate",
+        srcs = ["//bazel:v++_env.sh"],
+        args = [
+            "$(location //tests/apps/gemv:gemv-host)",
+            "--bitstream=$(location gemv-floorplan-{}-xo)".format(idx),
+            "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        ],
+        data = [
+            ":gemv-floorplan-{}-xo".format(idx),
+            "//tapa/cosim:tapa-fast-cosim",
+            "//tests/apps/gemv:gemv-host",
+        ],
+        tags = [
+            "cpu:2",
+        ],
+    )
+    for idx in range(5)
+]
