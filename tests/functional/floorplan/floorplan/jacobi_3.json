@@ -1,0 +1,19 @@
+{
+    "Jacobi_fsm": "SLOT_X0Y2:SLOT_X0Y2",
+    "Mmap2Stream_0": "SLOT_X0Y1:SLOT_X0Y1",
+    "Module0Func_0": "SLOT_X0Y2:SLOT_X0Y2",
+    "Module1Func_0": "SLOT_X0Y2:SLOT_X0Y2",
+    "Module1Func_1": "SLOT_X0Y0:SLOT_X0Y0",
+    "Module1Func_2": "SLOT_X0Y0:SLOT_X0Y0",
+    "Module1Func_3": "SLOT_X0Y2:SLOT_X0Y2",
+    "Module1Func_4": "SLOT_X0Y2:SLOT_X0Y2",
+    "Module1Func_5": "SLOT_X0Y1:SLOT_X0Y1",
+    "Module3Func1_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "Module3Func2_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "Module6Func1_0": "SLOT_X0Y2:SLOT_X0Y2",
+    "Module6Func2_0": "SLOT_X0Y2:SLOT_X0Y2",
+    "Module8Func_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "Stream2Mmap_0": "SLOT_X0Y2:SLOT_X0Y2",
+    "bank_0_t0": "SLOT_X0Y1:SLOT_X0Y1",
+    "bank_0_t1": "SLOT_X0Y0:SLOT_X0Y0"
+}

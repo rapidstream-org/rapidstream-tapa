@@ -1,0 +1,11 @@
+{
+    "Control_0": "SLOT_X0Y1:SLOT_X0Y1",
+    "Graph_fsm": "SLOT_X0Y2:SLOT_X0Y2",
+    "ProcElem_0": "SLOT_X0Y1:SLOT_X0Y1",
+    "UpdateHandler_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "edges": "SLOT_X0Y1:SLOT_X0Y1",
+    "num_edges": "SLOT_X0Y0:SLOT_X0Y0",
+    "num_vertices": "SLOT_X0Y2:SLOT_X0Y2",
+    "updates": "SLOT_X0Y0:SLOT_X0Y0",
+    "vertices": "SLOT_X0Y1:SLOT_X0Y1"
+}

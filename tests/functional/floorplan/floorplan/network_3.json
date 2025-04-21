@@ -1,0 +1,19 @@
+{
+    "Consume_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "Network_fsm": "SLOT_X0Y2:SLOT_X0Y2",
+    "Produce_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "Switch2x2_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "Switch2x2_1": "SLOT_X0Y0:SLOT_X0Y0",
+    "Switch2x2_10": "SLOT_X0Y0:SLOT_X0Y0",
+    "Switch2x2_11": "SLOT_X0Y2:SLOT_X0Y2",
+    "Switch2x2_2": "SLOT_X0Y0:SLOT_X0Y0",
+    "Switch2x2_3": "SLOT_X0Y2:SLOT_X0Y2",
+    "Switch2x2_4": "SLOT_X0Y2:SLOT_X0Y2",
+    "Switch2x2_5": "SLOT_X0Y2:SLOT_X0Y2",
+    "Switch2x2_6": "SLOT_X0Y1:SLOT_X0Y1",
+    "Switch2x2_7": "SLOT_X0Y0:SLOT_X0Y0",
+    "Switch2x2_8": "SLOT_X0Y2:SLOT_X0Y2",
+    "Switch2x2_9": "SLOT_X0Y0:SLOT_X0Y0",
+    "mmap_in": "SLOT_X0Y2:SLOT_X0Y2",
+    "mmap_out": "SLOT_X0Y2:SLOT_X0Y2"
+}

@@ -1,0 +1,11 @@
+{
+    "Bandwidth_fsm": "SLOT_X0Y1:SLOT_X0Y1",
+    "Copy_0": "SLOT_X0Y1:SLOT_X0Y1",
+    "Copy_1": "SLOT_X0Y2:SLOT_X0Y2",
+    "Copy_2": "SLOT_X0Y1:SLOT_X0Y1",
+    "Copy_3": "SLOT_X0Y0:SLOT_X0Y0",
+    "chan_0": "SLOT_X0Y1:SLOT_X0Y1",
+    "chan_1": "SLOT_X0Y2:SLOT_X0Y2",
+    "chan_2": "SLOT_X0Y0:SLOT_X0Y0",
+    "chan_3": "SLOT_X0Y1:SLOT_X0Y1"
+}

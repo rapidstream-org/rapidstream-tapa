@@ -1,0 +1,8 @@
+{
+    "Add_0": "SLOT_X0Y0:SLOT_X0Y0",
+    "Mmap2Stream_0": "SLOT_X0Y1:SLOT_X0Y1",
+    "Mmap2Stream_1": "SLOT_X0Y0:SLOT_X0Y0",
+    "Stream2Mmap_0": "SLOT_X0Y1:SLOT_X0Y1",
+    "VecAddShared_fsm": "SLOT_X0Y1:SLOT_X0Y1",
+    "elems": "SLOT_X0Y2:SLOT_X0Y2"
+}

@@ -1,0 +1,7 @@
+{
+    "GemvCore_0": "SLOT_X0Y2:SLOT_X0Y2",
+    "GemvCore_1": "SLOT_X0Y0:SLOT_X0Y0",
+    "mat_a": "SLOT_X0Y0:SLOT_X0Y0",
+    "vec_x": "SLOT_X0Y0:SLOT_X0Y0",
+    "vec_y": "SLOT_X0Y2:SLOT_X0Y2"
+}
