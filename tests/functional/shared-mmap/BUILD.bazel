@@ -8,6 +8,15 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//bazel:tapa_rules.bzl", "tapa_xo")
 
+exports_files(
+    [
+        ".",
+        "vadd.cpp",
+        "vadd.h",
+    ],
+    visibility = ["//tests/functional:__subpackages__"],
+)
+
 sh_test(
     name = "shared-mmap",
     size = "medium",
@@ -44,6 +53,7 @@ cc_binary(
     srcs = glob([
         "*.cpp",
     ]),
+    visibility = ["//tests/functional:__subpackages__"],
     deps = [
         "//tapa-lib:tapa",
         "@gflags",
