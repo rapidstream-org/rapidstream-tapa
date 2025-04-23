@@ -71,6 +71,20 @@ changes back to the main repository.
 Build TAPA from Source
 ----------------------
 
+When building on systems other than a RapidStream server or a UCLA server, you
+will need to modify the ``VARS.bzl`` file in the repository's root directory
+to specify the correct Vivado installation paths and versions. The build script
+currently assumes default installation paths at
+``/opt/tools/xilinx/Vivado/2024.2`` and
+``/opt/tools/xilinx/Vivado/2022.2`` for Vivado, and
+``/opt/tools/xilinx/Vitis/2024.2`` for Vitis.
+
+For installations in non-standard locations, please update the relevant paths
+in the ``VARS.bzl`` file to match your system configuration. Additionally,
+you should set ``XILINX_TOOL_VERSION`` to reference your most recent Xilinx
+tools version and ``XILINX_TOOL_LEGACY_VERSION`` to indicate the earliest
+Xilinx tools version you have installed.
+
 To build TAPA, navigate to the root directory of the cloned repository and execute the following command:
 
 .. code-block:: bash
