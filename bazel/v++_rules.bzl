@@ -5,6 +5,7 @@
 # RapidStream Contributor License Agreement.
 
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+load("//:VARS.bzl", "XILINX_TOOL_PATH", "XILINX_TOOL_VERSION")
 
 # Define the implementation of vpp target.
 def _vpp_xclbin_impl(ctx):
@@ -146,10 +147,10 @@ xilinx_wrapper = rule(
             doc = "Overrides the tool version just for this target.",
         ),
         "_tool_path": attr.label(
-            default = "//bazel:xilinx_tool_path",
+            default = XILINX_TOOL_PATH,
         ),
         "_tool_version": attr.label(
-            default = "//bazel:xilinx_tool_version",
+            default = XILINX_TOOL_VERSION,
         ),
     },
 )

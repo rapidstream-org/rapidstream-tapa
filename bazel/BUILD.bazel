@@ -4,28 +4,10 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("//:VARS.bzl", "XILINX_TOOL_LEGACY_VERSION")
 load("//bazel:v++_rules.bzl", "xilinx_wrapper")
 
 package(default_visibility = ["//visibility:public"])
-
-string_flag(
-    name = "xilinx_tool_path",
-    build_setting_default = "/opt/tools/xilinx",
-)
-
-string_flag(
-    name = "xilinx_tool_version",
-    build_setting_default = "2024.1",
-    values = [
-        "2022.1",
-        "2022.2",
-        "2023.1",
-        "2023.2",
-        "2024.1",
-        "2024.2",
-    ],
-)
 
 exports_files([
     "nuitka_wrapper.py",
@@ -50,12 +32,10 @@ xilinx_wrapper(
     tool = "Vitis_HLS",
 )
 
-# Starting from 2024.2, Vivado has renamed rdi to xv
 xilinx_wrapper(
     name = "xsc_xv",
     argv0 = "xsc",
     tool = "Vivado",
-    tool_version = "2024.2",
 )
 
 # Use the oldest supported version to ensure compatibility
@@ -63,5 +43,5 @@ xilinx_wrapper(
     name = "xsc_legacy_rdi",
     argv0 = "xsc",
     tool = "Vivado",
-    tool_version = "2022.1",
+    tool_version = XILINX_TOOL_LEGACY_VERSION,
 )
