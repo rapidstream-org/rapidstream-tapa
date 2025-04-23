@@ -10,6 +10,7 @@
 /bazel-*
 /build/
 /compile_commands.json
+VARS.bzl
 __pycache__
 a.out
 artifacts.out/

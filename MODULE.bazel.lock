@@ -196,6 +196,49 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
+    "//bazel:dependencies.bzl%load_dependencies": {
+      "general": {
+        "bzlTransitiveDigest": "YauRX5oPB+U0kjtJ7qJqsOb9+lJ8fdC/bGnF8s7WaaE=",
+        "usagesDigest": "1Rl7iqWCprmw+WysiYjOWkXwNOQvijgPQT17u4qmLvc=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "vitis_hls": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:local.bzl%new_local_repository",
+            "attributes": {
+              "build_file_content": "\ncc_library(\n    name = \"include\",\n    hdrs = glob([\"include/**/*.h\"]),\n    includes = [\"include\"],\n    visibility = [\"//visibility:public\"],\n)\n        ",
+              "path": "/opt/tools/xilinx/Vitis/2024.2"
+            }
+          },
+          "xsim_xv": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:local.bzl%new_local_repository",
+            "attributes": {
+              "build_file_content": "\ncc_library(\n    name = \"svdpi\",\n    hdrs = glob([\"include/svdpi.h\"]),\n    includes = [\"include\"],\n    visibility = [\"//visibility:public\"],\n)\n        ",
+              "path": "/opt/tools/xilinx/Vivado/2024.2/data/xsim"
+            }
+          },
+          "xsim_legacy_rdi": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:local.bzl%new_local_repository",
+            "attributes": {
+              "build_file_content": "\ncc_library(\n    name = \"svdpi\",\n    hdrs = glob([\"include/svdpi.h\"]),\n    includes = [\"include\"],\n    visibility = [\"//visibility:public\"],\n)\n    ",
+              "path": "/opt/tools/xilinx/Vivado/2022.2/data/xsim"
+            }
+          }
+        },
+        "moduleExtensionMetadata": {
+          "useAllRepos": "DEV",
+          "reproducible": false
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "",
+            "bazel_tools",
+            "bazel_tools"
+          ]
+        ]
+      }
+    },
     "@@apple_support+//crosstool:setup.bzl%apple_cc_configure_extension": {
       "general": {
         "bzlTransitiveDigest": "E970FlMbwpgJPdPUQzatKh6BMfeE0ZpWABvwshh7Tmg=",

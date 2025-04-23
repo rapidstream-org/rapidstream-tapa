@@ -98,46 +98,12 @@ single_version_override(
     patches = ["//bazel:patches/glog/0001-Fix-unused-but-set-variable.patch"],
 )
 
-new_local_repository(
-    name = "vitis_hls",
-    build_file_content = """
-cc_library(
-    name = "include",
-    hdrs = glob(["include/**/*.h"]),
-    includes = ["include"],
-    visibility = ["//visibility:public"],
+load_dependencies = use_extension(
+    "//bazel:dependencies.bzl",
+    "load_dependencies",
+    dev_dependency = True,
 )
-    """,
-    path = "/opt/tools/xilinx/Vitis/2024.2",
-)
-
-new_local_repository(
-    name = "xsim_xv",
-    build_file_content = """
-cc_library(
-    name = "svdpi",
-    hdrs = glob(["include/svdpi.h"]),
-    includes = ["include"],
-    visibility = ["//visibility:public"],
-)
-    """,
-    # Starting from 2024.2, Vivado has renamed rdi to xv
-    path = "/opt/tools/xilinx/Vivado/2024.2/data/xsim",
-)
-
-new_local_repository(
-    name = "xsim_legacy_rdi",
-    build_file_content = """
-cc_library(
-    name = "svdpi",
-    hdrs = glob(["include/svdpi.h"]),
-    includes = ["include"],
-    visibility = ["//visibility:public"],
-)
-    """,
-    # Use the oldest supported version to ensure compatibility
-    path = "/opt/tools/xilinx/Vivado/2022.1/data/xsim",
-)
+use_repo(load_dependencies, "vitis_hls", "xsim_legacy_rdi", "xsim_xv")
 
 # Required by FRT
 bazel_dep(name = "tinyxml2", version = "10.0.0")
