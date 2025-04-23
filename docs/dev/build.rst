@@ -79,11 +79,18 @@ currently assumes default installation paths at
 ``/opt/tools/xilinx/Vivado/2022.2`` for Vivado, and
 ``/opt/tools/xilinx/Vitis/2024.2`` for Vitis.
 
-For installations in non-standard locations, please update the relevant paths
-in the ``VARS.bzl`` file to match your system configuration. Additionally,
-you should set ``XILINX_TOOL_VERSION`` to reference your most recent Xilinx
-tools version and ``XILINX_TOOL_LEGACY_VERSION`` to indicate the earliest
-Xilinx tools version you have installed.
+If your Xilinx tools are installed in non-standard locations, please modify
+the ``XILINX_TOOL_PATH`` variable to reference the correct base installation
+directory for your Vivado and Vitis installations. You should also update
+``XILINX_TOOL_VERSION`` to specify the version of the latest Xilinx tools
+you have installed. With these settings properly configured, the system
+will expect your Vivado installation to be located at
+``{XILINX_TOOL_PATH}/Vivado/{XILINX_TOOL_VERSION}``.
+
+Furthermore, you should configure ``XILINX_TOOL_LEGACY_VERSION`` to indicate
+the earliest version of Xilinx tools installed on your system, along with
+``XILINX_TOOL_LEGACY_PATH`` to point to the corresponding installation
+directory.
 
 To build TAPA, navigate to the root directory of the cloned repository and execute the following command:
 

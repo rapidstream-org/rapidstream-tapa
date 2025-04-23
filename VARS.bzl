@@ -6,4 +6,5 @@
 
 XILINX_TOOL_PATH = "/opt/tools/xilinx"
 XILINX_TOOL_VERSION = "2024.2"
+XILINX_TOOL_LEGACY_PATH = "/opt/tools/xilinx"
 XILINX_TOOL_LEGACY_VERSION = "2022.2"

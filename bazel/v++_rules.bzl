@@ -4,7 +4,6 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("//:VARS.bzl", "XILINX_TOOL_PATH", "XILINX_TOOL_VERSION")
 
 # Define the implementation of vpp target.
@@ -108,9 +107,9 @@ vpp_xclbin = rule(
 def _xilinx_wrapper_impl(ctx):
     output = ctx.actions.declare_file(ctx.attr.name)
     tool_path = "{}/{}/{}".format(
-        ctx.attr._tool_path[BuildSettingInfo].value,
+        ctx.attr.tool_path,
         ctx.attr.tool,
-        ctx.attr.tool_version or ctx.attr._tool_version[BuildSettingInfo].value,
+        ctx.attr.tool_version,
     )
     lines = [
         "#!/bin/bash",
@@ -143,13 +142,12 @@ xilinx_wrapper = rule(
             default = False,
             doc = "If true, also set up XRT environment.",
         ),
-        "tool_version": attr.string(
-            doc = "Overrides the tool version just for this target.",
-        ),
-        "_tool_path": attr.label(
+        "tool_path": attr.string(
+            doc = "The tool path for this target.",
             default = XILINX_TOOL_PATH,
         ),
-        "_tool_version": attr.label(
+        "tool_version": attr.string(
+            doc = "The tool version for this target.",
             default = XILINX_TOOL_VERSION,
         ),
     },
