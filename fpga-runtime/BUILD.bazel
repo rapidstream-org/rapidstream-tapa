@@ -50,7 +50,7 @@ cc_library(
         "@glog",
         "@nlohmann_json//:json",
         "@tinyxml2",
-        "@xilinx_xrt//:xrt",
+        "@xilinx_xrt",
         "@yaml-cpp",
     ],
 )

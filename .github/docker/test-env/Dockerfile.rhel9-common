@@ -17,7 +17,6 @@ ARG DOCKER_GROUP_ID
 
 # Required by us:
 #   - gcc-c++
-#   - ocl-icd
 #   - tar (for installation)
 
 RUN yum update -y && \
@@ -35,7 +34,6 @@ RUN yum update -y && \
         hostname \
         libX11 \
         libxcrypt-compat \
-        ocl-icd \
         perl \
         shadow-utils \
         tar \

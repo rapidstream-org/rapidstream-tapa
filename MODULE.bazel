@@ -27,8 +27,6 @@ http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_
 
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
 
-new_local_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:local.bzl", "new_local_repository")
-
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
@@ -110,19 +108,136 @@ bazel_dep(name = "tinyxml2", version = "10.0.0")
 bazel_dep(name = "libuuid", version = "2.39.3.bcr.1")
 bazel_dep(name = "yaml-cpp", version = "0.8.0")
 
-new_local_repository(
-    name = "xilinx_xrt",
-    build_file_content = """
+OPENCL_VERSION = "2.3.3"
+
+OPENCL_SHA256 = "8cd8e8e129db3081a64090fc1252bec39dc88cdb7b3f929315e014b75069bd9d"
+
+http_archive(
+    name = "opencl",
+    patch_args = ["-p1"],
+    patch_cmds = [
+        """
+        cat >BUILD <<EOF
 cc_library(
-    name = "xrt",
-    hdrs = glob(["include/**/*.h"]),
-    includes = ["include"],
-    linkopts = [ "-l:libOpenCL.so.1" ],
+    name = "opencl",
+    srcs = [
+        "ocl_icd_loader.c",
+        "ocl_icd_loader_gen.c",
+    ],
+    hdrs = [
+        "config.h",
+        "ocl_icd.h",
+        "ocl_icd_debug.h",
+        "ocl_icd_loader.h",
+        "ocl_icd_loader_gen.h",
+    ] + glob(["khronos-headers/CL/*.h"]),
+    copts = ["-Wno-sign-compare"],
+    linkopts = ["-ldl"],
+    defines = [
+        "CLLAYERINFO",
+        "CL_NO_NON_ICD_DISPATCH_EXTENSION_PROTOTYPES",
+        "HAVE_CONFIG_H",
+    ],
+    includes = [".", "khronos-headers"],
     visibility = ["//visibility:public"],
-    deps = ["@libuuid"],
 )
-    """,
-    path = "/opt/xilinx/xrt",
+EOF
+        """,
+        """
+        cat >config.h <<EOF
+#define ETC_OPENCL_LAYERS "/etc/OpenCL/layers"
+#define ETC_OPENCL_VENDORS "/etc/OpenCL/vendors"
+#define HAVE_CL_CL_LAYER_H 1
+#define HAVE_DLFCN_H 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_LIBDL 1
+#define HAVE_MALLOC 1
+#define HAVE_REALLOC 1
+#define HAVE_STDINT_H 1
+#define HAVE_STDIO_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRINGS_H 1
+#define HAVE_STRING_H 1
+#define HAVE_STRSTR 1
+#define HAVE_SYS_STAT_H 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_UNISTD_H 1
+#define OCL_ICD_OPENCL_VERSION "1.2"
+#define PACKAGE "ocl-icd"
+#define PACKAGE_BUGREPORT "ocl-icd-devel@lists.forge.imag.fr"
+#define PACKAGE_NAME "OpenCL ICD Loader"
+#define PACKAGE_TARNAME "ocl-icd"
+#define PACKAGE_URL ""
+#define STDC_HEADERS 1
+#define VERSION "{}"
+#define PACKAGE_VERSION VERSION
+#define PACKAGE_STRING "OpenCL ICD Loader " VERSION
+EOF
+        """.format(OPENCL_VERSION),
+    ],
+    patches = [
+        "//bazel:patches/opencl/ocl_icd.h.patch",
+        "//bazel:patches/opencl/ocl_icd_loader_gen.h.patch",
+        "//bazel:patches/opencl/ocl_icd_loader_gen.c.patch",
+    ],
+    sha256 = OPENCL_SHA256,
+    strip_prefix = "ocl-icd-{}".format(OPENCL_VERSION),
+    urls = ["https://github.com/OCL-dev/ocl-icd/archive/refs/tags/v{}.tar.gz".format(OPENCL_VERSION)],
+)
+
+# Latest version of OpenCL-CLHPP supporting OpenCL 1.2
+OPENCL_CLHPP_VERSION = "2023.02.06"
+
+OPENCL_CLHPP_SHA256 = "2726106df611fb5cb65503a52df27988d80c0b8844c8f0901c6092ab43701e8c"
+
+http_archive(
+    name = "opencl-clhpp",
+    patch_cmds = [
+        """
+        cat >BUILD <<EOF
+cc_library(
+    name = "opencl-clhpp",
+    hdrs = glob(["include/**"]),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+    deps = ["@opencl"],
+)
+EOF
+""",
+    ],
+    sha256 = OPENCL_CLHPP_SHA256,
+    strip_prefix = "OpenCL-CLHPP-{}".format(OPENCL_CLHPP_VERSION),
+    urls = ["https://github.com/KhronosGroup/OpenCL-CLHPP/archive/refs/tags/v{}.tar.gz".format(OPENCL_CLHPP_VERSION)],
+)
+
+XRT_VERSION = "202420.2.18.179"
+
+XRT_SHA256 = "8c03891c8a121631853c2144e4224e456f5658c81857585ac81ea990c8a00f1b"
+
+http_archive(
+    name = "xilinx_xrt",
+    patch_cmds = [
+        """
+        cat >BUILD <<EOF
+cc_library(
+    name = "xilinx_xrt",
+    hdrs = [
+        "src/include/1_2/CL/cl2xrt.hpp",
+        "src/include/1_2/CL/cl_ext_xilinx.h",
+    ] + glob(["src/runtime_src/core/include/*.h"]),
+    includes = [
+        "src/runtime_src/core/include",
+        "src/include/1_2"
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@opencl-clhpp"],
+)
+EOF
+""",
+    ],
+    sha256 = XRT_SHA256,
+    strip_prefix = "XRT-{}".format(XRT_VERSION),
+    urls = ["https://github.com/Xilinx/XRT/archive/refs/tags/{}.tar.gz".format(XRT_VERSION)],
 )
 
 # Required by nuitka build

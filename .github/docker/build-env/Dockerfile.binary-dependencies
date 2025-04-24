@@ -35,10 +35,6 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 #   - libx11-6
 #   - locales
 
-# Required by XRT:
-#   - ocl-icd-opencl-dev
-#   - opencl-headers
-
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
       # Update the following line to the latest date for retriggering the docker build
@@ -54,8 +50,6 @@ RUN apt-get update && \
         libtinfo5 \
         libx11-6 \
         locales \
-        ocl-icd-opencl-dev \
-        opencl-headers \
         python3 \
         software-properties-common \
         ubuntu-advantage-tools \

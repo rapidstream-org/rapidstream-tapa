@@ -17,7 +17,6 @@ ARG DOCKER_GROUP_ID
 
 # Required by us:
 #   - gcc-c++
-#   - ocl-icd
 
 RUN yum update -y && \
     # Update the following line to the latest date for retriggering the docker build
@@ -29,7 +28,6 @@ RUN yum update -y && \
         hostname \
         libX11 \
         libxcrypt-compat \
-        ocl-icd \
         parallel \
         perl \
         util-linux \

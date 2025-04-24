@@ -17,7 +17,6 @@ ARG DOCKER_GROUP_ID
 
 # Required by us:
 #   - g++
-#   - ocl-icd-libopencl1
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
@@ -32,7 +31,6 @@ RUN apt-get update && \
         libtinfo5 \
         libx11-6 \
         locales \
-        ocl-icd-libopencl1 \
         parallel \
       && \
       git clone https://github.com/bats-core/bats-core.git /tmp/bats-core && \

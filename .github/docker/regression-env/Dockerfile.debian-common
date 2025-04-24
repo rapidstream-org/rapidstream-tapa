@@ -19,8 +19,6 @@ RUN apt-get update && \
         libtinfo5 \
         libx11-6 \
         locales \
-        ocl-icd-opencl-dev \
-        opencl-headers \
         sudo \
         unzip \
         wget \

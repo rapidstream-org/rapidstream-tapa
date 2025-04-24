@@ -21,7 +21,6 @@ ARG DOCKER_GROUP_ID
 
 # Required by us:
 #   - g++
-#   - ocl-icd-libopencl1
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
@@ -35,7 +34,6 @@ RUN apt-get update && \
         libtinfo6 \
         libx11-6 \
         locales \
-        ocl-icd-libopencl1 \
         parallel \
       && \
       rm -rf /var/lib/apt/lists/* && \
