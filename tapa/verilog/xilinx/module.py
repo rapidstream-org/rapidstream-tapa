@@ -86,23 +86,63 @@ _LOGIC_SYNTAX = pyslang.ContinuousAssignSyntax | pyslang.ProceduralBlockSyntax
 class Module:  # noqa: PLR0904  # TODO: refactor this class
     """AST and helpers for a verilog module.
 
-    `_next_*_idx` is the index to module_def.items where the next type of item
-    should be inserted.
+    Attributes:
+        _syntax_tree: Syntax tree parsed from the source.
+        _rewriter: Rewriter holding all uncommitted changes to the source.
 
-    Attributes
-    ----------
-      ast: The Source node.
-      directives: Tuple of Directives.
-      _next_io_port_idx: Next index of an IOPort in module_def.items.
-      _next_signal_idx: Next index of Wire or Reg in module_def.items.
-      _next_param_idx: Next index of Parameter in module_def.items.
-      _next_instance_idx: Next index of InstanceList in module_def.items.
-      _next_logic_idx: Next index of Assign or Always in module_def.items.
+        _module_decl: Singleton syntax node of the module declaration.
 
+        _params: A dict mapping parameter names to `Parameter` AST nodes.
+            Changes to the parameters are always reflected.
+        _param_name_to_decl: A dict mapping parameter names to syntax nodes.
+            Changes to the parameters are not reflected until they are committed.
+        _param_source_range: Syntax node to which the next parameter should be
+            appended.
+
+        _ports: A dict mapping port names to `IOPort` AST nodes. Changes to the
+            ports are always reflected.
+        _port_name_to_decl: A dict mapping port names to syntax nodes. Changes
+            to the ports are not reflected until they are committed.
+        _port_source_range: Syntax node to which the next port should be
+            appended.
+
+        _signals: A dict mapping signal names to `Signal` AST nodes. Changes to
+            the signals are always reflected.
+        _signal_name_to_decl: A dict mapping signal names to syntax nodes.
+            Changes to the signals are not reflected until they are committed.
+        _signal_source_range: Syntax node to which the next signal should be
+            appended.
+
+        _logics: A list of logic syntax nodes. Changes to the logics are not
+            reflected until they are committed.
+        _logic_source_range: Syntax node to which the next logic should be
+            appended.
+
+        _instances: A list of instance syntax nodes. Changes to the instances
+            are not reflected until they are committed.
+        _instance_source_range: Syntax node to which the next instance should be
+            appended.
     """
 
-    # module_def.items should contain the following attributes, in that order.
-    _ATTRS = "param", "io_port", "signal", "logic", "instance"
+    _module_decl: pyslang.ModuleDeclarationSyntax
+
+    _params: dict[str, Parameter]
+    _param_name_to_decl: dict[str, pyslang.ParameterDeclarationStatementSyntax]
+    _param_source_range: pyslang.SourceRange
+
+    _ports: dict[str, ioport.IOPort]
+    _port_name_to_decl: dict[str, pyslang.PortDeclarationSyntax]
+    _port_source_range: pyslang.SourceRange
+
+    _signals: dict[str, Signal]
+    _signal_name_to_decl: dict[str, _SIGNAL_SYNTAX]
+    _signal_source_range: pyslang.SourceRange
+
+    _logics: list[_LOGIC_SYNTAX]
+    _logic_source_range: pyslang.SourceRange
+
+    _instances: list[pyslang.HierarchyInstantiationSyntax]
+    _instance_source_range: pyslang.SourceRange
 
     def __init__(
         self,
@@ -154,27 +194,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     def _parse_syntax_tree(self) -> None:
         """Parse syntax tree and memorize relevant nodes.
 
-        The following attributes will be created/updated:
-
-        _module_decl: ModuleDeclarationSyntax
-
-        _params: dict[str, Parameter]
-        _param_name_to_decl: dict[str, ParameterDeclarationSyntax]
-        _param_source_range: SourceRange
-
-        _ports: dict[str, IOPort]
-        _port_name_to_decl: dict[str, PortDeclarationSyntax]
-        _port_source_range: SourceRange
-
-        _signals: dict[str, Signal]
-        _signal_name_to_decl: dict[str, DataDeclarationSyntax | NetDeclarationSyntax]
-        _signal_source_range: SourceRange
-
-        _logics: list[ContinuousAssignSyntax | ProceduralBlockSyntax]
-        _logic_source_range: SourceRange
-
-        _instances: list[HierarchyInstantiationSyntax]
-        _instance_source_range: SourceRange
+        All private attributes (except `_syntax_tree` and `_rewriter`) will be
+        created/updated.
         """
 
         class Attrs(UniqueAttrs):
@@ -182,24 +203,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         attrs = Attrs()
 
-        self._params: dict[str, Parameter] = {}
-        self._param_name_to_decl: dict[str, pyslang.ParameterDeclarationStatementSyntax]
+        self._params = {}
         self._param_name_to_decl = {}
-        self._param_source_range: pyslang.SourceRange
-
-        self._ports: dict[str, ioport.IOPort] = {}
-        self._port_name_to_decl: dict[str, pyslang.PortDeclarationSyntax] = {}
-        self._port_source_range: pyslang.SourceRange
-
-        self._signals: dict[str, Signal] = {}
-        self._signal_name_to_decl: dict[str, _SIGNAL_SYNTAX] = {}
-        self._signal_source_range: pyslang.SourceRange
-
-        self._logics: list[_LOGIC_SYNTAX] = []
-        self._logic_source_range: pyslang.SourceRange
-
-        self._instances: list[pyslang.HierarchyInstantiationSyntax] = []
-        self._instance_source_range: pyslang.SourceRange
+        self._ports = {}
+        self._port_name_to_decl = {}
+        self._signals = {}
+        self._signal_name_to_decl = {}
+        self._logics = []
+        self._instances = []
 
         @functools.singledispatch
         def visitor(_: object) -> pyslang.VisitAction:
