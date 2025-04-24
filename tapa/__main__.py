@@ -7,7 +7,6 @@ RapidStream Contributor License Agreement.
 """
 
 import logging
-import sys
 import tempfile
 
 import click
@@ -61,18 +60,6 @@ _logger = logging.getLogger().getChild(__name__)
     default=Options.clang_format_quota_in_bytes,
     help="Limit clang-format to the first few bytes of code.",
 )
-@click.option(
-    "--recursion-limit",
-    default=3000,
-    metavar="limit",
-    help="Override Python recursion limit.",
-)
-@click.option(
-    "--enable-pyslang / --disable-pyslang",
-    type=bool,
-    default=Options.enable_pyslang,
-    help="Enable or disable pyslang as RTL parser.",
-)
 @click.version_option(__version__, prog_name="tapa")
 @click.pass_context
 def entry_point(  # noqa: PLR0913,PLR0917
@@ -82,14 +69,11 @@ def entry_point(  # noqa: PLR0913,PLR0917
     work_dir: str,
     temp_dir: str | None,
     clang_format_quota_in_bytes: int,
-    recursion_limit: int,
-    enable_pyslang: bool,
 ) -> None:
     """The TAPA compiler."""
     setup_logging(verbose, quiet, work_dir)
 
     Options.clang_format_quota_in_bytes = clang_format_quota_in_bytes
-    Options.enable_pyslang = enable_pyslang
 
     # Setup execution context
     ctx.ensure_object(dict)
@@ -99,16 +83,6 @@ def entry_point(  # noqa: PLR0913,PLR0917
 
     # Print version information
     _logger.info("tapa version: %s", __version__)
-
-    if Options.enable_pyslang:
-        _logger.info("using pyslang parser")
-        return
-
-    _logger.info("using pyverilog parser")
-
-    # RTL parsing may require a deep stack
-    sys.setrecursionlimit(recursion_limit)
-    _logger.info("Python recursion limit set to %d", recursion_limit)
 
 
 entry_point.add_command(analyze)

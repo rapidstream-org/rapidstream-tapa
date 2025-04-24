@@ -5,12 +5,11 @@ RapidStream Contributor License Agreement.
 """
 
 import functools
-import itertools
 import logging
 import os.path
 import re
 import tempfile
-from collections.abc import Callable, Generator, Iterable, Iterator
+from collections.abc import Generator, Iterable, Iterator
 
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
@@ -20,11 +19,9 @@ from pyverilog.vparser.ast import (
     Decl,
     Description,
     Identifier,
-    Inout,
     Input,
     Instance,
     InstanceList,
-    Ioport,
     ModuleDef,
     Node,
     Output,
@@ -34,19 +31,16 @@ from pyverilog.vparser.ast import (
     Port,
     PortArg,
     Portlist,
-    Pragma,
     Reg,
     Source,
     Unot,
     Width,
     Wire,
 )
-from pyverilog.vparser.parser import VerilogCodeParser
 
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
-from tapa.util import Options
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.util import (
     Pipeline,
@@ -56,7 +50,7 @@ from tapa.verilog.util import (
     wire_name,
 )
 from tapa.verilog.xilinx import ioport
-from tapa.verilog.xilinx.ast_types import Directive, IOPort, Logic, Signal
+from tapa.verilog.xilinx.ast_types import IOPort, Logic, Signal
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
 from tapa.verilog.xilinx.const import (
     CLK,
@@ -121,19 +115,11 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             if not name:
                 msg = "`files` and `name` cannot both be empty"
                 raise ValueError(msg)
-            if Options.enable_pyslang:
-                self._syntax_tree = pyslang.SyntaxTree.fromText(
-                    f"module {name}(); endmodule",
-                )
-                self._rewriter = PyslangRewriter(self._syntax_tree)
-                self._parse_syntax_tree()
-                return
-            self.ast = Source(
-                name,
-                Description([ModuleDef(name, Paramlist(()), Portlist(()), items=())]),
+            self._syntax_tree = pyslang.SyntaxTree.fromText(
+                f"module {name}(); endmodule",
             )
-            self.directives = ()
-            self._calculate_indices()
+            self._rewriter = PyslangRewriter(self._syntax_tree)
+            self._parse_syntax_tree()
             return
         with tempfile.TemporaryDirectory(prefix="pyverilog-") as output_dir:
             if is_trimming_enabled:
@@ -161,43 +147,9 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 for idx, file in enumerate(files):
                     new_files.append(gen_trimmed_file(file, idx))
                 files = new_files
-            if Options.enable_pyslang:
-                self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
-                self._rewriter = PyslangRewriter(self._syntax_tree)
-                self._parse_syntax_tree()
-                return
-            codeparser = VerilogCodeParser(
-                files,
-                preprocess_output=os.path.join(output_dir, "preprocess.output"),
-                outputdir=output_dir,
-                debug=False,
-            )
-            self.ast: Source = codeparser.parse()
-            self.directives: tuple[Directive, ...] = codeparser.get_directives()
-        self._calculate_indices()
-
-    def _calculate_indices(self) -> None:
-        for idx, item in enumerate(self._module_def.items):
-            if isinstance(item, Decl):
-                if any(isinstance(x, Input | Output) for x in item.list):
-                    self._next_io_port_idx = idx + 1
-                elif any(isinstance(x, Wire | Reg) for x in item.list):
-                    self._next_signal_idx = idx + 1
-                elif any(isinstance(x, Parameter) for x in item.list):
-                    self._next_param_idx = idx + 1
-            elif isinstance(item, Logic):
-                self._next_logic_idx = idx + 1
-            elif isinstance(item, InstanceList):
-                self._next_instance_idx = idx + 1
-
-        # if an attr type is not present, set its idx to the previous attr type
-        last_idx = 0
-        for attr in self._ATTRS:
-            idx = getattr(self, f"_next_{attr}_idx", None)
-            if idx is None:
-                setattr(self, f"_next_{attr}_idx", last_idx)
-            else:
-                last_idx = idx
+            self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
+            self._rewriter = PyslangRewriter(self._syntax_tree)
+            self._parse_syntax_tree()
 
     def _parse_syntax_tree(self) -> None:
         """Parse syntax tree and memorize relevant nodes.
@@ -328,36 +280,12 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._instance_source_range = node.sourceRange
 
     @property
-    def _module_def(self) -> ModuleDef:
-        module_defs = [
-            x for x in self.ast.description.definitions if isinstance(x, ModuleDef)
-        ]
-        if len(module_defs) != 1:
-            msg = "unexpected number of modules"
-            raise ValueError(msg)
-        return module_defs[0]
-
-    @property
     def name(self) -> str:
-        if Options.enable_pyslang:
-            return self._module_decl.header.name.valueText
-        return self._module_def.name
+        return self._module_decl.header.name.valueText
 
     @property
     def ports(self) -> dict[str, ioport.IOPort]:
-        if Options.enable_pyslang:
-            return self._ports
-        port_lists = [
-            # ANSI style: ports declared in header
-            (x.first for x in self._module_def.portlist.ports if isinstance(x, Ioport)),
-            # Non-ANSI style: ports declared in body
-            *(x.list for x in self._module_def.items if isinstance(x, Decl)),
-        ]
-        return {
-            x.name: ioport.IOPort.create(x)
-            for x in itertools.chain.from_iterable(port_lists)
-            if isinstance(x, Input | Output | Inout)
-        }
+        return self._ports
 
     class NoMatchingPortError(ValueError):
         """No matching port being found exception."""
@@ -442,35 +370,17 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     @property
     def signals(self) -> dict[str, Wire | Reg]:
-        if Options.enable_pyslang:
-            return self._signals
-        signal_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
-        return {
-            x.name: x
-            for x in itertools.chain.from_iterable(signal_lists)
-            if isinstance(x, Wire | Reg)
-        }
+        return self._signals
 
     @property
     def params(self) -> dict[str, Parameter]:
-        if Options.enable_pyslang:
-            return self._params
-        param_lists = (x.list for x in self._module_def.items if isinstance(x, Decl))
-        return {
-            x.name: x
-            for x in itertools.chain.from_iterable(param_lists)
-            if isinstance(x, Parameter)
-        }
+        return self._params
 
     @property
     def code(self) -> str:
-        if Options.enable_pyslang:
-            self._syntax_tree = self._rewriter.commit()
-            self._parse_syntax_tree()
-            return str(self._syntax_tree.root)
-        return "\n".join(
-            directive for _, directive in self.directives
-        ) + _CODEGEN.visit(self.ast)
+        self._syntax_tree = self._rewriter.commit()
+        self._parse_syntax_tree()
+        return str(self._syntax_tree.root)
 
     def get_template_code(self) -> str:
         portlist = []
@@ -504,62 +414,13 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         return _CODEGEN.visit(template_ast)
 
-    def _increment_idx(self, length: int, target: str) -> None:
-        attr_map = {attr: priority for priority, attr in enumerate(self._ATTRS)}
-        target_priority = attr_map.get(target)
-        if target_priority is None:
-            msg = f"target must be one of {self._ATTRS}"
-            raise ValueError(msg)
-
-        # Get the index of the target once, since it could change in the loop.
-        target_idx = getattr(self, f"_next_{target}_idx")
-
-        # Increment `_next_*_idx` if it is after `_next_{target}_idx`. If
-        # `_next_*_idx` == `_next_{target}_idx`, increment only if `priority` is
-        # larger, i.e., `attr` should show up after `target` in `module_def.items`.
-        for priority, attr in enumerate(self._ATTRS):
-            attr_name = f"_next_{attr}_idx"
-            idx = getattr(self, attr_name)
-            if (idx, priority) >= (target_idx, target_priority):
-                setattr(self, attr_name, idx + length)
-
-    def _filter(self, func: Callable[[Node], bool], _target: str) -> None:
-        self._module_def.items = tuple(filter(func, self._module_def.items))
-        self._calculate_indices()
-
     def add_ports(self, ports: Iterable[IOPort | Decl]) -> "Module":
         """Add IO ports to this module.
 
         Each port could be an `IOPort`, or an `Decl` that has a single `IOPort`
         prefixed with 0 or more `Pragma`s.
         """
-        if Options.enable_pyslang:
-            return self._add_ports_pyslang(ports)
-        decl_list = []
-        port_list = []
-        for port in ports:
-            if isinstance(port, Decl):
-                decl_list.append(port)
-                port_list.extend(x for x in port.list if isinstance(x, IOPort))
-            elif isinstance(port, IOPort):
-                decl_list.append(Decl((port,)))
-                port_list.append(port)
-            else:
-                msg = f"unexpected port `{port}`"
-                raise ValueError(msg)
-        self._module_def.portlist.ports += tuple(
-            Port(name=port.name, width=None, dimensions=None, type=None)
-            for port in port_list
-        )
-        self._module_def.items = (
-            self._module_def.items[: self._next_io_port_idx]
-            + tuple(decl_list)
-            + self._module_def.items[self._next_io_port_idx :]
-        )
-        self._increment_idx(len(decl_list), "io_port")
-        return self
 
-    def _add_ports_pyslang(self, ports: Iterable[IOPort | Decl]) -> "Module":
         def flatten(ports: Iterable[IOPort | Decl]) -> Generator[ioport.IOPort]:
             for port in ports:
                 if isinstance(port, Decl):
@@ -597,38 +458,11 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         """Delete IO port from this module.
 
         Args:
-        ----
           port_name (str): Name of the IO port.
 
         Raises:
-        ------
           ValueError: Module does not have the port.
         """
-        if Options.enable_pyslang:
-            self._del_port_pyslang(port_name)
-            return
-
-        removed_ports = []
-
-        def func(item: Node) -> bool:
-            if isinstance(item, Decl):
-                for decl in item.list:
-                    if isinstance(decl, IOPort) and decl.name == port_name:
-                        removed_ports.append(decl.name)
-                        return False
-            return True
-
-        self._filter(func, "port")
-
-        if not removed_ports:
-            msg = f"no port {port_name} found in module {self.name}"
-            raise ValueError(msg)
-
-        self._module_def.portlist.ports = tuple(
-            x for x in self._module_def.portlist.ports if x.name != port_name
-        )
-
-    def _del_port_pyslang(self, port_name: str) -> None:
         if self._ports.pop(port_name, None) is None:
             msg = f"no port {port_name} found in module {self.name}"
             raise ValueError(msg)
@@ -686,26 +520,11 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             pieces.append(line)
             pieces.append("\n")
 
-        if not Options.enable_pyslang:
-            return self.add_ports([Decl([Identifier("".join(pieces))])])
-
         # Append the comment lines after the module header.
         self._rewriter.add_before(self._module_decl.header.sourceRange.end, pieces)
         return self
 
     def add_signals(self, signals: Iterable[Signal]) -> "Module":
-        if Options.enable_pyslang:
-            return self._add_signals_pyslang(signals)
-        decl = Decl(list=tuple(signals))
-        self._module_def.items = (
-            *self._module_def.items[: self._next_signal_idx],
-            decl,
-            *self._module_def.items[self._next_signal_idx :],
-        )
-        self._increment_idx(len(decl.list), "signal")
-        return self
-
-    def _add_signals_pyslang(self, signals: Iterable[Signal]) -> "Module":
         for signal in signals:
             self._signals[signal.name] = signal
             self._rewriter.add_before(
@@ -726,22 +545,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self.add_logics([Assign(left=q[0], right=init)])
 
     def del_signals(self, prefix: str = "", suffix: str = "") -> None:
-        if Options.enable_pyslang:
-            self._del_signals_pyslang(prefix, suffix)
-            return
-
-        def func(item: Node) -> bool:
-            if isinstance(item, Decl):
-                item = item.list[0]
-                if isinstance(item, Reg | Wire):
-                    name: str = item.name
-                    if name.startswith(prefix) and name.endswith(suffix):
-                        return False
-            return True
-
-        self._filter(func, "signal")
-
-    def _del_signals_pyslang(self, prefix: str, suffix: str) -> None:
         new_signals = {}
         for name, signal in self._signals.items():
             if name.startswith(prefix) and name.endswith(suffix):
@@ -752,18 +555,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self._signals = new_signals
 
     def add_params(self, params: Iterable[Parameter]) -> "Module":
-        if Options.enable_pyslang:
-            return self._add_params_pyslang(params)
-        decl = Decl(list=tuple(params))
-        self._module_def.items = (
-            *self._module_def.items[: self._next_param_idx],
-            decl,
-            *self._module_def.items[self._next_param_idx :],
-        )
-        self._increment_idx(len(decl.list), "param")
-        return self
-
-    def _add_params_pyslang(self, params: Iterable[Parameter]) -> "Module":
         for param in params:
             self._params[param.name] = param
             self._rewriter.add_before(
@@ -772,22 +563,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self
 
     def del_params(self, prefix: str = "", suffix: str = "") -> None:
-        if Options.enable_pyslang:
-            self._del_params_pyslang(prefix, suffix)
-            return
-
-        def func(item: Node) -> bool:
-            if isinstance(item, Decl):
-                item = item.list[0]
-                if isinstance(item, Parameter):
-                    name: str = item.name
-                    if name.startswith(prefix) and name.endswith(suffix):
-                        return False
-            return True
-
-        self._filter(func, "param")
-
-    def _del_params_pyslang(self, prefix: str, suffix: str) -> None:
         new_params = {}
         for name, param in self._params.items():
             if name.startswith(prefix) and name.endswith(suffix):
@@ -796,15 +571,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             else:
                 new_params[name] = param
         self._params = new_params
-
-    def _add_instancelist(self, item: InstanceList) -> "Module":
-        self._module_def.items = (
-            *self._module_def.items[: self._next_instance_idx],
-            item,
-            *self._module_def.items[self._next_instance_idx :],
-        )
-        self._increment_idx(1, "instance")
-        return self
 
     def add_instance(
         self,
@@ -825,31 +591,12 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 ),
             ),
         )
-        if Options.enable_pyslang:
-            return self._add_instancelist_pyslang(item)
-        self._add_instancelist(item)
-        return self
-
-    def _add_instancelist_pyslang(self, item: InstanceList) -> "Module":
         self._rewriter.add_before(
             self._instance_source_range.end, ["\n  ", _CODEGEN.visit(item)]
         )
         return self
 
     def add_logics(self, logics: Iterable[Logic]) -> "Module":
-        if Options.enable_pyslang:
-            return self._add_logics_pyslang(logics)
-
-        logic_tuple = tuple(logics)
-        self._module_def.items = (
-            self._module_def.items[: self._next_logic_idx]
-            + logic_tuple
-            + self._module_def.items[self._next_logic_idx :]
-        )
-        self._increment_idx(len(logic_tuple), "logic")
-        return self
-
-    def _add_logics_pyslang(self, logics: Iterable[Logic]) -> "Module":
         for logic in logics:
             self._rewriter.add_before(
                 self._logic_source_range.end, ["\n  ", _CODEGEN.visit(logic)]
@@ -857,35 +604,11 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self
 
     def del_logics(self) -> None:
-        if Options.enable_pyslang:
-            self._del_logics_pyslang()
-            return
-
-        def func(item: Node) -> bool:
-            return not isinstance(item, Logic)
-
-        self._filter(func, "param")
-
-    def _del_logics_pyslang(self) -> None:
         for logic in self._logics:
             self._rewriter.remove(logic.sourceRange)
 
     def del_instances(self, prefix: str = "", suffix: str = "") -> None:
         """Deletes instances with a matching *module* name."""
-        if Options.enable_pyslang:
-            self._del_instances_pyslang(prefix, suffix)
-            return
-
-        def func(item: Node) -> bool:
-            return not (
-                isinstance(item, InstanceList)
-                and item.module.startswith(prefix)
-                and item.module.endswith(suffix)
-            )
-
-        self._filter(func, "instance")
-
-    def _del_instances_pyslang(self, prefix: str, suffix: str) -> None:
         for instance in self._instances:
             module_name = instance.type.valueText
             if module_name.startswith(prefix) and module_name.endswith(suffix):
@@ -901,19 +624,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             Module: self, for chaining.
 
         """
-        if Options.enable_pyslang:
-            return self._add_rs_pragmas_pyslang()
-        items = []
-        for item in self._module_def.items:
-            if isinstance(item, Decl):
-                items.append(with_rs_pragma(item))
-            else:
-                items.append(item)
-        self._module_def.items = tuple(items)
-        self._calculate_indices()
-        return self
-
-    def _add_rs_pragmas_pyslang(self) -> "Module":
         self._syntax_tree = self._rewriter.commit()
         self._parse_syntax_tree()
         for port in self._ports.values():
@@ -923,14 +633,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                     _CODEGEN.visit(port.rs_pragma),
                 )
         return self
-
-    def del_pragmas(self, pragma: Iterable[str]) -> None:
-        def func(item: Node) -> bool:
-            return not isinstance(item, Pragma) or (
-                item.entry.name != pragma and item.entry.name not in pragma
-            )
-
-        self._filter(func, "signal")
 
     def add_fifo_instance(
         self,
@@ -1093,8 +795,6 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         self.del_signals(HANDSHAKE_READY)
         self.del_logics()
         self.del_instances(suffix="_regslice_both")
-        if not Options.enable_pyslang:
-            self.del_pragmas("fsm_encoding")
         self.add_signals(
             map(
                 Wire,

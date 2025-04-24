@@ -29,8 +29,6 @@ _logger = logging.getLogger().getChild(__name__)
 class Options:
     """Global configuration options."""
 
-    enable_pyslang: bool = True
-
     # Only clang-format the first 1MB code to avoid performance bottleneck:
     # https://github.com/rapidstream-org/rapidstream-tapa/issues/232
     clang_format_quota_in_bytes: int = 1_000_000

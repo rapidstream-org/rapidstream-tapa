@@ -87,7 +87,6 @@ py_test(
     deps = [
         ":ast_types",
         ":module",
-        "//tapa:util",
         "//tapa/verilog/xilinx",
         requirement("pyverilog"),
     ],

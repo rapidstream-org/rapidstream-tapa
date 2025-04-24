@@ -16,7 +16,6 @@ import shutil
 import tarfile
 import tempfile
 from collections.abc import Generator
-from concurrent import futures
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
@@ -51,7 +50,6 @@ from tapa.program.pack import ProgramPackMixin
 from tapa.program.synthesis import ProgramSynthesisMixin
 from tapa.task import Task
 from tapa.util import (
-    Options,
     get_instance_name,
     get_module_name,
 )
@@ -285,16 +283,12 @@ class Program(  # TODO: refactor this class
 
         # extract and parse RTL and populate tasks
         _logger.info("parsing RTL files and populating tasks")
-        for task, module in zip(
-            self._tasks.values(),
-            (map if Options.enable_pyslang else futures.ProcessPoolExecutor().map)(
-                Module,
-                ([self.get_rtl_path(x.name)] for x in self._tasks.values()),
-                (not x.is_upper for x in self._tasks.values()),
-            ),
-        ):
+        for task in self._tasks.values():
             _logger.debug("parsing %s", task.name)
-            task.module = module
+            task.module = Module(
+                files=[self.get_rtl_path(task.name)],
+                is_trimming_enabled=task.is_lower,
+            )
             task.self_area = self.get_area(task.name)
             task.clock_period = self.get_clock_period(task.name)
 

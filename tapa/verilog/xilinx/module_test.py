@@ -6,14 +6,12 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser import ast
 
-from tapa.util import Options
 from tapa.verilog import ast_utils
 from tapa.verilog.xilinx import ast_types
 from tapa.verilog.xilinx.const import (
@@ -27,12 +25,9 @@ _CODEGEN = ASTCodeGenerator()
 _TESTDATA_PATH = (Path(__file__).parent / "testdata").resolve()
 
 
-@pytest.fixture(params=["pyslang"])
-def options(request: pytest.FixtureRequest) -> Iterator[None]:
-    enable_pyslang_saved = Options.enable_pyslang
-    Options.enable_pyslang = request.param == "pyslang"
-    yield
-    Options.enable_pyslang = enable_pyslang_saved
+@pytest.fixture(params=[])
+def options() -> None:
+    return
 
 
 @pytest.mark.usefixtures("options")
