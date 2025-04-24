@@ -1,7 +1,7 @@
 """Load the local vendor dependencies for the TAPA project based on VARS.bzl"""
 
 load("@bazel_tools//tools/build_defs/repo:local.bzl", "new_local_repository")
-load("//:VARS.bzl", "XILINX_TOOL_LEGACY_VERSION", "XILINX_TOOL_PATH", "XILINX_TOOL_VERSION")
+load("//:VARS.bzl", "XILINX_TOOL_LEGACY_PATH", "XILINX_TOOL_LEGACY_VERSION", "XILINX_TOOL_PATH", "XILINX_TOOL_VERSION")
 
 # Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 # All rights reserved. The contributor(s) of this file has/have agreed to the
@@ -45,7 +45,8 @@ cc_library(
     )
 
     # Use the oldest supported version to ensure compatibility
-    xsim_legacy_path = vivado_path + XILINX_TOOL_LEGACY_VERSION + "/data/xsim"
+    vivado_legacy_path = XILINX_TOOL_LEGACY_PATH + "/Vivado/"
+    xsim_legacy_path = vivado_legacy_path + XILINX_TOOL_LEGACY_VERSION + "/data/xsim"
     new_local_repository(
         name = "xsim_legacy_rdi",
         build_file_content = """
