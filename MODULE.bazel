@@ -31,9 +31,31 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 
-# LLVM toolchain, lastest version supporting Ubuntu 18.04
+# LLVM toolchain
 llvm.toolchain(
-    llvm_version = "16.0.0",
+    llvm_versions = {
+        # lastest version supporting Ubuntus
+        "ubuntu-18.04-x86_64": "18.1.8",
+        "ubuntu-20.04-x86_64": "18.1.8",
+        "ubuntu-22.04-x86_64": "18.1.8",
+        "ubuntu-24.04-x86_64": "18.1.8",
+        "ubuntu-25.04-x86_64": "18.1.8",
+        # lastest version supporting RHELs
+        "rhel-8.6-x86_64": "14.0.0",
+        "rhel-8.7-x86_64": "14.0.0",
+        "rhel-8.8-x86_64": "14.0.0",
+        "rhel-8.9-x86_64": "14.0.0",
+        "rhel-8.10-x86_64": "14.0.0",
+        "rhel-9.0-x86_64": "14.0.0",
+        "rhel-9.1-x86_64": "14.0.0",
+        "rhel-9.2-x86_64": "14.0.0",
+        "rhel-9.3-x86_64": "14.0.0",
+        "rhel-9.4-x86_64": "14.0.0",
+        "rhel-9.5-x86_64": "14.0.0",
+        # for other platforms, use the latest version
+        # you are really on your own here
+        "": "20.1.2",
+    },
     stdlib = {"": "stdc++"},
 )
 use_repo(llvm, "llvm_toolchain")

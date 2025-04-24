@@ -2,6 +2,7 @@ build --copt=-Wall
 build --copt=-Wextra
 build --copt=-Werror
 build --copt=-Wno-attributes
+build --copt=-Wno-deprecated-declarations
 build --copt=-Wno-unknown-pragmas
 build --copt=-Wno-unused-label
 build --copt=-Wno-unused-parameter

@@ -198,7 +198,7 @@
   "moduleExtensions": {
     "//bazel:dependencies.bzl%load_dependencies": {
       "general": {
-        "bzlTransitiveDigest": "wVpB6bLTvK7RToVhBLd9Ad59NojmpLkujbeEsxm+pbg=",
+        "bzlTransitiveDigest": "U1XIoN4sMuwjB27hnWHsCo0nxmeOGlXySXCvCm4JBtQ=",
         "usagesDigest": "1Rl7iqWCprmw+WysiYjOWkXwNOQvijgPQT17u4qmLvc=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -538,7 +538,7 @@
     "@@toolchains_llvm+//toolchain/extensions:llvm.bzl%llvm": {
       "general": {
         "bzlTransitiveDigest": "miE+G1r8txiL9GGIOFLiY+RyielXfNO9OiFlFw+NE+U=",
-        "usagesDigest": "PRUuy2zAiZVf4aUgC/ObrBcNHcxxg1syYqfC0FXS3BM=",
+        "usagesDigest": "2YoCZeG5xRLv5DP/jKuOQABqYWZ03v8jVEBK9TQf7a4=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -553,8 +553,26 @@
               "exec_os": "",
               "libclang_rt": {},
               "llvm_mirror": "",
-              "llvm_version": "16.0.0",
-              "llvm_versions": {},
+              "llvm_version": "",
+              "llvm_versions": {
+                "ubuntu-18.04-x86_64": "18.1.8",
+                "ubuntu-20.04-x86_64": "18.1.8",
+                "ubuntu-22.04-x86_64": "18.1.8",
+                "ubuntu-24.04-x86_64": "18.1.8",
+                "ubuntu-25.04-x86_64": "18.1.8",
+                "rhel-8.6-x86_64": "14.0.0",
+                "rhel-8.7-x86_64": "14.0.0",
+                "rhel-8.8-x86_64": "14.0.0",
+                "rhel-8.9-x86_64": "14.0.0",
+                "rhel-8.10-x86_64": "14.0.0",
+                "rhel-9.0-x86_64": "14.0.0",
+                "rhel-9.1-x86_64": "14.0.0",
+                "rhel-9.2-x86_64": "14.0.0",
+                "rhel-9.3-x86_64": "14.0.0",
+                "rhel-9.4-x86_64": "14.0.0",
+                "rhel-9.5-x86_64": "14.0.0",
+                "": "20.1.2"
+              },
               "netrc": "",
               "sha256": {},
               "strip_prefix": {},
@@ -581,7 +599,23 @@
               "link_flags": {},
               "link_libs": {},
               "llvm_versions": {
-                "": "16.0.0"
+                "ubuntu-18.04-x86_64": "18.1.8",
+                "ubuntu-20.04-x86_64": "18.1.8",
+                "ubuntu-22.04-x86_64": "18.1.8",
+                "ubuntu-24.04-x86_64": "18.1.8",
+                "ubuntu-25.04-x86_64": "18.1.8",
+                "rhel-8.6-x86_64": "14.0.0",
+                "rhel-8.7-x86_64": "14.0.0",
+                "rhel-8.8-x86_64": "14.0.0",
+                "rhel-8.9-x86_64": "14.0.0",
+                "rhel-8.10-x86_64": "14.0.0",
+                "rhel-9.0-x86_64": "14.0.0",
+                "rhel-9.1-x86_64": "14.0.0",
+                "rhel-9.2-x86_64": "14.0.0",
+                "rhel-9.3-x86_64": "14.0.0",
+                "rhel-9.4-x86_64": "14.0.0",
+                "rhel-9.5-x86_64": "14.0.0",
+                "": "20.1.2"
               },
               "opt_compile_flags": {},
               "opt_link_flags": {},
