@@ -16,7 +16,6 @@ tapa_xo(
     enable_synth_util = True,
     flatten_hierarchy = True,
     gen_ab_graph = True,
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
 )
 
@@ -47,7 +46,6 @@ tapa_xo(
     enable_synth_util = True,
     flatten_hierarchy = True,
     gen_ab_graph = True,
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "Bandwidth",
 )
 
@@ -77,7 +75,6 @@ tapa_xo(
     enable_synth_util = True,
     flatten_hierarchy = True,
     gen_ab_graph = True,
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "Cannon",
 )
 
@@ -107,7 +104,6 @@ tapa_xo(
     enable_synth_util = True,
     flatten_hierarchy = True,
     gen_ab_graph = True,
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "Network",
 )
 

@@ -49,7 +49,6 @@ tapa_xo(
         "rtl/*.v",
         "rtl/*.tcl",
     ]),
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
 )
 
@@ -57,6 +56,5 @@ tapa_xo(
     name = "custom-rtl-target-xo-template",
     src = "vadd.cpp",
     output_file = "template.xo",
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
 )

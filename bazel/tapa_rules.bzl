@@ -10,7 +10,6 @@ def _tapa_xo_impl(ctx):
     tapa_cli = ctx.executable.tapa_cli
     src = ctx.file.src
     top_name = ctx.attr.top_name
-    platform_name = ctx.attr.platform_name
     work_dir = ctx.actions.declare_directory(ctx.attr.name + ".tapa")
 
     output_file = ctx.outputs.output_file
@@ -59,7 +58,7 @@ def _tapa_xo_impl(ctx):
         tapa_cmd.extend(["--floorplan-path", ctx.file.floorplan_path.path])
 
     # Build the command for tapa-cli synth.
-    tapa_cmd.extend(["synth", "--platform", platform_name])
+    tapa_cmd.extend(["synth"])
 
     # Redact report schema version for better cache hit.
     tapa_cmd.extend(["--override-report-schema-version", "redacted"])
@@ -69,10 +68,19 @@ def _tapa_xo_impl(ctx):
     tapa_cmd.extend(["--jobs", "2"])
 
     # Add optional parameters to synth command.
+    if ctx.attr.platform_name:
+        tapa_cmd.extend(["--platform", ctx.attr.platform_name])
     if ctx.attr.clock_period:
         tapa_cmd.extend(["--clock-period", ctx.attr.clock_period])
     if ctx.attr.part_num:
         tapa_cmd.extend(["--part-num", ctx.attr.part_num])
+
+    # If none of the platform, clock period, or part number is specified,
+    # use the default partnum.
+    if not ctx.attr.platform_name and not ctx.attr.clock_period and not ctx.attr.part_num:
+        tapa_cmd.extend(["--part-num", "xcvu13p-flga2577-2L-e"])  # UltraScale+ U250
+        tapa_cmd.extend(["--clock-period", "3.33"])
+
     if ctx.attr.enable_synth_util:
         tapa_cmd.extend(["--enable-synth-util"])
     ab_graph_file = None
@@ -126,7 +134,7 @@ tapa_xo = rule(
         "include": attr.label_list(allow_files = True),
         "top_name": attr.string(mandatory = True),
         "custom_rtl_files": attr.label_list(allow_files = True),
-        "platform_name": attr.string(mandatory = True),
+        "platform_name": attr.string(),
         "output_file": attr.output(),
         "tapa_cli": attr.label(
             cfg = "exec",

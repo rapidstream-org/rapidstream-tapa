@@ -12,7 +12,6 @@ tapa_xo(
     src = "//tests/apps/vadd:vadd.cpp",
     hdrs = ["//tests/apps/vadd:vadd.h"],
     include = ["//tests/apps/vadd:."],
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
 )
 
@@ -39,18 +38,20 @@ genrule(
     cmd_bash = """
 set -ex
 work_dir="work.out"
-platform="xilinx_u250_gen3x16_xdma_4_1_202210_1"
+part_name="xcvu13p-flga2577-2L-e"
+clock_period="3.33"
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
     analyze -c -I$$(dirname $(location //tests/apps/vadd:vadd.h)) \
     --input $(location //tests/apps/vadd:vadd.cpp) --top VecAdd \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
-    synth --platform "$${platform}" \
+    synth --part-num "$${part_name}" --clock-period "$${clock_period}" \
     --override-report-schema-version=redacted \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
-    synth --platform "$${platform}" --skip-hls-based-on-mtime \
+    synth --part-num "$${part_name}" --clock-period "$${clock_period}" \
+    --skip-hls-based-on-mtime \
     --override-report-schema-version=redacted \
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \

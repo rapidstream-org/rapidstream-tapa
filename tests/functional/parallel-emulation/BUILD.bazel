@@ -59,7 +59,6 @@ tapa_xo(
     hdrs = ["cannon.h"],
     include = ["."],
     cflags = "-DTAPA_CANNON_P=2",
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "ProcElem",
     vitis_mode = False,
 )
@@ -117,7 +116,6 @@ tapa_xo(
     hdrs = ["cannon.h"],
     include = ["."],
     cflags = "-DTAPA_CANNON_P=4",
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "ProcElem",
     vitis_mode = False,
 )

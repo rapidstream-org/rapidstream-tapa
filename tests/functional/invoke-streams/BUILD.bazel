@@ -56,6 +56,5 @@ tapa_xo(
     name = "invoke-streams-xo",
     src = "vadd.cpp",
     hdrs = glob(["*.h"]),
-    platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     top_name = "VecAdd",
 )
