@@ -42,8 +42,6 @@ RapidStream TAPA requires the following dependencies:
 +===================+=================+==============================================+
 | GNU C++ Compiler  | 7.5.0 or newer  | For simulation and deployment only           |
 +-------------------+-----------------+----------------------------------------------+
-| OpenCL            | 1.2             | For simulation and deployment only           |
-+-------------------+-----------------+----------------------------------------------+
 | Xilinx Vitis      | 2022.1 or newer |                                              |
 +-------------------+-----------------+----------------------------------------------+
 
@@ -61,7 +59,7 @@ Ubuntu / Debian
 
 .. code-block:: bash
 
-  sudo apt-get install g++ ocl-icd-libopencl1
+  sudo apt-get install g++
 
 RHEL / Amazon Linux
 ^^^^^^^^^^^^^^^^^^^
@@ -74,7 +72,7 @@ RHEL / Amazon Linux
 
 .. code-block:: bash
 
-  sudo yum install gcc-c++ libxcrypt-compat ocl-icd
+  sudo yum install gcc-c++ libxcrypt-compat
 
 Fedora
 ^^^^^^
@@ -86,7 +84,7 @@ Fedora
 
 .. code-block:: bash
 
-  sudo yum install gcc-c++ libxcrypt-compat ocl-icd
+  sudo yum install gcc-c++ libxcrypt-compat
 
 RapidStream License
 ~~~~~~~~~~~~~~~~~~~

@@ -135,13 +135,13 @@ OPENCL_VERSION = "2.3.3"
 OPENCL_SHA256 = "8cd8e8e129db3081a64090fc1252bec39dc88cdb7b3f929315e014b75069bd9d"
 
 http_archive(
-    name = "opencl",
+    name = "OpenCL",
     patch_args = ["-p1"],
     patch_cmds = [
         """
         cat >BUILD <<EOF
 cc_library(
-    name = "opencl",
+    name = "OpenCL",
     srcs = [
         "ocl_icd_loader.c",
         "ocl_icd_loader_gen.c",
@@ -222,7 +222,7 @@ cc_library(
     hdrs = glob(["include/**"]),
     includes = ["include"],
     visibility = ["//visibility:public"],
-    deps = ["@opencl"],
+    deps = ["@OpenCL"],
 )
 EOF
 """,

@@ -156,7 +156,7 @@ def get_tapa_ldflags() -> tuple[str, ...]:
         "-lfrt",
         "-lglog",
         "-lgflags",
-        "-l:libOpenCL.so.1",
+        "-lOpenCL",
         "-ltinyxml2",
         "-lyaml-cpp",
         "-lstdc++fs",

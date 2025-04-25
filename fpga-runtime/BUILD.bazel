@@ -140,6 +140,7 @@ pkg_files(
 pkg_files(
     name = "pkg-extra-runtime-deps",
     srcs = [
+        "@OpenCL",
         "@gflags",
         "@glog",
         "@tinyxml2",
