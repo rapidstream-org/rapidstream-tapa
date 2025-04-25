@@ -53,7 +53,7 @@ sh_test(
     name = "vadd-cosim",
     size = "enormous",
     timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
+    srcs = ["//bazel:xrt_env.sh"],
     args = [
         "$(location vadd-host)",
         "--bitstream=$(location vadd-hw-emu-xclbin)",

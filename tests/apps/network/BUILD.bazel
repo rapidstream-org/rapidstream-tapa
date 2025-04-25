@@ -52,7 +52,7 @@ sh_test(
     name = "network-cosim",
     size = "enormous",
     timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
+    srcs = ["//bazel:xrt_env.sh"],
     args = [
         "$(location network-host)",
         "--bitstream=$(location network-hw-emu-xclbin)",

@@ -18,11 +18,15 @@ xilinx_wrapper(
     name = "v++",
     argv0 = "v++",
     tool = "Vitis",
-    xrt = True,
 )
 
 xilinx_wrapper(
     name = "v++_env.sh",
+    tool = "Vitis",
+)
+
+xilinx_wrapper(
+    name = "xrt_env.sh",
     tool = "Vitis",
     xrt = True,
 )

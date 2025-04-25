@@ -78,7 +78,7 @@ sh_test(
     name = "graph-cosim",
     size = "enormous",
     timeout = "moderate",
-    srcs = ["//bazel:v++_env.sh"],
+    srcs = ["//bazel:xrt_env.sh"],
     args = [
         "$(location graph-host)",
         "--bitstream=$(location graph-hw-emu-xclbin)",

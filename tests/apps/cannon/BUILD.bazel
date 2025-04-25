@@ -53,7 +53,7 @@ sh_test(
     name = "cannon-cosim",
     size = "enormous",
     timeout = "long",  # often >300s
-    srcs = ["//bazel:v++_env.sh"],
+    srcs = ["//bazel:xrt_env.sh"],
     args = [
         "$(location cannon-host)",
         "--bitstream=$(location cannon-hw-emu-xclbin)",
