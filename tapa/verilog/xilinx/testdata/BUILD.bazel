@@ -40,7 +40,7 @@ genrule(
     cmd_bash = """
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir . \
     analyze --input $< --top TopLevelTask \
-    synth --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
+    synth --part-num xcu250-figd2104-2l-e --clock-period 3.33 \
 
 for f in tar/*.tar; do
     tar xf $$f
