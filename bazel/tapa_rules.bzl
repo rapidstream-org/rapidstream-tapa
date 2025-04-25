@@ -78,7 +78,7 @@ def _tapa_xo_impl(ctx):
     # If none of the platform, clock period, or part number is specified,
     # use the default partnum.
     if not ctx.attr.platform_name and not ctx.attr.clock_period and not ctx.attr.part_num:
-        tapa_cmd.extend(["--part-num", "xcvu13p-flga2577-2L-e"])  # UltraScale+ U250
+        tapa_cmd.extend(["--part-num", "xcu250-figd2104-2l-e"])  # UltraScale+ U250
         tapa_cmd.extend(["--clock-period", "3.33"])
 
     if ctx.attr.enable_synth_util:
