@@ -9,6 +9,8 @@ RapidStream Contributor License Agreement.
 import os
 import runpy
 
+import nuitka.PythonVersions
+
 if "BUILD_WORKING_DIRECTORY" in os.environ:
     os.chdir(os.environ["BUILD_WORKING_DIRECTORY"])
 
@@ -29,6 +31,12 @@ for key in (
         os.environ[key] = os.pathsep.join(
             os.path.abspath(p) for p in os.environ[key].split(os.pathsep)
         )
+
+# Monkey-patch Nuitka to use -latomic instead of its static library.
+ORIGINAL_MODULE_LINKER_LIBS = nuitka.PythonVersions.getModuleLinkerLibs
+nuitka.PythonVersions.getModuleLinkerLibs = lambda: [
+    lib.replace(":libatomic.a", "atomic") for lib in ORIGINAL_MODULE_LINKER_LIBS()
+]
 
 os.environ["NUITKA_CACHE_DIR"] = "/tmp/.nuitka_cache"
 
