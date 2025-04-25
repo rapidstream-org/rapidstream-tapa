@@ -33,13 +33,17 @@ runs:
         if (( ${#containers[@]} )); then
           docker stop "${containers[@]}"
         fi
-        cp /etc/bazel.bazelrc ~/.bazelrc || touch ~/.bazelrc
+
+        # Make a copy of bazelrc which is readable by the runner.
+        local_bazelrc=~/.cache/rapidstream-tapa-local/bazelrc
+        cp /etc/bazel.bazelrc "${local_bazelrc}" || touch "${local_bazelrc}"
+
         docker run \
           --rm \
           --init \
           --label="${label}" \
           --mac-address=${{ env.MAC_ADDRESS }} \
-          -v ~/.bazelrc:/etc/bazel.bazelrc:ro \
+          -v "${local_bazelrc}":/etc/bazel.bazelrc:ro \
           -v /share/software/licenses:/opt/licenses:ro \
           -v /share/software/tools:/opt/tools:ro \
           -v /share/software/xilinx/platforms:/opt/xilinx/platforms:ro \
