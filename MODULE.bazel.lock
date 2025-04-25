@@ -198,7 +198,7 @@
   "moduleExtensions": {
     "//bazel:dependencies.bzl%load_dependencies": {
       "general": {
-        "bzlTransitiveDigest": "U1XIoN4sMuwjB27hnWHsCo0nxmeOGlXySXCvCm4JBtQ=",
+        "bzlTransitiveDigest": "/3lmGjUx8fCdGaf7gcS8qd7OkAyKs3qZJJVtsO+kPA4=",
         "usagesDigest": "1Rl7iqWCprmw+WysiYjOWkXwNOQvijgPQT17u4qmLvc=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

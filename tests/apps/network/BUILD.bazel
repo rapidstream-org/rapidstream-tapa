@@ -6,6 +6,7 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//:VARS.bzl", "HAS_XRT")
 load("//bazel:tapa_rules.bzl", "tapa_xo")
 load("//bazel:v++_rules.bzl", "vpp_xclbin")
 
@@ -64,6 +65,7 @@ sh_test(
     tags = [
         "cpu:2",
     ],
+    target_compatible_with = [] if HAS_XRT else ["@platforms//:incompatible"],
 )
 
 cc_binary(
@@ -92,6 +94,7 @@ vpp_xclbin(
     name = "network-hw-emu-xclbin",
     platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
     target = "hw_emu",
+    target_compatible_with = [] if HAS_XRT else ["@platforms//:incompatible"],
     top_name = "Network",
     xo = ":network-xo",
 )
