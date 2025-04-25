@@ -100,8 +100,8 @@ networkx==3.4.2 \
     --hash=sha256:307c3669428c5362aab27c8a1260aa8f47c4e91d3891f48be0141738d8d053e1 \
     --hash=sha256:df5d4365b724cf81b8c6a7312509d0c22386097011ad1abe274afd5e9d3bbc5f
     # via -r tapa/requirements.in
-nuitka==2.6.6 \
-    --hash=sha256:4376fe46a5eea7db570266773fedf47329b6d529475900d2ba0dc8054e7f5aaf
+nuitka==2.6.9 \
+    --hash=sha256:50e1d2fae48c32b0103850df5ad2ccdde7f3c736545681c0896a5ce233597a5d
     # via -r tapa/requirements.in
 ordered-set==4.1.0 \
     --hash=sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562 \
