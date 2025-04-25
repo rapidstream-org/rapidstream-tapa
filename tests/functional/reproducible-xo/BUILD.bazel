@@ -38,7 +38,7 @@ genrule(
     cmd_bash = """
 set -ex
 work_dir="work.out"
-part_name="xcvu13p-flga2577-2L-e"
+part_name="xcu250-figd2104-2L-e"
 clock_period="3.33"
 
 $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
