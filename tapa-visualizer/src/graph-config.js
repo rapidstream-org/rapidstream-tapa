@@ -71,7 +71,7 @@ const elementOptions = {
       fill: ({ style }) => style?.fill ?? color.nodeA,
 
       portR: 5,
-      portFill: ({ style }) => style?.fill ?? color.nodeA,
+      portFill: color.nodeA,
 
       labelPlacement: "center",
       labelWordWrap: true, // enable label ellipsis

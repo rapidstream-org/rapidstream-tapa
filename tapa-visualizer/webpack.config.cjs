@@ -2,16 +2,26 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-const path = require('path');
-const fs = require('fs');
+// const path = require("path");
+// const fs = require("fs");
 
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
+const input = {
+  html: "./index.html",
+  js: "./src/app.js",
+};
+
+/** @type {import("webpack").Configuration["output"]} */
+const output = {
+  filename: "bundle.js",
+};
+
+/** @type {import("webpack").Configuration} */
 module.exports = {
-  output: {
-    filename: 'bundle.js',
-  },
+  entry: input.js,
+  output,
   module: {
     rules: [
       {
@@ -21,13 +31,15 @@ module.exports = {
     ],
   },
   plugins: [
-    new HtmlWebpackPlugin({
-      template: "./index.html",
-    }),
+    new HtmlWebpackPlugin({ template: input.html }),
     new MiniCssExtractPlugin()
   ],
   resolve: {
     fallback: { "url": require.resolve("url/") }
   },
-  devtool: 'source-map',
+  performance: { // 1024 * 1024 * 2 = 2 MiB
+    maxAssetSize: 2097152,
+    maxEntrypointSize: 2097152,
+  },
+  devtool: "source-map",
 };
