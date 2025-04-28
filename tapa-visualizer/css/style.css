@@ -23,6 +23,8 @@ body {
 body>header,
 body>header .flex {
 	display: flex;
+	align-items: center;
+	gap: .5rem;
 }
 
 body>aside {
@@ -110,13 +112,6 @@ body>header {
 	}
 }
 
-body>header,
-body>header .flex {
-	display: flex;
-	align-items: center;
-	gap: .5rem;
-}
-
 body>header .tools {
 	margin-left: auto;
 }
@@ -124,6 +119,16 @@ body>header .tools {
 body>header .tools hr {
 	height: 1rem;
 	margin: 0;
+}
+
+body>header .grouping {
+	padding: 2px;
+	border-radius: 4px;
+	transition: box-shadow .2s ease-out;
+	will-change: box-shadow;
+}
+body>header .grouping:hover {
+	box-shadow: 0 0 2px 1px var(--border);
 }
 
 

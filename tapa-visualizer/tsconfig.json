@@ -19,8 +19,8 @@
     },
     "include": [
         "eslint.config.mjs",
-        "src/*.js",
-        "types/*.d.ts",
+        "src/**/*.js",
+        "types/**/*.d.ts",
         "webpack.config.cjs"
     ]
 }
