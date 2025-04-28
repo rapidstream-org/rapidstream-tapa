@@ -68,8 +68,8 @@ instead. When you're ready to contribute, create a new branch for your
 changes, commit your work, and open a pull request to contribute your
 changes back to the main repository.
 
-Build TAPA from Source
-----------------------
+Modify the Build Configuration
+------------------------------
 
 When building on systems other than a RapidStream server or a UCLA server, you
 will need to modify the ``VARS.bzl`` file in the repository's root directory
@@ -91,6 +91,13 @@ Furthermore, you should configure ``XILINX_TOOL_LEGACY_VERSION`` to indicate
 the earliest version of Xilinx tools installed on your system, along with
 ``XILINX_TOOL_LEGACY_PATH`` to point to the corresponding installation
 directory.
+
+If your system does not have the Xilinx Runtime (XRT) installed, you can
+modify the ``HAS_XRT`` variable in the ``VARS.bzl`` file to ``False``. This
+will prevent the tests to fail due to the absence of XRT.
+
+Build TAPA from Source
+----------------------
 
 To build TAPA, navigate to the root directory of the cloned repository and execute the following command:
 
