@@ -21,6 +21,6 @@
         "eslint.config.mjs",
         "src/**/*.js",
         "types/**/*.d.ts",
-        "webpack.config.cjs"
+        "webpack.config.mjs"
     ]
 }

@@ -4,11 +4,11 @@
  * RapidStream Contributor License Agreement.
  */
 
-import Prism from 'prismjs';
+import Prism from "prismjs";
 
-import 'prismjs/themes/prism.css';
-import 'prismjs/components/prism-c';
-import 'prismjs/components/prism-cpp';
-import 'prismjs/plugins/line-numbers/prism-line-numbers';
+import "prismjs/themes/prism.css";
+import "prismjs/components/prism-c.js";
+import "prismjs/components/prism-cpp.js";
+import "prismjs/plugins/line-numbers/prism-line-numbers.js";
 
 export default Prism;

@@ -13,14 +13,15 @@ const altEdgeColor = "#479f76"; //  Bootstrap $green-400
  * @type {Map<string, Set<number>>} */
 const fifoGroups = new Map();
 
-/** @type {(fifoname: string, source: string, target: string) => boolean} */
-const matchFifoGroup = (fifoName, source, target) => {
+/** @type {(fifoname: string, source: string, target: string, id: string) => boolean} */
+const matchFifoGroup = (fifoName, source, target, id) => {
   const matchResult = fifoName.match(/^(.*)\[(\d+)\]$/);
   const matched = matchResult !== null;
   if (matched) {
     // Add to fifo group map
     const name = matchResult[1];
-    const key = [name, source, target].join("\n");
+    const idWithoutFifoName = id.replace(`/${fifoName}`, "");
+    const key = [name, source, target, idWithoutFifoName].join("\n");
     const index = Number.parseInt(matchResult[2]);
 
     const set = fifoGroups.get(key);
@@ -75,7 +76,7 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
      * @typedef {() => import("@antv/g6/lib/spec/element/edge").EdgeStyle} GetStyle
      * @type {(source: string, target: string, id: string, getStyle: GetStyle) => void} */
     const addFifo = (source, target, id, getStyle) => void (
-      matchFifoGroup(fifoName, source, target) ||
+      matchFifoGroup(fifoName, source, target, id) ||
       addEdge({ source, target, id, style: getStyle(), data: fifo })
     );
 
@@ -122,7 +123,7 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
           const targets = nodes.filter(({id}) => id.startsWith(target));
           const len = Math.min(sources.length, targets.length);
           for (let i = 0; i < len; i++) {
-            addFifo(sources[i].id, targets[i].id, `${id}/${i}`, getStyle(sources[i]))
+            addFifo(sources[i].id, targets[i].id, `${id}/${i}`, getStyle(sources[i]));
           }
           break;
         }
@@ -159,7 +160,7 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
           const targets = nodes.filter(({id}) => id.startsWith(`${taskName}/`));
           const len = Math.min(sources.length, targets.length);
           for (let i = 0; i < len; i++) {
-            addFifo(sources[i].id, targets[i].id, `${id}/${i}`, getStyle(targets[i]))
+            addFifo(sources[i].id, targets[i].id, `${id}/${i}`, getStyle(targets[i]));
           }
           break;
         }
@@ -177,9 +178,9 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
 
   // Add edges for fifo groups
   fifoGroups.forEach((indexes, key) => {
-    const [name, source, target] = key.split("\n");
+    const [name, source, target, idPrefix] = key.split("\n");
     const indexRange = getIndexRange([...indexes.values()]);
-    addEdge({ source, target, id: `${taskName}/${name}[${indexRange}]` });
+    addEdge({ source, target, id: `${idPrefix}/${name}[${indexRange}]` });
   });
 
 }
