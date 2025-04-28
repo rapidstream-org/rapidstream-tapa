@@ -6,106 +6,25 @@
 
 "use strict";
 
-import { getComboId } from "./helper.js";
+import { getComboId, getComboName } from "./helper.js";
+import { setIOPorts, setPortsStyle } from "./parser/ports.js";
+import { parseFifo } from "./parser/fifo.js";
 
 /** Color for node with more than 1 connection */
 const altNodeColor = "#0F5132"; // Bootstrap $green-700
 
-/* Color for edge connecting parent and children */
-const altEdgeColor = "#479f76"; //  Bootstrap $green-400
-
-/** @type {<K, V>(map: Map<K, Set<V>>, key: K, value: V) => void} */
-const addToMappedSet = (map, key, value) => {
-  const set = map.get(key);
-  set ? set.add(value) : map.set(key, new Set([value]));
-};
-
-/** [1,2,3,5] -> "1~3,5"
- * @type {(indexArr: number[]) => string} */
-const getIndexRange = indexes => {
-  // Only 1 index, just return it as string
-  if (indexes.length === 1) return `${indexes[0]}`;
-
-  // More than 1 index, sort & parse to "a~b,c,d~e"
-  indexes.sort((a, b) => a - b);
-
-  // continuous groups of indexs
-  const groups = [[indexes[0]]];
-  for (let i = 1; i < indexes.length; i++) {
-    indexes[i - 1] + 1 === indexes[i]
-    ? groups.at(-1)?.push(indexes[i])
-    : groups.push([indexes[i]]);
-  }
-
-  return groups.map(
-    group => group.length === 1 ? group[0] : `${group[0]}~${group.at(-1)}`
-  ).join(",");
-};
-
-/** @type {Placements} */
-const placements = {
-  x: [
-    [0.5],
-    [0.25, 0.75],
-    [0, 0.5, 1],
-    [0, 0.25, 0.75, 1],
-    [0, 0.25, 0.5, 0.75, 1],
-  ],
-  // y:
-  istream: 0,
-  ostream: 1,
-};
-
-/** @type {5} */
-const ioPortsLength = 5; // placements[istream / ostream].length;
-
-/** subTask -> ioPorts
- * @type {(subTask: SubTask, ioPorts: IOPorts) => void} */
-const setIOPorts = (subTask, ioPorts) => {
-  for (const argName in subTask.args) {
-    const { arg, cat } = subTask.args[argName];
-    switch (cat) {
-      case "istream": ioPorts.istream.push([argName, arg]); break;
-      case "ostream": ioPorts.ostream.push([argName, arg]); break;
-    }
-  }
-};
-
-/** ioPorts -> style.ports
- * @type {(ioPorts: IOPorts, style: NodeStyle) => void} */
-const setPortsStyle = (ioPorts, style) => {
-  /** @type {import("@antv/g6").NodePortStyleProps[]} */
-  let ports = [];
-  /** @type {["istream", "ostream"]} */
-  (["istream", "ostream"]).forEach(stream => {
-    const amount = ioPorts[stream].length;
-    if (amount <= ioPortsLength) {
-      ports = ports.concat(
-        ioPorts[stream].map(
-          ([name, key], i) => {
-            /** @type {import("@antv/g6").Placement} */
-            const placement = [placements.x[amount - 1][i], placements[stream]];
-            return { name, key, placement };
-          }
-        ),
-      );
-    }
-  });
-  style.ports = ports;
-}
-
 /** @type {Readonly<Required<GetGraphDataOptions>>} */
 const defaultOptions = {
-  separate: false,
+  grouping: "merge",
   expand: false,
   port: false,
 };
 
-/** @type {(json: GraphJSON, options: GetGraphDataOptions) => GraphData} */
+/** @type {(json: GraphJSON, options: Required<GetGraphDataOptions>) => GraphData} */
 export const getGraphData = (json, options = defaultOptions) => {
 
   /** Rename `port` option to a meaningful one */
-  const { separate, port: showPorts } = options;
+  const { grouping, port: showPorts } = options;
   /** Convert `expand` option to combo's `collapsed` style */
   const collapsed = !options.expand;
 
@@ -222,7 +141,7 @@ export const getGraphData = (json, options = defaultOptions) => {
       }
 
       // Add node for subTask
-      if (separate) {
+      if (grouping !== "merge") {
         subTasks.forEach((subTask, i) => {
           if (showPorts) {
           /** @type {IOPorts} */
@@ -248,117 +167,44 @@ export const getGraphData = (json, options = defaultOptions) => {
     }
   });
 
-  /** fifo groups, for fifos like fifo_xx[0], fifo_xx[1]...
-   * @type {Map<string, Set<number>>} */
-  const fifoGroups = new Map();
+  // Between Loop 1 and Loop 2: check & expand sub-task
+  if (grouping === "expand" && graphData.combos.length > 1) {
 
-  /** @type {(fifoname: string, source: string, target: string) => boolean} */
-  const matchFifoGroup = (fifoName, source, target) => {
-    const matchResult = fifoName.match(/^(.*)\[(\d+)\]$/);
-    const matched = matchResult !== null;
-    if (matched) {
-      // Add to fifo group map
-      const name = matchResult[1];
-      const key = [name, source, target].join("\n");
-      const index = Number.parseInt(matchResult[2]);
-      addToMappedSet(fifoGroups, key, index);
-    }
-    return matched;
-  }
+    /** @type {(id: string, i: string) => string} */
+    const insertIndex = (id, i) => id.split("/").toSpliced(2, 0, i).join("/");
 
-  /** get port's key for missing produced_by or consumed_by
-   * @type {(node: import("@antv/g6").NodeData | undefined, fifoName: string) => string} */
-  const getPortKey = (node, fifoName) => node?.style?.ports
-    ?.find(port => "name" in port && port.name === fifoName)?.key ?? fifoName;
+    for (let i = 1; i < graphData.combos.length; i++) {
+      const combo = graphData.combos[i];
+      const name = getComboName(combo.id);
 
-  // Loop 2: fifo -> edges
-  upperTasks.forEach((upperTask, upperTaskName) => {
+      // Check if combo need expand: if it has multiple nodes (sub-tasks)
+      const comboNodes = nodes.filter(node => node.id.startsWith(`${name}/`));
+      if (comboNodes.length <= 1) continue;
 
-    fifoGroups.clear();
+      // Combo's children
+      const children = graphData.nodes.filter(node => node.combo === combo.id);
 
-    for (const fifoName in upperTask.fifos) {
-      const fifo = upperTask.fifos[fifoName];
-      const id = `${upperTaskName}/${fifoName}`;
-
-      /**
-       * @typedef {() => import("@antv/g6/lib/spec/element/edge").EdgeStyle} GetStyle
-       * @type {(source: string, target: string, id: string, getStyle: GetStyle) => void} */
-      const parseFifo = (source, target, id, getStyle) => void (
-        matchFifoGroup(fifoName, source, target) ||
-        addEdge({ source, target, id, style: getStyle(), data: fifo })
-      );
-
-      if (fifo.produced_by && fifo.consumed_by) {
-        /** @type {(by: [string, number]) => string} */
-        const getSubTask = by => separate ? by.join("/") : by[0];
-        const source = getSubTask(fifo.produced_by);
-        const target = getSubTask(fifo.consumed_by);
-
-        const style = { sourcePort: fifoName, targetPort: fifoName };
-        parseFifo(source, target, id, () => style);
-      } else if (!fifo.produced_by && fifo.consumed_by) {
-
-        // produced_by is missing
-        /** @type {(node: import("@antv/g6").NodeData | undefined) => GetStyle} */
-        const getStyle = node => () => {
-          const sourcePort = getPortKey(node, fifoName);
-          return { sourcePort, targetPort: fifoName, stroke: altEdgeColor };
-        };
-
-        if (separate) {
-          const target = fifo.consumed_by.join("/");
-          nodes
-            .filter(node => node.id.startsWith(`${upperTaskName}/`))
-            .forEach(node => {
-              // avoid duplicate id
-              const edgeId = `${id}${node.id.slice(node.id.indexOf("/"))}`;
-              parseFifo(node.id, target, edgeId, getStyle(node));
-            });
-        } else {
-          const node = nodes.find(node => node.id === upperTaskName);
-          parseFifo(upperTaskName, fifo.consumed_by[0], id, getStyle(node));
-        }
-
-      } else if (fifo.produced_by && !fifo.consumed_by) {
-
-        // consumed_by is missing
-        /** @type {(node: import("@antv/g6").NodeData | undefined) => GetStyle} */
-        const getStyle = node => () => {
-          const targetPort = getPortKey(node, fifoName);
-          return { sourcePort: fifoName, targetPort, stroke: altEdgeColor };
-        };
-
-        if (separate) {
-          const source = fifo.produced_by.join("/");
-          nodes
-            .filter(node => node.id.startsWith(`${upperTaskName}/`))
-            .forEach(node => {
-              const edgeId = `${id}${node.id.slice(node.id.indexOf("/"))}`;
-              parseFifo(source, node.id, edgeId, getStyle(node));
-            });
-        } else {
-          const node = nodes.find(node => node.id === upperTaskName);
-          parseFifo( fifo.produced_by[0], upperTaskName, id, getStyle(node));
-        }
-
-      } else {
-        console.warn(
-          `fifo ${fifoName} without produced_by and consumed_by in ${upperTaskName}:`,
-          upperTask,
-        )
-        continue;
+      // Add expanded nodes, using combo's children as template
+      for (let j = 1; j < comboNodes.length; j++) {
+        graphData.nodes.push(
+          ...children.map(node => ({
+            ...node,
+            id: insertIndex(node.id, j.toString())
+          }))
+        );
       }
 
+      // Update combo's children
+      children.forEach(node => node.id = insertIndex(node.id, "0"));
     }
 
-    // Add fifo groups
-    fifoGroups.forEach((indexes, key) => {
-      const [name, source, target] = key.split("\n");
-      const indexRange = getIndexRange([...indexes.values()]);
-      addEdge({ source, target, id: `${upperTaskName}/${name}[${indexRange}]` });
-    });
+  }
 
-  });
+  // Loop 2: fifo -> edges
+  upperTasks.forEach(
+    (upperTask, upperTaskName) =>
+      parseFifo(upperTask, upperTaskName, grouping, nodes, addEdge),
+  );
 
   return graphData;
 

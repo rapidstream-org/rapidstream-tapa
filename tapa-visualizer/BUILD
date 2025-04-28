@@ -19,6 +19,8 @@ SRCS = [
     ":src/graph-config.js",
     ":src/helper.js",
     ":src/parser.js",
+    ":src/parser/fifo.js",
+    ":src/parser/ports.js",
     ":src/prism-config.js",
     ":src/sidebar.js",
 ]

@@ -6,7 +6,7 @@
 
 "use strict";
 
-import { Graph, DragCanvas } from "@antv/g6";
+import { DragCanvas, Graph } from "@antv/g6";
 import { createIcons, icons } from 'lucide';
 
 createIcons({icons});
@@ -83,27 +83,28 @@ const renderGraph = async (graph, graphData) => {
   await graph.render();
 };
 
-/** Update options & re-render graph when option changed.
- * @type {(graph: Graph, newOption: GetGraphDataOptions) => Promise<void>} */
-const renderGraphWithNewOption = async (graph, newOption) => {
-  Object.assign(options, newOption);
-
-  // Only re-render if graph exist
-  if (!graphJSON) return;
-  graphData = getGraphData(graphJSON, options);
-  console.debug(
-    "\ngraphData:\n", graphData,
-    "\ngetGraphData() options:", options,
-  );
-
-  resetSidebar("Loading...");
-  await renderGraph(graph, graphData);
-  resetInstance();
-};
-
 /** @param {Graph} graph */
 const setupRadioToggles = graph => {
-  // Rerender when grouping method changed
+
+  /** Re-render graph with new option;
+   * update options & re-render graph when option changed.
+   * @type {(newOption: GetGraphDataOptions) => Promise<void>} */
+  const updateGraph = async (newOption) => {
+    Object.assign(options, newOption);
+
+    // Only re-render if graph exist
+    if (!graphJSON) return;
+    graphData = getGraphData(graphJSON, options);
+    console.debug(
+      "\ngraphData:\n", graphData,
+      "\ngetGraphData() options:", options,
+    );
+
+    resetSidebar("Loading...");
+    await renderGraph(graph, graphData);
+    resetInstance();
+  };
+
   if (groupingForm) {
     for (let i = 0; i < groupingForm.elements.length; i++) {
       groupingForm.elements[i].addEventListener(
@@ -122,25 +123,21 @@ const setupRadioToggles = graph => {
     for (let i = 0; i < optionsForm.elements.length; i++) {
       const element = optionsForm.elements[i];
       if (!(element instanceof HTMLInputElement)) continue;
-      if (element.name === "layout") {
-        element.addEventListener(
-          "change", () => {
-            graph.setLayout(getLayout());
-            void graph.layout().then(() => graph.fitView());
-          }
-        );
-        continue;
-      }
 
       element.addEventListener(
         "change",
-        ({ target }) =>
-          target instanceof HTMLInputElement &&
-          void renderGraphWithNewOption(
-            graph,
-            { [target.name]: target.value === "true" },
-          ),
-      )
+        element.name === "layout"
+          // layout option
+          ? () => {
+            graph.setLayout(getLayout());
+            void graph.layout().then(() => graph.fitView());
+          }
+          // other options
+          : ({ target }) => {
+            target instanceof HTMLInputElement &&
+            void updateGraph({ [target.name]: target.value === "true" });
+          }
+      );
     }
   }
 };
@@ -204,7 +201,7 @@ const setupFileInput = (graph) => {
       const visibleElements = expand ? graphData.nodes : topChildren;
 
       // Put edges in front of nodes
-      graph.frontElement(
+      await graph.frontElement(
         graph.getEdgeData()
         .map(({id}) => id)
         .filter(id => typeof id === "string")

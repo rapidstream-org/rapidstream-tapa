@@ -36,15 +36,17 @@ const globalVariablesR =
 /** @type {(Config | FlatConfig)[]} */
 export default [
 
-  globalIgnoresR("global ignores", []),
+  globalIgnoresR("global ignores", [
+    "dist/*",
+  ]),
 
   // Global variables
   globalVariablesR("globals/browser", globals.browser, [
-    "js/*.js",
+    "src/**/*.js",
   ]),
   globalVariablesR("globals/nodeBuiltin", globals.nodeBuiltin, [
     "eslint.config.mjs",
-    "vite.config.ts",
+    "webpack.config.cjs",
   ]),
 
   // JavaScript
@@ -105,7 +107,9 @@ export default [
   },
   {
     name: "tsdef",
-    files: ["types/*.d.ts"],
+    files: [
+      "types/**/*.d.ts",
+    ],
     rules: {
       "no-var": "off",
     }
@@ -114,7 +118,9 @@ export default [
   // CSS
   {
     name: "css",
-    files: ["css/*.css"],
+    files: [
+      "css/**/*.css",
+    ],
     language: "css/css",
 		...css.configs.recommended,
   },
