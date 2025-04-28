@@ -20,8 +20,8 @@ from pathlib import Path
 import click
 
 from tapa.common.graph import Graph as TapaGraph
-from tapa.common.task_definition import TaskDefinition
 from tapa.common.paths import find_resource, get_tapa_cflags
+from tapa.common.task_definition import TaskDefinition
 from tapa.core import Program
 from tapa.steps.common import (
     get_work_dir,
@@ -262,6 +262,7 @@ def run_and_check(cmd: tuple[str, ...]) -> str:
         stdout=subprocess.PIPE,
         text=True,
         check=False,
+        encoding="utf-8",
     )
     if proc.returncode != 0:
         quoted_cmd = " ".join(f'"{arg}"' if " " in arg else arg for arg in cmd)
