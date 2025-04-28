@@ -99,18 +99,33 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
         return { sourcePort, targetPort: fifoName, stroke: altEdgeColor };
       };
 
-      if (grouping !== "merge") {
-        const target = fifo.consumed_by.join("/");
-        nodes
-          .filter(node => node.id.startsWith(`${taskName}/`))
-          .forEach(node => {
-            // avoid duplicate id
-            const edgeId = `${id}${node.id.slice(node.id.indexOf("/"))}`;
-            addFifo(node.id, target, edgeId, getStyle(node));
-          });
-      } else {
-        const node = nodes.find(node => node.id === taskName);
-        addFifo(taskName, fifo.consumed_by[0], id, getStyle(node));
+      switch (grouping) {
+        case "merge": {
+          const node = nodes.find(node => node.id === taskName);
+          addFifo(taskName, fifo.consumed_by[0], id, getStyle(node));
+          break;
+        }
+        case "separate": {
+          const target = fifo.consumed_by.join("/");
+          nodes
+            .filter(node => node.id.startsWith(`${taskName}/`))
+            .forEach(node => {
+              // avoid duplicate id
+              const edgeId = `${id}${node.id.slice(node.id.indexOf("/"))}`;
+              addFifo(node.id, target, edgeId, getStyle(node));
+            });
+          break;
+        }
+        case "expand": {
+          const target = fifo.consumed_by.join("/");
+          const sources = nodes.filter(({id}) => id.startsWith(`${taskName}/`));
+          const targets = nodes.filter(({id}) => id.startsWith(target));
+          const len = Math.min(sources.length, targets.length);
+          for (let i = 0; i < len; i++) {
+            addFifo(sources[i].id, targets[i].id, `${id}/${i}`, getStyle(sources[i]))
+          }
+          break;
+        }
       }
 
     } else if (fifo.produced_by && !fifo.consumed_by) {
@@ -122,17 +137,32 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
         return { sourcePort: fifoName, targetPort, stroke: altEdgeColor };
       };
 
-      if (grouping !== "merge") {
-        const source = fifo.produced_by.join("/");
-        nodes
-          .filter(node => node.id.startsWith(`${taskName}/`))
-          .forEach(node => {
-            const edgeId = `${id}${node.id.slice(node.id.indexOf("/"))}`;
-            addFifo(source, node.id, edgeId, getStyle(node));
-          });
-      } else {
-        const node = nodes.find(node => node.id === taskName);
-        addFifo(fifo.produced_by[0], taskName, id, getStyle(node));
+      switch (grouping) {
+        case "merge": {
+          const node = nodes.find(node => node.id === taskName);
+          addFifo(fifo.produced_by[0], taskName, id, getStyle(node));
+          break;
+        }
+        case "separate": {
+          const source = fifo.produced_by.join("/");
+          nodes
+            .filter(node => node.id.startsWith(`${taskName}/`))
+            .forEach(node => {
+              const edgeId = `${id}${node.id.slice(node.id.indexOf("/"))}`;
+              addFifo(source, node.id, edgeId, getStyle(node));
+            });
+          break;
+        }
+        case "expand": {
+          const source = fifo.produced_by.join("/");
+          const sources = nodes.filter(({id}) => id.startsWith(source));
+          const targets = nodes.filter(({id}) => id.startsWith(`${taskName}/`));
+          const len = Math.min(sources.length, targets.length);
+          for (let i = 0; i < len; i++) {
+            addFifo(sources[i].id, targets[i].id, `${id}/${i}`, getStyle(targets[i]))
+          }
+          break;
+        }
       }
 
     } else {
