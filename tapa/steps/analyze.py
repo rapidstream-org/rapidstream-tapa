@@ -20,6 +20,7 @@ from pathlib import Path
 import click
 
 from tapa.common.graph import Graph as TapaGraph
+from tapa.common.task_definition import TaskDefinition
 from tapa.common.paths import find_resource, get_tapa_cflags
 from tapa.core import Program
 from tapa.steps.common import (
@@ -117,6 +118,11 @@ def analyze(
     tapa_graph = TapaGraph(None, graph_dict)
     if flatten_hierarchy:
         tapa_graph = tapa_graph.get_flatten_graph()
+
+    # If the top task is a leaf task, Vitis mode will not work.
+    if tapa_graph.get_top_task_def().get_level() == TaskDefinition.Level.LEAF:
+        msg = "The top task is a leaf task, please use `--no-vitis-mode`."
+        raise click.UsageError(msg)
 
     fp_slots = []
     graph_dict = tapa_graph.to_dict()
