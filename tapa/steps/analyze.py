@@ -120,7 +120,10 @@ def analyze(
         tapa_graph = tapa_graph.get_flatten_graph()
 
     # If the top task is a leaf task, Vitis mode will not work.
-    if tapa_graph.get_top_task_def().get_level() == TaskDefinition.Level.LEAF:
+    if (
+        tapa_graph.get_top_task_def().get_level() == TaskDefinition.Level.LEAF
+        and vitis_mode
+    ):
         msg = "The top task is a leaf task, please use `--no-vitis-mode`."
         raise click.UsageError(msg)
 
