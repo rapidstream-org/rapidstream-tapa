@@ -26,11 +26,13 @@ type GraphData = Required<import("@antv/g6").GraphData>;
 
 type NodeStyle = import("@antv/g6/lib/spec/element/node").NodeStyle;
 
+type Grouping = "merge" | "separate" | "expand";
+
 /** Options of getGraphData() */
 type GetGraphDataOptions = {
   /** Whether expand sub-task to sub-task/0, sub-task/1, ...
-   * @default false */
-  separate?: boolean;
+   * @default "merge" */
+  grouping?: Grouping;
   /** Whether expand non-top upper task's combo by default
    * @default false */
   expand?: boolean;
@@ -59,7 +61,7 @@ type IOPorts = {
 // Forms
 interface GroupingFormControls extends HTMLFormControlsCollection {
   /** Sub-task grouping */
-  grouping: { value: "merge" | "separate"; },
+  grouping: { value: Grouping; },
 }
 interface OptionsFormControls extends HTMLFormControlsCollection {
   /** Layout algorithm */
@@ -70,10 +72,11 @@ interface OptionsFormControls extends HTMLFormControlsCollection {
   port: { value: "true" | "false"; },
 }
 interface GroupingForm extends HTMLFormElement {
-  elements: GroupingFormControls,
+  grouping: { value: Grouping; };
+  elements: GroupingFormControls;
 }
 interface OptionsForm extends HTMLFormElement {
-  elements: OptionsFormControls,
+  elements: OptionsFormControls;
 }
 
 // graph.json

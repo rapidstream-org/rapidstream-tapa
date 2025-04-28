@@ -59,7 +59,7 @@ const getLayout = (layout = optionsForm?.elements.layout.value) => {
 };
 
 const getOptions = () => ({
-  separate: groupingForm?.elements.grouping.value === "separate",
+  grouping: groupingForm?.elements.grouping.value ?? "merge",
   expand: optionsForm?.elements.expand.value === "true",
   port: optionsForm?.elements.port.value === "true",
 });
@@ -107,15 +107,8 @@ const setupRadioToggles = graph => {
 
   if (groupingForm) {
     for (let i = 0; i < groupingForm.elements.length; i++) {
-      groupingForm.elements[i].addEventListener(
-        "change",
-        ({ target }) =>
-          target instanceof HTMLInputElement &&
-          void renderGraphWithNewOption(
-            graph,
-            { separate: target.value === "separate" }
-          ),
-      )
+      groupingForm.elements[i].addEventListener("change",
+        () => void updateGraph({ grouping: groupingForm.grouping.value }));
     }
   }
 
