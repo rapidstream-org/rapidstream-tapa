@@ -10,10 +10,8 @@ import js from "@eslint/js";
 import ts from "typescript-eslint";
 
 /**
- * @typedef {import("eslint").Linter} Linter
- * @typedef {import("eslint").Linter.Config} Config
+ * @typedef {import("typescript-eslint").ConfigArray[0]} Config
  * @typedef {import("eslint").Linter.Globals} Globals
- * @typedef {import("@typescript-eslint/utils").TSESLint.FlatConfig.Config} FlatConfig
  **/
 
 /** @type {(files: string[], globals: Globals, name?: string) => Config} */
@@ -33,7 +31,7 @@ const globalVariablesR =
   (name, globals, files) => globalVariables(files, globals, name);
 
 
-/** @type {(Config | FlatConfig)[]} */
+/** @type {import("typescript-eslint").ConfigArray} */
 export default [
 
   globalIgnoresR("global ignores", [
@@ -46,7 +44,7 @@ export default [
   ]),
   globalVariablesR("globals/nodeBuiltin", globals.nodeBuiltin, [
     "eslint.config.mjs",
-    "webpack.config.cjs",
+    "webpack.config.mjs",
   ]),
 
   // JavaScript

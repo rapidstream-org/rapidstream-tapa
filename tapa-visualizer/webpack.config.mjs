@@ -5,8 +5,10 @@
 // const path = require("path");
 // const fs = require("fs");
 
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+import { createRequire as R } from "node:module";
+
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
 
 const input = {
   html: "./index.html",
@@ -19,9 +21,10 @@ const output = {
 };
 
 /** @type {import("webpack").Configuration} */
-module.exports = {
+export default {
   entry: input.js,
   output,
+
   module: {
     rules: [
       {
@@ -35,8 +38,11 @@ module.exports = {
     new MiniCssExtractPlugin()
   ],
   resolve: {
-    fallback: { "url": require.resolve("url/") }
+    fallback: {
+      "url": (import.meta.resolve ?? R(import.meta.url).resolve)("url/"),
+    }
   },
+
   performance: { // 1024 * 1024 * 2 = 2 MiB
     maxAssetSize: 2097152,
     maxEntrypointSize: 2097152,

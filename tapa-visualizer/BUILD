@@ -9,7 +9,7 @@ npm_link_all_packages(name = "node_modules")
 
 ENTRY = ":src/app.js"
 
-WEBPACK_CONFIG = ":webpack.config.cjs"
+WEBPACK_CONFIG = ":webpack.config.mjs"
 
 SRCS = [
     ":css/button.css",
