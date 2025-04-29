@@ -14,7 +14,6 @@ py_library(
     deps = [
         "//tapa:util",
         "//tapa/backend",
-        "//tapa/verilog/xilinx",
         requirement("jinja2"),
         requirement("pyverilog"),
     ],

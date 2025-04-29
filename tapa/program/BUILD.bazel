@@ -19,7 +19,7 @@ py_library(
     srcs = ["directory.py"],
     deps = [
         "//tapa:util",
-        "//tapa/verilog/xilinx",
+        "//tapa/verilog/xilinx:const",
     ],
 )
 
@@ -34,7 +34,6 @@ py_library(
         "//tapa/common:paths",
         "//tapa/program:abc",
         "//tapa/program:directory",
-        "//tapa/verilog/xilinx",
         requirement("psutil"),
     ],
 )

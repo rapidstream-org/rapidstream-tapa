@@ -14,19 +14,12 @@ package(
 
 py_library(
     name = "xilinx",
-    srcs = glob(
-        ["*.py"],
-        exclude = [
-            "ast_types.py",
-            "ioport.py",
-            "module.py",
-            "*_test.py",
-        ],
-    ),
+    srcs = ["__init__.py"],
     deps = [
-        ":ast_types",
+        "//tapa:util",
         "//tapa/backend",
-        requirement("jinja2"),
+        "//tapa/verilog",
+        "//tapa/verilog/xilinx:const",
         requirement("pyverilog"),
     ],
 )
@@ -40,14 +33,50 @@ py_library(
 )
 
 py_library(
+    name = "async_mmap",
+    srcs = ["async_mmap.py"],
+    deps = [
+        "//tapa/verilog",
+        "//tapa/verilog/xilinx:ast_types",
+        "//tapa/verilog/xilinx:const",
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "axis",
+    srcs = ["axis.py"],
+)
+
+py_library(
+    name = "const",
+    srcs = ["const.py"],
+    deps = [
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
     name = "ioport",
     srcs = ["ioport.py"],
     deps = [
-        ":ast_types",
         "//tapa/common:unique_attrs",
         "//tapa/verilog",
-        "//tapa/verilog/xilinx",
+        "//tapa/verilog/xilinx:ast_types",
+        "//tapa/verilog/xilinx:axis",
+        "//tapa/verilog/xilinx:const",
+        "//tapa/verilog/xilinx:m_axi",
         requirement("pyslang"),
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "m_axi",
+    srcs = ["m_axi.py"],
+    deps = [
+        "//tapa/backend",
+        "//tapa/verilog/xilinx:ast_types",
         requirement("pyverilog"),
     ],
 )
@@ -66,11 +95,14 @@ py_library(
     name = "module",
     srcs = ["module.py"],
     deps = [
-        ":ioport",
         "//tapa/backend",
         "//tapa/common:pyslang_rewriter",
         "//tapa/common:unique_attrs",
         "//tapa/verilog",
+        "//tapa/verilog/xilinx:ast_types",
+        "//tapa/verilog/xilinx:async_mmap",
+        "//tapa/verilog/xilinx:const",
+        "//tapa/verilog/xilinx:ioport",
         requirement("jinja2"),
         requirement("pyslang"),
         requirement("pyverilog"),
@@ -85,9 +117,9 @@ py_test(
         "//tapa/verilog/xilinx/testdata:UpperLevelTask.v",
     ],
     deps = [
-        ":ast_types",
-        ":module",
-        "//tapa/verilog/xilinx",
+        "//tapa/verilog/xilinx:ast_types",
+        "//tapa/verilog/xilinx:const",
+        "//tapa/verilog/xilinx:module",
         requirement("pyverilog"),
     ],
 )
