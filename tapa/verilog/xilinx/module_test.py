@@ -25,7 +25,8 @@ _CODEGEN = ASTCodeGenerator()
 _TESTDATA_PATH = (Path(__file__).parent / "testdata").resolve()
 
 
-@pytest.fixture(params=[])
+# `params` must not be empty, or tests will be skipped
+@pytest.fixture(params=["pyslang"])
 def options() -> None:
     return
 
@@ -168,6 +169,8 @@ def test_upper_level_task_module() -> None:
         "ap_done",
         "ap_idle",
         "ap_ready",
+        "istream_s_read",
+        "ostreams_s_write",
         "ap_rst_n_inv",
         "ap_CS_fsm",
         "ap_CS_fsm_state1",
@@ -175,8 +178,6 @@ def test_upper_level_task_module() -> None:
         "ap_CS_fsm_state2",
         "ostreams_s_blk_n",
         "ap_block_state1",
-        "ostreams_s_write_local",
-        "istream_s_read_local",
         "ap_NS_fsm",
         "ap_ST_fsm_state1_blk",
         "ap_ST_fsm_state2_blk",
@@ -191,8 +192,6 @@ def test_upper_level_task_module() -> None:
 
     assert list(module.signals) == [
         "ap_block_state1",
-        "ostreams_s_write_local",
-        "istream_s_read_local",
         "ap_ST_fsm_state1_blk",
         "ap_ST_fsm_state2_blk",
         "ap_ce_reg",
