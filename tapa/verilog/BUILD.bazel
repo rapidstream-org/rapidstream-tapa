@@ -6,6 +6,7 @@
 
 load("@rules_python//python:defs.bzl", "py_library")
 load("@tapa_deps//:requirements.bzl", "requirement")
+load("//bazel:pytest_rules.bzl", "py_test")
 
 py_library(
     name = "verilog",
@@ -16,5 +17,13 @@ py_library(
         "//tapa/backend",
         requirement("jinja2"),
         requirement("pyverilog"),
+    ],
+)
+
+py_test(
+    name = "util_test",
+    srcs = ["util_test.py"],
+    deps = [
+        ":verilog",
     ],
 )

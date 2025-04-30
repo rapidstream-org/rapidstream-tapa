@@ -44,6 +44,7 @@ from tapa.common.unique_attrs import UniqueAttrs
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.util import (
     Pipeline,
+    array_name,
     async_mmap_instance_name,
     match_array_name,
     sanitize_array_name,
@@ -361,7 +362,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 if match is None:
                     peek_port = f"{port}_peek"
                 else:
-                    peek_port = f"{match[0]}_peek[{match[1]}]"
+                    peek_port = array_name(f"{match[0]}_peek", match[1])
                 assert arg_name
                 yield make_port_arg(
                     port=self.get_port_of(peek_port, suffix).name,

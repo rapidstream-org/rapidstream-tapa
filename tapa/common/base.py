@@ -9,7 +9,8 @@ RapidStream Contributor License Agreement.
 """
 
 import copy
-import re
+
+from tapa.verilog.util import array_name, match_array_name
 
 
 class Base:
@@ -58,12 +59,10 @@ class Base:
 
     def _generate_global_name(self) -> str:
         """Return the global name for an object."""
-        if self.name is not None:
-            match = re.fullmatch(r"(\w+)(\[\d+\])", self.name)
-            if match is not None:
-                # FIXME: tapacc should sanitize the names
-                # the name has an array subscript
-                return f"{self._generate_global_name_without_sub(match[1])}{match[2]}"
+        if self.name is not None and (match := match_array_name(self.name)) is not None:
+            return array_name(
+                self._generate_global_name_without_sub(match[0]), match[1]
+            )
 
         return self._generate_global_name_without_sub(self.name)
 

@@ -28,6 +28,9 @@ py_library(
             "*_test.py",
         ],
     ),
+    deps = [
+        "//tapa/verilog",
+    ],
 )
 
 py_library(

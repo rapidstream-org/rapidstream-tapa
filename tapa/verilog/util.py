@@ -50,6 +50,10 @@ def match_array_name(name: str) -> tuple[str, int] | None:
     return None
 
 
+def array_name(name: str, idx: int) -> str:
+    return f"{name}[{idx}]"
+
+
 def sanitize_array_name(name: str) -> str:
     match = match_array_name(name)
     if match is not None:
