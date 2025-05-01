@@ -13,6 +13,11 @@
 ignore-words-list = "din,dout,edn,inout,pres,implmentation,cips,ket"
 
 
+[tool.docformatter]
+style = "google"
+black = true
+
+
 [tool.mypy]
 check_untyped_defs = true
 disallow_any_generics = true
@@ -49,7 +54,7 @@ select = [
   "BLE",
   "C",
   "COM",
-  # "D",  # should be enabled in docstring refactoring
+  "D",
   "E",
   "EM",
   "ERA",
@@ -95,10 +100,7 @@ select = [
 ignore = [
   "COM812",
   "COM819",
-  "D203",
-  "D206",
-  "D213",
-  "D300",
+  "D1", # allow missing docstrings
   "E111",
   "E114",
   "E117",
@@ -111,6 +113,9 @@ ignore = [
   "Q003",
   "W191",
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.format]
 docstring-code-format = true

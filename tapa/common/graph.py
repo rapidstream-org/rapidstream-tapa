@@ -348,7 +348,7 @@ def _get_slot_fifos(
 ) -> tuple[dict, list[str]]:
     """Get the fifos of the slot.
 
-    returns:
+    Returns:
     - new_fifos: dict of updated slot fifos
     - fifo_ports: list of external fifo names.
     """

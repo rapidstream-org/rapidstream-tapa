@@ -24,7 +24,7 @@ _logger = logging.getLogger().getChild(__name__)
 
 
 def _update_relative_path(config: dict, config_path: str) -> None:
-    """convert the relative path in the config file"""
+    """Convert the relative path in the config file."""
     config_dir = "/".join(config_path.split("/")[:-1])
 
     curr_path = config["xo_path"]
@@ -37,8 +37,7 @@ def _update_relative_path(config: dict, config_path: str) -> None:
 
 
 def extract_part_from_xml_file(file_path: str) -> str:
-    """
-    Extracts the <Part> element from the given XML file.
+    """Extracts the <Part> element from the given XML file.
 
     Args:
         file_path (str): The path to the XML file.
@@ -82,8 +81,9 @@ def parse_part_num(xo_dir: str) -> str | None:
 
 
 def _parse_and_update_config(config: dict, tb_output_dir: str) -> None:
-    """
-    Only supports TAPA xo. Vitis XO has different hierarchy and RTL coding style
+    """Only supports TAPA xo.
+
+    Vitis XO has different hierarchy and RTL coding style.
     """
     xo_path = config["xo_path"]
 

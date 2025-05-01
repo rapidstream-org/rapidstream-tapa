@@ -70,7 +70,6 @@ def gen_slot_cpp(slot_name: str, top_name: str, ports: list, top_cpp: str) -> st
             "width": 32
         }
     """
-
     cpp_ports = []
     cpp_pragmas = []
     for port in ports:
@@ -143,8 +142,7 @@ def gen_slot_cpp(slot_name: str, top_name: str, ports: list, top_cpp: str) -> st
 
 
 def remove_comments_and_strings(code: str) -> str:
-    """
-    Removes comments from C++ code, preserving strings and character literals.
+    """Removes comments from C++ code, preserving strings and character literals.
 
     Args:
         code: The input C++ source code.
@@ -172,8 +170,7 @@ def remove_comments_and_strings(code: str) -> str:
 def find_function_definition(
     code: str, func_name: str
 ) -> tuple[int | None, int | None]:
-    """
-    Finds the start and end index of the function definition in the code.
+    """Finds the start and end index of the function definition in the code.
 
     Args:
         code: The full source code.
@@ -233,8 +230,7 @@ def find_function_definition(
 
 
 def replace_function_declaration(code: str, func_name: str, new_decl: str) -> str:
-    """
-    Replaces the function declaration of the given function name with a new one.
+    """Replaces the function declaration of the given function name with a new one.
 
     Args:
         code: The full source code.
@@ -249,8 +245,7 @@ def replace_function_declaration(code: str, func_name: str, new_decl: str) -> st
 
 
 def replace_function_definition(code: str, func_name: str, new_def: str) -> str:
-    """
-    Replaces the full function definition of the given function.
+    """Replaces the full function definition of the given function.
 
     Args:
         code: The full source code.
@@ -271,8 +266,7 @@ def replace_function_definition(code: str, func_name: str, new_def: str) -> str:
 
 
 def replace_function(code: str, func_name: str, new_decl: str, new_def: str) -> str:
-    """
-    Replaces both the declaration and the definition of a function in a C++ source file.
+    """Replaces both declaration and definition of a function in a C++ source file.
 
     Args:
         code: Original source code.

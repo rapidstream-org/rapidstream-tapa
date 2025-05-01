@@ -89,10 +89,10 @@ def get_basic_ab_graph(
     def replace_bracketed_number(s: str) -> str:
         """Replace the bracketed number in the string with an underscore.
 
-        Streams fifo names contain a bracketed number at the end such as fifo[0],
-        which matches the connected task instance arg name in the pattern of fifo_0.
-        We need to replace the bracketed number with an underscore to match the
-        connected task instance arg name.
+        Streams fifo names contain a bracketed number at the end such as fifo[0], which
+        matches the connected task instance arg name in the pattern of fifo_0. We need
+        to replace the bracketed number with an underscore to match the connected task
+        instance arg name.
         """
         pattern = r"\[(\d+)\]$"
         match = re.search(pattern, s)
@@ -133,8 +133,8 @@ def add_port_iface_connections(
 ) -> ABGraph:
     """Add port interface connections to the ab graph.
 
-    For each top level port interfaces, add a dummy vertex and
-    corresponding edges to the graph.
+    For each top level port interfaces, add a dummy vertex and corresponding edges to
+    the graph.
     """
     vertices = {v.name: v for v in graph.vs}
     edges = graph.es.copy()
@@ -191,7 +191,6 @@ def add_port_iface_connections(
 def add_scalar_connections(
     program: Program, graph: ABGraph, port_width: dict[str, int]
 ) -> ABGraph:
-    """"""
     vertices = {v.name: v for v in graph.vs}
     edges = graph.es.copy()
 

@@ -93,7 +93,7 @@ def get_module_name(module: str) -> str:
 
 
 def get_xilinx_tool_path(tool_name: Literal["HLS", "VITIS"] = "HLS") -> str | None:
-    "Returns the XILINX_<TOOL> path."
+    """Returns the XILINX_<TOOL> path."""
     xilinx_tool_path = os.environ.get(f"XILINX_{tool_name}")
     if xilinx_tool_path is None:
         _logger.critical("not adding vendor include paths;")
@@ -108,7 +108,7 @@ def get_xilinx_tool_path(tool_name: Literal["HLS", "VITIS"] = "HLS") -> str | No
 
 
 def get_xpfm_path(platform: str) -> str | None:
-    "Returns the XPFM path for a platform."
+    """Returns the XPFM path for a platform."""
     xilinx_vitis_path = get_xilinx_tool_path("VITIS")
     path_in_vitis = f"{xilinx_vitis_path}/base_platforms/{platform}/{platform}.xpfm"
     path_in_opt = f"/opt/xilinx/platforms/{platform}/{platform}.xpfm"

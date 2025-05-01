@@ -45,13 +45,10 @@ def load_persistent_context(name: str) -> dict:
     """Try load context from the flow or from the workdir.
 
     Args:
-    ----
       name: Name of the context, e.g. graph, settings.
 
     Returns:
-    -------
       The context.
-
     """
     local_ctx = click.get_current_context().obj
 
@@ -81,10 +78,8 @@ def load_persistent_context(name: str) -> dict:
 def load_tapa_program() -> Program:
     """Try load program description from the flow or from the workdir.
 
-    Returns
-    -------
+    Returns:
       Loaded program description.
-
     """
     local_ctx = click.get_current_context().obj
     if "tapa-program" not in local_ctx:
@@ -101,10 +96,8 @@ def store_persistent_context(name: str, ctx: dict | None = None) -> None:
     """Try store context to the workdir.
 
     Args:
-    ----
       name: Name of the context, e.g. program, settings.
       ctx: The context to be stored.  If not given, use local context.
-
     """
     local_ctx = click.get_current_context().obj
 
@@ -123,9 +116,7 @@ def store_tapa_program(prog: Program) -> None:
     """Store program description to the flow for downstream reuse.
 
     Args:
-    ----
       prog: The TAPA program for reuse.
-
     """
     click.get_current_context().obj["tapa-program"] = prog
 

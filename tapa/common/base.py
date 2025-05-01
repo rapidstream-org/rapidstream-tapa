@@ -16,14 +16,12 @@ from tapa.verilog.util import array_name, match_array_name
 class Base:
     """Describes a TAPA base object.
 
-    Attributes
-    ----------
+    Attributes:
       name: Name of the object, which is locally unique in its parent.
       obj: The JSON dict object of the TAPA object.
       parent: The TAPA object that has this object nested in.
       definition: The TAPA definition object of this object, or self.
       global_name: Globally descriptive name of this object in a Graph.
-
     """
 
     uuid_counter = 0
@@ -38,12 +36,10 @@ class Base:
         """Construct TAPA object from a JSON description.
 
         Args:
-        ----
           name: Name of the object, which is locally unique in its parent.
           obj: The JSON dict object of the TAPA object.
           parent: The TAPA object that has this object nested in.
           definition: The TAPA definition object of this object, or self.
-
         """
         self.obj = copy.deepcopy(obj)
         self.name = name

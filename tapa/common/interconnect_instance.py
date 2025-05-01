@@ -21,7 +21,6 @@ class InterconnectInstance(Base):
         """Return the dict as in the graph JSON description.
 
         Args:
-        ----
           insts_override:
             Override the instantiation of the tasks where the interconnect
             resides in and is used by.
@@ -29,9 +28,7 @@ class InterconnectInstance(Base):
             Use the global names as the name of the interconnects.
 
         Returns:
-        -------
           The dict representation of the interconnect.
-
         """
         obj = self.definition.to_dict()
 

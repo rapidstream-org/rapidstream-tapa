@@ -160,18 +160,14 @@ def find_clang_binary(name: str) -> str:
     `name` and then verify if that is an executable binary.
 
     Args:
-    ----
       name: The name of the binary.
       override: A user specified path of the binary, or None
 
     Returns:
-    -------
       Verified binary path.
 
     Raises:
-    ------
       ValueError: If the binary is not found.
-
     """
     # Lookup binary from the distribution
     binary = find_resource(name)
@@ -202,20 +198,16 @@ def find_tapacc_cflags(
     """Append tapa, system and vendor libraries to tapacc cflags.
 
     Args:
-    ----
       tapacc: The path of the tapacc binary.
       cflags: User-given CFLAGS.
 
     Returns:
-    -------
       A tuple, the first element is the CFLAGS with vendor libraries for HLS,
       including the tapa and HLS vendor libraries, and the second element is
       the CFLAGS for system libraries, such as clang and libc++.
 
     Raises:
-    ------
       click.UsageError: Unable to find the include folders.
-
     """
     # Add vendor include files to tapacc cflags
     vendor_include_paths = ()
@@ -251,13 +243,10 @@ def run_and_check(cmd: tuple[str, ...]) -> str:
     """Run command and check return code.
 
     Args:
-    ----
       cmd: The command to execute.
 
     Returns:
-    -------
       Stdout of the command execution.
-
     """
     proc = subprocess.run(
         cmd,
@@ -289,16 +278,13 @@ def run_flatten(
     header files, excluding system and TAPA header files, are inlined.
 
     Args:
-    ----
       tapa_cpp: The path of the tapa-clang binary.
       files: C/C++ files to flatten.
       cflags: User specified CFLAGS.
       work_dir: Working directory of TAPA, for output of the flatten files.
 
     Returns:
-    -------
       Tuple of the flattened output files.
-
     """
     flatten_folder = os.path.join(work_dir, "flatten")
     os.makedirs(flatten_folder, exist_ok=True)
@@ -353,16 +339,14 @@ def run_tapacc(
     """Execute tapacc and return the program description.
 
     Args:
-    ----
       tapacc: The path of the tapacc binary.
       files: C/C++ files to flatten.
+      top: Top task name.
       cflags: User specified CFLAGS with TAPA specific headers.
       vitis_mode: Insert Vitis compatible interfaces or not.
 
     Returns:
-    -------
       Output description of the TAPA program.
-
     """
     tapacc_args = (
         "-top",

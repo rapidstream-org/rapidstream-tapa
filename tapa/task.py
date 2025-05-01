@@ -71,8 +71,7 @@ class MMapConnection(NamedTuple):
 class Task:  # noqa: PLR0904
     """Describes a TAPA task.
 
-    Attributes
-    ----------
+    Attributes:
       level: Task.Level, upper or lower.
       name: str, name of the task, function name as defined in the source code.
       code: str, HLS C++ code of this task.
@@ -92,7 +91,6 @@ class Task:  # noqa: PLR0904
       args: A dict mapping arg names to lists of Arg objects that belong to the
           children instances of this task.
       mmaps: A dict mapping mmap arg names to MMapConnection objects.
-
     """
 
     class Level(enum.Enum):

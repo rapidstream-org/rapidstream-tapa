@@ -1,7 +1,7 @@
 """Helpers for Xilinx verilog.
 
-This package defines constants and helper functions for verilog files generated
-for Xilinx devices.
+This package defines constants and helper functions for verilog files generated for
+Xilinx devices.
 """
 
 __copyright__ = """
@@ -63,11 +63,10 @@ def pack(
 ) -> None:
     """Create a .xo file that archives all generated RTL files.
 
-    Note that if an RTL file has syntax errors, Vivado will secretly leave
-    it out from the .xo instead of reporting an error.
+    Note that if an RTL file has syntax errors, Vivado will secretly leave it out from
+    the .xo instead of reporting an error.
 
-    The .xo file is essentially a zip file, you could check the contents by
-    unzip it.
+    The .xo file is essentially a zip file, you could check the contents by unzip it.
     """
     port_list = []
     _logger.debug("RTL ports of %s:", top_name)
@@ -120,11 +119,9 @@ def print_kernel_xml(name: str, ports: "Iterable[Port]", kernel_xml: TextIO) -> 
     """Generate kernel.xml file.
 
     Args:
-    ----
       name: name of the kernel.
       ports: Iterable of tapa.instance.Port.
       kernel_xml: file object to write to.
-
     """
     args = []
     for port in ports:

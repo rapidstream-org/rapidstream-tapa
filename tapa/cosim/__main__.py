@@ -44,9 +44,10 @@ _logger = logging.getLogger().getChild(__name__)
 
 
 def parse_register_addr(ctrl_unit_path: str) -> dict[str, list[str]]:
-    """
-    parse the comments in s_axi_control.v to get the register addresses for each
-    argument
+    """Parses register addresses from the given s_axi_control.v file.
+
+    Parses the comments in s_axi_control.v to get the register addresses for each
+    argument.
     """
     with open(ctrl_unit_path, encoding="utf-8") as fp:
         ctrl_unit = fp.readlines()
@@ -66,9 +67,7 @@ def parse_register_addr(ctrl_unit_path: str) -> dict[str, list[str]]:
 
 
 def parse_m_axi_interfaces(top_rtl_path: str) -> list[AXI]:
-    """
-    parse the top RTL to extract all m_axi interfaces, the data width and addr width
-    """
+    """Parse the top RTL to extract all m_axi interface metadata."""
     with open(top_rtl_path, encoding="utf-8") as fp:
         top_rtl = fp.read()
 
@@ -105,9 +104,7 @@ def get_cosim_tb(  # noqa: PLR0913,PLR0917
     scalar_to_val: dict[str, str],
     mode: str,
 ) -> str:
-    """
-    generate a lightweight testbench to test the HLS RTL
-    """
+    """Generate a lightweight testbench to test the HLS RTL."""
     tb = get_begin() + "\n"
 
     if mode == "vitis":
@@ -129,10 +126,11 @@ def get_cosim_tb(  # noqa: PLR0913,PLR0917
 
 
 def set_default_nettype(verilog_path: str) -> None:
-    """
-    Sometimes the HLS-generated RTL will directly assign constants to IO ports
-    But Vivado does not allow this behaviour. We need to set the `default_nettype
-    to wire to bypass this issue.
+    """Appends `default_nettype` to Verilog files in the given directory.
+
+    Sometimes the HLS-generated RTL will directly assign constants to IO ports But
+    Vivado does not allow this behaviour. We need to set the `default_nettype to wire to
+    bypass this issue.
     """
     _logger.info("append `default_nettype wire to every RTL file")
     for file in os.listdir(verilog_path):

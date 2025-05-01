@@ -29,7 +29,6 @@ def report_qor(run_dir: str) -> None:
 
 def report_freq(run_dir: str) -> None:
     """Report the Fmax of an implemented design."""
-
     _logger.warning("Regression metrics are stored in %s", GITHUB_JOB_SUMMARY)
 
     with open(GITHUB_JOB_SUMMARY, "w", encoding="utf-8") as log_f:

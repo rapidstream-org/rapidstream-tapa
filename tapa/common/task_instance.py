@@ -18,10 +18,8 @@ from tapa.common.task_definition import TaskDefinition
 class TaskInstance(Base):
     """TAPA task instance.
 
-    Attributes
-    ----------
+    Attributes:
       idx: The index of this task as nested in its parent.
-
     """
 
     def __init__(
@@ -35,9 +33,11 @@ class TaskInstance(Base):
         """Construct a TAPA task instance.
 
         Args:
-        ----
           idx: The index of this task as nested in its parent.
-
+          name: Name of the task instance.
+          obj: The JSON dict object of the TAPA object.
+          parent: The TAPA object that has this object nested in.
+          definition: The TAPA definition object of this object, or self.
         """
         super().__init__(name=name, obj=obj, parent=parent, definition=definition)
         self.idx = idx
@@ -101,13 +101,10 @@ class TaskInstance(Base):
         original interconnect or external port recursively.
 
         Args:
-        ----
           name: Name of the interconnect or port in the local scope.
 
         Returns:
-        -------
           The corresponding interconnect or external port.
-
         """
         assert isinstance(self.definition, TaskDefinition)
         inter_inst = self.get_interconnect_inst(name)
@@ -182,14 +179,11 @@ class TaskInstance(Base):
         """Transform the task instance object to its JSON description.
 
         Args:
-        ----
           interconnect_global_name:
             Use the global names as the name of the interconnects.
 
         Returns:
-        -------
           The dict as in the graph JSON description.
-
         """
         obj = super().to_dict()
         assert isinstance(obj["args"], dict)

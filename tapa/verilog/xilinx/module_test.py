@@ -41,8 +41,8 @@ def test_invalid_module() -> None:
 def test_empty_module() -> None:
     """An empty module can be constructed from a name.
 
-    This is used to create placeholders before Verilog is parsed, and to create
-    skeleton FSM modules.
+    This is used to create placeholders before Verilog is parsed, and to create skeleton
+    FSM modules.
     """
     module = Module(name="foo")
 

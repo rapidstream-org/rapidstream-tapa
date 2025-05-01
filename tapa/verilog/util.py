@@ -65,14 +65,11 @@ def wire_name(fifo: str, suffix: str) -> str:
     """Return the wire name of the fifo signals in generated modules.
 
     Args:
-    ----
         fifo (str): Name of the fifo.
         suffix (str): One of the suffixes in ISTREAM_SUFFIXES or OSTREAM_SUFFIXES.
 
     Returns:
-    -------
         str: Wire name of the fifo signal.
-
     """
     fifo = sanitize_array_name(fifo)
     if suffix.startswith("_"):

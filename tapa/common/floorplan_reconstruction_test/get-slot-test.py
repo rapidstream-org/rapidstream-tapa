@@ -26,10 +26,9 @@ _logger = logging.getLogger(__name__)
 def test_abgraph(test_name: str) -> None:
     """Test if the generated slot matches the golden.
 
-    The new golden file will be generated in the bazel sandbox tmp directory.
-    Manually updated the golden file to the test directory if needed.
+    The new golden file will be generated in the bazel sandbox tmp directory. Manually
+    updated the golden file to the test directory if needed.
     """
-
     # Access bazel runfiles
     runfiles = Runfiles.Create()
     assert runfiles is not None

@@ -306,18 +306,14 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         """Return the IOPort of the given fifo with the given suffix.
 
         Args:
-        ----
           fifo (str): Name of the fifo.
           suffix (str): One of the suffixes in ISTREAM_SUFFIXES or OSTREAM_SUFFIXES.
 
         Raises:
-        ------
           ValueError: Module does not have the port.
 
         Returns:
-        -------
           IOPort.
-
         """
         ports = self.ports
         sanitized_fifo = sanitize_array_name(fifo)
@@ -548,10 +544,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         """Add registered signals and logics for q initialized by init.
 
         Args:
-        ----
             q (Pipeline): The pipelined variable.
             init (Node): Value used to drive the first stage of the pipeline.
-
         """
         self.add_signals(q.signals)
         self.add_logics([Assign(left=q[0], right=init)])
@@ -631,10 +625,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         Note, this is based on port name suffix matching and may not be perfect.
 
-        Returns
-        -------
+        Returns:
             Module: self, for chaining.
-
         """
         self._syntax_tree = self._rewriter.commit()
         self._parse_syntax_tree()
@@ -865,20 +857,16 @@ def generate_m_axi_ports(
     """Generate AXI mmap ports that instantiate given module.
 
     Args:
-    ----
         module (Module): Module that needs to be instantiated.
         port (str): Port name in the instantiated module.
         arg (str): Argument name in the instantiating module.
         arg_reg (str, optional): Registered argument name. Defaults to ''.
 
     Raises:
-    ------
         ValueError: If the offset port cannot be found in the instantiated module.
 
     Yields:
-    ------
         Iterator[PortArg]: PortArgs.
-
     """
     for suffix in M_AXI_SUFFIXES:
         yield make_port_arg(

@@ -108,8 +108,7 @@ def find_external_lib_in_runfiles() -> set[Path]:
 def get_tapa_cflags() -> tuple[str, ...]:
     """Return the CFLAGS for compiling TAPA programs.
 
-    The CFLAGS include the TAPA include and system include paths
-    when applicable.
+    The CFLAGS include the TAPA include and system include paths when applicable.
     """
     tapa_lib_include = find_resource("tapa-lib-include")
     includes = {
@@ -137,8 +136,8 @@ def get_tapa_cflags() -> tuple[str, ...]:
 def get_tapa_ldflags() -> tuple[str, ...]:
     """Return the LDFLAGS for linking TAPA programs.
 
-    The LDFLAGS include the TAPA library path when applicable,
-    and adds the -l flags for the TAPA libraries.
+    The LDFLAGS include the TAPA library path when applicable, and adds the -l flags for
+    the TAPA libraries.
     """
     libraries = {
         find_resource("fpga-runtime-lib"),

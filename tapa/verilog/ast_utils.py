@@ -86,14 +86,11 @@ def make_port_arg(port: str, arg: str | Node) -> PortArg:
     """Make PortArg from port and arg names.
 
     Args:
-    ----
         port: Port name.
         arg: Arg name (will be used to construct an Identifier) or Node.
 
     Returns:
-    -------
         PortArg: `.port(arg)` in Verilog.
-
     """
     return PortArg(
         portname=port,

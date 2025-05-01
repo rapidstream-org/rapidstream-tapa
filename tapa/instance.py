@@ -41,8 +41,7 @@ class Instance:
     A task can be instantiated multiple times in the same upper-level task.
     Each object of this class corresponds to such a instance of a task.
 
-    Attributes
-    ----------
+    Attributes:
       task: Task, corresponding task of this instance.
       instance_id: int, index of the instance of the same task.
       step: int, bulk-synchronous step when instantiated.
@@ -50,7 +49,6 @@ class Instance:
 
     Properties:
       name: str, instance name, unique in the parent module.
-
     """
 
     class Arg:
@@ -271,10 +269,8 @@ class Instance:
         This signal is asserted until the ready signal is asserted when the instance
         of task starts.
 
-        Returns
-        -------
+        Returns:
           The ast.Identifier node of this signal.
-
         """
         return Identifier(f"{self.name}__{HANDSHAKE_START}")
 
@@ -284,10 +280,8 @@ class Instance:
 
         This signal is asserted for 1 cycle when the instance of task finishes.
 
-        Returns
-        -------
+        Returns:
           The ast.Identifier node of this signal.
-
         """
         return Identifier(f"{self.name}__{HANDSHAKE_DONE}")
 
@@ -347,10 +341,8 @@ class Instance:
 
         These include all public IO ports like `ap_start` and `ap_done`.
 
-        Yields
-        ------
+        Yields:
           ast.Decl of IO ports.
-
         """
         for _, port_type, name in self._public_handshake_tuples:
             yield port_type(name)
@@ -361,10 +353,8 @@ class Instance:
 
         These include all public signals like `ap_start` and `ap_done`.
 
-        Yields
-        ------
+        Yields:
           Union[ast.Wire, ast.Reg] of signals.
-
         """
         for signal_type, _, name in self._public_handshake_tuples:
             yield signal_type(name)
@@ -376,10 +366,8 @@ class Instance:
         These include both public signals like `ap_start` and `ap_done`, and any
         private state signals.
 
-        Yields
-        ------
+        Yields:
           Union[ast.Wire, ast.Reg] of signals.
-
         """
         yield from self.public_handshake_signals
         if not self.is_autorun:

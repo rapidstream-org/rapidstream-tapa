@@ -15,7 +15,7 @@ class AXI:
 
 
 class Port(NamedTuple):
-    """Port parsed from kernel.xml"""
+    """Port parsed from kernel.xml."""
 
     name: str
     mode: str  # 'read_only' | 'write_only'
@@ -33,7 +33,7 @@ class Port(NamedTuple):
 
 
 class Arg(NamedTuple):
-    """Arg parsed from kernel.xml"""
+    """Arg parsed from kernel.xml."""
 
     name: str
     address_qualifier: int  # 0: scalar, 1: mmap, 4: stream

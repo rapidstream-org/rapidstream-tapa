@@ -279,7 +279,7 @@ exit
 
 
 class RunHls(VivadoHls):
-    """Runs Vivado HLS for the given kernels and generate HDL files
+    """Runs Vivado HLS for the given kernels and generate HDL files.
 
     This is a subclass of subprocess.Popen. A temporary directory will be created
     and used as the working directory.
@@ -392,10 +392,10 @@ class RunHls(VivadoHls):
 
 
 class RunAie(subprocess.Popen):
-    """Runs Vitis AIE for the given kernels and generate aie.a files
+    """Runs Vitis AIE for the given kernels and generate aie.a files.
 
-    This is a subclass of subprocess.Popen. A temporary directory will be created
-    and used as the working directory.
+    This is a subclass of subprocess.Popen. A temporary directory will be created and
+    used as the working directory.
     """
 
     def __init__(  # noqa: PLR0913,PLR0917
@@ -654,7 +654,7 @@ def print_kernel_xml(name: str, args: Iterable[Arg], kernel_xml: TextIO) -> None
     """Generate kernel.xml file.
 
     Args:
-      top_name: Name of the kernel.
+      name: Name of the kernel.
       args: Iterable of Arg. The `port` field should not include any prefix and
           could be an empty string to connect the argument to a default port.
       kernel_xml: File object to write to.

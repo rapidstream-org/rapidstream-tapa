@@ -63,7 +63,7 @@ class ReportDirUtil(backend.Vivado):
 
         Args:
           hdl_dir: HDL directory containing *.v and *.tcl files.
-          rpt_file: Path of generated resource utilization report.
+          rpt_path: Path of generated resource utilization report.
           top_name: Top module name.
           part_num: Part number; inferred from HDL if empty.
           synth_kwargs: Additional arguments for synth_design.

@@ -291,7 +291,6 @@ class ProgramHlsMixin(
 
     def _get_aie_graph(self, task: Task) -> str:
         """Generates the complete AIE graph code."""
-
         _header_decl, kernel_decl, port_decl = _gen_declarations(task)
         (
             kernel_def,

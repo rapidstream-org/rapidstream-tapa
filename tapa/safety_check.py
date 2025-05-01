@@ -27,8 +27,8 @@ _logger = logging.getLogger().getChild(__name__)
 def check_mmap_arg_name(task_list: list[Task]) -> None:
     """Mmap arguments cannot be named "in" or "out".
 
-    Otherwise HLS will have inconsistent naming convention
-    in the generated AXI interface.
+    Otherwise HLS will have inconsistent naming convention in the generated AXI
+    interface.
     """
     for task in task_list:
         if task.is_upper:
