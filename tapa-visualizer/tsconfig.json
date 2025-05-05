@@ -15,7 +15,12 @@
         "noEmit": true,
         "strict": true,
         "strictNullChecks": true,
-        "target": "ES2023"
+        "target": "ES2023",
+        "typeRoots": [
+            "./node_modules/@types/node",
+            "./node_modules/@types/prismjs",
+            "./types"
+        ]
     },
     "include": [
         "eslint.config.mjs",

@@ -4,24 +4,33 @@
 # RapidStream Contributor License Agreement.
 */
 
-.sidebar-contents {
-	position: relative;
-}
-
 /* Only show contents for selected sidebar */
 .sidebar-contents section {
 	display: none;
 }
-
 .sidebar-tabs:has(.btn-explorer > input:checked)+.sidebar-contents>.explorer,
+.sidebar-tabs:has(.btn-cflags > input:checked)+.sidebar-contents>.cflags,
 .sidebar-tabs:has(.btn-details > input:checked)+.sidebar-contents>.details,
 .sidebar-tabs:has(.btn-connections > input:checked)+.sidebar-contents>.connections {
 	display: block;
 }
+
 .sidebar-tabs:has(.btn-options > input:checked)+.sidebar-contents>.options {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
+}
+
+.sidebar-tabs>hr {
+	margin: .25rem 0;
+	opacity: .5;
+}
+.sidebar-tabs>.btn-options {
+	margin-top: auto;
+}
+
+.sidebar-contents {
+	position: relative;
 }
 
 .sidebar-contents .summary,
@@ -164,13 +173,24 @@
 	margin: .5rem 0;
 }
 
-.sidebar-content-explorer>ul {
+.sidebar-content-explorer>ul,
+.sidebar-content-cflags>ul {
 	padding: .5rem;
 	list-style-image: none;
+	word-break: break-all;
 }
 
 .sidebar-content-explorer>ul>li:hover {
 	background-color: #EEE;
+}
+
+.sidebar-content-cflags>ul>li {
+	margin: .25rem 0;
+	line-height: 1.2;
+}
+.sidebar-content-cflags>ul>li.isystem {
+	opacity: .75;
+	font-size: .8rem;
 }
 
 .sidebar-content-options {

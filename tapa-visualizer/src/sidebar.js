@@ -12,6 +12,7 @@ import Prism from "./prism-config.js";
 // sidebar content container elements
 const sidebarContainers = [
   "explorer",
+  "cflags",
   "instance",
   "task",
   "neighbors",
@@ -25,10 +26,9 @@ const sidebarContainers = [
   }
 });
 
-// Explorer don't need reset when anything is selected
+// Explorer & Cflags don't need reset when anything is selected
 // .shift() introduces undefined, use [0] for the explorer variable
-const explorer = sidebarContainers[0];
-sidebarContainers.shift();
+const [explorer, cflags] = sidebarContainers.splice(0, 2);
 
 const [
   instance,
@@ -116,7 +116,35 @@ const showCode = codeDialog && codeContainer
 // Explorer
 
 /** @type {(graphJSON: GraphJSON) => void} */
-export const updateExplorer = ({ tasks, top }) => {
+export const updateExplorer = ({ tasks, top, cflags: flags }) => {
+
+  cflags.replaceChildren(
+    ul(
+      flags.reduce(
+        (arr, cur) => {
+          const last = arr.length - 1;
+          // concat "-isystem" with its following argument
+          if (cur === "-isystem") {
+            arr.push(`${cur} `);
+          } else if (arr[last]?.endsWith(" ")) {
+            arr[last] += cur;
+          } else {
+            arr.push(cur);
+          }
+          return arr;
+        },
+        /** @type {string[]} */
+        ([]),
+      ).map(flag => {
+        const li = $text("li", flag);
+        if (flag.startsWith("-isystem ")) {
+          li.className = "isystem";
+        }
+        return li;
+      }),
+    ),
+  );
+
   const taskLis = [];
 
   /** @type {(task: UpperTask, level: number) => void} */

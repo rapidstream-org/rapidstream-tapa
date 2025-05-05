@@ -6,8 +6,10 @@
 
 "use strict";
 
-/* Color for edge connecting parent and children */
-const altEdgeColor = "#479f76"; //  Bootstrap $green-400
+import { color } from "../graph-config.js";
+
+/** Color for edge connecting parent and children */
+const altEdgeColor = color.edgeB;
 
 /** fifo groups, for fifos like fifo_xx[0], fifo_xx[1]...
  * @type {Map<string, Set<number>>} */
@@ -118,12 +120,13 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
           break;
         }
         case "expand": {
-          const target = fifo.consumed_by.join("/");
+          const targetPrefix = fifo.consumed_by.join("/");
           const sources = nodes.filter(({id}) => id.startsWith(`${taskName}/`));
-          const targets = nodes.filter(({id}) => id.startsWith(target));
+          const targets = nodes.filter(({id}) => id.startsWith(targetPrefix));
           const len = Math.min(sources.length, targets.length);
           for (let i = 0; i < len; i++) {
-            addFifo(sources[i].id, targets[i].id, `${id}/${i}`, getStyle(sources[i]));
+            const source = sources[i];
+            addFifo(source.id, targets[i].id, `${id}/${i}`, getStyle(source));
           }
           break;
         }
@@ -155,12 +158,13 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
           break;
         }
         case "expand": {
-          const source = fifo.produced_by.join("/");
-          const sources = nodes.filter(({id}) => id.startsWith(source));
+          const sourcePrefix = fifo.produced_by.join("/");
+          const sources = nodes.filter(({id}) => id.startsWith(sourcePrefix));
           const targets = nodes.filter(({id}) => id.startsWith(`${taskName}/`));
           const len = Math.min(sources.length, targets.length);
           for (let i = 0; i < len; i++) {
-            addFifo(sources[i].id, targets[i].id, `${id}/${i}`, getStyle(targets[i]));
+            const target = targets[i];
+            addFifo(sources[i].id, target.id, `${id}/${i}`, getStyle(target));
           }
           break;
         }
