@@ -17,7 +17,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Cloudflare Wrangler
-RUN npm install -g wrangler@4.12.0
+RUN npm install -g wrangler@4.14.1
 
 # Clear the cache to avoid permission issues for GitHub Actions users
 RUN rm -rf /tmp/.npm

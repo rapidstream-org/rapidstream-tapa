@@ -8,7 +8,7 @@ ARG DOCKER_GROUP_ID
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
       # Update the following line to the latest date for retriggering the docker build
-      echo "Installing system dependencies as of 20250421" && \
+      echo "Installing system dependencies as of 20250505" && \
       apt-get upgrade -y && \
       apt-get install --no-install-recommends -y \
         build-essential \

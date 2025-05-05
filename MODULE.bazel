@@ -10,14 +10,14 @@ programming model and generates high-frequency FPGA accelerators.
 module(name = "rapidstream-tapa")
 
 # Bazel dependencies
-bazel_dep(name = "aspect_rules_js", version = "2.3.5", dev_dependency = True)
+bazel_dep(name = "aspect_rules_js", version = "2.3.7", dev_dependency = True)
 bazel_dep(name = "aspect_rules_webpack", version = "0.17.0", dev_dependency = True)
 bazel_dep(name = "bazel_skylib", version = "1.7.1", dev_dependency = True)
 bazel_dep(name = "platforms", version = "0.0.11", dev_dependency = True)
 bazel_dep(name = "rules_cc", version = "0.1.1", dev_dependency = True)
-bazel_dep(name = "rules_nodejs", version = "6.3.4", dev_dependency = True)
+bazel_dep(name = "rules_nodejs", version = "6.3.5", dev_dependency = True)
 bazel_dep(name = "rules_pkg", version = "1.1.0", dev_dependency = True)
-bazel_dep(name = "rules_python", version = "1.4.0-rc2", dev_dependency = True)
+bazel_dep(name = "rules_python", version = "1.4.0", dev_dependency = True)
 bazel_dep(name = "rules_shell", version = "0.4.0", dev_dependency = True)
 bazel_dep(name = "toolchains_llvm", version = "1.4.0", dev_dependency = True)
 
@@ -87,7 +87,7 @@ pip.parse(
 use_repo(pip, "tapa_deps")
 
 # Required by tapacc
-bazel_dep(name = "nlohmann_json", version = "3.11.3.bcr.1")
+bazel_dep(name = "nlohmann_json", version = "3.12.0")
 
 # Required by tapa-lib
 bazel_dep(name = "rules_boost", repo_name = "com_github_nelhage_rules_boost")
@@ -111,7 +111,7 @@ bazel_dep(name = "gflags", version = "2.2.2")
 # glog must be 0.5.0 as in later versions, bazel is strictly required for
 # including glog headers for the host code
 bazel_dep(name = "glog", version = "0.5.0")
-bazel_dep(name = "googletest", version = "1.16.0.bcr.1")
+bazel_dep(name = "googletest", version = "1.17.0")
 
 single_version_override(
     module_name = "glog",
@@ -309,11 +309,11 @@ LLVM_VERSION_MAJOR = 20
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 3
+LLVM_VERSION_PATCH = 4
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
-LLVM_SHA256 = "b6183c41281ee3f23da7fda790c6d4f5877aed103d1e759763b1008bdd0e2c50"
+LLVM_SHA256 = "a95365b02536ed4aef29b325c205dd89c268cba41503ab2fc05f81418613ab63"
 
 # Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/707c0f939d1a801370aeb3a795e1a253a880f4f7/modules/llvm-project/17.0.3/patches
 http_archive(

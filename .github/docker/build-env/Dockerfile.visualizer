@@ -4,7 +4,7 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM ubuntu:noble-20250404
+FROM ubuntu:noble-20250415.1
 
 ARG DOCKER_USER_ID
 ARG DOCKER_GROUP_ID
@@ -12,7 +12,7 @@ ARG DOCKER_GROUP_ID
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
       # Update the following line to the latest date for retriggering the docker build
-      echo "Installing system dependencies as of 20250421" && \
+      echo "Installing system dependencies as of 20250505" && \
       apt-get upgrade -y && \
       apt-get install --no-install-recommends -y \
         ca-certificates \
