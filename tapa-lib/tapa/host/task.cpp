@@ -161,10 +161,12 @@ class worker {
         {
           unique_lock lock(this->mtx);
           this->task_cv.wait(lock, [this] {
-            // yield to the OS for every spin
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            return this->done || !this->coroutines.empty() ||
-                   !this->tasks.empty();
+            bool pred =
+                this->done || !this->coroutines.empty() || !this->tasks.empty();
+            // yield to the OS for every idle spin
+            if (!pred)
+              std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            return pred;
           });
 
           // stop worker if it is done
@@ -191,6 +193,8 @@ class worker {
 
         // iterate over all tasks and their coroutines
         bool active = false;
+        bool coroutine_executed = false;
+
         bool debugging = this->signal;
         if (debugging) debug = true;
         for (auto& pair : this->coroutines) {
@@ -200,6 +204,7 @@ class worker {
             if (auto& coroutine = *it) {
               current_handle = this->handle_table[&coroutine];
               coroutine();
+              coroutine_executed = true;
             }
 
             if (*it) {
@@ -211,15 +216,21 @@ class worker {
             }
           }
         }
+
         if (debugging) {
           debug = false;
           this->signal = 0;
         }
+
         // response to wait requests
         if (!active) {
+          this->wait_cv.notify_all();
+        }
+
+        // check if coroutines are executed
+        if (!coroutine_executed) {
           // yield to the OS every time the thread is idle
           std::this_thread::sleep_for(std::chrono::milliseconds(1));
-          this->wait_cv.notify_all();
         }
       }
     });
@@ -236,7 +247,12 @@ class worker {
   void wait() {
     unique_lock lock(this->mtx);
     this->wait_cv.wait(lock, [this] {
-      return this->tasks.empty() && this->coroutines[false].empty();
+      bool pred = this->tasks.empty() && this->coroutines[false].empty();
+      if (!pred) {
+        // yield to the OS for every idle spin
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+      return pred;
     });
   }
 
