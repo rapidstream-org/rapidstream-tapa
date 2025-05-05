@@ -47,8 +47,8 @@ body>header {
 }
 
 .lucide {
-	width: 1rem;
-	height: 1rem;
+	width: 1.2rem;
+	height: 1.2rem;
 }
 
 
@@ -119,6 +119,7 @@ body>header .tools {
 body>header .tools hr {
 	height: 1rem;
 	margin: 0;
+	opacity: .5;
 }
 
 body>header .grouping {

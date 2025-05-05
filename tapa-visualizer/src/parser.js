@@ -8,10 +8,11 @@
 
 import { getComboId, getComboName } from "./helper.js";
 import { setIOPorts, setPortsStyle } from "./parser/ports.js";
+import { color } from "./graph-config.js";
 import { parseFifo } from "./parser/fifo.js";
 
 /** Color for node with more than 1 connection */
-const altNodeColor = "#0F5132"; // Bootstrap $green-700
+const altNodeColor = color.nodeB;
 
 /** @type {Readonly<Required<GetGraphDataOptions>>} */
 const defaultOptions = {
