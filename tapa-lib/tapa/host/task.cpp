@@ -93,7 +93,7 @@ void yield(const string& msg) {
 #endif  // TAPA_ENABLE_STACKTRACE
   }
   if (current_handle == nullptr) {
-    std::this_thread::yield();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
   } else {
     (*current_handle)();
   }
@@ -161,6 +161,8 @@ class worker {
         {
           unique_lock lock(this->mtx);
           this->task_cv.wait(lock, [this] {
+            // yield to the OS for every spin
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
             return this->done || !this->coroutines.empty() ||
                    !this->tasks.empty();
           });
@@ -168,7 +170,7 @@ class worker {
           // stop worker if it is done
           if (this->done && this->tasks.empty()) break;
 
-          // create coroutines
+          // create coroutines for new tasks
           while (!this->tasks.empty()) {
             bool detach;
             function<void()> f;
@@ -214,7 +216,11 @@ class worker {
           this->signal = 0;
         }
         // response to wait requests
-        if (!active) this->wait_cv.notify_all();
+        if (!active) {
+          // yield to the OS every time the thread is idle
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+          this->wait_cv.notify_all();
+        }
       }
     });
   }
@@ -365,7 +371,9 @@ __attribute__((weak)) void __sanitizer_finish_switch_fiber(void*, const void**,
 namespace tapa {
 namespace internal {
 
-void yield(const std::string& msg) { std::this_thread::yield(); }
+void yield(const std::string& msg) {
+  std::this_thread::sleep_for(std::chrono::milliseconds(1));
+}
 
 namespace {
 
@@ -415,7 +423,7 @@ task::~task() {
       if (t.joinable()) {
         t.join();
       }
-      std::this_thread::yield();
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
     internal::top_task = nullptr;
   }
