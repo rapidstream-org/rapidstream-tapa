@@ -10,6 +10,7 @@
 
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 #include <glog/logging.h>
 #include <svdpi.h>
@@ -151,6 +152,11 @@ DPI_DLLESPEC void istream(
     StringToOpenArrayHandle(std::string(istream->width(), 'x'), dout);
     empty_n = sv_0;
     last_empty_n[id] = false;
+
+    // If there is no data to be consumed from the DPI queue, we yield to
+    // the operating system to allow the TAPA processes or other simulation
+    // processes to produce data to write to the queue.
+    sleep(0);
   } else {
     // Otherwise, we provide data and tell the downstream we are not empty.
     StringToOpenArrayHandle(istream->front(), dout);
@@ -180,6 +186,11 @@ DPI_DLLESPEC void ostream(
     // No data can be read in the next cycle because we are full
     full_n = sv_0;
     last_full_n[id] = false;
+
+    // If the DPI queue is full, we yield to the operating system to allow
+    // the TAPA processes or other simulation processes to consume data from
+    // the queue.
+    sleep(0);
   } else {
     // If in the *previous* cycle we have indicated that we are not full, we
     // shall consume data in this cycle if it is available.

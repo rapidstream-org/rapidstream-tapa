@@ -24,6 +24,8 @@
 #include <frt.h>
 #include <glog/logging.h>
 
+#include <unistd.h>
+
 #include "tapa/base/stream.h"
 #include "tapa/host/coroutine.h"
 #include "tapa/host/util.h"
@@ -186,8 +188,24 @@ class frt_queue : public base_queue<T> {
 
   explicit frt_queue(int64_t depth, const std::string& name)
       : base_queue<T>(name), stream(depth) {}
-  bool empty() const override { return stream.empty(); }
-  bool full() const override { return stream.full(); }
+  bool empty() const override {
+    if (this->stream.empty()) {
+      // Yield to the OS to allow the simulation to produce data.
+      sleep(0);
+      return true;
+    } else {
+      return false;
+    }
+  }
+  bool full() const override {
+    if (this->stream.full()) {
+      // Yield to the OS to allow the simulation to consume data.
+      sleep(0);
+      return true;
+    } else {
+      return false;
+    }
+  }
   void push(const T& val) override { stream.push(val); }
   T pop() override { return stream.pop(); };
   T front() const override { return stream.front(); }
