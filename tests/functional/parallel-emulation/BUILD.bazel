@@ -88,10 +88,7 @@ sh_test(
         "//tapa/cosim:tapa-fast-cosim",
     ],
     env = {"TAPA_CONCURRENCY": "1"},
-    tags = [
-        "cpu:17",
-        "manual",  # heavy contention on CI runners
-    ],
+    tags = ["cpu:17"],
 )
 
 cc_binary(
