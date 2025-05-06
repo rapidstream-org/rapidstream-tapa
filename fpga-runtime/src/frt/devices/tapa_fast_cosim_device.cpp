@@ -341,9 +341,19 @@ void TapaFastCosimDevice::Exec() {
 
 void TapaFastCosimDevice::Finish() {
   LOG_IF(FATAL, context_ == nullptr) << "Exec() must be called before Finish()";
-  int rc = context_->proc.wait();
 
-  LOG_IF(FATAL, rc != 0) << "TAPA fast cosim failed";
+  int waitcode = context_->proc.wait();
+  LOG_IF(FATAL, waitcode != 0)
+      << "Failed to wait for TAPA fast cosim process: " << strerror(errno);
+
+  int rc = context_->proc.retcode();
+  if (rc != 0) {
+    LOG(ERROR) << "TAPA fast cosim failed with exit code " << rc;
+    // terminate the whole process if the simulation fails
+    std::terminate();
+  } else {
+    LOG(INFO) << "TAPA fast cosim finished successfully";
+  }
 
   // skip the rest of the function if only setup is needed
   if (FLAGS_xosim_setup_only) {
