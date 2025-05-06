@@ -34,7 +34,7 @@ TEST(SharedMemoryStreamTest, CreateStreamFailsWithInvalidPathTemplate) {
   SharedMemoryStream stream({
       .depth = kDepth,
       .width = kWidth,
-      .path_template = "/invalid path",
+      .filename_template = "invalid path",
   });
 
   SharedMemoryQueue* queue = stream.queue();
