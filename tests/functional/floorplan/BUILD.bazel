@@ -44,7 +44,6 @@ APPS = [
         include = ["."],
         flatten_hierarchy = True,
         floorplan_path = ":gen_random_floorplan_vadd_{}".format(idx),
-        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
         top_name = "VecAdd",
     )
     for idx in range(5)
@@ -62,7 +61,6 @@ APPS = [
         include = ["."],
         flatten_hierarchy = True,
         floorplan_path = ":gen_random_floorplan_bandwidth_{}".format(idx),
-        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
         top_name = "Bandwidth",
     )
     for idx in range(5)
@@ -77,7 +75,6 @@ APPS = [
         include = ["."],
         flatten_hierarchy = True,
         floorplan_path = ":gen_random_floorplan_cannon_{}".format(idx),
-        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
         top_name = "Cannon",
     )
     for idx in range(5)
@@ -92,7 +89,6 @@ APPS = [
         include = ["."],
         flatten_hierarchy = True,
         floorplan_path = ":gen_random_floorplan_network_{}".format(idx),
-        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
         top_name = "Network",
     )
     for idx in range(5)
@@ -107,7 +103,6 @@ APPS = [
         include = ["."],
         flatten_hierarchy = True,
         floorplan_path = ":gen_random_floorplan_gemv_{}".format(idx),
-        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
         top_name = "Gemv",
     )
     for idx in range(5)
@@ -122,7 +117,6 @@ APPS = [
         include = ["."],
         flatten_hierarchy = True,
         floorplan_path = ":gen_random_floorplan_jacobi_{}".format(idx),
-        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
         top_name = "Jacobi",
     )
     for idx in range(5)
@@ -140,7 +134,6 @@ APPS = [
         include = ["."],
         flatten_hierarchy = True,
         floorplan_path = ":gen_random_floorplan_graph_{}".format(idx),
-        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
         top_name = "Graph",
     )
     for idx in range(5)
@@ -154,7 +147,6 @@ APPS = [
         include = ["."],
         flatten_hierarchy = True,
         # floorplan_path = ":gen_random_floorplan_shared_mmap_{}".format(idx),
-        platform_name = "xilinx_u250_gen3x16_xdma_4_1_202210_1",
         top_name = "VecAddShared",
     )
     for idx in range(5)
