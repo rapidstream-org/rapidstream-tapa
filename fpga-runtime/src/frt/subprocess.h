@@ -56,21 +56,12 @@ Documentation for C++ subprocessing libraray.
 #include <unordered_map>
 #include <vector>
 
-#ifdef _MSC_VER
-#include <codecvt>
-#endif
-
 extern "C" {
-#ifdef _MSC_VER
-#include <Windows.h>
-#include <io.h>
-#else
-#include <sys/wait.h>
-#include <unistd.h>
-#endif
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 }
 
 /*!
@@ -201,69 +192,6 @@ inline void quote_argument(const std::wstring& argument,
   }
 }
 
-#ifdef _MSC_VER
-std::string get_last_error() {
-  DWORD errorMessageID = ::GetLastError();
-  if (errorMessageID == 0) return std::string();
-
-  LPSTR messageBuffer = nullptr;
-  size_t size = FormatMessageA(
-      FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-          FORMAT_MESSAGE_IGNORE_INSERTS,
-      NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      (LPSTR)&messageBuffer, 0, NULL);
-
-  std::string message(messageBuffer, size);
-
-  LocalFree(messageBuffer);
-
-  return message;
-}
-
-FILE* file_from_handle(HANDLE h, const char* mode) {
-  int md;
-  if (mode == "w") {
-    md = _O_WRONLY;
-  } else if (mode == "r") {
-    md = _O_RDONLY;
-  } else {
-    throw OSError("file_from_handle", 0);
-  }
-
-  int os_fhandle = _open_osfhandle((intptr_t)h, md);
-  if (os_fhandle == -1) {
-    CloseHandle(h);
-    throw OSError("_open_osfhandle", 0);
-  }
-
-  FILE* fp = _fdopen(os_fhandle, mode);
-  if (fp == 0) {
-    _close(os_fhandle);
-    throw OSError("_fdopen", 0);
-  }
-
-  return fp;
-}
-
-void configure_pipe(HANDLE* read_handle, HANDLE* write_handle,
-                    HANDLE* child_handle) {
-  SECURITY_ATTRIBUTES saAttr;
-
-  // Set the bInheritHandle flag so pipe handles are inherited.
-  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-  saAttr.bInheritHandle = TRUE;
-  saAttr.lpSecurityDescriptor = NULL;
-
-  // Create a pipe for the child process's STDIN.
-  if (!CreatePipe(read_handle, write_handle, &saAttr, 0))
-    throw OSError("CreatePipe", 0);
-
-  // Ensure the write handle to the pipe for STDIN is not inherited.
-  if (!SetHandleInformation(*child_handle, HANDLE_FLAG_INHERIT, 0))
-    throw OSError("SetHandleInformation", 0);
-}
-#endif
-
 /*!
  * Function: split
  * Parameters:
@@ -309,7 +237,6 @@ static inline std::string join(const std::vector<std::string>& vec,
   return res;
 }
 
-#ifndef _MSC_VER
 /*!
  * Function: set_clo_on_exec
  * Sets/Resets the FD_CLOEXEC flag on the provided file descriptor
@@ -350,7 +277,6 @@ static inline std::pair<int, int> pipe_cloexec() noexcept(false) {
 
   return std::make_pair(pipe_fds[0], pipe_fds[1]);
 }
-#endif
 
 /*!
  * Function: write_n
@@ -388,9 +314,6 @@ static inline int write_n(int fd, const char* buf, size_t length) {
  *  reaches 50 after which it will return with whatever data it read.
  */
 static inline int read_atmost_n(FILE* fp, char* buf, size_t read_upto) {
-#ifdef _MSC_VER
-  return (int)fread(buf, 1, read_upto, fp);
-#else
   int fd = fileno(fp);
   int rbytes = 0;
   int eintr_cnter = 0;
@@ -410,7 +333,6 @@ static inline int read_atmost_n(FILE* fp, char* buf, size_t read_upto) {
     rbytes += read_bytes;
   }
   return rbytes;
-#endif
 }
 
 /*!
@@ -459,7 +381,6 @@ static inline int read_all(FILE* fp, std::vector<char>& buf) {
   return total_bytes_read;
 }
 
-#ifndef _MSC_VER
 /*!
  * Function: wait_for_child_exit
  * Waits for the process with pid `pid` to exit
@@ -485,7 +406,6 @@ static inline std::pair<int, int> wait_for_child_exit(int pid) {
 
   return std::make_pair(ret, status);
 }
-#endif
 
 }  // end namespace util
 
@@ -628,9 +548,7 @@ struct input {
   }
   input(IOTYPE typ) {
     assert(typ == PIPE && "STDOUT/STDERR not allowed");
-#ifndef _MSC_VER
     std::tie(rd_ch_, wr_ch_) = util::pipe_cloexec();
-#endif
   }
 
   int rd_ch_ = -1;
@@ -659,9 +577,7 @@ struct output {
   }
   output(IOTYPE typ) {
     assert(typ == PIPE && "STDOUT/STDERR not allowed");
-#ifndef _MSC_VER
     std::tie(rd_ch_, wr_ch_) = util::pipe_cloexec();
-#endif
   }
 
   int rd_ch_ = -1;
@@ -689,9 +605,7 @@ struct error {
   error(IOTYPE typ) {
     assert((typ == PIPE || typ == STDOUT) && "STDERR not aloowed");
     if (typ == PIPE) {
-#ifndef _MSC_VER
       std::tie(rd_ch_, wr_ch_) = util::pipe_cloexec();
-#endif
     } else {
       // Need to defer it till we have checked all arguments
       deferred_ = true;
@@ -976,15 +890,6 @@ class Streams {
   std::shared_ptr<FILE> output_ = nullptr;
   std::shared_ptr<FILE> error_ = nullptr;
 
-#ifdef _MSC_VER
-  HANDLE g_hChildStd_IN_Rd = nullptr;
-  HANDLE g_hChildStd_IN_Wr = nullptr;
-  HANDLE g_hChildStd_OUT_Rd = nullptr;
-  HANDLE g_hChildStd_OUT_Wr = nullptr;
-  HANDLE g_hChildStd_ERR_Rd = nullptr;
-  HANDLE g_hChildStd_ERR_Wr = nullptr;
-#endif
-
   // Buffer size for the IO streams
   int bufsiz_ = 0;
 
@@ -1075,15 +980,6 @@ class Popen {
     if (!defer_process_start_) execute_process();
   }
 
-  /*
-    ~Popen()
-    {
-  #ifdef _MSC_VER
-      CloseHandle(this->process_handle_);
-  #endif
-    }
-  */
-
   void start_process() noexcept(false);
 
   int pid() const noexcept { return child_pid_; }
@@ -1141,10 +1037,6 @@ class Popen {
  private:
   detail::Streams stream_;
 
-#ifdef _MSC_VER
-  HANDLE process_handle_;
-#endif
-
   bool defer_process_start_ = false;
   bool close_fds_ = false;
   bool has_preexec_fn_ = false;
@@ -1199,50 +1091,36 @@ inline void Popen::start_process() noexcept(false) {
 }
 
 inline int Popen::wait() noexcept(false) {
-#ifdef _MSC_VER
-  int ret = WaitForSingleObject(process_handle_, INFINITE);
-
-  return 0;
-#else
   int ret, status;
   std::tie(ret, status) = util::wait_for_child_exit(pid());
+
   if (ret == -1) {
     if (errno != ECHILD) throw OSError("waitpid failed", errno);
-    return 0;
+    return retcode_;
   }
-  if (WIFEXITED(status)) return WEXITSTATUS(status);
-  if (WIFSIGNALED(status))
-    return WTERMSIG(status);
-  else
-    return 255;
 
-  return 0;
-#endif
+  // if retcode was not obtained from the polling
+  if (retcode_ == -1) {
+    if (WIFEXITED(status)) {
+      retcode_ = WEXITSTATUS(status);
+    } else if (WIFSIGNALED(status)) {
+      retcode_ = WTERMSIG(status);
+    } else {
+      retcode_ = 255;
+    }
+  }
+
+  return retcode_;
 }
 
 inline int Popen::poll() noexcept(false) {
   int status;
   if (!child_created_) return -1;  // TODO: ??
 
-#ifdef _MSC_VER
-  int ret = WaitForSingleObject(process_handle_, 0);
-  if (ret != WAIT_OBJECT_0) return -1;
-#else
   // Returns zero if child is still running
   int ret = waitpid(child_pid_, &status, WNOHANG);
   if (ret == 0) return -1;
-#endif
 
-#ifdef _MSC_VER
-  DWORD dretcode_;
-  if (FALSE == GetExitCodeProcess(process_handle_, &dretcode_))
-    throw OSError("GetExitCodeProcess", 0);
-
-  retcode_ = (int)dretcode_;
-  CloseHandle(process_handle_);
-
-  return retcode_;
-#else
   if (ret == child_pid_) {
     if (WIFSIGNALED(status)) {
       retcode_ = WTERMSIG(status);
@@ -1269,105 +1147,16 @@ inline int Popen::poll() noexcept(false) {
   }
 
   return retcode_;
-#endif
 }
 
 inline void Popen::kill(int sig_num) {
-#ifdef _MSC_VER
-  if (!TerminateProcess(this->process_handle_, (UINT)sig_num)) {
-    throw OSError("TerminateProcess", 0);
-  }
-#else
   if (session_leader_)
     killpg(child_pid_, sig_num);
   else
     ::kill(child_pid_, sig_num);
-#endif
 }
 
 inline void Popen::execute_process() noexcept(false) {
-#ifdef _MSC_VER
-  if (this->shell_) {
-    throw OSError("shell not currently supported on windows", 0);
-  }
-
-  if (exe_name_.length()) {
-    this->vargs_.insert(this->vargs_.begin(), this->exe_name_);
-    this->populate_c_argv();
-  }
-  this->exe_name_ = vargs_[0];
-
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-  std::wstring argument;
-  std::wstring command_line;
-
-  for (auto arg : this->vargs_) {
-    argument = converter.from_bytes(arg);
-    util::quote_argument(argument, command_line, true);
-    command_line += L" ";
-  }
-
-  // CreateProcessW can modify szCmdLine so we allocate needed memory
-  wchar_t* szCmdline = new wchar_t[command_line.size() + 1];
-  wcscpy_s(szCmdline, command_line.size() + 1, command_line.c_str());
-  PROCESS_INFORMATION piProcInfo;
-  STARTUPINFOW siStartInfo;
-  BOOL bSuccess = FALSE;
-
-  // Set up members of the PROCESS_INFORMATION structure.
-  ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
-
-  // Set up members of the STARTUPINFOW structure.
-  // This structure specifies the STDIN and STDOUT handles for redirection.
-
-  ZeroMemory(&siStartInfo, sizeof(STARTUPINFOW));
-  siStartInfo.cb = sizeof(STARTUPINFOW);
-
-  siStartInfo.hStdError = this->stream_.g_hChildStd_OUT_Wr;
-  siStartInfo.hStdOutput = this->stream_.g_hChildStd_OUT_Wr;
-  siStartInfo.hStdInput = this->stream_.g_hChildStd_IN_Rd;
-
-  siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
-
-  // Create the child process.
-  bSuccess = CreateProcessW(NULL,
-                            szCmdline,     // command line
-                            NULL,          // process security attributes
-                            NULL,          // primary thread security attributes
-                            TRUE,          // handles are inherited
-                            0,             // creation flags
-                            NULL,          // use parent's environment
-                            NULL,          // use parent's current directory
-                            &siStartInfo,  // STARTUPINFOW pointer
-                            &piProcInfo);  // receives PROCESS_INFORMATION
-
-  // If an error occurs, exit the application.
-  if (!bSuccess) throw OSError("CreateProcess failed", 0);
-
-  CloseHandle(piProcInfo.hThread);
-
-  /*
-    TODO: use common apis to close linux handles
-  */
-
-  this->process_handle_ = piProcInfo.hProcess;
-
-  std::async(std::launch::async, [this] {
-    WaitForSingleObject(this->process_handle_, INFINITE);
-
-    CloseHandle(this->stream_.g_hChildStd_ERR_Wr);
-    CloseHandle(this->stream_.g_hChildStd_OUT_Wr);
-    CloseHandle(this->stream_.g_hChildStd_IN_Rd);
-  });
-
-  /*
-    NOTE: In the linux version, there is a check to make sure that the process
-          has been started. Here, we do nothing because CreateProcess will throw
-          if we fail to create the process.
-  */
-
-#else
-
   int err_rd_pipe, err_wr_pipe;
   std::tie(err_rd_pipe, err_wr_pipe) = util::pipe_cloexec();
 
@@ -1433,7 +1222,6 @@ inline void Popen::execute_process() noexcept(false) {
       throw;
     }
   }
-#endif
 }
 
 namespace detail {
@@ -1498,7 +1286,6 @@ inline void ArgumentDeducer::set_option(preexec_func&& prefunc) {
 }
 
 inline void Child::execute_child() {
-#ifndef _MSC_VER
   int sys_ret = -1;
   auto& stream = parent_->stream_;
 
@@ -1592,27 +1379,9 @@ inline void Child::execute_child() {
   // Calling application would not get this
   // exit failure
   exit(EXIT_FAILURE);
-#endif
 }
 
 inline void Streams::setup_comm_channels() {
-#ifdef _MSC_VER
-  util::configure_pipe(&this->g_hChildStd_IN_Rd, &this->g_hChildStd_IN_Wr,
-                       &this->g_hChildStd_IN_Wr);
-  this->input(util::file_from_handle(this->g_hChildStd_IN_Wr, "w"));
-  this->write_to_child_ = _fileno(this->input());
-
-  util::configure_pipe(&this->g_hChildStd_OUT_Rd, &this->g_hChildStd_OUT_Wr,
-                       &this->g_hChildStd_OUT_Rd);
-  this->output(util::file_from_handle(this->g_hChildStd_OUT_Rd, "r"));
-  this->read_from_child_ = _fileno(this->output());
-
-  util::configure_pipe(&this->g_hChildStd_ERR_Rd, &this->g_hChildStd_ERR_Wr,
-                       &this->g_hChildStd_ERR_Rd);
-  this->error(util::file_from_handle(this->g_hChildStd_ERR_Rd, "r"));
-  this->err_read_ = _fileno(this->error());
-#else
-
   if (write_to_child_ != -1) input(fdopen(write_to_child_, "wb"));
   if (read_from_child_ != -1) output(fdopen(read_from_child_, "rb"));
   if (err_read_ != -1) error(fdopen(err_read_, "rb"));
@@ -1632,7 +1401,6 @@ inline void Streams::setup_comm_channels() {
         setvbuf(h, nullptr, _IOFBF, bufsiz_);
     };
   }
-#endif
 }
 
 inline int Communication::send(const char* msg, size_t length) {
