@@ -234,9 +234,13 @@ def main() -> None:  # pylint: disable=too-many-locals
             check=True,
             env=os.environ
             | {
+                # Vivado generates garbage files in the user home directory.
+                # We ask Vivado to dump garbages to the current directory instead
+                # of the user home to avoid collisions.
+                "HOME": Path(f"{args.tb_output_dir}/run").resolve().as_posix(),
                 "TAPA_FAST_COSIM_DPI_ARGS": ",".join(
                     f"{k}:{v}" for k, v in config["axis_to_data_file"].items()
-                )
+                ),
             },
         )
 
