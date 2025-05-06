@@ -21,8 +21,9 @@ class SharedMemoryStream {
     uint64_t depth = 0;
     uint64_t width = 0;
 
-    // This will be consumed by `shm_open`.
-    std::string path_template = "/shared_memory_queue.XXXXXX";
+    // This will be consumed by `mkstemp` to create a unique path for the shared
+    // memory object. See `SharedMemoryQueue::CreateFile`.
+    std::string filename_template = "shared_memory_queue.XXXXXX";
   };
 
   explicit SharedMemoryStream(Options options);

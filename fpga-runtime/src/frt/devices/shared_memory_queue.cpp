@@ -78,7 +78,21 @@ SharedMemoryQueue::UniquePtr SharedMemoryQueue::New(int fd) {
 
 int SharedMemoryQueue::CreateFile(std::string& path, int32_t depth,
                                   int32_t width) {
-  int fd = shm_open(mktemp(&path[0]), O_RDWR | O_CREAT | O_EXCL, 0600);
+  // Use /dev/shm as the prefix for the path.
+  path = std::string("/dev/shm/") + path;
+
+  if (access("/dev/shm", F_OK) == 0) {
+    // Create a unique name using mkstemp to avoid collisions. Close the file
+    // descriptor returned by mkstemp and we will use shm_open later.
+    close(mkstemp(&path[0]));
+  } else {
+    LOG(FATAL) << "Shared memory not supported on this system without /dev/shm";
+  }
+
+  // Remove /dev/shm prefix from the path template to get the shm_open name.
+  path = path.substr(strlen("/dev/shm"));
+
+  int fd = shm_open(path.c_str(), O_RDWR, 0600);
   if (fd < 0) {
     PLOG(ERROR) << "shm_open";
     return fd;

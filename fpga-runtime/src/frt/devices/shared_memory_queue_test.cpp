@@ -27,7 +27,7 @@ class SharedMemoryQueueTest : public testing::Test {
 
   const testing::TestInfo* const test_info_ =
       testing::UnitTest::GetInstance()->current_test_info();
-  std::string temp_file_ = "/shared_memory_queue.XXXXXX";
+  std::string temp_file_ = "shared_memory_queue.XXXXXX";
   int fd_ = SharedMemoryQueue::CreateFile(temp_file_, kDepth, kWidth);
   SharedMemoryQueue::UniquePtr queue_ = SharedMemoryQueue::New(fd_);
 };

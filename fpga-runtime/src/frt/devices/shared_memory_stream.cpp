@@ -17,7 +17,7 @@ namespace fpga {
 namespace internal {
 
 SharedMemoryStream::SharedMemoryStream(Options options)
-    : path_(std::move(options.path_template)),
+    : path_(std::move(options.filename_template)),
       fd_(SharedMemoryQueue::CreateFile(path_, options.depth, options.width)),
       queue_(SharedMemoryQueue::New(fd_)) {}
 
