@@ -35,7 +35,9 @@ Top Toolbar
 The top toolbar contains controls for working with your graph:
 
 **File Controls**:
+
 - **Choose File** input for selecting a ``graph.json`` file.
+
 - **Clear Graph** button to clear the current graph.
 
 **Visualization Options**:
