@@ -8,6 +8,7 @@ RapidStream Contributor License Agreement.
 
 import os
 import runpy
+import tempfile
 
 import nuitka.PythonVersions
 
@@ -38,7 +39,8 @@ nuitka.PythonVersions.getModuleLinkerLibs = lambda: [
     lib.replace(":libatomic.a", "atomic") for lib in ORIGINAL_MODULE_LINKER_LIBS()
 ]
 
-os.environ["NUITKA_CACHE_DIR"] = "/tmp/.nuitka_cache"
-
 if __name__ == "__main__":
-    runpy.run_module("nuitka", run_name="__main__")
+    with tempfile.TemporaryDirectory() as tempdir:
+        os.environ["NUITKA_CACHE_DIR"] = tempdir
+        os.environ["CCACHE_TEMPDIR"] = tempdir + "/ccache_tmp"
+        runpy.run_module("nuitka", run_name="__main__")

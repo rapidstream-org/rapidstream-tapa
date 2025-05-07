@@ -21,3 +21,7 @@ build:release --copt=-flto=thin
 build:release --linkopt=-Os
 build:release --linkopt=-flto=thin
 build:release --strip=always
+
+# linux-sandbox is having some issues when running Vivado on RHEL 8.
+# we use the less strict version of processwrapper-sandbox instead
+common --spawn_strategy=processwrapper-sandbox,local

@@ -25,12 +25,7 @@ def _nuitka_binary_impl(ctx):
     nuitka = ctx.executable.nuitka
 
     # Start building the command to run Nuitka.
-    # By default, caching is enable but discarded due to sandboxing.
-    # To preserve cache:
-    #   mkdir -p /tmp/.nuitka_cache  # This won't be written, but must exist.
-    #   mkdir -p "/var/tmp/${USER}/nuitka-cache"  # This will be written.
-    #   echo "build --sandbox_add_mount_pair=/var/tmp/${USER}/nuitka-cache:/tmp/.nuitka_cache" >> ~/.bazelrc
-    #   echo "build --sandbox_writable_path=/tmp/.nuitka_cache" >> ~/.bazelrc
+    # Caching is discarded due to sandboxing.
     nuitka_cmd = [
         nuitka.path,
         src.path,
@@ -77,7 +72,6 @@ def _nuitka_binary_impl(ctx):
         "LIBRARY_PATH": py_lib_dir,
         "LD_LIBRARY_PATH": py_lib_dir,
         "CC": ctx.executable._clang.path,
-        "CCACHE_TEMPDIR": "/tmp/.nuitka_cache/ccache_tmp",
     }
 
     # Define a custom action to run the Nuitka command.
