@@ -25,7 +25,6 @@ def _nuitka_binary_impl(ctx):
     nuitka = ctx.executable.nuitka
 
     # Start building the command to run Nuitka.
-    # Caching is discarded due to sandboxing.
     nuitka_cmd = [
         nuitka.path,
         src.path,
