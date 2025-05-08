@@ -326,9 +326,10 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         if match is not None and match[1] == 0:
             singleton_fifo = match[0]
             for infix in FIFO_INFIXES:
-                port = ports.get(f"{singleton_fifo}{infix}{suffix}")
+                port_name = f"{singleton_fifo}{infix}{suffix}"
+                port = ports.get(port_name)
                 if port is not None:
-                    _logger.warning("assuming %s is a singleton array", singleton_fifo)
+                    _logger.debug("assuming %s is a singleton array", port_name)
                     return port
 
         msg = f"module {self.name} does not have port {fifo}.{suffix}"
