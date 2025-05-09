@@ -493,6 +493,9 @@ task& task::invoke_frt(std::shared_ptr<fpga::Instance> instance) {
   internal::schedule(
       /*detach=*/false, [instance]() {
         while (!instance->IsFinished()) {
+          // Yield to the OS for every idle spin, so that a thread waiting
+          // for the FPGA to finish will not spin in a 100% CPU loop.
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
           internal::yield("fpga::Instance() is not finished");
         }
         instance->Finish();
