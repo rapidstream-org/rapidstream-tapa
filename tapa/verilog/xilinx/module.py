@@ -6,10 +6,10 @@ RapidStream Contributor License Agreement.
 
 import functools
 import logging
-import os.path
 import re
 import tempfile
-from collections.abc import Generator, Iterable, Iterator
+from collections.abc import Collection, Generator, Iterable, Iterator
+from pathlib import Path
 
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
@@ -147,7 +147,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
     def __init__(
         self,
-        files: Iterable[str] = (),
+        files: Collection[Path] = (),
         is_trimming_enabled: bool = False,
         name: str = "",
     ) -> None:
@@ -167,7 +167,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 # trim the body since we only need the interface information
                 new_files = []
 
-                def gen_trimmed_file(file: str, idx: int) -> str:
+                def gen_trimmed_file(file: Path, idx: int) -> Path:
                     lines = []
                     with open(file, encoding="utf-8") as fp:
                         for line in fp:
@@ -180,7 +180,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                                 lines.append("endmodule")
                                 break
                             lines.append(line)
-                    new_file = os.path.join(output_dir, f"trimmed_{idx}.v")
+                    new_file = Path(output_dir) / f"trimmed_{idx}.v"
                     with open(new_file, "w", encoding="utf-8") as fp:
                         fp.writelines(lines)
                     return new_file
@@ -188,7 +188,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
                 for idx, file in enumerate(files):
                     new_files.append(gen_trimmed_file(file, idx))
                 files = new_files
-            self._syntax_tree = pyslang.SyntaxTree.fromFiles(files)
+            self._syntax_tree = pyslang.SyntaxTree.fromFiles([str(x) for x in files])
             self._rewriter = PyslangRewriter(self._syntax_tree)
             self._parse_syntax_tree()
 

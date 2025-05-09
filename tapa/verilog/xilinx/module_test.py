@@ -53,7 +53,7 @@ def test_empty_module() -> None:
 @pytest.mark.usefixtures("options")
 def test_lower_level_task_module() -> None:
     module = Module(
-        files=[str(_TESTDATA_PATH / "LowerLevelTask.v")],
+        files=[_TESTDATA_PATH / "LowerLevelTask.v"],
         is_trimming_enabled=True,
     )
 
@@ -160,7 +160,7 @@ endmodule
 @pytest.mark.usefixtures("options")
 def test_upper_level_task_module() -> None:
     module = Module(
-        files=[str(_TESTDATA_PATH / "UpperLevelTask.v")],
+        files=[_TESTDATA_PATH / "UpperLevelTask.v"],
         is_trimming_enabled=False,
     )
 

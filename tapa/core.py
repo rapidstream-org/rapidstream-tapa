@@ -285,7 +285,7 @@ class Program(  # TODO: refactor this class
         for task in self._tasks.values():
             _logger.debug("parsing %s", task.name)
             task.module = Module(
-                files=[self.get_rtl_path(task.name)],
+                files=[Path(self.get_rtl_path(task.name))],
                 is_trimming_enabled=task.is_lower,
             )
             task.self_area = self.get_area(task.name)
@@ -957,7 +957,7 @@ class Program(  # TODO: refactor this class
                 )
                 continue
             try:
-                rtl_module = Module([str(rtl_path)])
+                rtl_module = Module([rtl_path])
             except ParseError:
                 msg = (
                     f"Failed to parse custom RTL file: {rtl_path!s}. "
