@@ -68,6 +68,8 @@ class OpenclDevice : public Device {
   std::vector<cl::Event> load_event_;
   std::vector<cl::Event> compute_event_;
   std::vector<cl::Event> store_event_;
+
+  bool is_finished_;
 };
 
 }  // namespace internal

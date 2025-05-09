@@ -99,16 +99,25 @@ void OpenclDevice::Exec() {
                                        &load_event_, &compute_event_[i]));
     ++i;
   }
+  is_finished_ = false;
 }
 
 void OpenclDevice::Finish() {
   CL_CHECK(cmd_.flush());
   CL_CHECK(cmd_.finish());
+  is_finished_ = true;
 }
 
 void OpenclDevice::Kill() { LOG(ERROR) << "OpenCl kernels cannot be killed"; }
 
-bool OpenclDevice::IsFinished() const { LOG(FATAL) << "Not implemented"; }
+bool OpenclDevice::IsFinished() const {
+  if (is_finished_) {
+    return true;
+  } else {
+    LOG(ERROR) << "Not implemented, assuming to be running.";
+    return false;
+  }
+}
 
 std::vector<ArgInfo> OpenclDevice::GetArgsInfo() const {
   std::vector<ArgInfo> args;
@@ -206,6 +215,7 @@ void OpenclDevice::Initialize(const cl::Program::Binaries& binaries,
     }
   }
   LOG(FATAL) << "Target platform '" + vendor_name + "' not found";
+  is_finished_ = true;
 }
 
 cl::Buffer OpenclDevice::CreateBuffer(size_t index, cl_mem_flags flags,
