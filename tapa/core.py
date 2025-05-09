@@ -223,8 +223,9 @@ class Program(  # TODO: refactor this class
 
     @functools.cache
     def _get_hls_report_xml(self, name: str) -> ET.ElementTree:
-        filename = os.path.join(self.report_dir, f"{name}_csynth.xml")
-        return ET.parse(filename)
+        tree = ET.ElementTree()
+        tree.parse(os.path.join(self.report_dir, f"{name}_csynth.xml"))
+        return tree
 
     def _get_part_num(self, name: str) -> str:
         xml = self._get_hls_report_xml(name)
