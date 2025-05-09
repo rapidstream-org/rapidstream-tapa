@@ -9,10 +9,15 @@ import logging
 import os
 import os.path
 import re
+import signal
 import subprocess
+import sys
 from collections import defaultdict
 from collections.abc import Sequence
+from contextlib import suppress
 from pathlib import Path
+
+import psutil
 
 from tapa import __version__
 from tapa.cosim.common import AXI, Arg
@@ -223,26 +228,54 @@ def main() -> None:  # pylint: disable=too-many-locals
         _logger.info("User requested to only setup the cosim environment, exiting...")
         return
 
-    # launch simulation
-    mode = "gui" if args.start_gui else "batch"
-    command = ["vivado", "-mode", mode, "-source", "run_cosim.tcl"]
     if args.launch_simulation:
-        _logger.info("Running vivado command: %s", command)
-        subprocess.run(
-            command,
-            cwd=Path(f"{args.tb_output_dir}/run").resolve(),
-            check=True,
-            env=os.environ
-            | {
-                # Vivado generates garbage files in the user home directory.
-                # We ask Vivado to dump garbages to the current directory instead
-                # of the user home to avoid collisions.
-                "HOME": Path(f"{args.tb_output_dir}/run").resolve().as_posix(),
-                "TAPA_FAST_COSIM_DPI_ARGS": ",".join(
-                    f"{k}:{v}" for k, v in config["axis_to_data_file"].items()
-                ),
-            },
-        )
+        launch_simulation(config, args.start_gui, args.tb_output_dir)
+
+
+def launch_simulation(
+    config: dict,
+    start_gui: bool,
+    tb_output_dir: str,
+) -> None:
+    mode = "gui" if start_gui else "batch"
+    command = ["vivado", "-mode", mode, "-source", "run_cosim.tcl"]
+
+    _logger.info("Running vivado command: %s", command)
+    with subprocess.Popen(
+        command,
+        cwd=Path(f"{tb_output_dir}/run").resolve(),
+        env=os.environ
+        | {
+            # Vivado generates garbage files in the user home directory.
+            # We ask Vivado to dump garbages to the current directory instead
+            # of the user home to avoid collisions.
+            "HOME": Path(f"{tb_output_dir}/run").resolve().as_posix(),
+            "TAPA_FAST_COSIM_DPI_ARGS": ",".join(
+                f"{k}:{v}" for k, v in config["axis_to_data_file"].items()
+            ),
+        },
+    ) as process:
+
+        def kill_vivado_tree() -> None:
+            """Kill the Vivado process and its children."""
+            _logger.info("Killing Vivado process and its children")
+            for child in psutil.Process(process.pid).children(recursive=True):
+                with suppress(psutil.NoSuchProcess):
+                    child.kill()
+            with suppress(psutil.NoSuchProcess):
+                process.kill()
+
+        signal.signal(signal.SIGINT, lambda _s, _f: kill_vivado_tree())
+        signal.signal(signal.SIGTERM, lambda _s, _f: kill_vivado_tree())
+
+        process.wait()
+        if process.returncode != 0:
+            _logger.error(
+                "Vivado simulation failed with error code %d", process.returncode
+            )
+            sys.exit(process.returncode)
+        else:
+            _logger.info("Vivado simulation finished successfully")
 
 
 if __name__ == "__main__":

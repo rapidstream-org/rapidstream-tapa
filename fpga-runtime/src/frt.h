@@ -64,6 +64,14 @@ class Instance {
   Instance(Instance&&) = default;
   Instance& operator=(Instance&&) = default;
 
+  // Cleanup on destruction.
+  ~Instance() {
+    // If the execution is not finished, kill the program.
+    if (device_ && !device_->IsFinished()) {
+      device_->Kill();
+    }
+  }
+
   // Sets a scalar argument.
   template <typename T>
   void SetArg(int index, T arg) {
@@ -103,6 +111,9 @@ class Instance {
 
   // Waits for the program to finish.
   void Finish();
+
+  // Kill the program on the device.
+  void Kill();
 
   // Returns whether the program has finished.
   bool IsFinished() const;

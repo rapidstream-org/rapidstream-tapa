@@ -1185,6 +1185,11 @@ inline void Popen::execute_process() noexcept(false) {
   child_created_ = true;
 
   if (child_pid_ == 0) {
+    // Put the child in a new process group,
+    // so that SIGINT is not sent to the child
+    // directly.
+    setpgid(0, 0);
+
     // Close descriptors belonging to parent
     stream_.close_parent_fds();
 

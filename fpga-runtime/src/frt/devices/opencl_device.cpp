@@ -106,6 +106,8 @@ void OpenclDevice::Finish() {
   CL_CHECK(cmd_.finish());
 }
 
+void OpenclDevice::Kill() { LOG(ERROR) << "OpenCl kernels cannot be killed"; }
+
 bool OpenclDevice::IsFinished() const { LOG(FATAL) << "Not implemented"; }
 
 std::vector<ArgInfo> OpenclDevice::GetArgsInfo() const {

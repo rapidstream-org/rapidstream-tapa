@@ -275,6 +275,9 @@ class thread_pool {
   std::list<worker> workers;
   decltype(workers)::iterator it;
 
+  mutex cleanup_mtx;
+  std::list<function<void()>> cleanup_tasks;
+
  public:
   thread_pool(size_t worker_count = 0) {
     signal(SIGINT, signal_handler);
@@ -301,6 +304,19 @@ class thread_pool {
     it->add_task(detach, f);
     ++it;
     if (it == this->workers.end()) it = this->workers.begin();
+  }
+
+  void add_cleanup_task(const function<void()>& f) {
+    unique_lock lock(this->cleanup_mtx);
+    this->cleanup_tasks.push_back(f);
+  }
+
+  void run_cleanup_tasks() {
+    unique_lock lock(this->cleanup_mtx);
+    for (auto& task : this->cleanup_tasks) {
+      task();
+    }
+    this->cleanup_tasks.clear();
   }
 
   void wait() {
@@ -336,6 +352,7 @@ void signal_handler(int signal) {
         signal_timestamp - last_signal_timestamp < kSignalThreshold) {
       LOG(INFO) << "caught SIGINT twice in " << kSignalThreshold / 1000000
                 << " ms; exit";
+      pool->run_cleanup_tasks();
       exit(EXIT_FAILURE);
     }
     LOG(INFO) << "caught SIGINT";
@@ -351,6 +368,8 @@ void signal_handler(int signal) {
 void schedule(bool detach, const function<void()>& f) {
   pool->add_task(detach, f);
 }
+
+void schedule_cleanup(const function<void()>& f) { pool->add_cleanup_task(f); }
 
 }  // namespace internal
 
@@ -470,8 +489,9 @@ task& task::invoke_frt(std::shared_ptr<fpga::Instance> instance) {
   instance->WriteToDevice();
   instance->Exec();
   instance->ReadFromDevice();
+  internal::schedule_cleanup([instance]() { instance->Kill(); });
   internal::schedule(
-      /*detach=*/false, [instance = std::move(instance)]() {
+      /*detach=*/false, [instance]() {
         while (!instance->IsFinished()) {
           internal::yield("fpga::Instance() is not finished");
         }

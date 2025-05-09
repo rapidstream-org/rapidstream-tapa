@@ -367,6 +367,16 @@ void TapaFastCosimDevice::Finish() {
   }
 }
 
+void TapaFastCosimDevice::Kill() {
+  if (context_ != nullptr) {
+    // SIGINT is used to terminate the process so that it can
+    // be propagated to the child process.
+    context_->proc.kill(SIGINT);
+    context_ = nullptr;
+    LOG(INFO) << "TAPA fast cosim process killed";
+  }
+}
+
 bool TapaFastCosimDevice::IsFinished() const {
   return context_ != nullptr && context_->proc.poll() >= 0;
 }

@@ -32,6 +32,7 @@ class OpenclDevice : public Device {
 
   void Exec() override;
   void Finish() override;
+  void Kill() override;
   bool IsFinished() const override;
 
   std::vector<ArgInfo> GetArgsInfo() const override;

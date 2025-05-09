@@ -31,6 +31,7 @@ class Device {
   virtual void ReadFromDevice() = 0;
   virtual void Exec() = 0;
   virtual void Finish() = 0;
+  virtual void Kill() = 0;
   virtual bool IsFinished() const = 0;
 
   virtual std::vector<ArgInfo> GetArgsInfo() const = 0;
