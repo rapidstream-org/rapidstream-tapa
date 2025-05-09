@@ -9,10 +9,16 @@
 #include <gflags/gflags.h>
 #include <tapa.h>
 
+DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
+
 void StreamAdd(tapa::istream<float>& a, tapa::istream<float>& b,
                tapa::ostream<float>& c, uint64_t n);
 
-DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
+void VecAdd(tapa::istream<float>& a, tapa::istream<float>& b,
+            tapa::ostream<float>& c, uint64_t n) {
+  // Test: nested tasks, where streams are directly passed to the kernel
+  tapa::task().invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c, n);
+}
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
@@ -38,7 +44,7 @@ int main(int argc, char* argv[]) {
             b.close();
           },
           a, b)
-      .invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c, n)
+      .invoke(VecAdd, a, b, c, n)
       .invoke(
           [&](tapa::istream<float>& c) {
             for (uint64_t i = 0; i < n; ++i) {
