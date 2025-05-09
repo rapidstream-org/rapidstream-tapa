@@ -1,0 +1,328 @@
+{
+    "hierarchical_name": [
+        "Add"
+    ],
+    "metadata": null,
+    "module_type": "verilog_module",
+    "name": "Add",
+    "parameters": [
+        {
+            "expr": [
+                {
+                    "repr": "3'd1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state1"
+            ],
+            "name": "ap_ST_fsm_state1",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "3'd2",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state2"
+            ],
+            "name": "ap_ST_fsm_state2",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "3'd4",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state3"
+            ],
+            "name": "ap_ST_fsm_state3",
+            "range": null
+        }
+    ],
+    "ports": [
+        {
+            "hierarchical_name": [
+                "a_peek_dout"
+            ],
+            "name": "a_peek_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "a_peek_empty_n"
+            ],
+            "name": "a_peek_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "a_peek_read"
+            ],
+            "name": "a_peek_read",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "a_s_dout"
+            ],
+            "name": "a_s_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "a_s_empty_n"
+            ],
+            "name": "a_s_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "a_s_read"
+            ],
+            "name": "a_s_read",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_clk"
+            ],
+            "name": "ap_clk",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_done"
+            ],
+            "name": "ap_done",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_idle"
+            ],
+            "name": "ap_idle",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_ready"
+            ],
+            "name": "ap_ready",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_rst_n"
+            ],
+            "name": "ap_rst_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_start"
+            ],
+            "name": "ap_start",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "b_peek_dout"
+            ],
+            "name": "b_peek_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "b_peek_empty_n"
+            ],
+            "name": "b_peek_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "b_peek_read"
+            ],
+            "name": "b_peek_read",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "b_s_dout"
+            ],
+            "name": "b_s_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "b_s_empty_n"
+            ],
+            "name": "b_s_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "b_s_read"
+            ],
+            "name": "b_s_read",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "c_peek"
+            ],
+            "name": "c_peek",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "c_s_din"
+            ],
+            "name": "c_s_din",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "c_s_full_n"
+            ],
+            "name": "c_s_full_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "c_s_write"
+            ],
+            "name": "c_s_write",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "n"
+            ],
+            "name": "n",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        }
+    ],
+    "submodules_module_names": [],
+    "verilog": "// ==============================================================\n// RTL generated by Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2022.2 (64-bit)\n// Version: 2022.2\n// Copyright (C) Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.\n//\n// ===========================================================\n(* CORE_GENERATION_INFO=\"Add_Add,hls_ip_2022_2,{HLS_INPUT_TYPE=cxx,HLS_INPUT_FLOAT=0,HLS_INPUT_FIXED=0,HLS_INPUT_PART=xcu250-figd2104-2L-e,HLS_INPUT_CLOCK=3.330000,HLS_INPUT_ARCH=others,HLS_SYN_CLOCK=2.342000,HLS_SYN_LAT=-1,HLS_SYN_TPT=none,HLS_SYN_MEM=0,HLS_SYN_DSP=0,HLS_SYN_FF=502,HLS_SYN_LUT=414,HLS_VERSION=2022_2}\" *)\nmodule Add (\n        ap_clk,\n        ap_rst_n,\n        ap_start,\n        ap_done,\n        ap_idle,\n        ap_ready,\n        a_s_dout,\n        a_s_empty_n,\n        a_s_read,\n        a_peek_dout,\n        a_peek_empty_n,\n        a_peek_read,\n        b_s_dout,\n        b_s_empty_n,\n        b_s_read,\n        b_peek_dout,\n        b_peek_empty_n,\n        b_peek_read,\n        c_s_din,\n        c_s_full_n,\n        c_s_write,\n        c_peek,\n        n\n);\nparameter    ap_ST_fsm_state1 = 3'd1;\nparameter    ap_ST_fsm_state2 = 3'd2;\nparameter    ap_ST_fsm_state3 = 3'd4;\ninput   ap_clk;\ninput   ap_rst_n;\ninput   ap_start;\noutput   ap_done;\noutput   ap_idle;\noutput   ap_ready;\ninput  [32:0] a_s_dout;\ninput   a_s_empty_n;\noutput   a_s_read;\ninput  [32:0] a_peek_dout;\ninput   a_peek_empty_n;\noutput   a_peek_read;\ninput  [32:0] b_s_dout;\ninput   b_s_empty_n;\noutput   b_s_read;\ninput  [32:0] b_peek_dout;\ninput   b_peek_empty_n;\noutput   b_peek_read;\noutput  [32:0] c_s_din;\ninput   c_s_full_n;\noutput   c_s_write;\ninput  [32:0] c_peek;\ninput  [63:0] n;\nreg ap_done;\nreg ap_idle;\nreg ap_ready;\nreg a_s_read;\nreg b_s_read;\nreg c_s_write;\nendmodule"
+}

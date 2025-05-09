@@ -1,0 +1,2706 @@
+{
+    "hierarchical_name": [
+        "ProcElem"
+    ],
+    "metadata": null,
+    "module_type": "verilog_module",
+    "name": "ProcElem",
+    "parameters": [
+        {
+            "expr": [
+                {
+                    "repr": "28'd1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state1"
+            ],
+            "name": "ap_ST_fsm_state1",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd2",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state2"
+            ],
+            "name": "ap_ST_fsm_state2",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd4",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state3"
+            ],
+            "name": "ap_ST_fsm_state3",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd8",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state4"
+            ],
+            "name": "ap_ST_fsm_state4",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd16",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state5"
+            ],
+            "name": "ap_ST_fsm_state5",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd32",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state6"
+            ],
+            "name": "ap_ST_fsm_state6",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd64",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state7"
+            ],
+            "name": "ap_ST_fsm_state7",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd128",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state8"
+            ],
+            "name": "ap_ST_fsm_state8",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd256",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state9"
+            ],
+            "name": "ap_ST_fsm_state9",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd512",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state10"
+            ],
+            "name": "ap_ST_fsm_state10",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd1024",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state11"
+            ],
+            "name": "ap_ST_fsm_state11",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd2048",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state12"
+            ],
+            "name": "ap_ST_fsm_state12",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd4096",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state13"
+            ],
+            "name": "ap_ST_fsm_state13",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd8192",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state14"
+            ],
+            "name": "ap_ST_fsm_state14",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd16384",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state15"
+            ],
+            "name": "ap_ST_fsm_state15",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd32768",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state16"
+            ],
+            "name": "ap_ST_fsm_state16",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd65536",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state17"
+            ],
+            "name": "ap_ST_fsm_state17",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd131072",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state18"
+            ],
+            "name": "ap_ST_fsm_state18",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd262144",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state19"
+            ],
+            "name": "ap_ST_fsm_state19",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd524288",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state20"
+            ],
+            "name": "ap_ST_fsm_state20",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd1048576",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state21"
+            ],
+            "name": "ap_ST_fsm_state21",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd2097152",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state22"
+            ],
+            "name": "ap_ST_fsm_state22",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd4194304",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state23"
+            ],
+            "name": "ap_ST_fsm_state23",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd8388608",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state24"
+            ],
+            "name": "ap_ST_fsm_state24",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd16777216",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state25"
+            ],
+            "name": "ap_ST_fsm_state25",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd33554432",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state26"
+            ],
+            "name": "ap_ST_fsm_state26",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd67108864",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state27"
+            ],
+            "name": "ap_ST_fsm_state27",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "28'd134217728",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state28"
+            ],
+            "name": "ap_ST_fsm_state28",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_ID_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_ID_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "64",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_ADDR_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_ADDR_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "64",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_DATA_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_DATA_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_AWUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_AWUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_ARUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_ARUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_WUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_WUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_RUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_RUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_BUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_BUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "0",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_USER_VALUE"
+            ],
+            "name": "C_M_AXI_EDGES_USER_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "0",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_PROT_VALUE"
+            ],
+            "name": "C_M_AXI_EDGES_PROT_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "3",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_CACHE_VALUE"
+            ],
+            "name": "C_M_AXI_EDGES_CACHE_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "32",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_DATA_WIDTH"
+            ],
+            "name": "C_M_AXI_DATA_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_ID_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_ID_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "64",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_ADDR_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_ADDR_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "32",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_DATA_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_DATA_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_AWUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_AWUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_ARUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_ARUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_WUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_WUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_RUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_RUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_BUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_BUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "0",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_USER_VALUE"
+            ],
+            "name": "C_M_AXI_VERTICES_USER_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "0",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_PROT_VALUE"
+            ],
+            "name": "C_M_AXI_VERTICES_PROT_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "3",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_CACHE_VALUE"
+            ],
+            "name": "C_M_AXI_VERTICES_CACHE_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "(64 / 8)",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_EDGES_WSTRB_WIDTH"
+            ],
+            "name": "C_M_AXI_EDGES_WSTRB_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "(32 / 8)",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_WSTRB_WIDTH"
+            ],
+            "name": "C_M_AXI_WSTRB_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "(32 / 8)",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_VERTICES_WSTRB_WIDTH"
+            ],
+            "name": "C_M_AXI_VERTICES_WSTRB_WIDTH",
+            "range": null
+        }
+    ],
+    "ports": [
+        {
+            "hierarchical_name": [
+                "ap_clk"
+            ],
+            "name": "ap_clk",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_done"
+            ],
+            "name": "ap_done",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_idle"
+            ],
+            "name": "ap_idle",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_ready"
+            ],
+            "name": "ap_ready",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_rst_n"
+            ],
+            "name": "ap_rst_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_start"
+            ],
+            "name": "ap_start",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "edges_offset"
+            ],
+            "name": "edges_offset",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARADDR"
+            ],
+            "name": "m_axi_edges_ARADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_ADDR_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARBURST"
+            ],
+            "name": "m_axi_edges_ARBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARCACHE"
+            ],
+            "name": "m_axi_edges_ARCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARID"
+            ],
+            "name": "m_axi_edges_ARID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARLEN"
+            ],
+            "name": "m_axi_edges_ARLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARLOCK"
+            ],
+            "name": "m_axi_edges_ARLOCK",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARPROT"
+            ],
+            "name": "m_axi_edges_ARPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARQOS"
+            ],
+            "name": "m_axi_edges_ARQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARREADY"
+            ],
+            "name": "m_axi_edges_ARREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARREGION"
+            ],
+            "name": "m_axi_edges_ARREGION",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARSIZE"
+            ],
+            "name": "m_axi_edges_ARSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARUSER"
+            ],
+            "name": "m_axi_edges_ARUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_ARUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_ARVALID"
+            ],
+            "name": "m_axi_edges_ARVALID",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWADDR"
+            ],
+            "name": "m_axi_edges_AWADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_ADDR_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWBURST"
+            ],
+            "name": "m_axi_edges_AWBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWCACHE"
+            ],
+            "name": "m_axi_edges_AWCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWID"
+            ],
+            "name": "m_axi_edges_AWID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWLEN"
+            ],
+            "name": "m_axi_edges_AWLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWLOCK"
+            ],
+            "name": "m_axi_edges_AWLOCK",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWPROT"
+            ],
+            "name": "m_axi_edges_AWPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWQOS"
+            ],
+            "name": "m_axi_edges_AWQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWREADY"
+            ],
+            "name": "m_axi_edges_AWREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWREGION"
+            ],
+            "name": "m_axi_edges_AWREGION",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWSIZE"
+            ],
+            "name": "m_axi_edges_AWSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWUSER"
+            ],
+            "name": "m_axi_edges_AWUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_AWUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_AWVALID"
+            ],
+            "name": "m_axi_edges_AWVALID",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_BID"
+            ],
+            "name": "m_axi_edges_BID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_BREADY"
+            ],
+            "name": "m_axi_edges_BREADY",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_BRESP"
+            ],
+            "name": "m_axi_edges_BRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_BUSER"
+            ],
+            "name": "m_axi_edges_BUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_BUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_BVALID"
+            ],
+            "name": "m_axi_edges_BVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_RDATA"
+            ],
+            "name": "m_axi_edges_RDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_DATA_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_RID"
+            ],
+            "name": "m_axi_edges_RID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_RLAST"
+            ],
+            "name": "m_axi_edges_RLAST",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_RREADY"
+            ],
+            "name": "m_axi_edges_RREADY",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_RRESP"
+            ],
+            "name": "m_axi_edges_RRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_RUSER"
+            ],
+            "name": "m_axi_edges_RUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_RUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_RVALID"
+            ],
+            "name": "m_axi_edges_RVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_WDATA"
+            ],
+            "name": "m_axi_edges_WDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_DATA_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_WID"
+            ],
+            "name": "m_axi_edges_WID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_WLAST"
+            ],
+            "name": "m_axi_edges_WLAST",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_WREADY"
+            ],
+            "name": "m_axi_edges_WREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_WSTRB"
+            ],
+            "name": "m_axi_edges_WSTRB",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_WSTRB_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_WUSER"
+            ],
+            "name": "m_axi_edges_WUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_EDGES_WUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_edges_WVALID"
+            ],
+            "name": "m_axi_edges_WVALID",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARADDR"
+            ],
+            "name": "m_axi_vertices_ARADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_ADDR_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARBURST"
+            ],
+            "name": "m_axi_vertices_ARBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARCACHE"
+            ],
+            "name": "m_axi_vertices_ARCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARID"
+            ],
+            "name": "m_axi_vertices_ARID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARLEN"
+            ],
+            "name": "m_axi_vertices_ARLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARLOCK"
+            ],
+            "name": "m_axi_vertices_ARLOCK",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARPROT"
+            ],
+            "name": "m_axi_vertices_ARPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARQOS"
+            ],
+            "name": "m_axi_vertices_ARQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARREADY"
+            ],
+            "name": "m_axi_vertices_ARREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARREGION"
+            ],
+            "name": "m_axi_vertices_ARREGION",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARSIZE"
+            ],
+            "name": "m_axi_vertices_ARSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARUSER"
+            ],
+            "name": "m_axi_vertices_ARUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_ARUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_ARVALID"
+            ],
+            "name": "m_axi_vertices_ARVALID",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWADDR"
+            ],
+            "name": "m_axi_vertices_AWADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_ADDR_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWBURST"
+            ],
+            "name": "m_axi_vertices_AWBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWCACHE"
+            ],
+            "name": "m_axi_vertices_AWCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWID"
+            ],
+            "name": "m_axi_vertices_AWID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWLEN"
+            ],
+            "name": "m_axi_vertices_AWLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWLOCK"
+            ],
+            "name": "m_axi_vertices_AWLOCK",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWPROT"
+            ],
+            "name": "m_axi_vertices_AWPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWQOS"
+            ],
+            "name": "m_axi_vertices_AWQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWREADY"
+            ],
+            "name": "m_axi_vertices_AWREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWREGION"
+            ],
+            "name": "m_axi_vertices_AWREGION",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWSIZE"
+            ],
+            "name": "m_axi_vertices_AWSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWUSER"
+            ],
+            "name": "m_axi_vertices_AWUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_AWUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_AWVALID"
+            ],
+            "name": "m_axi_vertices_AWVALID",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_BID"
+            ],
+            "name": "m_axi_vertices_BID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_BREADY"
+            ],
+            "name": "m_axi_vertices_BREADY",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_BRESP"
+            ],
+            "name": "m_axi_vertices_BRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_BUSER"
+            ],
+            "name": "m_axi_vertices_BUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_BUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_BVALID"
+            ],
+            "name": "m_axi_vertices_BVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_RDATA"
+            ],
+            "name": "m_axi_vertices_RDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_DATA_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_RID"
+            ],
+            "name": "m_axi_vertices_RID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_RLAST"
+            ],
+            "name": "m_axi_vertices_RLAST",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_RREADY"
+            ],
+            "name": "m_axi_vertices_RREADY",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_RRESP"
+            ],
+            "name": "m_axi_vertices_RRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_RUSER"
+            ],
+            "name": "m_axi_vertices_RUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_RUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_RVALID"
+            ],
+            "name": "m_axi_vertices_RVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_WDATA"
+            ],
+            "name": "m_axi_vertices_WDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_DATA_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_WID"
+            ],
+            "name": "m_axi_vertices_WID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_WLAST"
+            ],
+            "name": "m_axi_vertices_WLAST",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_WREADY"
+            ],
+            "name": "m_axi_vertices_WREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_WSTRB"
+            ],
+            "name": "m_axi_vertices_WSTRB",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_WSTRB_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_WUSER"
+            ],
+            "name": "m_axi_vertices_WUSER",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_VERTICES_WUSER_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_vertices_WVALID"
+            ],
+            "name": "m_axi_vertices_WVALID",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "req_q_peek_dout"
+            ],
+            "name": "req_q_peek_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "208",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "req_q_peek_empty_n"
+            ],
+            "name": "req_q_peek_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "req_q_peek_read"
+            ],
+            "name": "req_q_peek_read",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "req_q_s_dout"
+            ],
+            "name": "req_q_s_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "208",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "req_q_s_empty_n"
+            ],
+            "name": "req_q_s_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "req_q_s_read"
+            ],
+            "name": "req_q_s_read",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "resp_q_peek"
+            ],
+            "name": "resp_q_peek",
+            "range": {
+                "left": [
+                    {
+                        "repr": "49",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "resp_q_s_din"
+            ],
+            "name": "resp_q_s_din",
+            "range": {
+                "left": [
+                    {
+                        "repr": "49",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "resp_q_s_full_n"
+            ],
+            "name": "resp_q_s_full_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "resp_q_s_write"
+            ],
+            "name": "resp_q_s_write",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_in_q_peek_dout"
+            ],
+            "name": "update_in_q_peek_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "64",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_in_q_peek_empty_n"
+            ],
+            "name": "update_in_q_peek_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_in_q_peek_read"
+            ],
+            "name": "update_in_q_peek_read",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_in_q_s_dout"
+            ],
+            "name": "update_in_q_s_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "64",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_in_q_s_empty_n"
+            ],
+            "name": "update_in_q_s_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_in_q_s_read"
+            ],
+            "name": "update_in_q_s_read",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_out_q_peek"
+            ],
+            "name": "update_out_q_peek",
+            "range": {
+                "left": [
+                    {
+                        "repr": "64",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_out_q_s_din"
+            ],
+            "name": "update_out_q_s_din",
+            "range": {
+                "left": [
+                    {
+                        "repr": "64",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_out_q_s_full_n"
+            ],
+            "name": "update_out_q_s_full_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_out_q_s_write"
+            ],
+            "name": "update_out_q_s_write",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_req_q_peek"
+            ],
+            "name": "update_req_q_peek",
+            "range": {
+                "left": [
+                    {
+                        "repr": "48",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_req_q_s_din"
+            ],
+            "name": "update_req_q_s_din",
+            "range": {
+                "left": [
+                    {
+                        "repr": "48",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_req_q_s_full_n"
+            ],
+            "name": "update_req_q_s_full_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "update_req_q_s_write"
+            ],
+            "name": "update_req_q_s_write",
+            "range": null,
+            "type": "output wire"
+        },
+        {
+            "hierarchical_name": [
+                "vertices_offset"
+            ],
+            "name": "vertices_offset",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        }
+    ],
+    "submodules_module_names": [],
+    "verilog": "// ==============================================================\n// Generated by Vitis HLS v2024.1\n// Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.\n// Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.\n// ==============================================================\n(* CORE_GENERATION_INFO=\"ProcElem_ProcElem,hls_ip_2024_1,{HLS_INPUT_TYPE=cxx,HLS_INPUT_FLOAT=0,HLS_INPUT_FIXED=0,HLS_INPUT_PART=xcu250-figd2104-2L-e,HLS_INPUT_CLOCK=3.333000,HLS_INPUT_ARCH=others,HLS_SYN_CLOCK=2.942090,HLS_SYN_LAT=-1,HLS_SYN_TPT=none,HLS_SYN_MEM=4,HLS_SYN_DSP=0,HLS_SYN_FF=3666,HLS_SYN_LUT=4016,HLS_VERSION=2024_1}\" *)\nmodule ProcElem (\n        ap_clk,\n        ap_rst_n,\n        ap_start,\n        ap_done,\n        ap_idle,\n        ap_ready,\n        m_axi_vertices_AWVALID,\n        m_axi_vertices_AWREADY,\n        m_axi_vertices_AWADDR,\n        m_axi_vertices_AWID,\n        m_axi_vertices_AWLEN,\n        m_axi_vertices_AWSIZE,\n        m_axi_vertices_AWBURST,\n        m_axi_vertices_AWLOCK,\n        m_axi_vertices_AWCACHE,\n        m_axi_vertices_AWPROT,\n        m_axi_vertices_AWQOS,\n        m_axi_vertices_AWREGION,\n        m_axi_vertices_AWUSER,\n        m_axi_vertices_WVALID,\n        m_axi_vertices_WREADY,\n        m_axi_vertices_WDATA,\n        m_axi_vertices_WSTRB,\n        m_axi_vertices_WLAST,\n        m_axi_vertices_WID,\n        m_axi_vertices_WUSER,\n        m_axi_vertices_ARVALID,\n        m_axi_vertices_ARREADY,\n        m_axi_vertices_ARADDR,\n        m_axi_vertices_ARID,\n        m_axi_vertices_ARLEN,\n        m_axi_vertices_ARSIZE,\n        m_axi_vertices_ARBURST,\n        m_axi_vertices_ARLOCK,\n        m_axi_vertices_ARCACHE,\n        m_axi_vertices_ARPROT,\n        m_axi_vertices_ARQOS,\n        m_axi_vertices_ARREGION,\n        m_axi_vertices_ARUSER,\n        m_axi_vertices_RVALID,\n        m_axi_vertices_RREADY,\n        m_axi_vertices_RDATA,\n        m_axi_vertices_RLAST,\n        m_axi_vertices_RID,\n        m_axi_vertices_RUSER,\n        m_axi_vertices_RRESP,\n        m_axi_vertices_BVALID,\n        m_axi_vertices_BREADY,\n        m_axi_vertices_BRESP,\n        m_axi_vertices_BID,\n        m_axi_vertices_BUSER,\n        m_axi_edges_AWVALID,\n        m_axi_edges_AWREADY,\n        m_axi_edges_AWADDR,\n        m_axi_edges_AWID,\n        m_axi_edges_AWLEN,\n        m_axi_edges_AWSIZE,\n        m_axi_edges_AWBURST,\n        m_axi_edges_AWLOCK,\n        m_axi_edges_AWCACHE,\n        m_axi_edges_AWPROT,\n        m_axi_edges_AWQOS,\n        m_axi_edges_AWREGION,\n        m_axi_edges_AWUSER,\n        m_axi_edges_WVALID,\n        m_axi_edges_WREADY,\n        m_axi_edges_WDATA,\n        m_axi_edges_WSTRB,\n        m_axi_edges_WLAST,\n        m_axi_edges_WID,\n        m_axi_edges_WUSER,\n        m_axi_edges_ARVALID,\n        m_axi_edges_ARREADY,\n        m_axi_edges_ARADDR,\n        m_axi_edges_ARID,\n        m_axi_edges_ARLEN,\n        m_axi_edges_ARSIZE,\n        m_axi_edges_ARBURST,\n        m_axi_edges_ARLOCK,\n        m_axi_edges_ARCACHE,\n        m_axi_edges_ARPROT,\n        m_axi_edges_ARQOS,\n        m_axi_edges_ARREGION,\n        m_axi_edges_ARUSER,\n        m_axi_edges_RVALID,\n        m_axi_edges_RREADY,\n        m_axi_edges_RDATA,\n        m_axi_edges_RLAST,\n        m_axi_edges_RID,\n        m_axi_edges_RUSER,\n        m_axi_edges_RRESP,\n        m_axi_edges_BVALID,\n        m_axi_edges_BREADY,\n        m_axi_edges_BRESP,\n        m_axi_edges_BID,\n        m_axi_edges_BUSER,\n        req_q_s_dout,\n        req_q_s_empty_n,\n        req_q_s_read,\n        req_q_peek_dout,\n        req_q_peek_empty_n,\n        req_q_peek_read,\n        resp_q_s_din,\n        resp_q_s_full_n,\n        resp_q_s_write,\n        resp_q_peek,\n        update_req_q_s_din,\n        update_req_q_s_full_n,\n        update_req_q_s_write,\n        update_req_q_peek,\n        update_in_q_s_dout,\n        update_in_q_s_empty_n,\n        update_in_q_s_read,\n        update_in_q_peek_dout,\n        update_in_q_peek_empty_n,\n        update_in_q_peek_read,\n        update_out_q_s_din,\n        update_out_q_s_full_n,\n        update_out_q_s_write,\n        update_out_q_peek,\n        vertices_offset,\n        edges_offset\n);\nparameter    ap_ST_fsm_state1 = 28'd1;\nparameter    ap_ST_fsm_state2 = 28'd2;\nparameter    ap_ST_fsm_state3 = 28'd4;\nparameter    ap_ST_fsm_state4 = 28'd8;\nparameter    ap_ST_fsm_state5 = 28'd16;\nparameter    ap_ST_fsm_state6 = 28'd32;\nparameter    ap_ST_fsm_state7 = 28'd64;\nparameter    ap_ST_fsm_state8 = 28'd128;\nparameter    ap_ST_fsm_state9 = 28'd256;\nparameter    ap_ST_fsm_state10 = 28'd512;\nparameter    ap_ST_fsm_state11 = 28'd1024;\nparameter    ap_ST_fsm_state12 = 28'd2048;\nparameter    ap_ST_fsm_state13 = 28'd4096;\nparameter    ap_ST_fsm_state14 = 28'd8192;\nparameter    ap_ST_fsm_state15 = 28'd16384;\nparameter    ap_ST_fsm_state16 = 28'd32768;\nparameter    ap_ST_fsm_state17 = 28'd65536;\nparameter    ap_ST_fsm_state18 = 28'd131072;\nparameter    ap_ST_fsm_state19 = 28'd262144;\nparameter    ap_ST_fsm_state20 = 28'd524288;\nparameter    ap_ST_fsm_state21 = 28'd1048576;\nparameter    ap_ST_fsm_state22 = 28'd2097152;\nparameter    ap_ST_fsm_state23 = 28'd4194304;\nparameter    ap_ST_fsm_state24 = 28'd8388608;\nparameter    ap_ST_fsm_state25 = 28'd16777216;\nparameter    ap_ST_fsm_state26 = 28'd33554432;\nparameter    ap_ST_fsm_state27 = 28'd67108864;\nparameter    ap_ST_fsm_state28 = 28'd134217728;\nparameter    C_M_AXI_EDGES_ID_WIDTH = 1;\nparameter    C_M_AXI_EDGES_ADDR_WIDTH = 64;\nparameter    C_M_AXI_EDGES_DATA_WIDTH = 64;\nparameter    C_M_AXI_EDGES_AWUSER_WIDTH = 1;\nparameter    C_M_AXI_EDGES_ARUSER_WIDTH = 1;\nparameter    C_M_AXI_EDGES_WUSER_WIDTH = 1;\nparameter    C_M_AXI_EDGES_RUSER_WIDTH = 1;\nparameter    C_M_AXI_EDGES_BUSER_WIDTH = 1;\nparameter    C_M_AXI_EDGES_USER_VALUE = 0;\nparameter    C_M_AXI_EDGES_PROT_VALUE = 0;\nparameter    C_M_AXI_EDGES_CACHE_VALUE = 3;\nparameter    C_M_AXI_DATA_WIDTH = 32;\nparameter    C_M_AXI_VERTICES_ID_WIDTH = 1;\nparameter    C_M_AXI_VERTICES_ADDR_WIDTH = 64;\nparameter    C_M_AXI_VERTICES_DATA_WIDTH = 32;\nparameter    C_M_AXI_VERTICES_AWUSER_WIDTH = 1;\nparameter    C_M_AXI_VERTICES_ARUSER_WIDTH = 1;\nparameter    C_M_AXI_VERTICES_WUSER_WIDTH = 1;\nparameter    C_M_AXI_VERTICES_RUSER_WIDTH = 1;\nparameter    C_M_AXI_VERTICES_BUSER_WIDTH = 1;\nparameter    C_M_AXI_VERTICES_USER_VALUE = 0;\nparameter    C_M_AXI_VERTICES_PROT_VALUE = 0;\nparameter    C_M_AXI_VERTICES_CACHE_VALUE = 3;\nparameter C_M_AXI_EDGES_WSTRB_WIDTH = (64 / 8);\nparameter C_M_AXI_WSTRB_WIDTH = (32 / 8);\nparameter C_M_AXI_VERTICES_WSTRB_WIDTH = (32 / 8);\ninput   ap_clk;\ninput   ap_rst_n;\ninput   ap_start;\noutput   ap_done;\noutput   ap_idle;\noutput   ap_ready;\noutput   m_axi_vertices_AWVALID;\ninput   m_axi_vertices_AWREADY;\noutput  [C_M_AXI_VERTICES_ADDR_WIDTH - 1:0] m_axi_vertices_AWADDR;\noutput  [C_M_AXI_VERTICES_ID_WIDTH - 1:0] m_axi_vertices_AWID;\noutput  [7:0] m_axi_vertices_AWLEN;\noutput  [2:0] m_axi_vertices_AWSIZE;\noutput  [1:0] m_axi_vertices_AWBURST;\noutput  [1:0] m_axi_vertices_AWLOCK;\noutput  [3:0] m_axi_vertices_AWCACHE;\noutput  [2:0] m_axi_vertices_AWPROT;\noutput  [3:0] m_axi_vertices_AWQOS;\noutput  [3:0] m_axi_vertices_AWREGION;\noutput  [C_M_AXI_VERTICES_AWUSER_WIDTH - 1:0] m_axi_vertices_AWUSER;\noutput   m_axi_vertices_WVALID;\ninput   m_axi_vertices_WREADY;\noutput  [C_M_AXI_VERTICES_DATA_WIDTH - 1:0] m_axi_vertices_WDATA;\noutput  [C_M_AXI_VERTICES_WSTRB_WIDTH - 1:0] m_axi_vertices_WSTRB;\noutput   m_axi_vertices_WLAST;\noutput  [C_M_AXI_VERTICES_ID_WIDTH - 1:0] m_axi_vertices_WID;\noutput  [C_M_AXI_VERTICES_WUSER_WIDTH - 1:0] m_axi_vertices_WUSER;\noutput   m_axi_vertices_ARVALID;\ninput   m_axi_vertices_ARREADY;\noutput  [C_M_AXI_VERTICES_ADDR_WIDTH - 1:0] m_axi_vertices_ARADDR;\noutput  [C_M_AXI_VERTICES_ID_WIDTH - 1:0] m_axi_vertices_ARID;\noutput  [7:0] m_axi_vertices_ARLEN;\noutput  [2:0] m_axi_vertices_ARSIZE;\noutput  [1:0] m_axi_vertices_ARBURST;\noutput  [1:0] m_axi_vertices_ARLOCK;\noutput  [3:0] m_axi_vertices_ARCACHE;\noutput  [2:0] m_axi_vertices_ARPROT;\noutput  [3:0] m_axi_vertices_ARQOS;\noutput  [3:0] m_axi_vertices_ARREGION;\noutput  [C_M_AXI_VERTICES_ARUSER_WIDTH - 1:0] m_axi_vertices_ARUSER;\ninput   m_axi_vertices_RVALID;\noutput   m_axi_vertices_RREADY;\ninput  [C_M_AXI_VERTICES_DATA_WIDTH - 1:0] m_axi_vertices_RDATA;\ninput   m_axi_vertices_RLAST;\ninput  [C_M_AXI_VERTICES_ID_WIDTH - 1:0] m_axi_vertices_RID;\ninput  [C_M_AXI_VERTICES_RUSER_WIDTH - 1:0] m_axi_vertices_RUSER;\ninput  [1:0] m_axi_vertices_RRESP;\ninput   m_axi_vertices_BVALID;\noutput   m_axi_vertices_BREADY;\ninput  [1:0] m_axi_vertices_BRESP;\ninput  [C_M_AXI_VERTICES_ID_WIDTH - 1:0] m_axi_vertices_BID;\ninput  [C_M_AXI_VERTICES_BUSER_WIDTH - 1:0] m_axi_vertices_BUSER;\noutput   m_axi_edges_AWVALID;\ninput   m_axi_edges_AWREADY;\noutput  [C_M_AXI_EDGES_ADDR_WIDTH - 1:0] m_axi_edges_AWADDR;\noutput  [C_M_AXI_EDGES_ID_WIDTH - 1:0] m_axi_edges_AWID;\noutput  [7:0] m_axi_edges_AWLEN;\noutput  [2:0] m_axi_edges_AWSIZE;\noutput  [1:0] m_axi_edges_AWBURST;\noutput  [1:0] m_axi_edges_AWLOCK;\noutput  [3:0] m_axi_edges_AWCACHE;\noutput  [2:0] m_axi_edges_AWPROT;\noutput  [3:0] m_axi_edges_AWQOS;\noutput  [3:0] m_axi_edges_AWREGION;\noutput  [C_M_AXI_EDGES_AWUSER_WIDTH - 1:0] m_axi_edges_AWUSER;\noutput   m_axi_edges_WVALID;\ninput   m_axi_edges_WREADY;\noutput  [C_M_AXI_EDGES_DATA_WIDTH - 1:0] m_axi_edges_WDATA;\noutput  [C_M_AXI_EDGES_WSTRB_WIDTH - 1:0] m_axi_edges_WSTRB;\noutput   m_axi_edges_WLAST;\noutput  [C_M_AXI_EDGES_ID_WIDTH - 1:0] m_axi_edges_WID;\noutput  [C_M_AXI_EDGES_WUSER_WIDTH - 1:0] m_axi_edges_WUSER;\noutput   m_axi_edges_ARVALID;\ninput   m_axi_edges_ARREADY;\noutput  [C_M_AXI_EDGES_ADDR_WIDTH - 1:0] m_axi_edges_ARADDR;\noutput  [C_M_AXI_EDGES_ID_WIDTH - 1:0] m_axi_edges_ARID;\noutput  [7:0] m_axi_edges_ARLEN;\noutput  [2:0] m_axi_edges_ARSIZE;\noutput  [1:0] m_axi_edges_ARBURST;\noutput  [1:0] m_axi_edges_ARLOCK;\noutput  [3:0] m_axi_edges_ARCACHE;\noutput  [2:0] m_axi_edges_ARPROT;\noutput  [3:0] m_axi_edges_ARQOS;\noutput  [3:0] m_axi_edges_ARREGION;\noutput  [C_M_AXI_EDGES_ARUSER_WIDTH - 1:0] m_axi_edges_ARUSER;\ninput   m_axi_edges_RVALID;\noutput   m_axi_edges_RREADY;\ninput  [C_M_AXI_EDGES_DATA_WIDTH - 1:0] m_axi_edges_RDATA;\ninput   m_axi_edges_RLAST;\ninput  [C_M_AXI_EDGES_ID_WIDTH - 1:0] m_axi_edges_RID;\ninput  [C_M_AXI_EDGES_RUSER_WIDTH - 1:0] m_axi_edges_RUSER;\ninput  [1:0] m_axi_edges_RRESP;\ninput   m_axi_edges_BVALID;\noutput   m_axi_edges_BREADY;\ninput  [1:0] m_axi_edges_BRESP;\ninput  [C_M_AXI_EDGES_ID_WIDTH - 1:0] m_axi_edges_BID;\ninput  [C_M_AXI_EDGES_BUSER_WIDTH - 1:0] m_axi_edges_BUSER;\ninput  [208:0] req_q_s_dout;\ninput   req_q_s_empty_n;\noutput   req_q_s_read;\ninput  [208:0] req_q_peek_dout;\ninput   req_q_peek_empty_n;\noutput   req_q_peek_read;\noutput  [49:0] resp_q_s_din;\ninput   resp_q_s_full_n;\noutput   resp_q_s_write;\ninput  [49:0] resp_q_peek;\noutput  [48:0] update_req_q_s_din;\ninput   update_req_q_s_full_n;\noutput   update_req_q_s_write;\ninput  [48:0] update_req_q_peek;\ninput  [64:0] update_in_q_s_dout;\ninput   update_in_q_s_empty_n;\noutput   update_in_q_s_read;\ninput  [64:0] update_in_q_peek_dout;\ninput   update_in_q_peek_empty_n;\noutput   update_in_q_peek_read;\noutput  [64:0] update_out_q_s_din;\ninput   update_out_q_s_full_n;\noutput   update_out_q_s_write;\ninput  [64:0] update_out_q_peek;\ninput  [63:0] vertices_offset;\ninput  [63:0] edges_offset;\nreg ap_done;\nreg ap_idle;\nreg ap_ready;\nreg update_in_q_s_read;\nreg update_in_q_peek_read;\nreg[64:0] update_out_q_s_din;\nreg update_out_q_s_write;\nendmodule"
+}
