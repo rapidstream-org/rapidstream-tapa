@@ -61,7 +61,7 @@ sh_test(
 tapa_xo(
     name = "stream-top-xo",
     src = "vadd.cpp",
-    top_name = "VecAdd",
+    top_name = "StreamAdd_XRT",
 )
 
 cc_binary(
@@ -79,6 +79,6 @@ cc_binary(
 tapa_xo(
     name = "stream-top-hls-zip",
     src = "vadd.cpp",
-    top_name = "VecAdd",
+    top_name = "StreamAdd",
     vitis_mode = False,
 )

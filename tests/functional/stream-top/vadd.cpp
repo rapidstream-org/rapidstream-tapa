@@ -14,7 +14,7 @@ void StreamAdd(tapa::istream<float>& a, tapa::istream<float>& b,
   c.close();
 }
 
-void VecAdd(tapa::istream<float>& a, tapa::istream<float>& b,
-            tapa::ostream<float>& c, uint64_t n) {
+void StreamAdd_XRT(tapa::istream<float>& a, tapa::istream<float>& b,
+                   tapa::ostream<float>& c, uint64_t n) {
   tapa::task().invoke(StreamAdd, a, b, c, n);
 }
