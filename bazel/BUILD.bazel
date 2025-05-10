@@ -10,6 +10,7 @@ load("//bazel:v++_rules.bzl", "xilinx_wrapper")
 package(default_visibility = ["//visibility:public"])
 
 exports_files([
+    "doctest_wrapper.py",
     "nuitka_wrapper.py",
     "pytest_wrapper.py",
 ])

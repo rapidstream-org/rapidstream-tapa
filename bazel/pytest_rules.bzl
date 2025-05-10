@@ -16,3 +16,14 @@ def py_test(name, srcs, deps = [], args = [], **kwargs):
         args = args + ["$(location %s)" % x for x in srcs],
         **kwargs
     )
+
+def py_doc_test(name, package, deps, **kwargs):
+    """Runs doctest recursively on all modules in `package`."""
+    _py_test(
+        name = name,
+        main = "//bazel:doctest_wrapper.py",
+        srcs = ["//bazel:doctest_wrapper.py"],
+        deps = deps,
+        env = {"DOCTEST_PACKAGE": package},
+        **kwargs
+    )
