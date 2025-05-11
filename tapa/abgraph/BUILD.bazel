@@ -6,13 +6,21 @@
 
 load("@rules_python//python:defs.bzl", "py_library")
 load("@tapa_deps//:requirements.bzl", "requirement")
+load("//bazel:pytest_rules.bzl", "py_doc_test")
 
 py_library(
     name = "abgraph",
     srcs = glob(["**/*.py"]),
     visibility = ["//tapa:__subpackages__"],
     deps = [
+        "//tapa:core",
         requirement("networkx"),
         requirement("pydantic"),
     ],
+)
+
+py_doc_test(
+    name = "abgraph_doc_test",
+    package = "tapa.abgraph",
+    deps = ["//tapa/abgraph"],
 )
