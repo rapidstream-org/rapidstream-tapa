@@ -142,6 +142,8 @@ def _parse_xo_update_config(config: dict, tmp_path: str) -> None:
         _logger.error("Fail to extract kernel name")
         sys.exit(1)
     config["top_name"] = kernel_xml.attrib["name"]
+    # Vitis mode does not support a leaf task as top task
+    config["top_is_leaf_task"] = False
 
     # parse kernel ports and args
     ports = {}
@@ -187,6 +189,10 @@ def _parse_zip_update_config(config: dict, tmp_path: str) -> None:
         # top name of the kernel
         graph = safe_load(f)
         config["top_name"] = graph["top"]
+
+        config["top_is_leaf_task"] = (
+            graph["tasks"][config["top_name"]]["level"] == "lower"
+        )
 
         # parse kernel ports
         ports = []

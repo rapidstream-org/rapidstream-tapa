@@ -27,7 +27,7 @@ compile_hls() {
     --no-vitis-mode \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f vadd.cpp \
-    -t StreamAdd_XRT
+    -t StreamAdd
 
   [ -d "${BATS_TMPDIR}/stream-top-hls-workdir" ]
 }

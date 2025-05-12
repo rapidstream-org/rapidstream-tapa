@@ -103,6 +103,7 @@ def parse_m_axi_interfaces(top_rtl_path: str) -> list[AXI]:
 
 def get_cosim_tb(  # noqa: PLR0913,PLR0917
     top_name: str,
+    top_is_leaf_task: bool,
     s_axi_control_path: str,
     axi_list: list[AXI],
     args: Sequence[Arg],
@@ -122,7 +123,7 @@ def get_cosim_tb(  # noqa: PLR0913,PLR0917
         tb += get_vitis_test_signals(arg_to_reg_addrs, scalar_to_val, args)
     else:
         tb += get_fifo(args) + "\n"
-        tb += get_hls_dut(top_name, args, scalar_to_val) + "\n"
+        tb += get_hls_dut(top_name, top_is_leaf_task, args, scalar_to_val) + "\n"
         tb += get_hls_test_signals(args)
 
     tb += get_end() + "\n"
@@ -174,6 +175,7 @@ def main() -> None:  # pylint: disable=too-many-locals
     axi_list = parse_m_axi_interfaces(top_path)
     tb = get_cosim_tb(
         top_name,
+        config["top_is_leaf_task"],
         ctrl_path,
         axi_list,
         config["args"],

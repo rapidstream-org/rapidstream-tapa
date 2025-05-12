@@ -7,14 +7,15 @@
 #include <tapa.h>
 
 void StreamAdd(tapa::istream<float>& a, tapa::istream<float>& b,
-               tapa::ostream<float>& c, uint64_t n) {
-  for (uint64_t i = 0; i < n; ++i) c << (a.read() + b.read());
+               tapa::ostream<float>& c) {
+  // Ensure that the peek function (eot) is supported by the stream
+  TAPA_WHILE_NEITHER_EOT(a, b) { c << (a.read() + b.read()); }
   a.open();
   b.open();
   c.close();
 }
 
 void StreamAdd_XRT(tapa::istream<float>& a, tapa::istream<float>& b,
-                   tapa::ostream<float>& c, uint64_t n) {
-  tapa::task().invoke(StreamAdd, a, b, c, n);
+                   tapa::ostream<float>& c) {
+  tapa::task().invoke(StreamAdd, a, b, c);
 }

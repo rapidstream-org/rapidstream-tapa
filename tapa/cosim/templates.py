@@ -358,7 +358,10 @@ def get_vitis_dut(top_name: str, args: Sequence[Arg]) -> str:
 
 
 def get_hls_dut(
-    top_name: str, args: Sequence[Arg], scalar_to_val: dict[str, str]
+    top_name: str,
+    top_is_leaf_task: bool,
+    args: Sequence[Arg],
+    scalar_to_val: dict[str, str],
 ) -> str:
     dut = f"\n  {top_name} dut (\n"
 
@@ -372,6 +375,11 @@ def get_hls_dut(
     .{arg.name}_s_dout(fifo_{arg.name}_data),
     .{arg.name}_s_empty_n(fifo_{arg.name}_valid),
     .{arg.name}_s_read(fifo_{arg.name}_ready),
+"""
+            if top_is_leaf_task:
+                dut += f"""
+    .{arg.name}_peek_dout(fifo_{arg.name}_data),
+    .{arg.name}_peek_empty_n(fifo_{arg.name}_valid),
 """
 
         if arg.is_stream and arg.port.is_ostream:
