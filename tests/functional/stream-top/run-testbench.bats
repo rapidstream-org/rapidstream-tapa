@@ -11,7 +11,7 @@ compile_xo_axis() {
     --jobs 2 \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f vadd.cpp \
-    -t VecAdd \
+    -t StreamAdd_XRT \
     -o ${BATS_TMPDIR}/stream-top.xo
 
   [ -f "${BATS_TMPDIR}/stream-top.xo" ]
@@ -27,7 +27,7 @@ compile_hls() {
     --no-vitis-mode \
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f vadd.cpp \
-    -t VecAdd
+    -t StreamAdd_XRT
 
   [ -d "${BATS_TMPDIR}/stream-top-hls-workdir" ]
 }

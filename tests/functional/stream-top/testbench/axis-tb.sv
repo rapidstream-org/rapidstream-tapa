@@ -28,7 +28,7 @@ module VecAdd_tb();
   wire [3:0] c_TKEEP;
   wire a_TREADY, b_TREADY, c_TVALID, c_TLAST;
 
-  VecAdd uut (.*);
+  StreamAdd_XRT uut (.*);
 
   always #(CLK_PERIOD/2) ap_clk = ~ap_clk;
 
