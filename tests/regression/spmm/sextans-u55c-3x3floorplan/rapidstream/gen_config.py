@@ -37,8 +37,8 @@ def gen_device_config() -> None:
     factory.reduce_slot_area(2, 1, dsp=100, lut=5000, ff=10000)
 
     # reduce the wire number between (1,1)<->(2,1), (1,0)<->(2,0)
-    factory.set_slot_wire_capacity_in_pair(1, 1, 2, 1, 11000)
-    factory.set_slot_wire_capacity_in_pair(1, 0, 2, 0, 11000)
+    factory.set_slot_wire_capacity_in_pair(1, 1, 2, 1, 10000)
+    factory.set_slot_wire_capacity_in_pair(1, 0, 2, 0, 10000)
 
     factory.generate_virtual_device(DEVICE_CONFIG)
 
@@ -47,7 +47,7 @@ def gen_device_config() -> None:
     # reduce (0,0) LUT from 25,000 to 30,000. FF from 30,000 to 40,000
     # reduce (2,1) LUT from 0 to 5,000, FF from 0 to 10,000
 
-    # reduce wire number from 12,000 to 11,000 between (1,1)<->(2,1), (1,0)<->(2,0)
+    # reduce wire number from 12,000 to 10,000 between (1,1)<->(2,1), (1,0)<->(2,0)
 
 
 def gen_floorplan_config() -> None:
@@ -90,6 +90,13 @@ def gen_floorplan_config() -> None:
             "m_axi_mat_C_ch_in_6_.*": "SLOT_X2Y0:SLOT_X2Y0",
             "m_axi_mat_C_ch_in_7_.*": "SLOT_X2Y0:SLOT_X2Y0",
             "s_axi_control_.*": "SLOT_X2Y1:SLOT_X2Y1",
+        },
+        slot_to_rtype_to_max_limit={
+            "SLOT_X0Y0:SLOT_X0Y0": {"LUT": 0.75},
+            "SLOT_X1Y0:SLOT_X1Y0": {"LUT": 0.75},
+            "SLOT_X2Y0:SLOT_X2Y0": {"LUT": 0.75},
+            "SLOT_X2Y1:SLOT_X2Y1": {"LUT": 0.75},
+            "SLOT_X1Y1:SLOT_X1Y1": {"LUT": 0.77},
         },
     )
     floorplan_config.save_to_file(FLOORPLAN_CONFIG)
