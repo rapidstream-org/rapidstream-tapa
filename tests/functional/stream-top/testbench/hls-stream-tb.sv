@@ -20,7 +20,7 @@ module VecAdd_tb();
 
   reg [63:0] n = 5;
 
-  StreamAdd_XRT uut (.*);
+  StreamAdd uut (.*);
 
   always #(CLK_PERIOD/2) ap_clk = ~ap_clk;
 
