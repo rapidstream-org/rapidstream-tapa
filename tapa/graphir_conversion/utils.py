@@ -44,9 +44,14 @@ from tapa.graphir.types import (
     Range,
     Token,
 )
+from tapa.instance import Port
 from tapa.task import Task
+from tapa.verilog.xilinx.const import ISTREAM_SUFFIXES, OSTREAM_SUFFIXES
+from tapa.verilog.xilinx.ioport import IOPort
+from tapa.verilog.xilinx.m_axi import M_AXI_PREFIX, M_AXI_SUFFIXES
+from tapa.verilog.xilinx.module import Module, get_streams_fifos
 
-_PORT_TYPE_MAPPING = {
+PORT_TYPE_MAPPING = {
     "input": ModulePort.Type.INPUT,
     "output": ModulePort.Type.OUTPUT,
     "inout": ModulePort.Type.INOUT,
@@ -154,7 +159,7 @@ def get_task_graphir_ports(task: Task) -> list[ModulePort]:
             ModulePort(
                 name=name,
                 hierarchical_name=HierarchicalName.get_name(port.name),
-                type=_PORT_TYPE_MAPPING[port.direction],
+                type=PORT_TYPE_MAPPING[port.direction],
                 range=port_range,
             )
         )
@@ -176,3 +181,49 @@ def get_task_graphir_parameters(task: Task) -> list[ModuleParameter]:
             )
         )
     return graphir_params
+
+
+def get_module_ports(  # noqa: C901
+    task_port: Port, task_module: Module
+) -> list[IOPort]:
+    """Get all module ports related to a task port."""
+    matching_ports = []
+    if task_port.cat.is_scalar:
+        matching_ports.append(task_module.get_port_of(task_port.name, ""))
+
+    elif task_port.cat.is_istream:
+        matching_ports.extend(
+            task_module.get_port_of(task_port.name, suffix)
+            for suffix in ISTREAM_SUFFIXES
+        )
+
+    elif task_port.cat.is_ostream:
+        matching_ports.extend(
+            task_module.get_port_of(task_port.name, suffix)
+            for suffix in OSTREAM_SUFFIXES
+        )
+
+    elif task_port.cat.is_mmap:
+        for suffix in M_AXI_SUFFIXES:
+            m_axi_port_name = f"{M_AXI_PREFIX}{task_port.name}{suffix}"
+            if m_axi_port_name in task_module.ports:
+                matching_ports.append(task_module.get_port_of(m_axi_port_name, suffix))
+
+    elif task_port.is_istreams:
+        related_fifos = get_streams_fifos(task_module, task_port.name)
+        for fifo in related_fifos:
+            matching_ports.extend(
+                task_module.get_port_of(fifo, suffix) for suffix in ISTREAM_SUFFIXES
+            )
+
+    elif task_port.is_istreams:
+        related_fifos = get_streams_fifos(task_module, task_port.name)
+        for fifo in related_fifos:
+            matching_ports.extend(
+                task_module.get_port_of(fifo, suffix) for suffix in OSTREAM_SUFFIXES
+            )
+    else:
+        msg = f"Unknown port type for port {task_port.name}"
+        raise ValueError(msg)
+
+    return matching_ports
