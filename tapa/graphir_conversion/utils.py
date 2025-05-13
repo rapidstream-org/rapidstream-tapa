@@ -44,9 +44,13 @@ from tapa.graphir.types import (
     Range,
     Token,
 )
+from tapa.instance import Port
 from tapa.task import Task
+from tapa.verilog.xilinx.const import ISTREAM_SUFFIXES, OSTREAM_SUFFIXES
+from tapa.verilog.xilinx.m_axi import M_AXI_PREFIX, M_AXI_SUFFIXES
+from tapa.verilog.xilinx.module import Module
 
-_PORT_TYPE_MAPPING = {
+PORT_TYPE_MAPPING = {
     "input": ModulePort.Type.INPUT,
     "output": ModulePort.Type.OUTPUT,
     "inout": ModulePort.Type.INOUT,
@@ -154,7 +158,7 @@ def get_task_graphir_ports(task: Task) -> list[ModulePort]:
             ModulePort(
                 name=name,
                 hierarchical_name=HierarchicalName.get_name(port.name),
-                type=_PORT_TYPE_MAPPING[port.direction],
+                type=PORT_TYPE_MAPPING[port.direction],
                 range=port_range,
             )
         )
@@ -176,3 +180,49 @@ def get_task_graphir_parameters(task: Task) -> list[ModuleParameter]:
             )
         )
     return graphir_params
+
+
+def get_leaf_port_connection_mapping(
+    task_port: Port, task_module: Module, arg: str
+) -> dict[str, str]:
+    """Get leaf task port and slot port mapping.
+
+    Given a leaf task port and its arg, find all related ports in the task module based
+    on cat. Return a mapping from the leaf module port name to the connected slot port
+    name.
+    """
+    matching_ports = {}
+    if task_port.cat.is_scalar:
+        matching_ports[task_port.name] = arg
+
+    elif task_port.cat.is_istream:
+        for suffix in ISTREAM_SUFFIXES:
+            module_port = task_module.get_port_of(task_port.name, suffix)
+            matching_ports[module_port.name] = get_stream_port_name(arg, suffix)
+
+    elif task_port.cat.is_ostream:
+        for suffix in OSTREAM_SUFFIXES:
+            module_port = task_module.get_port_of(task_port.name, suffix)
+            matching_ports[module_port.name] = get_stream_port_name(arg, suffix)
+
+    elif task_port.cat.is_mmap:
+        for suffix in M_AXI_SUFFIXES:
+            m_axi_port_name = get_m_axi_port_name(task_port.name, suffix)
+            if m_axi_port_name in task_module.ports:
+                matching_ports[m_axi_port_name] = get_m_axi_port_name(arg, suffix)
+
+    else:
+        msg = f"Unknown port type for port {task_port.name}"
+        raise ValueError(msg)
+
+    return matching_ports
+
+
+def get_stream_port_name(task_port_name: str, suffix: str) -> str:
+    """Get the stream port name from the task port name and suffix."""
+    return f"{task_port_name}{suffix}"
+
+
+def get_m_axi_port_name(task_port_name: str, suffix: str) -> str:
+    """Get the m_axi port name from the task port name and suffix."""
+    return f"{M_AXI_PREFIX}{task_port_name}{suffix}"
