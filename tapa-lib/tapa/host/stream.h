@@ -1132,7 +1132,7 @@ struct accessor<istream<T>&, istream<T>&> {
     frt.initialize_queue_by_handshake(/*is_frt=*/true);
 
     // captured by value so scheduler does not lose the queue
-    internal::schedule(/*detach=*/true, [arg, frt] mutable {
+    internal::schedule(/*detach=*/true, [arg, frt]() mutable {
       auto arg_queue = arg.ensure_queue();
       auto frt_queue = frt.ensure_queue();
 
@@ -1170,7 +1170,7 @@ struct accessor<ostream<T>&, ostream<T>&> {
     frt.initialize_queue_by_handshake(/*is_frt=*/true);
 
     // captured by value so scheduler does not lose the queue
-    internal::schedule(/*detach=*/true, [arg, frt] mutable {
+    internal::schedule(/*detach=*/true, [arg, frt]() mutable {
       auto arg_queue = arg.ensure_queue();
       auto frt_queue = frt.ensure_queue();
 
