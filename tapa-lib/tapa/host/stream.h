@@ -1117,30 +1117,45 @@ TAPA_DEFINE_DEVICE_ACCESSOR(unbound_, &)
 #undef TAPA_DEFINE_DEVICE_ACCESSOR
 
 // See the IMPORTANT NOTE in the header before you are tempted to refactor
-// this pass-through method.
-
-#define TAPA_CREATE_PASSTHROUGH(arg, src, dest)                          \
-  /* already handshaked by the caller as a locked/lock-free istream */   \
-  /* to connect it to the device, we need to passthrough the stream's */ \
-  /* data to the device using an FRT queue. */                           \
-  tapa::stream<T> frt(arg.name + "/frt", arg.simulation_depth);          \
-  frt.initialize_queue_by_handshake(/*is_frt=*/true);                    \
-  /* captured by value so scheduler does not lose the queue */           \
-  internal::schedule(/*detach=*/true, [arg, frt] mutable {               \
-    while (true) {                                                       \
-      for (bool valid; !src.eot(valid) || !valid;)                       \
-        if (valid) dest.write(src.read());                               \
-      src.open();                                                        \
-      dest.close();                                                      \
-    }                                                                    \
-  });                                                                    \
-  access_stream(instance, idx, frt);
+// this pass-through method. The accessors have the same logic but written
+// separately because their underlying mechanism is in fact different,
+// see the comment in the functions for more details.
 
 template <typename T>
 struct accessor<istream<T>&, istream<T>&> {
   static istream<T> access(istream<T>& arg, bool sequential) { return arg; }
   static void access(fpga::Instance& instance, int& idx, istream<T>& arg) {
-    TAPA_CREATE_PASSTHROUGH(arg, arg, frt);
+    // the passthrough frt queue has a depth of 1 and takes data from the arg
+    // only when frt is empty, i.e. the device has read the data from frt, to
+    // ensure that its behavior matches that when it does not exist.
+    tapa::stream<T, 1> frt(arg.name + "/frt");
+    frt.initialize_queue_by_handshake(/*is_frt=*/true);
+
+    // captured by value so scheduler does not lose the queue
+    internal::schedule(/*detach=*/true, [arg, frt] mutable {
+      auto arg_queue = arg.ensure_queue();
+      auto frt_queue = frt.ensure_queue();
+
+      while (true) {
+        // wait for the host to write data to the device
+        while (arg_queue->empty())
+          internal::yield("channel '" + arg.get_name() +
+                          "' is empty, preventing the device from reading");
+
+        // push the first available element to the device and wait for the
+        // device to consume it
+        frt_queue->push(arg_queue->front());
+        while (!frt_queue->empty())
+          internal::yield("waiting for the device to read data from channel '" +
+                          arg.get_name() + "'");
+
+        // pop the consumed element from arg
+        arg_queue->pop();
+      }
+    });
+
+    // bind to the frt device
+    access_stream(instance, idx, frt);
   }
 };
 
@@ -1148,7 +1163,38 @@ template <typename T>
 struct accessor<ostream<T>&, ostream<T>&> {
   static ostream<T> access(ostream<T>& arg, bool sequential) { return arg; }
   static void access(fpga::Instance& instance, int& idx, ostream<T>& arg) {
-    TAPA_CREATE_PASSTHROUGH(arg, frt, arg);
+    // the passthrough frt queue has a depth of 1 and accept data from the
+    // device only when the arg stream is not full, to ensure that the
+    // behavior matches that when it does not exist.
+    tapa::stream<T, 1> frt(arg.name + "/frt");
+    frt.initialize_queue_by_handshake(/*is_frt=*/true);
+
+    // captured by value so scheduler does not lose the queue
+    internal::schedule(/*detach=*/true, [arg, frt] mutable {
+      auto arg_queue = arg.ensure_queue();
+      auto frt_queue = frt.ensure_queue();
+
+      while (true) {
+        // wait for the device to write data to the channel
+        while (frt_queue->empty())
+          internal::yield("waiting for the device to write data to channel '" +
+                          arg.get_name() + "'");
+        arg_queue->push(frt_queue->front());
+
+        // if the host channel is now full, we wait for it to consume at least
+        // one element before we allow the device to write the next element
+        while (arg_queue->full())
+          internal::yield("channel '" + arg.get_name() +
+                          "' is full, preventing the device from writing");
+
+        // pop the consumed element from frt so that the device can write the
+        // next element
+        frt_queue->pop();
+      }
+    });
+
+    // bind to the frt device
+    access_stream(instance, idx, frt);
   }
 };
 
