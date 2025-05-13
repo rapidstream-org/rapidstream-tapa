@@ -840,9 +840,9 @@ class stream : public internal::unbound_stream<T> {
   stream(const internal::basic_stream<T>& base)
       : internal::basic_stream<T>(base) {}
 
-  // internal constructor for stream with given name
-  stream(const std::string name)
-      : internal::basic_stream<T>(name, N, SimulationDepth) {}
+  // internal constructor for stream with given name and simulation depth
+  stream(const std::string name, uint64_t simulation_depth = SimulationDepth)
+      : internal::basic_stream<T>(name, N, simulation_depth) {}
 };
 
 /// Provides consumer-side operations to an array of @c tapa::stream where they
@@ -1123,26 +1123,24 @@ TAPA_DEFINE_DEVICE_ACCESSOR(unbound_, &)
   /* already handshaked by the caller as a locked/lock-free istream */   \
   /* to connect it to the device, we need to passthrough the stream's */ \
   /* data to the device using an FRT queue. */                           \
-  auto passthrough_name = arg.get_name() + "/frt";                       \
-  auto passthrough_stream = new tapa::stream<T, 1>(passthrough_name);    \
-  internal::schedule(/*detach=*/true, [&arg, passthrough_stream]() {     \
-    auto& passthrough = *passthrough_stream;                             \
-    passthrough.initialize_queue_by_handshake(/*is_frt=*/false);         \
+  tapa::stream<T> frt(arg.name + "/frt", arg.simulation_depth);          \
+  frt.initialize_queue_by_handshake(/*is_frt=*/true);                    \
+  /* captured by value so scheduler does not lose the queue */           \
+  internal::schedule(/*detach=*/true, [arg, frt] mutable {               \
     while (true) {                                                       \
-      TAPA_WHILE_NOT_EOT(src) { dest.write(src.read()); }                \
-      dest.close();                                                      \
+      for (bool valid; !src.eot(valid) || !valid;)                       \
+        if (valid) dest.write(src.read());                               \
       src.open();                                                        \
+      dest.close();                                                      \
     }                                                                    \
   });                                                                    \
-  internal::schedule_cleanup(                                            \
-      [passthrough_stream]() { delete passthrough_stream; });            \
-  return access_stream(instance, idx, *passthrough_stream);
+  access_stream(instance, idx, frt);
 
 template <typename T>
 struct accessor<istream<T>&, istream<T>&> {
   static istream<T> access(istream<T>& arg, bool sequential) { return arg; }
   static void access(fpga::Instance& instance, int& idx, istream<T>& arg) {
-    TAPA_CREATE_PASSTHROUGH(arg, arg, passthrough);
+    TAPA_CREATE_PASSTHROUGH(arg, arg, frt);
   }
 };
 
@@ -1150,7 +1148,7 @@ template <typename T>
 struct accessor<ostream<T>&, ostream<T>&> {
   static ostream<T> access(ostream<T>& arg, bool sequential) { return arg; }
   static void access(fpga::Instance& instance, int& idx, ostream<T>& arg) {
-    TAPA_CREATE_PASSTHROUGH(arg, passthrough, arg);
+    TAPA_CREATE_PASSTHROUGH(arg, frt, arg);
   }
 };
 
