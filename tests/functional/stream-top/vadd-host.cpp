@@ -14,6 +14,13 @@ DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 void StreamAdd(tapa::istream<float>& a, tapa::istream<float>& b,
                tapa::ostream<float>& c);
 
+void StreamAdd_HostTask(tapa::istream<float>& a, tapa::istream<float>& b,
+                        tapa::ostream<float>& c) {
+  // Here, a, b, c had already been handshaked as lock-free streams. Passing the
+  // streams to the FRT kernel requires a passthrough conversion.
+  tapa::task().invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c);
+}
+
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
 
@@ -38,7 +45,7 @@ int main(int argc, char* argv[]) {
             b.close();
           },
           a, b)
-      .invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c)
+      .invoke(StreamAdd_HostTask, a, b, c)
       .invoke(
           [&](tapa::istream<float>& c) {
             for (uint64_t i = 0; i < n; ++i) {
