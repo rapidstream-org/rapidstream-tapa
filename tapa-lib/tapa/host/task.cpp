@@ -485,22 +485,17 @@ void deallocate(void* addr, size_t length) {
 
 }  // namespace internal
 
-task& task::invoke_frt(std::shared_ptr<fpga::Instance> instance) {
+void task::invoke_frt(std::shared_ptr<fpga::Instance> instance) {
   instance->WriteToDevice();
   instance->Exec();
   instance->ReadFromDevice();
-  internal::schedule_cleanup([instance]() { instance->Kill(); });
-  internal::schedule(
-      /*detach=*/false, [instance]() {
-        while (!instance->IsFinished()) {
-          // Yield to the OS for every idle spin, so that a thread waiting
-          // for the FPGA to finish will not spin in a 100% CPU loop.
-          std::this_thread::sleep_for(std::chrono::milliseconds(1));
-          internal::yield("fpga::Instance() is not finished");
-        }
-        instance->Finish();
-      });
-  return *this;
+  while (!instance->IsFinished()) {
+    // Yield to the OS for every idle spin, so that a thread waiting
+    // for the FPGA to finish will not spin in a 100% CPU loop.
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    internal::yield("fpga::Instance() is not finished");
+  }
+  instance->Finish();
 }
 
 }  // namespace tapa

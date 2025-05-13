@@ -29,7 +29,7 @@ namespace internal {
 
 template <typename Param, typename Arg>
 struct accessor {
-  static Param access(Arg&& arg, bool) { return arg; }
+  static Param access(Arg&& arg) { return arg; }
   static void access(fpga::Instance& instance, int& idx, Arg&& arg) {
     instance.SetArg(idx++, static_cast<Param>(arg));
   }
@@ -37,7 +37,7 @@ struct accessor {
 
 template <typename T>
 struct accessor<T, seq> {
-  static T access(seq&& arg, bool) { return arg.pos++; }
+  static T access(seq&& arg) { return arg.pos++; }
   static void access(fpga::Instance& instance, int& idx, seq&& arg) {
     instance.SetArg(idx++, static_cast<T>(arg.pos++));
   }
@@ -67,8 +67,8 @@ struct invoker {
   static void invoke(InvokeMode mode, F&& f, Args&&... args) {
     // Create a functor that captures args by value
     auto functor = invoker::functor_with_accessors(
-        mode == InvokeMode::kSequential, std::forward<F>(f),
-        std::index_sequence_for<Args...>{}, std::forward<Args>(args)...);
+        std::forward<F>(f), std::index_sequence_for<Args...>{},
+        std::forward<Args>(args)...);
     if (mode == InvokeMode::kSequential) {  // Sequential scheduling.
       std::move(functor)();
     } else {
@@ -111,8 +111,8 @@ struct invoker {
     }
   }
 
-  template <typename Func, size_t... Is, typename... CapturedArgs>
-  static void set_fpga_args(fpga::Instance& instance, Func&& func,
+  template <size_t... Is, typename... CapturedArgs>
+  static void set_fpga_args(fpga::Instance& instance,
                             std::index_sequence<Is...>,
                             CapturedArgs&&... args) {
     int idx = 0;
@@ -126,8 +126,7 @@ struct invoker {
   template <typename... Args>
   static int64_t invoke(F&& f, const std::string& bitstream, Args&&... args) {
     auto instance = fpga::Instance(bitstream);
-    set_fpga_args(instance, std::forward<F>(f),
-                  std::index_sequence_for<Args...>{},
+    set_fpga_args(instance, std::index_sequence_for<Args...>{},
                   std::forward<Args>(args)...);
     instance.WriteToDevice();
     instance.Exec();
@@ -137,14 +136,13 @@ struct invoker {
   }
 
   template <typename Func, size_t... Is, typename... CapturedArgs>
-  static auto functor_with_accessors(bool is_sequential, Func&& func,
-                                     std::index_sequence<Is...>,
+  static auto functor_with_accessors(Func&& func, std::index_sequence<Is...>,
                                      CapturedArgs&&... args) {
     // std::bind creates a copy of args
     // Aggregate initialization evaluates args from left to right.
     return binder{
         func, accessor<std::tuple_element_t<Is, Params>, CapturedArgs>::access(
-                  std::forward<CapturedArgs>(args), is_sequential)...}
+                  std::forward<CapturedArgs>(args))...}
         .result;
   }
 };
@@ -236,9 +234,6 @@ struct task {
 
   /// Host-only invoke that takes an @c executable as an argument.
   ///
-  /// NOTE: This `invoke` must be called before any direct `tapa::stream` reader
-  /// / writer; otherwise `tapa::stream` will not bind correctly.
-  ///
   /// @param func Task function definition of the instantiated child.
   /// @param exe  Optionally overrides the execution target.
   /// @param args Arguments passed to @c func.
@@ -250,10 +245,16 @@ struct task {
     }
 
     auto instance = std::make_shared<fpga::Instance>(exe.path_);
-    internal::invoker<Func>::set_fpga_args(*instance, std::forward<Func>(func),
-                                           std::index_sequence_for<Args...>{},
-                                           std::forward<Args>(args)...);
-    return invoke_frt(std::move(instance));
+    internal::schedule_cleanup([instance]() { instance->Kill(); });
+    internal::schedule(
+        /*detach=*/false, [=]() mutable {
+          // captured FPGA arguments by value
+          internal::invoker<Func>::set_fpga_args(
+              *instance, std::index_sequence_for<Args...>{}, args...);
+          invoke_frt(std::move(instance));
+        });
+
+    return *this;
   }
 
   /// Invokes a task @c n times and instantiates @c n child task
@@ -283,7 +284,7 @@ struct task {
   std::optional<internal::InvokeMode> mode_override;
 
  private:
-  task& invoke_frt(std::shared_ptr<fpga::Instance> instance);
+  void invoke_frt(std::shared_ptr<fpga::Instance> instance);
 };
 
 }  // namespace tapa

@@ -3,6 +3,9 @@
 // RapidStream Contributor License Agreement.
 
 #include "tapa/host/task.h"
+#include "tapa/host/stream.h"
+
+#include "tapa/compat.h"
 
 #include <thread>
 
@@ -35,23 +38,15 @@ void DataSink(tapa::istream<int>& data_in_q, int n) {
 // WARNING: This is not synthesizable.
 TEST(TaskTest, YieldingWithoutCoroutineWorks) {
   tapa::stream<int, 2> data_q;
-  auto data_out_q_out =
-      tapa::internal::template accessor<tapa::ostream<int>&,
-                                        tapa::stream<int, 2>&>::access(data_q,
-                                                                       false);
-  auto data_out_q_in =
-      tapa::internal::template accessor<tapa::istream<int>&,
-                                        tapa::stream<int, 2>&>::access(data_q,
-                                                                       false);
-  std::thread t1(DataSource, std::ref(data_out_q_out), kN);
-  std::thread t2(DataSink, std::ref(data_out_q_in), kN);
+  std::thread t1(DataSource, std::ref(data_q), kN);
+  std::thread t2(DataSink, std::ref(data_q), kN);
   t1.join();
   t2.join();
 }
 
 // WARNING: This is not synthesizable.
 TEST(TaskTest, DirectInvocationMixedWithTapaInvocationWorks) {
-  tapa::stream<int, kN> data_q;
+  tapa::hls::stream<int, kN> data_q;
   DataSource(data_q, kN);
   tapa::task().invoke(DataSink, data_q, kN);
 }

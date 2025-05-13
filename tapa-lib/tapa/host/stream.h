@@ -228,8 +228,8 @@ std::shared_ptr<base_queue<T>> make_queue(bool is_frt, uint64_t depth,
 }
 
 // A shared pointer of a queue that can be shared among multiple tasks.
-// The pointer cannot be copied so that one task can create the queue and
-// the other can wait for the queue to be created.
+// The pointer cannot be copied but only referenced to, so that one task
+// can create the queue and the other can wait for the queue to be created.
 template <typename T>
 class shared_queue {
  public:
@@ -251,8 +251,8 @@ class shared_queue {
     return task_id > 0;
   }
 
-  // return the raw pointer for the queue
-  base_queue<T>* get() { return queue_ptr.get(); }
+  // return the pointer for the queue
+  std::shared_ptr<base_queue<T>> get() { return queue_ptr; }
 
   // initialize the queue without handshaking two tasks, such as in a leaf task
   // in this case, frt is always false.
@@ -260,7 +260,7 @@ class shared_queue {
                                           const std::string& name = "") {
     std::lock_guard<std::mutex> lock(handshake_mtx);
     CHECK(task_id == 0) << "handshake is already in progress";
-    initialize_queue(false, depth, name);
+    create_queue(false, depth, name);
   }
 
   // handshaking two tasks to initialize the queue and decide whether it is an
@@ -274,18 +274,18 @@ class shared_queue {
     if (task_id == 1) {
       // the first task simply returns and allows the second task to create
       // the queue, unless it is already known as an FRT queue
-      if (is_frt) initialize_queue(is_frt, depth, name);
+      if (is_frt) create_queue(is_frt, depth, name);
     } else if (task_id == 2) {
       // the second task creates the queue if the first task hasn't done it yet
-      if (!queue_ptr) initialize_queue(is_frt, depth, name);
+      if (!queue_ptr) create_queue(is_frt, depth, name);
     } else {
       LOG(FATAL) << "more than two tasks are trying to connect to a channel";
     }
   }
 
  private:
-  void initialize_queue(bool is_frt = false, uint64_t depth = 0,
-                        const std::string& name = "") {
+  void create_queue(bool is_frt = false, uint64_t depth = 0,
+                    const std::string& name = "") {
     CHECK(!is_initialized()) << "queue is already initialized";
     queue_ptr = make_queue<T>(is_frt, depth, name);
   }
@@ -325,45 +325,88 @@ class basic_stream {
   int depth;
   int simulation_depth;
 
-  std::shared_ptr<shared_queue<elem_t<T>>> ensure_queue() {
-    // if the queue is already initialized, return it
-    if (queue->is_initialized()) return queue;
+  // ensure that the queue is initialized for the host to access
+  std::shared_ptr<shared_queue<elem_t<T>>> ensure_host_queue() {
+    if (try_ensure_host_queue()) return queue;
 
-    // if the queue is handshaking, wait for it to be initialized
-    if (queue->is_handshaking()) {
-      while (!queue->is_initialized())
-        internal::yield("channel '" + name + "' is handshaking");
-      return queue;
-    }
+    while (!queue->is_initialized())
+      internal::yield("channel '" + name + "' is handshaking");
 
-    // if reaching this point, the handshake is not performed and the queue is
-    // not initialized. we initialize it without handshaking. this happens when
-    // the queue is created in a leaf task.
-    queue->initialize_queue_without_handshake(simulation_depth, name);
     return queue;
   }
 
+  // ensure that the queue's handshake has been initiated from this side
+  // and return if the handshake is completed.
+  bool try_ensure_host_queue() {
+    // if the queue is already initialized, the handshake is completed
+    if (queue->is_initialized()) return true;
+
+    // if the queue has infinite simulation depth, it is used as an HLS
+    // stream, typically in a leaf task. In this case, we don't need to
+    // handshake and can create the queue directly.
+    if (simulation_depth == ::tapa::kStreamInfiniteDepth) {
+      initialize_queue_without_handshake();
+      return true;
+    }
+
+    // otherwise, if the handshake has not been initiated from this endpoint,
+    // yet, start the handshake and check if the queue is initialized
+    if (!handshake_initiated_from_this_endpoint)
+      initialize_queue_by_handshake(/* is_frt */ false);
+    return queue->is_initialized();
+  }
+
  private:
-  template <typename Arg>
-  friend Arg access_stream(Arg arg, bool sequential);
-  template <typename Arg>
-  friend void access_stream(fpga::Instance&, int&, Arg arg);
   template <typename Param, typename Arg>
   friend struct internal::accessor;
 
   void initialize_queue_by_handshake(bool is_frt = false) {
+    CHECK(!queue->is_initialized())
+        << "queue is already initialized, please check if you are using "
+           "the stream in more than two tasks";
+    CHECK(!handshake_initiated_from_this_endpoint)
+        << "handshake is already in progress from this "
+           "endpoint, please report a bug";
+    handshake_initiated_from_this_endpoint = true;
     queue->initialize_queue_by_handshake(is_frt, simulation_depth, name);
   }
 
-  void frt_set_arg(fpga::Instance& instance, int& idx) {
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(ensure_queue()->get());
-    CHECK(ptr != nullptr) << "channel '" << get_name()
-                          << "' is not an FRT stream, please report a bug";
-    instance.SetArg(idx++, ptr->stream);
+  void initialize_queue_without_handshake() {
+    CHECK(!queue->is_initialized())
+        << "queue is already initialized, please check if you are using "
+           "the stream in more than two tasks";
+    queue->initialize_queue_without_handshake(simulation_depth, name);
   }
 
-  // Child class must access `queue` using `ensure_queue()`.
+  // set the stream as an FRT stream, can only be called once
+  void frt_set_arg(fpga::Instance& instance, int& idx) {
+    instance.SetArg(idx++, ensure_frt_queue()->stream);
+  }
+
+  // ensure that queue is initialized for the frt to access
+  //
+  // IMPORTANT: this function should only be called once when the FRT
+  // task is invoked. It should be called in a separate coroutine from
+  // the invoking task.
+  std::shared_ptr<frt_queue<elem_t<T>>> ensure_frt_queue() {
+    // As an FRT stream, the queue must not be initialized before setting the
+    CHECK(!queue->is_initialized())
+        << "channel '" << get_name()
+        << "' is already initialized as a non-frt stream, please check if you "
+           "are using the stream in more than two tasks.";
+
+    // handshake as an FRT queue and wait for it to be initialized
+    initialize_queue_by_handshake(/* is_frt */ true);
+    while (!queue->is_initialized())
+      internal::yield("frt channel '" + name + "' is handshaking");
+
+    return std::dynamic_pointer_cast<frt_queue<elem_t<T>>>(queue->get());
+  }
+
+  // Child class must access `queue` using `ensure_host_queue()`.
   std::shared_ptr<shared_queue<elem_t<T>>> queue;
+  // Flag to indicate if the stream handshake is in progress from this endpoint.
+  bool handshake_initiated_from_this_endpoint = false;
 };
 
 // shared pointer of multiple queues
@@ -455,7 +498,9 @@ class istream : virtual public internal::basic_stream<T> {
   ///
   /// @return Whether the stream is empty.
   bool empty() {
-    bool is_empty = this->ensure_queue()->empty();
+    // if the queue is not initialized, it is regarded as empty
+    bool is_empty =
+        !this->try_ensure_host_queue() || this->ensure_host_queue()->empty();
     if (is_empty) {
       internal::yield("channel '" + this->get_name() + "' is empty");
     }
@@ -471,7 +516,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return            Whether @c is_eot is updated.
   bool try_eot(bool& is_eot) {
     if (!empty()) {
-      is_eot = this->ensure_queue()->front().eot;
+      is_eot = this->ensure_host_queue()->front().eot;
       return true;
     }
     return false;
@@ -511,7 +556,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return           Whether @c value is updated.
   bool try_peek(T& value) {
     if (!empty()) {
-      auto elem = this->ensure_queue()->front();
+      auto elem = this->ensure_host_queue()->front();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' peeked when closed";
       }
@@ -563,7 +608,7 @@ class istream : virtual public internal::basic_stream<T> {
   ///                        returned.
   T peek(bool& is_success, bool& is_eot) {
     if (!empty()) {
-      auto elem = this->ensure_queue()->front();
+      auto elem = this->ensure_host_queue()->front();
       is_success = true;
       is_eot = elem.eot;
       return elem.val;
@@ -584,7 +629,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return           Whether @c value is updated.
   bool try_read(T& value) {
     if (!empty()) {
-      auto elem = this->ensure_queue()->pop();
+      auto elem = this->ensure_host_queue()->pop();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' read when closed";
       }
@@ -679,7 +724,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return Whether an EoT token is consumed.
   bool try_open() {
     if (!empty()) {
-      auto elem = this->ensure_queue()->pop();
+      auto elem = this->ensure_host_queue()->pop();
       if (!elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name()
                    << "' opened when not closed";
@@ -727,7 +772,9 @@ class ostream : virtual public internal::basic_stream<T> {
   ///
   /// @return Whether the stream is full.
   bool full() {
-    bool is_full = this->ensure_queue()->full();
+    // if the queue is not initialized, it is regarded as full
+    bool is_full =
+        !this->try_ensure_host_queue() || this->ensure_host_queue()->full();
     if (is_full) {
       internal::yield("channel '" + this->get_name() + "' is full");
     }
@@ -742,7 +789,7 @@ class ostream : virtual public internal::basic_stream<T> {
   /// @return          Whether @c value has been written successfully.
   bool try_write(const T& value) {
     if (!full()) {
-      this->ensure_queue()->push({value, false});
+      this->ensure_host_queue()->push({value, false});
       return true;
     }
     return false;
@@ -776,7 +823,7 @@ class ostream : virtual public internal::basic_stream<T> {
   /// @return Whether the EoT token has been written successfully.
   bool try_close() {
     if (!full()) {
-      this->ensure_queue()->push({{}, true});
+      this->ensure_host_queue()->push({{}, true});
       return true;
     }
     return false;
@@ -1057,107 +1104,44 @@ class streams : public internal::unbound_streams<T, S> {
 
 namespace internal {
 
-// Helper functions for accessing stream(s), friended by `basic_stream`.
-template <typename T>
-T access_stream(T arg, bool sequential) {
-  if (!sequential) arg.initialize_queue_by_handshake(/*is_frt=*/false);
-  return arg;
-}
-template <typename T>
-void access_stream(fpga::Instance& instance, int& idx, T arg) {
-  arg.initialize_queue_by_handshake(/*is_frt=*/true);
-  arg.frt_set_arg(instance, idx);
-}
-template <typename T>
-T access_streams(T arg, bool sequential) {
-  for (int i = 0; i < T::length; ++i) {
-    access_stream(arg[i], sequential);
-  }
-  return arg;
-}
-template <typename T>
-void access_streams(fpga::Instance& instance, int& idx, T arg) {
-  for (int i = 0; i < T::length; ++i) {
-    access_stream(instance, idx, arg[i]);
-  }
-}
-
-#define TAPA_DEFINE_DEVICE_ACCESSOR(io, arg_ref) /***************************/ \
-  /* param = i/ostream, arg = stream */                                        \
-  template <typename T, uint64_t N, typename U>                                \
-  struct accessor<io##stream<T>&, stream<U, N> arg_ref> {                      \
-    static io##stream<T> access(stream<U, N> arg_ref arg, bool sequential) {   \
-      return access_stream(arg, sequential);                                   \
-    }                                                                          \
-    static void access(fpga::Instance& instance, int& idx,                     \
-                       stream<U, N> arg_ref arg) {                             \
-      return access_stream(instance, idx, arg);                                \
-    }                                                                          \
+#define TAPA_DEFINE_ACCESSOR(io, reference) /***************************/   \
+  /* param = i/ostream, arg = stream */                                     \
+  template <typename T, uint64_t N, typename U>                             \
+  struct accessor<io##stream<T>&, stream<U, N> reference> {                 \
+    static io##stream<T> access(stream<U, N> reference arg) { return arg; } \
+    static void access(fpga::Instance& instance, int& idx,                  \
+                       stream<U, N> reference arg) {                        \
+      arg.frt_set_arg(instance, idx);                                       \
+    }                                                                       \
   };
 
 // streams are accessed as stream without reference
-TAPA_DEFINE_DEVICE_ACCESSOR(i, )
-TAPA_DEFINE_DEVICE_ACCESSOR(i, &)
-TAPA_DEFINE_DEVICE_ACCESSOR(o, )
-TAPA_DEFINE_DEVICE_ACCESSOR(o, &)
-TAPA_DEFINE_DEVICE_ACCESSOR(unbound_, )
-TAPA_DEFINE_DEVICE_ACCESSOR(unbound_, &)
+TAPA_DEFINE_ACCESSOR(i, )
+TAPA_DEFINE_ACCESSOR(i, &)
+TAPA_DEFINE_ACCESSOR(o, )
+TAPA_DEFINE_ACCESSOR(o, &)
+TAPA_DEFINE_ACCESSOR(unbound_, )
+TAPA_DEFINE_ACCESSOR(unbound_, &)
 
-#undef TAPA_DEFINE_DEVICE_ACCESSOR
-
-#define TAPA_CREATE_PASSTHROUGH(arg, src, dest)                          \
-  /* already handshaked by the caller as a locked/lock-free istream */   \
-  /* to connect it to the device, we need to passthrough the stream's */ \
-  /* data to the device using an FRT queue. */                           \
-  auto passthrough_name = arg.get_name() + "/frt";                       \
-  auto passthrough_stream = new tapa::stream<T, 1>(passthrough_name);    \
-  internal::schedule(/*detach=*/true, [&arg, passthrough_stream]() {     \
-    auto& passthrough = *passthrough_stream;                             \
-    passthrough.initialize_queue_by_handshake(/*is_frt=*/false);         \
-    while (true) {                                                       \
-      TAPA_WHILE_NOT_EOT(src) { dest.write(src.read()); }                \
-      dest.close();                                                      \
-      src.open();                                                        \
-    }                                                                    \
-  });                                                                    \
-  internal::schedule_cleanup(                                            \
-      [passthrough_stream]() { delete passthrough_stream; });            \
-  return access_stream(instance, idx, *passthrough_stream);
-
-template <typename T>
-struct accessor<istream<T>&, istream<T>&> {
-  static istream<T> access(istream<T>& arg, bool sequential) { return arg; }
-  static void access(fpga::Instance& instance, int& idx, istream<T>& arg) {
-    TAPA_CREATE_PASSTHROUGH(arg, arg, passthrough);
-  }
-};
-
-template <typename T>
-struct accessor<ostream<T>&, ostream<T>&> {
-  static ostream<T> access(ostream<T>& arg, bool sequential) { return arg; }
-  static void access(fpga::Instance& instance, int& idx, ostream<T>& arg) {
-    TAPA_CREATE_PASSTHROUGH(arg, passthrough, arg);
-  }
-};
+#undef TAPA_DEFINE_ACCESSOR
 
 #define TAPA_DEFINE_ACCESSER(io, reference) /********************************/ \
   /* param = i/ostream, arg = streams */                                       \
   template <typename T, uint64_t length, uint64_t depth>                       \
   struct accessor<io##stream<T> reference, streams<T, length, depth>&> {       \
-    static io##stream<T> access(streams<T, length, depth>& arg,                \
-                                bool sequential) {                             \
-      return access_stream(arg.access_as_##io##stream(), sequential);          \
+    static io##stream<T> access(streams<T, length, depth>& arg) {              \
+      return arg.access_as_##io##stream();                                     \
     }                                                                          \
     static void access(fpga::Instance& instance, int& idx,                     \
                        streams<T, length, depth>& arg) {                       \
-      return access_stream(instance, idx, arg.access_as_##io##stream());       \
+      arg.access_as_##io##stream().frt_set_arg(instance, idx);                 \
     }                                                                          \
   };                                                                           \
                                                                                \
   /* param = i/ostream, arg = i/ostreams */                                    \
   template <typename T, uint64_t length>                                       \
   struct accessor<io##stream<T> reference, io##streams<T, length>&> {          \
-    static io##stream<T> access(io##streams<T, length>& arg, bool) {           \
+    static io##stream<T> access(io##streams<T, length>& arg) {                 \
       return arg.access();                                                     \
     }                                                                          \
   };                                                                           \
@@ -1168,15 +1152,14 @@ struct accessor<ostream<T>&, ostream<T>&> {
   struct accessor<io##streams<T, param_length> reference,                      \
                   streams<T, arg_length, depth>&> {                            \
     static io##streams<T, param_length> access(                                \
-        streams<T, arg_length, depth>& arg, bool sequential) {                 \
-      return access_streams(                                                   \
-          arg.template access_as_##io##streams<param_length>(), sequential);   \
+        streams<T, arg_length, depth>& arg) {                                  \
+      return arg.template access_as_##io##streams<param_length>();             \
     }                                                                          \
     static void access(fpga::Instance& instance, int& idx,                     \
                        streams<T, arg_length, depth>& arg) {                   \
-      return access_streams(                                                   \
-          instance, idx,                                                       \
-          arg.template access_as_##io##streams<param_length>());               \
+      for (int i = 0; i < arg_length; ++i) {                                   \
+        arg[i].frt_set_arg(instance, idx);                                     \
+      }                                                                        \
     }                                                                          \
   };                                                                           \
                                                                                \
@@ -1185,7 +1168,7 @@ struct accessor<ostream<T>&, ostream<T>&> {
   struct accessor<io##streams<T, param_length> reference,                      \
                   io##streams<T, arg_length>&> {                               \
     static io##streams<T, param_length> access(                                \
-        io##streams<T, arg_length>& arg, bool) {                               \
+        io##streams<T, arg_length>& arg) {                                     \
       return arg.template access<param_length>();                              \
     }                                                                          \
   };

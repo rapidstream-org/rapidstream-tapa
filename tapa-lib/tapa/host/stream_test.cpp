@@ -3,6 +3,7 @@
 // RapidStream Contributor License Agreement.
 
 #include "tapa/host/stream.h"
+#include "tapa/compat.h"
 
 #include <cstring>
 #include <ostream>
@@ -57,7 +58,7 @@ class StreamLogTest : public testing::Test {
 
 // Primitive types are logged in text format.
 TEST_F(StreamLogTest, LoggingPrimitiveTypeSucceeds) {
-  tapa::stream<int> data_q("data");
+  tapa::hls::stream<int> data_q("data");
   data_q.write(2333);
   data_q.read();
 
@@ -69,7 +70,7 @@ struct Foo {
   int foo;
 };
 TEST_F(StreamLogTest, LoggingCustomTypeInHexFormatSucceeds) {
-  tapa::stream<Foo> data_q("data");
+  tapa::hls::stream<Foo> data_q("data");
   data_q.write(Foo{0x2333});
   data_q.read();
 
@@ -84,7 +85,7 @@ std::ostream& operator<<(std::ostream& os, const Bar& bar) {
   return os << bar.bar;
 }
 TEST_F(StreamLogTest, LoggingCustomTypeInTextFormatSucceeds) {
-  tapa::stream<Bar> data_q("data");
+  tapa::hls::stream<Bar> data_q("data");
   data_q.write(Bar{2333});
   data_q.read();
 
@@ -92,7 +93,7 @@ TEST_F(StreamLogTest, LoggingCustomTypeInTextFormatSucceeds) {
 }
 
 TEST_F(StreamLogTest, LoggingEotSucceeds) {
-  tapa::stream<int> data_q("data");
+  tapa::hls::stream<int> data_q("data");
   data_q.write(233);
   data_q.read();
   data_q.close();
@@ -107,7 +108,7 @@ TEST_F(StreamLogTest, LoggingToNonexistentDirFails) {
   ASSERT_EQ(setenv(kEnvVarName, "/nonexistent", /*replace=*/1), 0)
       << std::strerror(errno);
 
-  tapa::stream<int> data_q("data");
+  tapa::hls::stream<int> data_q("data");
   data_q.write(233);
   data_q.read();
 
@@ -130,7 +131,7 @@ TEST(StringifyTest, TapaInternalElemFromBinaryString) {
 }
 
 TEST(StreamNameTest, StreamsHaveIndexedNames) {
-  tapa::streams<int, 3> data_q("data");
+  tapa::hls::streams<int, 3> data_q("data");
 
   EXPECT_EQ(data_q[0].get_name(), "data[0]");
   EXPECT_EQ(data_q[1].get_name(), "data[1]");

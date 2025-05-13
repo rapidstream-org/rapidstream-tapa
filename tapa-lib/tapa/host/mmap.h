@@ -312,19 +312,7 @@ class async_mmap : public mmap<T> {
 
     // a copy of async_mem is stored in std::function<void()>
     async_mmap async_mem(mem);
-    // access the streams for the scheduled async i/o task
-    accessor<i_addr_t, s_addr_t>::access(async_mem.read_addr_q_, false);
-    accessor<o_data_t, s_data_t>::access(async_mem.read_data_q_, false);
-    accessor<i_addr_t, s_addr_t>::access(async_mem.write_addr_q_, false);
-    accessor<i_data_t, s_data_t>::access(async_mem.write_data_q_, false);
-    accessor<o_resp_t, s_resp_t>::access(async_mem.write_resp_q_, false);
     internal::schedule(/*detach=*/true, async_mem);
-    // access the streams for the user task
-    accessor<o_addr_t, s_addr_t>::access(async_mem.read_addr_q_, false);
-    accessor<i_data_t, s_data_t>::access(async_mem.read_data_q_, false);
-    accessor<o_addr_t, s_addr_t>::access(async_mem.write_addr_q_, false);
-    accessor<o_data_t, s_data_t>::access(async_mem.write_data_q_, false);
-    accessor<i_resp_t, s_resp_t>::access(async_mem.write_resp_q_, false);
     return async_mem;
   }
 };
@@ -593,7 +581,7 @@ template <typename T>
 struct accessor<async_mmap<T>, mmap<T>&> {
   [[deprecated("please use async_mmap<T>& in formal parameters")]]  //
   static async_mmap<T>
-  access(mmap<T>& arg, bool) {
+  access(mmap<T>& arg) {
     LOG_FIRST_N(ERROR, 1) << "please use async_mmap<T>& in formal parameters";
     return async_mmap<T>::schedule(arg);
   }
@@ -601,21 +589,21 @@ struct accessor<async_mmap<T>, mmap<T>&> {
 
 template <typename T>
 struct accessor<async_mmap<T>&, mmap<T>&> {
-  static async_mmap<T> access(mmap<T>& arg, bool) {
+  static async_mmap<T> access(mmap<T>& arg) {
     return async_mmap<T>::schedule(arg);
   }
 };
 
 template <typename T, uint64_t S>
 struct accessor<mmap<T>, mmaps<T, S>&> {
-  static mmap<T> access(mmaps<T, S>& arg, bool) { return arg.access(); }
+  static mmap<T> access(mmaps<T, S>& arg) { return arg.access(); }
 };
 
 template <typename T, uint64_t S>
 struct accessor<async_mmap<T>, mmaps<T, S>&> {
   [[deprecated("please use async_mmap<T>& in formal parameters")]]  //
   static async_mmap<T>
-  access(mmaps<T, S>& arg, bool) {
+  access(mmaps<T, S>& arg) {
     LOG_FIRST_N(ERROR, 1) << "please use async_mmap<T>& in formal parameters";
     return async_mmap<T>::schedule(arg.access());
   }
@@ -623,7 +611,7 @@ struct accessor<async_mmap<T>, mmaps<T, S>&> {
 
 template <typename T, uint64_t S>
 struct accessor<async_mmap<T>&, mmaps<T, S>&> {
-  static async_mmap<T> access(mmaps<T, S>& arg, bool) {
+  static async_mmap<T> access(mmaps<T, S>& arg) {
     return async_mmap<T>::schedule(arg.access());
   }
 };
@@ -631,7 +619,7 @@ struct accessor<async_mmap<T>&, mmaps<T, S>&> {
 #define TAPA_DEFINE_ACCESSER(tag, frt_tag)                         \
   template <typename T>                                            \
   struct accessor<mmap<T>, tag##_mmap<T>> {                        \
-    static mmap<T> access(tag##_mmap<T> arg, bool) { return arg; } \
+    static mmap<T> access(tag##_mmap<T> arg) { return arg; }       \
     static void access(fpga::Instance& instance, int& idx,         \
                        tag##_mmap<T> arg) {                        \
       auto buf = fpga::frt_tag(arg.get(), arg.size());             \
