@@ -7,7 +7,6 @@ RapidStream Contributor License Agreement.
 """
 
 import json
-import os
 from pathlib import Path
 
 import pytest
@@ -16,7 +15,7 @@ from tapa.graphir_conversion.gen_rs_graphir import get_verilog_module_from_leaf_
 from tapa.task import Task
 from tapa.verilog.xilinx.module import Module
 
-CURR_DIR = os.path.dirname(os.path.abspath(__file__))
+_TEST_FILES_DIR = Path(__file__).parent.absolute() / "test_files"
 
 
 @pytest.mark.parametrize(
@@ -37,12 +36,10 @@ def test_leaf_task_conversion(name: str) -> None:
     )
     task.module = Module(
         name=name,
-        files=[str(Path(CURR_DIR) / f"test_files/{name}.v")],
+        files=[_TEST_FILES_DIR / f"{name}.v"],
         is_trimming_enabled=task.is_lower,
     )
     generated = get_verilog_module_from_leaf_task(task).model_dump_json()
-    with open(
-        os.path.join(CURR_DIR, f"test_files/{name}_golden.json"), encoding="utf-8"
-    ) as f:
+    with open(_TEST_FILES_DIR / f"{name}_golden.json", encoding="utf-8") as f:
         golden = json.load(f)
     assert json.loads(generated) == golden, generated
