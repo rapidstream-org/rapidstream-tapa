@@ -6,7 +6,14 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-from tapa.graphir.types import HierarchicalName, ModulePort, VerilogModuleDefinition
+import logging
+
+from tapa.graphir.types import (
+    HierarchicalName,
+    ModuleParameter,
+    ModulePort,
+    VerilogModuleDefinition,
+)
 from tapa.graphir_conversion.utils import (
     PORT_TYPE_MAPPING,
     get_leaf_port_connection_mapping,
@@ -14,6 +21,8 @@ from tapa.graphir_conversion.utils import (
     get_task_graphir_ports,
 )
 from tapa.task import Task
+
+_logger = logging.getLogger().getChild(__name__)
 
 
 def get_verilog_module_from_leaf_task(task: Task) -> VerilogModuleDefinition:
@@ -31,6 +40,25 @@ def get_verilog_module_from_leaf_task(task: Task) -> VerilogModuleDefinition:
         verilog=task.module.code,
         submodules_module_names=(),
     )
+
+
+def get_slot_module_definition_parameters(
+    leaf_modules: dict[str, VerilogModuleDefinition],
+) -> list[ModuleParameter]:
+    """Get slot module parameters."""
+    # merge parameters from leaf modules
+    parameters = {}
+    for leaf_module in leaf_modules.values():
+        for param in leaf_module.parameters:
+            if param.name not in parameters:
+                parameters[param.name] = param
+            # merge parameter
+            elif param.expr != parameters[param.name].expr:
+                _logger.error(
+                    "Parameter %s has different values in leaf modules",
+                    param.name,
+                )
+    return list(parameters.values())
 
 
 def get_slot_module_definition_ports(
