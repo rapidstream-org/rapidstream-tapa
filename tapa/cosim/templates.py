@@ -400,7 +400,7 @@ def get_hls_dut(
     .ap_start(ap_start),
     .ap_done(ap_done),
     .ap_ready(ap_ready),
-    .ap_idle()
+    .ap_idle(ap_idle)
   );
 """
 
@@ -645,6 +645,17 @@ def get_hls_test_signals(args: list[Arg]) -> str:
       begin
         wait(ap_done);
       end
+      begin
+        // In some Vitis versions, there is a bug where ap_done is asserted
+        // before the operation is done. Preliminary investigations show that
+        // ap_done is asserted as soon as the last state is reached, which
+        // does not necessarily mean that the operation is done. Instead,
+        // wait for ap_idle to be asserted (which is state_1 & !ap_start)
+        // seems to be a workaround. We are not sure yet, if there is a
+        // possibility that ap_idle has the same bug. If so, there is no
+        // reasonable workaround to identify the end of the operation.
+        wait(ap_idle);
+      end
     join
 
     #(CLOCK_PERIOD*100);
@@ -679,6 +690,7 @@ module test();
   reg ap_start = 0;
   wire ap_done;
   wire ap_ready;
+  wire ap_idle;
 
   reg kernel_started = 0;
 
