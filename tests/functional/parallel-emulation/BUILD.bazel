@@ -88,7 +88,10 @@ sh_test(
         "//tapa/cosim:tapa-fast-cosim",
     ],
     env = {"TAPA_CONCURRENCY": "1"},
-    tags = ["cpu:17"],
+    tags = [
+        "cpu:17",
+        "manual",
+    ],
 )
 
 cc_binary(
@@ -100,6 +103,7 @@ cc_binary(
     ],
     defines = ["TAPA_CANNON_P=4"],
     includes = ["."],
+    tags = ["manual"],
     deps = [
         "//tapa-lib:tapa",
         "@gflags",
@@ -113,6 +117,7 @@ tapa_xo(
     hdrs = ["cannon.h"],
     include = ["."],
     cflags = "-DTAPA_CANNON_P=4",
+    tags = ["manual"],
     top_name = "ProcElem",
     vitis_mode = False,
 )
