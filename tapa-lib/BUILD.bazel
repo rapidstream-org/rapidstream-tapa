@@ -14,9 +14,19 @@ bool_flag(
     build_setting_default = True,  # Enable with `--//tapa-lib:tapa_enable_coroutine`
 )
 
+bool_flag(
+    name = "accurate_frt_stream_depth",
+    build_setting_default = False,  # Enable with `--//tapa-lib:accurate_frt_stream_depth`
+)
+
 config_setting(
     name = "coroutine_enabled",
     flag_values = {":enable_coroutine": "True"},
+)
+
+config_setting(
+    name = "accurate_frt_stream_depth_enabled",
+    flag_values = {":accurate_frt_stream_depth": "True"},
 )
 
 cc_library(
@@ -31,6 +41,9 @@ cc_library(
     includes = ["."],
     local_defines = select({
         ":coroutine_enabled": ["TAPA_ENABLE_COROUTINE"],
+        "//conditions:default": [],
+    }) + select({
+        ":accurate_frt_stream_depth_enabled": ["TAPA_ACCURATE_FRT_STREAM_DEPTH"],
         "//conditions:default": [],
     }),
     visibility = ["//visibility:public"],
