@@ -10,9 +10,11 @@ load("//bazel:pytest_rules.bzl", "py_test")
 
 py_library(
     name = "graphir_conversion",
-    srcs = glob([
-        "**/*.py",
-    ]),
+    srcs = [
+        "__init__.py",
+        "gen_rs_graphir.py",
+        "utils.py",
+    ],
     visibility = [
         "//tapa:__subpackages__",
     ],
