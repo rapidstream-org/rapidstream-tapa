@@ -95,8 +95,10 @@ git_override(
     module_name = "rules_boost",
     commit = "ec53a3b510be6a9fb41508cf884fe62d4098c5eb",
     patch_cmds = [
-        # Enable BOOST_USE_ASAN, which requires BOOST_USE_UCONTEXT.
-        """sed '/name = "context",/a defines=["BOOST_USE_ASAN","BOOST_USE_UCONTEXT"],' -i boost.BUILD""",
+        # Enable BOOST_USE_SEGMENTED_STACKS
+        # Enable BOOST_USE_ASAN
+        # Dependency: BOOST_USE_UCONTEXT.
+        """sed '/name = "context",/a defines=["BOOST_USE_ASAN","BOOST_USE_SEGMENTED_STACKS","BOOST_USE_UCONTEXT"],' -i boost.BUILD""",
         # Do not exclude fiber.cpp since we enable BOOST_USE_UCONTEXT
         "sed /fiber.cpp/d -i boost.BUILD",
     ],

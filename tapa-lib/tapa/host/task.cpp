@@ -33,7 +33,7 @@
 #if TAPA_ENABLE_COROUTINE
 
 #include <boost/coroutine2/coroutine.hpp>
-#include <boost/coroutine2/fixedsize_stack.hpp>
+#include <boost/coroutine2/segmented_stack.hpp>
 #include <boost/thread/condition_variable.hpp>
 
 #if TAPA_ENABLE_STACKTRACE
@@ -48,7 +48,7 @@ using std::unordered_map;
 
 using boost::condition_variable;
 using boost::mutex;
-using boost::coroutines2::fixedsize_stack;
+using boost::coroutines2::segmented_stack;
 
 using pull_type = boost::coroutines2::coroutine<void>::pull_type;
 using push_type = boost::coroutines2::coroutine<void>::push_type;
@@ -107,14 +107,6 @@ uint64_t get_time_ns() {
   return static_cast<uint64_t>(tp.tv_sec) * 1000000000 + tp.tv_nsec;
 }
 
-rlim_t get_stack_size() {
-  rlimit rl;
-  if (getrlimit(RLIMIT_STACK, &rl) != 0) {
-    throw runtime_error(std::strerror(errno));
-  }
-  return rl.rlim_cur;
-}
-
 int get_physical_core_count() {
   std::ifstream cpuinfo("/proc/cpuinfo");
   std::string line;
@@ -154,8 +146,7 @@ class worker {
 
  public:
   worker() {
-    auto stack_size = get_stack_size();
-    this->thread = std::thread([this, stack_size]() {
+    this->thread = std::thread([this]() {
       for (;;) {
         // accept new tasks
         {
@@ -186,7 +177,7 @@ class worker {
               delete coroutine;
               f();
             };
-            l.emplace_back(fixedsize_stack(stack_size), call_back);
+            l.emplace_back(segmented_stack(), call_back);
             *coroutine = &l.back();
           }
         }
