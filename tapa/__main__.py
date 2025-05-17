@@ -12,6 +12,7 @@ import tempfile
 import click
 
 from tapa import __version__
+from tapa.cosim.__main__ import main as cosim
 from tapa.steps.analyze import analyze
 from tapa.steps.common import switch_work_dir
 from tapa.steps.floorplan import floorplan
@@ -92,6 +93,7 @@ entry_point.add_command(pack)
 entry_point.add_command(compile_entry)
 entry_point.add_command(version)
 entry_point.add_command(gcc)
+entry_point.add_command(cosim)
 
 if __name__ == "__main__":
     entry_point(prog_name="tapa")

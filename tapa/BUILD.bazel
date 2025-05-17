@@ -49,6 +49,7 @@ py_binary(
         "//tapa-lib:pkg-lib",
         "//tapa-system-include",
         "//tapa-system-include:tapa-extra-runtime-include",
+        "//tapa/cosim:__main__",
     ],
     main = "__main__.py",
     visibility = ["//visibility:public"],

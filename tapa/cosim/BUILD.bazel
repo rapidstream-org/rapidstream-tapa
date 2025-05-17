@@ -27,6 +27,15 @@ py_binary(
     main = "__main__.py",
     visibility = ["//visibility:public"],
     deps = [
+        ":__main__",
+    ],
+)
+
+py_library(
+    name = "__main__",
+    srcs = ["__main__.py"],
+    visibility = ["//tapa:__pkg__"],
+    deps = [
         ":common",
         ":config_preprocess",
         ":templates",
