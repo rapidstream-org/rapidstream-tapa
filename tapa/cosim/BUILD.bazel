@@ -4,22 +4,10 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_filegroup", "pkg_files", "pkg_mklink", "strip_prefix")
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_filegroup", "pkg_files")
 load("@rules_python//python:defs.bzl", "py_library")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@tapa_deps//:requirements.bzl", "requirement")
-load("//bazel:nuitka_rules.bzl", "nuitka_binary")
-
-nuitka_binary(
-    name = "nuitka",
-    src = ":tapa-fast-cosim",
-    flags = [
-        "--deployment",
-        "--include-package-data=tapa:VERSION",
-        "--python-flag=isolated,no_docstrings,no_site",
-    ],
-    output_name = "tapa-fast-cosim",
-)
 
 py_binary(
     name = "tapa-fast-cosim",
@@ -78,27 +66,17 @@ py_library(
 )
 
 pkg_files(
-    name = "pkg-runtime",
-    srcs = [":nuitka"],
-    attributes = pkg_attributes(mode = "0755"),
-    prefix = "usr/share/tapa/cosim-runtime",
-    strip_prefix = strip_prefix.from_pkg("__main__.dist"),
-    visibility = ["//visibility:public"],
-)
-
-# link usr/share/tapa/cosim-runtime/tapa-fast-cosim to /usr/bin/tapa-fast-cosim
-pkg_mklink(
     name = "pkg-link",
-    link_name = "usr/bin/tapa-fast-cosim",
-    target = "../share/tapa/cosim-runtime/tapa-fast-cosim",
-    visibility = ["//visibility:public"],
+    srcs = ["tapa-fast-cosim.sh"],
+    attributes = pkg_attributes(mode = "0755"),
+    prefix = "usr/bin",
+    renames = {"tapa-fast-cosim.sh": "tapa-fast-cosim"},
 )
 
 pkg_filegroup(
     name = "pkg",
     srcs = [
         ":pkg-link",
-        ":pkg-runtime",
     ],
     visibility = ["//visibility:public"],
 )
