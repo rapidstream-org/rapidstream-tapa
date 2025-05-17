@@ -4,7 +4,6 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import argparse
 import logging
 import os
 import os.path
@@ -17,6 +16,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from pathlib import Path
 
+import click
 import psutil
 
 from tapa import __version__
@@ -148,21 +148,27 @@ def set_default_nettype(verilog_path: str) -> None:
                 f.write("`default_nettype wire\n" + content)
 
 
-def main() -> None:  # pylint: disable=too-many-locals
+@click.command("cosim")
+@click.option("--config_path", type=str, required=True)
+@click.option("--tb_output_dir", type=str, required=True)
+@click.option("--part_num", type=str)
+@click.option("--launch_simulation", type=bool, is_flag=True)
+@click.option("--save_waveform", type=bool, is_flag=True)
+@click.option("--start_gui", type=bool, is_flag=True)
+@click.option("--setup_only", type=bool, is_flag=True)
+def main(  # noqa: PLR0913, PLR0917
+    config_path: str,
+    tb_output_dir: str,
+    part_num: str | None,
+    launch_simulation: bool,
+    save_waveform: bool,
+    start_gui: bool,
+    setup_only: bool,
+) -> None:
     """Main entry point for the TAPA fast cosim tool."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config_path", type=str, required=True)
-    parser.add_argument("--tb_output_dir", type=str, required=True)
-    parser.add_argument("--part_num", type=str, required=False)
-    parser.add_argument("--launch_simulation", action="store_true")
-    parser.add_argument("--save_waveform", action="store_true")
-    parser.add_argument("--start_gui", action="store_true")
-    parser.add_argument("--setup_only", action="store_true")
-    args = parser.parse_args()
-
     _logger.info("TAPA fast cosim version: %s", __version__)
 
-    config = preprocess_config(args.config_path, args.tb_output_dir, args.part_num)
+    config = preprocess_config(config_path, tb_output_dir, part_num)
 
     top_name = config["top_name"]
     verilog_path = config["verilog_path"]
@@ -184,31 +190,29 @@ def main() -> None:  # pylint: disable=too-many-locals
     )
 
     # generate test bench RTL files
-    Path(args.tb_output_dir).mkdir(parents=True, exist_ok=True)
-    for bin_file in Path(args.tb_output_dir).glob("*.bin"):
+    Path(tb_output_dir).mkdir(parents=True, exist_ok=True)
+    for bin_file in Path(tb_output_dir).glob("*.bin"):
         bin_file.unlink()
-    with open(f"{args.tb_output_dir}/tb.sv", "w", encoding="utf-8") as fp:
+    with open(f"{tb_output_dir}/tb.sv", "w", encoding="utf-8") as fp:
         fp.write(tb)
-    with open(f"{args.tb_output_dir}/fifo_srl_tb.v", "w", encoding="utf-8") as fp:
+    with open(f"{tb_output_dir}/fifo_srl_tb.v", "w", encoding="utf-8") as fp:
         fp.write(get_srl_fifo_template())
 
     for axi in axi_list:
         source_data_path = config["axi_to_data_file"][axi.name]
         c_array_size = config["axi_to_c_array_size"][axi.name]
         ram_module = get_axi_ram_module(axi, source_data_path, c_array_size)
-        with open(
-            f"{args.tb_output_dir}/axi_ram_{axi.name}.v", "w", encoding="utf-8"
-        ) as fp:
+        with open(f"{tb_output_dir}/axi_ram_{axi.name}.v", "w", encoding="utf-8") as fp:
             fp.write(ram_module)
 
     # generate vivado script
-    Path(f"{args.tb_output_dir}/run").mkdir(parents=True, exist_ok=True)
-    if args.save_waveform:
+    Path(f"{tb_output_dir}/run").mkdir(parents=True, exist_ok=True)
+    if save_waveform:
         _logger.warning(
             "Waveform will be saved at %s"
             "/run/vivado/tapa-fast-cosim/tapa-fast-cosim.sim"
             "/sim_1/behav/xsim/wave.wdb",
-            args.tb_output_dir,
+            tb_output_dir,
         )
     else:
         _logger.warning(
@@ -218,23 +222,23 @@ def main() -> None:  # pylint: disable=too-many-locals
 
     vivado_script = get_vivado_tcl(
         config,
-        args.tb_output_dir,
-        args.save_waveform,
-        args.start_gui,
+        tb_output_dir,
+        save_waveform,
+        start_gui,
     )
 
-    with open(f"{args.tb_output_dir}/run/run_cosim.tcl", "w", encoding="utf-8") as fp:
+    with open(f"{tb_output_dir}/run/run_cosim.tcl", "w", encoding="utf-8") as fp:
         fp.write("\n".join(vivado_script))
 
-    if args.setup_only:
+    if setup_only:
         _logger.info("User requested to only setup the cosim environment, exiting...")
         return
 
-    if args.launch_simulation:
-        launch_simulation(config, args.start_gui, args.tb_output_dir)
+    if launch_simulation:
+        _launch_simulation(config, start_gui, tb_output_dir)
 
 
-def launch_simulation(
+def _launch_simulation(
     config: dict,
     start_gui: bool,
     tb_output_dir: str,

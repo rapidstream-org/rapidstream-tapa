@@ -32,6 +32,7 @@ py_binary(
         ":templates",
         ":vivado",
         "//tapa:__init__",
+        requirement("click"),
         requirement("psutil"),
     ],
 )
