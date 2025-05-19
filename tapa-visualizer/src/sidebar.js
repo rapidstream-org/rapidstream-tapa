@@ -234,7 +234,7 @@ const getNodeInfo = node => {
       $text("dt", "Step"),
       $text("dd", step),
     );
-  }
+  };
 
   const { data } = node;
 
@@ -370,15 +370,15 @@ export const updateSidebarForNode = (id, graph) => {
 
   neighbors.replaceChildren(
     neighborIds.size > 0
-    ? ul([...neighborIds.values().map(id => $("li", { textContent: id }))])
-    : $("p", { textContent: `Node ${node.id} has no neighbors.` }),
+    ? ul([...neighborIds.values().map(id => $text("li", id))])
+    : $text("p", `Node ${node.id} has no neighbors.`),
   );
 
   connections.replaceChildren(
     sourcesTitle,
-    ul(sources.map(edge => $("li", { textContent: `${edge.id} -> ${edge.target}` }))),
+    ul(sources.map(edge => $text("li", `${edge.id} -> ${edge.target}`))),
     targetsTitle,
-    ul(targets.map(edge => $("li", { textContent: `${edge.id} <- ${edge.source}` }))),
+    ul(targets.map(edge => $text("li", `${edge.id} <- ${edge.source}`))),
   );
 
 };
