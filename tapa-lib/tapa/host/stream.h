@@ -1098,6 +1098,62 @@ void access_streams(fpga::Instance& instance, int& idx, T arg) {
   }
 }
 
+template <typename T>
+constexpr bool dependent_false() {
+  return false;
+}
+
+#define TAPA_DEFINE_DISALLOWED_ACCESSOR(io,                                    \
+                                        arg_ref) /***************************/ \
+  /* param = i/ostream, arg = stream */                                        \
+  template <typename T, uint64_t N, typename U>                                \
+  struct accessor<io##stream<T>, stream<U, N> arg_ref> {                       \
+    static io##stream<T> access(stream<U, N> arg_ref arg, bool sequential) {   \
+      static_assert(dependent_false<T>(),                                      \
+                    "accessing stream as value is disallowed. you must use "   \
+                    "\"i/ostream &\" as the formal parameter in a TAPA task"); \
+    }                                                                          \
+    static void access(fpga::Instance& instance, int& idx,                     \
+                       stream<U, N> arg_ref arg) {                             \
+      static_assert(dependent_false<T>(),                                      \
+                    "accessing stream as value is disallowed. you must use "   \
+                    "\"i/ostream &\" as the formal parameter in a TAPA task"); \
+    }                                                                          \
+  };
+
+// streams should not be accessed as i/ostream without reference
+// e.g. stream -> istream, stream & -> istream
+TAPA_DEFINE_DISALLOWED_ACCESSOR(i, )
+TAPA_DEFINE_DISALLOWED_ACCESSOR(i, &)
+TAPA_DEFINE_DISALLOWED_ACCESSOR(o, )
+TAPA_DEFINE_DISALLOWED_ACCESSOR(o, &)
+
+#undef TAPA_DEFINE_DISALLOWED_ACCESSOR
+
+#define TAPA_DEFINE_DISALLOWED_ACCESSOR(io) /***************************/      \
+  /* param = i/ostream, arg = i/ostream */                                     \
+  template <typename T>                                                        \
+  struct accessor<io##stream<T>, io##stream<T>&> {                             \
+    static io##stream<T> access(io##stream<T>& arg, bool sequential) {         \
+      static_assert(dependent_false<T>(),                                      \
+                    "accessing stream as value is disallowed. you must use "   \
+                    "\"i/ostream &\" as the formal parameter in a TAPA task"); \
+    }                                                                          \
+    static void access(fpga::Instance& instance, int& idx,                     \
+                       io##stream<T>& arg) {                                   \
+      static_assert(dependent_false<T>(),                                      \
+                    "accessing stream as value is disallowed. you must use "   \
+                    "\"i/ostream &\" as the formal parameter in a TAPA task"); \
+    }                                                                          \
+  };
+
+// streams should not be accessed as i/ostream without reference
+// e.g. istream & -> istream
+TAPA_DEFINE_DISALLOWED_ACCESSOR(i)
+TAPA_DEFINE_DISALLOWED_ACCESSOR(o)
+
+#undef TAPA_DEFINE_DISALLOWED_ACCESSOR
+
 // See the IMPORTANT NOTE in the header before you are tempted to refactor
 // this accessor-based handshake method.
 
