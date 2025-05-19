@@ -9,20 +9,34 @@ RapidStream Contributor License Agreement.
 import logging
 
 from tapa.graphir.types import (
+    Expression,
     HierarchicalName,
+    ModuleConnection,
+    ModuleInstantiation,
     ModuleParameter,
     ModulePort,
+    Token,
     VerilogModuleDefinition,
 )
 from tapa.graphir_conversion.utils import (
     PORT_TYPE_MAPPING,
     get_leaf_port_connection_mapping,
+    get_m_axi_port_name,
+    get_stream_port_name,
     get_task_graphir_parameters,
     get_task_graphir_ports,
 )
+from tapa.instance import Instance
 from tapa.task import Task
+from tapa.verilog.xilinx.const import (
+    ISTREAM_SUFFIXES,
+    OSTREAM_SUFFIXES,
+    STREAM_DATA_SUFFIXES,
+)
+from tapa.verilog.xilinx.m_axi import M_AXI_SUFFIXES
 
 _logger = logging.getLogger().getChild(__name__)
+_FIFO_MODULE_NAME = "fifo"
 
 
 def get_verilog_module_from_leaf_task(task: Task) -> VerilogModuleDefinition:
@@ -125,3 +139,270 @@ def get_slot_module_definition_ports(
         add_port(name, direction)
 
     return ports
+
+
+def get_submodule_inst(
+    leaf_tasks: dict[str, Task],
+    inst: Instance,
+) -> ModuleInstantiation:
+    """Get submodule instantiation."""
+    task_name = inst.task.name
+    connections = []
+    for arg in inst.args:
+        port_name = arg.port
+        if arg.cat == Instance.Arg.Cat.SCALAR:
+            connections.append(
+                ModuleConnection(
+                    name=port_name,
+                    hierarchical_name=HierarchicalName.get_name(port_name),
+                    expr=Expression((Token.new_id(f"{arg.name}"),)),
+                )
+            )
+
+        elif arg.cat == Instance.Arg.Cat.ISTREAM:
+            for suffix in ISTREAM_SUFFIXES:
+                leaf_port = leaf_tasks[task_name].module.get_port_of(port_name, suffix)
+                connections.append(
+                    ModuleConnection(
+                        name=leaf_port.name,
+                        hierarchical_name=HierarchicalName.get_name(leaf_port.name),
+                        expr=Expression(
+                            (Token.new_id(get_stream_port_name(arg.name, suffix)),)
+                        ),
+                    )
+                )
+        elif arg.cat == Instance.Arg.Cat.OSTREAM:
+            for suffix in OSTREAM_SUFFIXES:
+                leaf_port = leaf_tasks[task_name].module.get_port_of(port_name, suffix)
+                connections.append(
+                    ModuleConnection(
+                        name=leaf_port.name,
+                        hierarchical_name=HierarchicalName.get_name(leaf_port.name),
+                        expr=Expression(
+                            (Token.new_id(get_stream_port_name(arg.name, suffix)),)
+                        ),
+                    )
+                )
+
+        else:  # mmap
+            assert arg.cat == Instance.Arg.Cat.MMAP, arg.cat
+            for suffix in M_AXI_SUFFIXES:
+                full_port_name = get_m_axi_port_name(port_name, suffix)
+                if full_port_name not in leaf_tasks[task_name].module.ports:
+                    continue
+                connections.append(
+                    ModuleConnection(
+                        name=full_port_name,
+                        hierarchical_name=HierarchicalName.get_name(full_port_name),
+                        expr=Expression(
+                            (Token.new_id(get_m_axi_port_name(arg.name, suffix)),)
+                        ),
+                    )
+                )
+
+    # add control signals
+    # ap_clk
+    connections.append(
+        ModuleConnection(
+            name="ap_clk",
+            hierarchical_name=HierarchicalName.get_name("ap_clk"),
+            expr=Expression((Token.new_id("ap_clk"),)),
+        )
+    )
+
+    # ap_rst_n
+    connections.append(
+        ModuleConnection(
+            name="ap_rst_n",
+            hierarchical_name=HierarchicalName.get_name("ap_rst_n"),
+            expr=Expression((Token.new_id("ap_rst_n"),)),
+        )
+    )
+
+    # ap_ctrl
+    ap_signals = ["ap_start", "ap_done", "ap_ready", "ap_idle"]
+    connections.extend(
+        ModuleConnection(
+            name=signal,
+            hierarchical_name=HierarchicalName.get_name(signal),
+            expr=Expression((Token.new_id(f"{inst.name}__{signal}"),)),
+        )
+        for signal in ap_signals
+    )
+
+    return ModuleInstantiation(
+        name=inst.name,
+        hierarchical_name=HierarchicalName.get_name(inst.name),
+        module=task_name,
+        connections=tuple(connections),
+        parameters=(),
+        floorplan_region=None,
+        area=None,
+    )
+
+
+def get_slot_fifo_inst(
+    slot_task: Task,
+    fifo_name: str,
+    fifo: dict,
+    leaf_ir_defs: dict[str, VerilogModuleDefinition],
+) -> ModuleInstantiation:
+    """Get slot fifo module instantiation."""
+    depth = int(fifo["depth"])
+    addr_width = max(1, (depth - 1).bit_length())
+    # infer width from leaf module port
+    fifo_range = infer_fifo_data_range(
+        fifo_name,
+        fifo,
+        leaf_ir_defs,
+        slot_task,
+    )
+    assert fifo_range
+
+    data_width = Expression(
+        (
+            Token.new_lit("("),
+            *fifo_range.left.root,
+            Token.new_lit(")"),
+            Token.new_lit("-"),
+            Token.new_lit("("),
+            *fifo_range.right.root,
+            Token.new_lit(")"),
+            Token.new_lit("+"),
+            Token.new_lit("1"),
+        )
+    )
+    return ModuleInstantiation(
+        name=fifo_name,
+        hierarchical_name=HierarchicalName.get_name(fifo_name),
+        module=_FIFO_MODULE_NAME,
+        connections=(
+            ModuleConnection(
+                name="clk",
+                hierarchical_name=HierarchicalName.get_name("clk"),
+                expr=Expression((Token.new_id("ap_clk"),)),
+            ),
+            ModuleConnection(
+                name="reset",
+                hierarchical_name=HierarchicalName.get_name("reset"),
+                expr=Expression(
+                    (
+                        Token.new_lit("~"),
+                        Token.new_id("ap_rst_n"),
+                    )
+                ),
+            ),
+            ModuleConnection(
+                name="if_dout",
+                hierarchical_name=HierarchicalName.get_name("if_dout"),
+                expr=Expression((Token.new_id(f"{fifo_name}_dout"),)),
+            ),
+            ModuleConnection(
+                name="if_empty_n",
+                hierarchical_name=HierarchicalName.get_name("if_empty_n"),
+                expr=Expression((Token.new_id(f"{fifo_name}_empty_n"),)),
+            ),
+            ModuleConnection(
+                name="if_read",
+                hierarchical_name=HierarchicalName.get_name("if_read"),
+                expr=Expression((Token.new_id(f"{fifo_name}_read"),)),
+            ),
+            ModuleConnection(
+                name="if_read_ce",
+                hierarchical_name=HierarchicalName.get_name("if_read_ce"),
+                expr=Expression((Token.new_lit("1'b1"),)),
+            ),
+            ModuleConnection(
+                name="if_din",
+                hierarchical_name=HierarchicalName.get_name("if_din"),
+                expr=Expression((Token.new_id(f"{fifo_name}_din"),)),
+            ),
+            ModuleConnection(
+                name="if_full_n",
+                hierarchical_name=HierarchicalName.get_name("if_full_n"),
+                expr=Expression((Token.new_id(f"{fifo_name}_full_n"),)),
+            ),
+            ModuleConnection(
+                name="if_write",
+                hierarchical_name=HierarchicalName.get_name("if_write"),
+                expr=Expression((Token.new_id(f"{fifo_name}_write"),)),
+            ),
+            ModuleConnection(
+                name="if_write_ce",
+                hierarchical_name=HierarchicalName.get_name("if_write_ce"),
+                expr=Expression((Token.new_lit("1'b1"),)),
+            ),
+        ),
+        parameters=(
+            ModuleConnection(
+                name="DEPTH",
+                hierarchical_name=HierarchicalName.get_name("DEPTH"),
+                expr=Expression((Token.new_lit(str(depth)),)),
+            ),
+            ModuleConnection(
+                name="ADDR_WIDTH",
+                hierarchical_name=HierarchicalName.get_name("ADDR_WIDTH"),
+                expr=Expression((Token.new_lit(str(addr_width)),)),
+            ),
+            ModuleConnection(
+                name="DATA_WIDTH",
+                hierarchical_name=HierarchicalName.get_name("DATA_WIDTH"),
+                expr=data_width,
+            ),
+        ),
+        floorplan_region=None,
+        area=None,
+    )
+
+
+def get_slot_module_submodules(
+    slot_task: Task,
+    leaf_ir_defs: dict[str, VerilogModuleDefinition],
+) -> list[ModuleInstantiation]:
+    """Get leaf module instantiations of slot module."""
+    leaf_tasks = {inst.task.name: inst.task for inst in slot_task.instances}
+    ir_insts = [
+        get_submodule_inst(
+            leaf_tasks,
+            inst,
+        )
+        for inst in slot_task.instances
+    ]
+
+    # fsm
+    fsm_module = slot_task.fsm_module
+    connections = [
+        ModuleConnection(
+            name=port,
+            hierarchical_name=HierarchicalName.get_name(port),
+            expr=Expression((Token.new_id(port),)),
+        )
+        for port in fsm_module.ports
+    ]
+    ir_insts.append(
+        ModuleInstantiation(
+            name=f"{fsm_module.name}_0",
+            hierarchical_name=HierarchicalName.get_name(f"{fsm_module.name}_0"),
+            module=fsm_module.name,
+            connections=tuple(connections),
+            parameters=(),
+            floorplan_region=None,
+            area=None,
+        )
+    )
+
+    # fifo
+    for fifo_name, fifo in slot_task.fifos.items():
+        # skip external fifos
+        if slot_task.is_fifo_external(fifo_name):
+            continue
+        ir_insts.append(
+            get_slot_fifo_inst(
+                slot_task,
+                fifo_name,
+                fifo,
+                leaf_ir_defs,
+            )
+        )
+
+    return ir_insts
