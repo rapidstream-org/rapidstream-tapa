@@ -6,15 +6,21 @@ interface JSON {
   /**
    * Converts a JavaScript Object Notation (JSON) string into an object.
    * @param text A valid JSON string.
-   * @param reviver A function that transforms the results. This function is called for each member of the object.
-   * If a member contains nested objects, the nested objects are transformed before the parent object is.
+   * @param reviver A function that transforms the results. This function is
+   * called for each member of the object. If a member contains nested objects,
+   * the nested objects are transformed before the parent object is.
    */
-    parse<T>(text: string, reviver?: <This, X, Y>(this: This, key: string, value: X) => Y): T;
+    parse<T>(
+      text: string,
+      reviver?: <This, X, Y>(this: This, key: string, value: X) => Y,
+    ): T;
 }
 
 // Helpers
-type $ = <K extends keyof HTMLElementTagNameMap>(tagName: K, prop?: Record<string, unknown>) => HTMLElementTagNameMap[K];
-type $text = <K extends keyof HTMLElementTagNameMap>(tagName: K, textContent: string | number) => HTMLElementTagNameMap[K];
+type $ = <K extends keyof HTMLElementTagNameMap>
+  (tagName: K, prop?: Record<string, unknown>) => HTMLElementTagNameMap[K];
+type $text = <K extends keyof HTMLElementTagNameMap>
+  (tagName: K, textContent: string | number) => HTMLElementTagNameMap[K];
 
 // Globals
 declare var graph: Graph;

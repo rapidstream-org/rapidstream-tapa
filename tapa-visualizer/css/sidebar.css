@@ -70,14 +70,19 @@
 	transform: rotate(180deg);
 }
 
+.sidebar-contents details>div {
+	padding: .5rem;
+}
+.sidebar-content-instance>dl>dt:first-child,
+.sidebar-content-connections>p:first-child {
+	margin-top: 0;
+}
+
 .sidebar-contents details>div>p:only-child,
 .sidebar-content-explorer>p:only-child {
 	text-align: center;
 }
 
-.sidebar-contents>.connections>details>div {
-	padding: 0 .5rem;
-}
 
 /* sidebar contents - ol ul dl */
 .sidebar-contents p {
@@ -98,10 +103,10 @@
 
 .sidebar-contents dl {
 	margin: 0;
-	padding: .5rem;
 }
 
 .sidebar-contents dl>dt {
+	margin: .25rem 0;
 	color: var(--fg2);
 	font-weight: bold;
 	font-size: .85rem;
@@ -111,10 +116,7 @@
 	max-height: 24rem;
 	overflow: auto;
 	scrollbar-width: thin;
-
-	margin: 0;
-	margin-top: .1rem;
-	margin-bottom: .25rem;
+	margin: .1rem 0;
 	font-family: monospace;
 }
 
@@ -169,10 +171,7 @@
 	text-align: center;
 }
 
-.sidebar-content-neighbors>ul {
-	margin: .5rem 0;
-}
-
+/* Explorer & Cflags */
 .sidebar-content-explorer>ul,
 .sidebar-content-cflags>ul {
 	padding: .5rem;
@@ -193,6 +192,7 @@
 	font-size: .8rem;
 }
 
+/* Options */
 .sidebar-content-options {
 	flex-grow: 1;
 	max-width: 24em;
@@ -210,6 +210,7 @@
 	margin-bottom: -.25rem;
 }
 
+/* Hint */
 .sidebar-contents .hint {
 	font-size: .75rem;
 	color: gray;
