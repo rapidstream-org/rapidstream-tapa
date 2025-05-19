@@ -14,6 +14,7 @@ import sys
 from collections import defaultdict
 from collections.abc import Sequence
 from contextlib import suppress
+from io import TextIOWrapper
 from pathlib import Path
 
 import click
@@ -231,19 +232,33 @@ def main(  # noqa: PLR0913, PLR0917
         fp.write("\n".join(vivado_script))
 
     if launch_simulation:
-        _launch_simulation(config, start_gui, tb_output_dir)
+        with (
+            open(
+                f"{tb_output_dir}/cosim.stdout.log", "w", encoding="utf-8"
+            ) as stdout_fp,
+            open(
+                f"{tb_output_dir}/cosim.stderr.log", "w", encoding="utf-8"
+            ) as stderr_fp,
+        ):
+            _launch_simulation(config, start_gui, tb_output_dir, stdout_fp, stderr_fp)
 
 
 def _launch_simulation(
     config: dict,
     start_gui: bool,
     tb_output_dir: str,
+    stdout_fp: TextIOWrapper,
+    stderr_fp: TextIOWrapper,
 ) -> None:
     mode = "gui" if start_gui else "batch"
     command = ["vivado", "-mode", mode, "-source", "run_cosim.tcl"]
 
-    _logger.info("Starting Vivado: %s", " ".join(command))
-    _logger.debug("   Working directory: %s/run", tb_output_dir)
+    _logger.info("Starting Vivado:")
+    _logger.info("   Command: %s", " ".join(command))
+    _logger.info("   Working directory: %s/run", tb_output_dir)
+    _logger.info("   Stdout: %s/cosim.stdout.log", tb_output_dir)
+    _logger.info("   Stderr: %s/cosim.stderr.log", tb_output_dir)
+
     with subprocess.Popen(
         command,
         cwd=Path(f"{tb_output_dir}/run").resolve(),
@@ -257,6 +272,8 @@ def _launch_simulation(
                 f"{k}:{v}" for k, v in config["axis_to_data_file"].items()
             ),
         },
+        stdout=stdout_fp,
+        stderr=stderr_fp,
     ) as process:
 
         def kill_vivado_tree() -> None:
