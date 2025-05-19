@@ -10,6 +10,7 @@ import logging
 
 from tapa.graphir.types import (
     Expression,
+    GroupedModuleDefinition,
     HierarchicalName,
     ModuleConnection,
     ModuleInstantiation,
@@ -518,3 +519,23 @@ def get_slot_module_wires(
             )
 
     return connections
+
+
+def get_slot_module_definition(
+    slot: Task, leaf_ir_defs: dict[str, VerilogModuleDefinition]
+) -> GroupedModuleDefinition:
+    """Get slot module definition."""
+    # TODO: port array support
+    return GroupedModuleDefinition(
+        name=slot.name,
+        hierarchical_name=HierarchicalName.get_name(slot.name),
+        parameters=tuple(get_slot_module_definition_parameters(leaf_ir_defs)),
+        ports=tuple(get_slot_module_definition_ports(slot, leaf_ir_defs)),
+        submodules=tuple(
+            get_slot_module_submodules(
+                slot,
+                leaf_ir_defs,
+            )
+        ),
+        wires=tuple(get_slot_module_wires(slot, leaf_ir_defs)),
+    )
