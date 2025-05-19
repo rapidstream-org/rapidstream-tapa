@@ -192,6 +192,25 @@
 	font-size: .8rem;
 }
 
+/* Task */
+.sidebar-content-task button {
+	font: inherit;
+}
+.sidebar-content-task>h3 {
+	margin: 0;
+	font-size: 1rem;
+}
+.sidebar-content-task>dl.compact {
+	display: grid;
+	grid-template-columns: auto auto;
+	width: 16rem;
+	margin: .5rem 0;
+	font-size: .85rem;
+}
+.sidebar-content-task>dl.compact>.dt {
+	margin: .1rem 0;
+}
+
 /* Options */
 .sidebar-content-options {
 	flex-grow: 1;

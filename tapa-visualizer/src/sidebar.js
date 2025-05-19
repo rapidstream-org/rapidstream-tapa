@@ -208,7 +208,7 @@ const getNodeInfo = node => {
 
   const dl = append(
     $("dl"),
-    $text("dt", "Instance Name"),
+    $text("dt", "Node Name"),
     $text("dd", node.id),
     $text("dt", "Upper Task"),
     $text("dd", getComboName(node.combo ?? "<none>")),
@@ -252,27 +252,44 @@ const getNodeInfo = node => {
 
 };
 
-/** Get an `<dl>` element containing:
- * Instance Name, Upper Task, Sub-Task(s)
- * @type {(node: Task, taskName: string) => HTMLElement} */
-const getTaskInfo = (task, taskName) => {
-  const dl = append(
-    $("dl"),
-    $text("dt", "Task Name"),
-    $text("dd", taskName),
-    $text("dt", "Task Level"),
-    $text("dd", task.level),
-    $text("dt", "Build Target"),
-    $text("dd", task.target),
-    $text("dt", "Vendor"),
-    $text("dd", task.vendor),
 
+/** Get an array of elements containing:
+ * Task Name & Info & Show Code button, Ports, Sub-Tasks & FIFO Streams
+ * @type {(node: Task, id: string) => HTMLElement[]} */
+const getTaskInfo = (task, id) => {
+
+  // Get taskName from id like `${taskName}/x`
+  const i = id.indexOf("/");
+  const taskName = i !== -1 ? id.slice(0, i) : id;
+
+  const compactInfo = append(
+    $("dl", { className: "compact" }),
+    $text("dt", "Task Name:"),
+    $text("dd", taskName),
+    $text("dt", "Task Level:"),
+    $text("dd", task.level),
+    $text("dt", "Build Target:"),
+    $text("dd", task.target),
+    $text("dt", "Vendor:"),
+    $text("dd", task.vendor),
+    $text("dt", "Code:"),
+    append($("dd"), showCode(task.code, taskName)),
+  );
+
+  const listInfo = append(
+    $("dl"),
     // Lower task can have ports too
     $text("dt", "Ports"),
     task.ports && task.ports.length !== 0
       ? append($("dd"), parsePorts(task.ports))
       : $text("dd", "none"),
   );
+
+  const elements = [
+    compactInfo,
+    listInfo,
+  ]
+
 
   if (task.level === "upper") {
     /** @type {HTMLLIElement[]} */
@@ -298,7 +315,7 @@ const getTaskInfo = (task, taskName) => {
       fifos.push($text("li", `${name}${depth}:\n${fifo}`));
     }
 
-    dl.append(
+    listInfo.append(
       $text("dt", "Sub-Tasks"),
       tasks.length !== 0
         ? append($("dd"), ul(tasks))
@@ -311,12 +328,7 @@ const getTaskInfo = (task, taskName) => {
     );
   }
 
-  dl.append(
-    $text("dt", "Code"),
-    append($("dd"), showCode(task.code, taskName)),
-  );
-
-  return dl;
+  return elements;
 };
 
 const sourcesTitle = append(
@@ -354,8 +366,8 @@ export const updateSidebarForNode = (id, graph) => {
 
   const taskInfo = node.data.task
     ? getTaskInfo(node.data.task, node.id)
-    : $text("p", "This item has no task infomation.");
-  task.replaceChildren(taskInfo);
+    : [$text("p", "This item has no task infomation.")];
+  task.replaceChildren(...taskInfo);
 
   // Connection sidebar: Neighbors & Connections
   const sources = graph.getRelatedEdgesData(node.id, "out");
@@ -392,7 +404,7 @@ const getComboInfo = (combo, graph) => {
 
   return append(
     $("dl"),
-    $text("dt", "Instance Name"),
+    $text("dt", "Combo Name"),
     $text("dd", combo.id),
     $text("dt", "Children"),
     append($("dd"), ul(children)),
@@ -415,7 +427,7 @@ export const updateSidebarForCombo = (id, graph) => {
   instance.replaceChildren(comboInfo);
 
   const taskInfo = getTaskInfo(combo.data, getComboName(combo.id));
-  task.replaceChildren(taskInfo);
+  task.replaceChildren(...taskInfo);
 
 
   neighbors.replaceChildren($text("p", "Please select a node."));
@@ -425,15 +437,58 @@ export const updateSidebarForCombo = (id, graph) => {
 
 /** Update sidebar for selected edge
  * TODO: support show edge infomation
- * @param {string} id */
-export const updateSidebarForEdge = id => {
-  id.at(-1);
-  instance.replaceChildren(
-    $text("p", "Edge is not fully supported yet.")
+ * @param {string} id
+ * @param {Graph} graph */
+export const updateSidebarForEdge = (id, graph) => {
+
+  const edge = graph.getEdgeData(id);
+  if (!edge) {
+    resetSidebar(`Edge ${id} not found!`);
+    return;
+  }
+
+  const dl = append(
+    $("dl"),
+    $text("dt", "Edge Name"),
+    $text("dd", id),
+    $text("dt", "Source Node"),
+    $text("dd", edge.source),
+    $text("dt", "Target Node"),
+    $text("dd", edge.target),
   );
 
-  task.replaceChildren(
-    $text("p", "Edge has no task infomation.")
+  instance.replaceChildren(dl);
+
+  /** @type {HTMLElement[]} */
+  const taskElements = [];
+
+  /** @ts-expect-error @type {NodeData} */
+  const sourceNode = graph.getNodeData(edge.source);
+  /** @ts-expect-error @type {NodeData} */
+  const targetNode = graph.getNodeData(edge.target);
+
+  sourceNode?.data?.task &&
+  taskElements.push(
+    $text("h3", "Source Task"),
+    ...getTaskInfo(sourceNode.data.task, sourceNode.id),
   );
+
+  sourceNode?.data?.task && targetNode?.data?.task &&
+  taskElements.push($("hr"));
+
+  targetNode?.data?.task &&
+  taskElements.push(
+    $text("h3", "Target Task"),
+    ...getTaskInfo(targetNode.data.task, targetNode.id),
+  );
+
+  const hint = $("p", {
+    style: "opacity: .75;",
+    textContent: "This edge has no task infomation.",
+  });
+
+  taskElements.length !== 0
+    ? task.replaceChildren(...taskElements)
+    : task.replaceChildren(hint);
 
 };
