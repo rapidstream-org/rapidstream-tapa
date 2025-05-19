@@ -121,9 +121,11 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
           break;
         }
         case "expand": {
-          const targetPrefix = fifo.consumed_by.join("/");
+          const targetId = fifo.consumed_by.join("/");
           const sources = nodes.filter(({id}) => id.startsWith(`${taskName}/`));
-          const targets = nodes.filter(({id}) => id.startsWith(targetPrefix));
+          const targets = nodes.filter(
+            ({id}) => id === targetId || id.startsWith(`${targetId}/`),
+          );
           const len = Math.min(sources.length, targets.length);
           for (let i = 0; i < len; i++) {
             const source = sources[i];
@@ -159,8 +161,10 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
           break;
         }
         case "expand": {
-          const sourcePrefix = `${fifo.produced_by.join("/")}/`;
-          const sources = nodes.filter(({id}) => id.startsWith(sourcePrefix));
+          const sourceId = fifo.produced_by.join("/");
+          const sources = nodes.filter(
+            ({id}) => id === sourceId || id.startsWith(`${sourceId}/`),
+          );
           const targets = nodes.filter(({id}) => id.startsWith(`${taskName}/`));
           const len = Math.min(sources.length, targets.length);
           for (let i = 0; i < len; i++) {
