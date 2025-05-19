@@ -94,20 +94,15 @@ from tapa.steps.common import (
     type=click.Path(dir_okay=False, writable=True),
     default=None,
     help=(
-        "`--nonpipeline_fifos` specifies the stream FIFOs to not add "
-        "pipeline to. A grouping_constrains.json file will be generated "
-        "for rapidstream."
+        "Specifies the stream FIFOs to not add pipeline to. "
+        "A `grouping_constrains.json` file will be generated for rapidstream."
     ),
 )
 @click.option(
-    "--gen-ab-graph",
-    is_flag=True,
+    "--gen-ab-graph / --no-gen-ab-graph",
     type=bool,
-    default=None,
-    help=(
-        "`--gen_ab-graph` specifies whether to generate the AutoBridge "
-        "graph for the AutoBridge partitioning."
-    ),
+    default=False,
+    help="Specifies whether to generate the AutoBridge graph for partitioning.",
 )
 def synth(  # noqa: PLR0913,PLR0917
     part_num: str | None,

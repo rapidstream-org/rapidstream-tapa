@@ -15,10 +15,10 @@ bazel_dep(name = "aspect_rules_webpack", version = "0.17.0", dev_dependency = Tr
 bazel_dep(name = "bazel_skylib", version = "1.7.1", dev_dependency = True)
 bazel_dep(name = "platforms", version = "0.0.11", dev_dependency = True)
 bazel_dep(name = "rules_cc", version = "0.1.1", dev_dependency = True)
-bazel_dep(name = "rules_nodejs", version = "6.3.5", dev_dependency = True)
+bazel_dep(name = "rules_nodejs", version = "6.4.0", dev_dependency = True)
 bazel_dep(name = "rules_pkg", version = "1.1.0", dev_dependency = True)
-bazel_dep(name = "rules_python", version = "1.4.0", dev_dependency = True)
-bazel_dep(name = "rules_shell", version = "0.4.0", dev_dependency = True)
+bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
+bazel_dep(name = "rules_shell", version = "0.4.1", dev_dependency = True)
 bazel_dep(name = "toolchains_llvm", version = "1.4.0", dev_dependency = True)
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -311,11 +311,11 @@ LLVM_VERSION_MAJOR = 20
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 4
+LLVM_VERSION_PATCH = 5
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
-LLVM_SHA256 = "a95365b02536ed4aef29b325c205dd89c268cba41503ab2fc05f81418613ab63"
+LLVM_SHA256 = "a069565cd1c6aee48ee0f36de300635b5781f355d7b3c96a28062d50d575fa3e"
 
 # Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/707c0f939d1a801370aeb3a795e1a253a880f4f7/modules/llvm-project/17.0.3/patches
 http_archive(
