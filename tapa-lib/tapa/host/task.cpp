@@ -58,6 +58,17 @@ namespace tapa {
 
 namespace internal {
 
+// Signal handler for SIGINT to kill running kernel instance,
+// when the tapa::invoke synchronous kernel is running.
+fpga::Instance* frt_sync_kernel_instance = nullptr;
+extern "C" void kill_frt_sync_kernel(int) {
+  if (frt_sync_kernel_instance) {
+    frt_sync_kernel_instance->Kill();
+    frt_sync_kernel_instance = nullptr;
+  }
+  exit(EXIT_FAILURE);
+}
+
 namespace {
 
 thread_local pull_type* current_handle = nullptr;

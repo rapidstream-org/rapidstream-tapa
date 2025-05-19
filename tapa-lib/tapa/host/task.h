@@ -27,6 +27,9 @@ namespace tapa {
 
 namespace internal {
 
+extern fpga::Instance* frt_sync_kernel_instance;
+extern "C" void kill_frt_sync_kernel(int);
+
 template <typename Param, typename Arg>
 struct accessor {
   static Param access(Arg&& arg, bool) { return arg; }
@@ -126,6 +129,13 @@ struct invoker {
   template <typename... Args>
   static int64_t invoke(F&& f, const std::string& bitstream, Args&&... args) {
     auto instance = fpga::Instance(bitstream);
+
+    // Register SIGINT handler to kill the kernel.
+    CHECK(frt_sync_kernel_instance == nullptr)
+        << "kernel instance already exists";
+    frt_sync_kernel_instance = &instance;
+    signal(SIGINT, &kill_frt_sync_kernel);
+
     set_fpga_args(instance, std::forward<F>(f),
                   std::index_sequence_for<Args...>{},
                   std::forward<Args>(args)...);
@@ -133,6 +143,12 @@ struct invoker {
     instance.Exec();
     instance.ReadFromDevice();
     instance.Finish();
+
+    // Unregister SIGINT handler.
+    signal(SIGINT, SIG_DFL);
+    CHECK(frt_sync_kernel_instance == &instance) << "kernel instance mismatch";
+    frt_sync_kernel_instance = nullptr;
+
     return instance.ComputeTimeNanoSeconds();
   }
 
