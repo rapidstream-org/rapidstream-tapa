@@ -22,8 +22,8 @@ const matchFifoGroup = (fifoName, source, target, id) => {
   if (matched) {
     // Add to fifo group map
     const name = matchResult[1];
-    const idWithoutFifoName = id.replace(`/${fifoName}`, "");
-    const key = [name, source, target, idWithoutFifoName].join("\n");
+    const idSegments = id.replace(`/${fifoName}`, "");
+    const key = [name, source, target, idSegments].join("\n");
     const index = Number.parseInt(matchResult[2]);
 
     const set = fifoGroups.get(key);
@@ -41,7 +41,7 @@ const getIndexRange = indexes => {
   // More than 1 index, sort & parse to "a~b,c,d~e"
   indexes.sort((a, b) => a - b);
 
-  // continuous groups of indexs
+  // Get continuous groups of indexs
   const groups = [[indexes[0]]];
   for (let i = 1; i < indexes.length; i++) {
     indexes[i - 1] + 1 === indexes[i]
@@ -49,6 +49,7 @@ const getIndexRange = indexes => {
     : groups.push([indexes[i]]);
   }
 
+  // Parse groups of indexs back into a string
   return groups.map(
     group => group.length === 1 ? group[0] : `${group[0]}~${group.at(-1)}`
   ).join(",");
@@ -79,11 +80,11 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
      * @type {(source: string, target: string, id: string, getStyle: GetStyle) => void} */
     const addFifo = (source, target, id, getStyle) => void (
       matchFifoGroup(fifoName, source, target, id) ||
-      addEdge({ source, target, id, style: getStyle(), data: fifo })
+      addEdge({ source, target, id, style: getStyle(), data: { fifo } })
     );
 
     if (fifo.produced_by && fifo.consumed_by) {
-      // normal fifo connection
+      // normal fifo connection, both side exists
 
       /** @type {(by: [string, number]) => string} */
       const getSubTask = by => grouping !== "merge" ? by.join("/") : by[0];
@@ -158,7 +159,7 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
           break;
         }
         case "expand": {
-          const sourcePrefix = fifo.produced_by.join("/");
+          const sourcePrefix = `${fifo.produced_by.join("/")}/`;
           const sources = nodes.filter(({id}) => id.startsWith(sourcePrefix));
           const targets = nodes.filter(({id}) => id.startsWith(`${taskName}/`));
           const len = Math.min(sources.length, targets.length);
@@ -182,9 +183,17 @@ export const parseFifo = (task, taskName, grouping, nodes, addEdge) => {
 
   // Add edges for fifo groups
   fifoGroups.forEach((indexes, key) => {
-    const [name, source, target, idPrefix] = key.split("\n");
+    const [name, source, target, idSegments] = key.split("\n");
+
+    const segments = idSegments.split("/");
+    const prefix = segments.shift();
+    const suffix = segments.length > 0
+      ? segments.map(segment => `/${segment}`).join("")
+      : "";
+
     const indexRange = getIndexRange([...indexes.values()]);
-    addEdge({ source, target, id: `${idPrefix}/${name}[${indexRange}]` });
+    const id = `${prefix}/${name}[${indexRange}]${suffix}`;
+    addEdge({ source, target, id });
   });
 
 }
