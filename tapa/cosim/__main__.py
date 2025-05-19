@@ -138,7 +138,7 @@ def set_default_nettype(verilog_path: str) -> None:
     Vivado does not allow this behaviour. We need to set the `default_nettype to wire to
     bypass this issue.
     """
-    _logger.info("append `default_nettype wire to every RTL file")
+    _logger.debug("appending `default_nettype wire to every RTL file")
     for file in os.listdir(verilog_path):
         if file.endswith((".v", ".sv")):
             abs_path = os.path.join(verilog_path, file)
@@ -242,7 +242,8 @@ def _launch_simulation(
     mode = "gui" if start_gui else "batch"
     command = ["vivado", "-mode", mode, "-source", "run_cosim.tcl"]
 
-    _logger.info("Running vivado command: %s", command)
+    _logger.info("Starting Vivado: %s", " ".join(command))
+    _logger.debug("   Working directory: %s/run", tb_output_dir)
     with subprocess.Popen(
         command,
         cwd=Path(f"{tb_output_dir}/run").resolve(),

@@ -110,7 +110,7 @@ def get_vivado_tcl(
     if dpi_library_dir is None:
         _logger.fatal("DPI directory not found")
     else:
-        _logger.info("DPI directory: %s", dpi_library_dir)
+        _logger.debug("DPI directory: %s", dpi_library_dir)
         script.append(
             "set_property -name {xelab.more_options} "
             f"-value {{-sv_root {dpi_library_dir} -sv_lib {dpi_version}}} "
