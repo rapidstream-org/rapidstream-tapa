@@ -19,7 +19,7 @@ To use the TAPA Visualizer, simply select and open a ``graph.json`` file using
 the file input in the top-left corner of the interface. The graph will
 automatically load and render after the file is selected.
 
-.. figure:: ../figures/tapa-visualizer.png
+.. figure:: ../figures/tapa-visualizer.webp
   :width: 100 %
 
 The interface consists of three main components: the top toolbar with
@@ -42,7 +42,7 @@ The top toolbar contains controls for working with your graph:
 
 **Visualization Options**:
 
-- Sub-task display toggle with two modes:
+- Sub-task display toggle with three modes:
 
   - *Merge Sub-task*: Displays one node per task, merging all instances into
     a single node, even if a task has multiple sub-task instances.
@@ -50,6 +50,17 @@ The top toolbar contains controls for working with your graph:
   - *Separate Sub-task*: Shows one node per instance, with nodes named as
     ``taskname/0``, ``taskname/1``, and connections named as
     ``connection/0``, ``connection/1``, etc.
+
+  - *Expand Sub-task*: Shows one node per actual sub-task, where every sub-task
+    has their own sibling trees, instead of merged into a single tree like
+    other sub-task display modes. The name scheme in Separate Sub-task works in
+    Expand Sub-task too.
+
+From left to right, Merge, Separate and Expand Sub-task are applied. Notice the
+difference in the top-left *Load* combo, where ``Mmap2Stream`` has 2 sub-tasks.
+
+.. figure:: ../figures/tapa-visualizer-sub-task-modes.webp
+  :width: 100 %
 
 **Action Buttons**:
 
@@ -91,14 +102,23 @@ The graph supports several interactions:
 - Shift+drag to perform box selection.
 - Ctrl+drag for lasso selection.
 
-Information Sidebar
+.. figure:: ../figures/tapa-visualizer-box-lasso-selection.webp
+  :width: 100 %
+
+Sidebars
 ~~~~~~~~~~~~~~~~~~~
+
+.. figure:: ../figures/tapa-visualizer-sidebars.webp
+  :width: 100 %
 
 The sidebar provides detailed information about your TAPA design through
 several tabs:
 
 **Explorer Tab** presents a hierarchical list of all tasks and sub-tasks in
 the graph, allowing you to quickly navigate complex designs.
+
+**Cflags Tab** shows the cflags options passed to the compiler when building
+this graph.
 
 **Details Tab** shows comprehensive information about the currently selected
 graph element, including task properties, parameters, and connectivity.
