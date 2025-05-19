@@ -6,10 +6,12 @@
 
 "use strict";
 
-import { getComboId, getComboName } from "./helper.js";
 import { setIOPorts, setPortsStyle } from "./parser/ports.js";
-import { color } from "./graph-config.js";
+import { expandSubTask } from "./parser/expand.js";
 import { parseFifo } from "./parser/fifo.js";
+
+import { color } from "./graph-config.js";
+import { getComboId } from "./helper.js";
 
 /** Color for node with more than 1 connection */
 const altNodeColor = color.nodeB;
@@ -56,6 +58,7 @@ export const getGraphData = (json, options = defaultOptions) => {
   const addEdge = (
     colorByTaskLevel
       ? edge => edges.push(edge)
+      // Color node by
       : (() => {
         /** Connection counts for nodes, 0: `<= 1`, 1: `> 1`
          * @type {Map<string, 0 | 1>} */
@@ -63,7 +66,6 @@ export const getGraphData = (json, options = defaultOptions) => {
 
         return (edge) => {
           [edge.source, edge.target].forEach(id => {
-            if (id.startsWith("combo:")) return;
             switch (counts.get(id)) {
               case undefined: // set to 0 if undefined
                 counts.set(id, 0);
@@ -170,35 +172,7 @@ export const getGraphData = (json, options = defaultOptions) => {
 
   // Between Loop 1 and Loop 2: check & expand sub-task
   if (grouping === "expand" && graphData.combos.length > 1) {
-
-    /** @type {(id: string, i: string) => string} */
-    const insertIndex = (id, i) => id.split("/").toSpliced(2, 0, i).join("/");
-
-    for (let i = 1; i < graphData.combos.length; i++) {
-      const combo = graphData.combos[i];
-      const name = getComboName(combo.id);
-
-      // Check if combo need expand: if it has multiple nodes (sub-tasks)
-      const comboNodes = nodes.filter(node => node.id.startsWith(`${name}/`));
-      if (comboNodes.length <= 1) continue;
-
-      // Combo's children
-      const children = graphData.nodes.filter(node => node.combo === combo.id);
-
-      // Add expanded nodes, using combo's children as template
-      for (let j = 1; j < comboNodes.length; j++) {
-        graphData.nodes.push(
-          ...children.map(node => ({
-            ...node,
-            id: insertIndex(node.id, j.toString())
-          }))
-        );
-      }
-
-      // Update combo's children
-      children.forEach(node => node.id = insertIndex(node.id, "0"));
-    }
-
+    expandSubTask(graphData);
   }
 
   // Loop 2: fifo -> edges
