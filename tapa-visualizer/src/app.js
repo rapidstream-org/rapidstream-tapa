@@ -96,7 +96,7 @@ const setupRadioToggles = graph => {
     if (!graphJSON) return;
     graphData = getGraphData(graphJSON, options);
     console.debug(
-      "\ngraphData:\n", graphData,
+      "graphData:\n", graphData,
       "\ngetGraphData() options:", options,
     );
 
@@ -388,7 +388,7 @@ const setupGraphButtons = graph => getGraphButtons(graph).forEach(
           switch (item.type) {
             case "node":  updateSidebarForNode(item.id, graph); break;
             case "combo": updateSidebarForCombo(item.id, graph); break;
-            case "edge":  updateSidebarForEdge(item.id); break;
+            case "edge":  updateSidebarForEdge(item.id, graph); break;
             default: resetSidebar(); break;
           }
         },
