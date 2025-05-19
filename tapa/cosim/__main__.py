@@ -149,13 +149,12 @@ def set_default_nettype(verilog_path: str) -> None:
 
 
 @click.command("cosim")
-@click.option("--config_path", type=str, required=True)
-@click.option("--tb_output_dir", type=str, required=True)
-@click.option("--part_num", type=str)
-@click.option("--launch_simulation", type=bool, is_flag=True)
-@click.option("--save_waveform", type=bool, is_flag=True)
-@click.option("--start_gui", type=bool, is_flag=True)
-@click.option("--setup_only", type=bool, is_flag=True)
+@click.option("--config-path", type=str, required=True)
+@click.option("--tb-output-dir", type=str, required=True)
+@click.option("--part-num", type=str)
+@click.option("--launch-simulation / --no-launch-simulation", type=bool, default=False)
+@click.option("--save-waveform / --no-save-waveform", type=bool, default=False)
+@click.option("--start-gui / --no-start-gui", type=bool, default=False)
 def main(  # noqa: PLR0913, PLR0917
     config_path: str,
     tb_output_dir: str,
@@ -163,10 +162,16 @@ def main(  # noqa: PLR0913, PLR0917
     launch_simulation: bool,
     save_waveform: bool,
     start_gui: bool,
-    setup_only: bool,
 ) -> None:
     """Main entry point for the TAPA fast cosim tool."""
     _logger.info("TAPA fast cosim version: %s", __version__)
+
+    _logger.debug("   Loading configuration from %s", config_path)
+    _logger.debug("   Generating testbench in %s", tb_output_dir)
+    _logger.debug("   Part number: %s", part_num)
+    _logger.debug("   Launch simulation: %s", launch_simulation)
+    _logger.debug("   Save waveform: %s", save_waveform)
+    _logger.debug("   Start GUI: %s", start_gui)
 
     config = preprocess_config(config_path, tb_output_dir, part_num)
 
@@ -214,11 +219,6 @@ def main(  # noqa: PLR0913, PLR0917
             "/sim_1/behav/xsim/wave.wdb",
             tb_output_dir,
         )
-    else:
-        _logger.warning(
-            "Waveform is not saved. "
-            "Use --save_waveform to save the simulation waveform."
-        )
 
     vivado_script = get_vivado_tcl(
         config,
@@ -229,10 +229,6 @@ def main(  # noqa: PLR0913, PLR0917
 
     with open(f"{tb_output_dir}/run/run_cosim.tcl", "w", encoding="utf-8") as fp:
         fp.write("\n".join(vivado_script))
-
-    if setup_only:
-        _logger.info("User requested to only setup the cosim environment, exiting...")
-        return
 
     if launch_simulation:
         _launch_simulation(config, start_gui, tb_output_dir)

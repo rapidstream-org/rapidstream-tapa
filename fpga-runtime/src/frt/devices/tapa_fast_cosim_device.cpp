@@ -310,21 +310,20 @@ void TapaFastCosimDevice::Exec() {
     argv = {FLAGS_xosim_executable};
   }
   argv.insert(argv.end(), {
-                              "--config_path=" + GetConfigPath(work_dir),
-                              "--tb_output_dir=" + work_dir + "/output",
-                              "--launch_simulation",
+                              "--config-path=" + GetConfigPath(work_dir),
+                              "--tb-output-dir=" + work_dir + "/output",
                           });
   if (FLAGS_xosim_start_gui) {
-    argv.push_back("--start_gui");
+    argv.push_back("--start-gui");
   }
   if (FLAGS_xosim_save_waveform) {
-    argv.push_back("--save_waveform");
+    argv.push_back("--save-waveform");
   }
-  if (FLAGS_xosim_setup_only) {
-    argv.push_back("--setup_only");
+  if (!FLAGS_xosim_setup_only) {
+    argv.push_back("--launch-simulation");
   }
   if (!FLAGS_xosim_part_num.empty()) {
-    argv.push_back("--part_num=" + FLAGS_xosim_part_num);
+    argv.push_back("--part-num=" + FLAGS_xosim_part_num);
   }
 
   // launch simulation as a noop if resume from post sim
