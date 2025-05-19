@@ -41,7 +41,6 @@ from pyverilog.vparser.ast import (
     SystemCall,
     Wire,
 )
-from pyverilog.vparser.parser import ParseError
 
 from tapa.instance import Instance
 from tapa.program.directory import ProgramDirectoryMixin
@@ -957,15 +956,7 @@ class Program(  # TODO: refactor this class
                     str(rtl_path),
                 )
                 continue
-            try:
-                rtl_module = Module([rtl_path])
-            except ParseError:
-                msg = (
-                    f"Failed to parse custom RTL file: {rtl_path!s}. "
-                    "Skip port checking."
-                )
-                _logger.warning(msg)
-                continue
+            rtl_module = Module([rtl_path])
             if (task := self._tasks.get(rtl_module.name)) is None:
                 continue  # ignore RTL modules that are not tasks
             if {str(port) for port in rtl_module.ports.values()} == set(
