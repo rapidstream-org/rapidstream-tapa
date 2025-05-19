@@ -13,8 +13,10 @@ from tapa.graphir.types import (
     HierarchicalName,
     ModuleConnection,
     ModuleInstantiation,
+    ModuleNet,
     ModuleParameter,
     ModulePort,
+    Range,
     Token,
     VerilogModuleDefinition,
 )
@@ -406,3 +408,113 @@ def get_slot_module_submodules(
         )
 
     return ir_insts
+
+
+def infer_fifo_data_range(
+    fifo_name: str,
+    fifo: dict,
+    leaf_ir_defs: dict[str, VerilogModuleDefinition],
+    slot: Task,
+) -> Range | None:
+    """Infer the range of a fifo data."""
+    consumer = fifo["consumed_by"][0]
+    producer = fifo["produced_by"][0]
+    assert isinstance(consumer, str)
+    assert isinstance(producer, str)
+    assert consumer in slot.tasks
+    assert producer in slot.tasks
+    producer_task_name, _, producer_fifo = slot.get_connection_to(
+        fifo_name, "produced_by"
+    )
+    consumer_task_name, _, consumer_fifo = slot.get_connection_to(
+        fifo_name, "consumed_by"
+    )
+
+    subtasks: dict[str, Task] = {}
+    for inst in slot.instances:
+        if inst.task.name not in subtasks:
+            subtasks[inst.task.name] = inst.task
+    assert producer_task_name in subtasks
+    assert consumer_task_name in subtasks
+
+    producer_data_port = subtasks[producer_task_name].module.get_port_of(
+        producer_fifo,
+        STREAM_DATA_SUFFIXES[1],
+    )
+    consumer_data_port = subtasks[consumer_task_name].module.get_port_of(
+        consumer_fifo,
+        STREAM_DATA_SUFFIXES[0],
+    )
+
+    range0 = leaf_ir_defs[producer_task_name].get_port(producer_data_port.name).range
+    range1 = leaf_ir_defs[consumer_task_name].get_port(consumer_data_port.name).range
+
+    if range0 != range1:
+        _logger.warning(
+            "Fifo %s has different ranges in producer %s and consumer %s",
+            fifo_name,
+            producer_task_name,
+            consumer_task_name,
+        )
+
+    return range0
+
+
+def get_slot_module_wires(
+    slot: Task, leaf_ir_defs: dict[str, VerilogModuleDefinition]
+) -> list[ModuleNet]:
+    """Get slot module wires."""
+    connections = []
+    # add fifo wires
+    for fifo_name, fifo in slot.fifos.items():
+        if slot.is_fifo_external(fifo_name):
+            continue
+        for suffix in ISTREAM_SUFFIXES + OSTREAM_SUFFIXES:
+            wire_name = get_stream_port_name(fifo_name, suffix)
+            if suffix in STREAM_DATA_SUFFIXES:
+                # infer fifo width from leaf module
+                fifo_range = infer_fifo_data_range(
+                    fifo_name,
+                    fifo,
+                    leaf_ir_defs,
+                    slot,
+                )
+            else:
+                fifo_range = None
+            connections.append(
+                ModuleNet(
+                    name=wire_name,
+                    hierarchical_name=HierarchicalName.get_name(wire_name),
+                    range=fifo_range,
+                )
+            )
+
+    # add scalar wires
+    for inst in slot.instances:
+        for port_name, port in inst.task.ports.items():
+            if not port.cat.is_scalar or port.is_streams:
+                continue
+            # infer width from leaf module
+            wire_range = leaf_ir_defs[inst.task.name].get_port(port_name).range
+            wire_name = f"{inst.name}__{port_name}"
+            connections.append(
+                ModuleNet(
+                    name=wire_name,
+                    hierarchical_name=HierarchicalName.get_name(wire_name),
+                    range=wire_range,
+                )
+            )
+
+    # add control signals
+    for inst in slot.instances:
+        for signal in ["ap_start", "ap_done", "ap_ready", "ap_idle"]:
+            wire_name = f"{inst.name}__{signal}"
+            connections.append(
+                ModuleNet(
+                    name=wire_name,
+                    hierarchical_name=HierarchicalName.get_name(wire_name),
+                    range=None,
+                )
+            )
+
+    return connections
