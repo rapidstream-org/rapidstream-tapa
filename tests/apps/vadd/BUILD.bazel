@@ -70,6 +70,25 @@ sh_test(
     target_compatible_with = [] if HAS_XRT else ["@platforms//:incompatible"],
 )
 
+sh_test(
+    name = "vadd-zipsim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:xrt_env.sh"],
+    args = [
+        "$(location vadd-host)",
+        "--bitstream=$(location vadd-zip)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "1000",
+    ],
+    data = [
+        ":vadd-host",
+        ":vadd-zip",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+    tags = ["cpu:2"],
+)
+
 cc_binary(
     name = "vadd-host",
     srcs = glob([
@@ -91,6 +110,16 @@ tapa_xo(
     include = ["."],
     top_name = "VecAdd",
     visibility = ["//tests/functional:__subpackages__"],
+)
+
+tapa_xo(
+    name = "vadd-zip",
+    src = "vadd.cpp",
+    hdrs = ["vadd.h"],
+    include = ["."],
+    top_name = "VecAdd",
+    visibility = ["//tests/functional:__subpackages__"],
+    vitis_mode = False,
 )
 
 vpp_xclbin(
