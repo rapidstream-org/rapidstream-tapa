@@ -271,6 +271,48 @@ def get_stream_typedef(args: Sequence[Arg]) -> str:
     return "\n".join(lines)
 
 
+def get_m_axi_connections(arg_name: str) -> str:
+    return f"""
+    .m_axi_{arg_name}_ARADDR  (axi_{arg_name}_araddr ),
+    .m_axi_{arg_name}_ARBURST (axi_{arg_name}_arburst),
+    .m_axi_{arg_name}_ARCACHE (axi_{arg_name}_arcache),
+    .m_axi_{arg_name}_ARID    (axi_{arg_name}_arid   ),
+    .m_axi_{arg_name}_ARLEN   (axi_{arg_name}_arlen  ),
+    .m_axi_{arg_name}_ARLOCK  (axi_{arg_name}_arlock ),
+    .m_axi_{arg_name}_ARPROT  (axi_{arg_name}_arprot ),
+    .m_axi_{arg_name}_ARQOS   (axi_{arg_name}_arqos  ),
+    .m_axi_{arg_name}_ARREADY (axi_{arg_name}_arready),
+    .m_axi_{arg_name}_ARSIZE  (axi_{arg_name}_arsize ),
+    .m_axi_{arg_name}_ARVALID (axi_{arg_name}_arvalid),
+    .m_axi_{arg_name}_AWADDR  (axi_{arg_name}_awaddr ),
+    .m_axi_{arg_name}_AWBURST (axi_{arg_name}_awburst),
+    .m_axi_{arg_name}_AWCACHE (axi_{arg_name}_awcache),
+    .m_axi_{arg_name}_AWID    (axi_{arg_name}_awid   ),
+    .m_axi_{arg_name}_AWLEN   (axi_{arg_name}_awlen  ),
+    .m_axi_{arg_name}_AWLOCK  (axi_{arg_name}_awlock ),
+    .m_axi_{arg_name}_AWPROT  (axi_{arg_name}_awprot ),
+    .m_axi_{arg_name}_AWQOS   (axi_{arg_name}_awqos  ),
+    .m_axi_{arg_name}_AWREADY (axi_{arg_name}_awready),
+    .m_axi_{arg_name}_AWSIZE  (axi_{arg_name}_awsize ),
+    .m_axi_{arg_name}_AWVALID (axi_{arg_name}_awvalid),
+    .m_axi_{arg_name}_BID     (axi_{arg_name}_bid    ),
+    .m_axi_{arg_name}_BREADY  (axi_{arg_name}_bready ),
+    .m_axi_{arg_name}_BRESP   (axi_{arg_name}_bresp  ),
+    .m_axi_{arg_name}_BVALID  (axi_{arg_name}_bvalid ),
+    .m_axi_{arg_name}_RDATA   (axi_{arg_name}_rdata  ),
+    .m_axi_{arg_name}_RID     (axi_{arg_name}_rid    ),
+    .m_axi_{arg_name}_RLAST   (axi_{arg_name}_rlast  ),
+    .m_axi_{arg_name}_RREADY  (axi_{arg_name}_rready ),
+    .m_axi_{arg_name}_RRESP   (axi_{arg_name}_rresp  ),
+    .m_axi_{arg_name}_RVALID  (axi_{arg_name}_rvalid ),
+    .m_axi_{arg_name}_WDATA   (axi_{arg_name}_wdata  ),
+    .m_axi_{arg_name}_WLAST   (axi_{arg_name}_wlast  ),
+    .m_axi_{arg_name}_WREADY  (axi_{arg_name}_wready ),
+    .m_axi_{arg_name}_WSTRB   (axi_{arg_name}_wstrb  ),
+    .m_axi_{arg_name}_WVALID  (axi_{arg_name}_wvalid ),
+"""
+
+
 def get_vitis_dut(top_name: str, args: Sequence[Arg]) -> str:
     dut = f"""
   {top_name} dut (
@@ -300,45 +342,7 @@ def get_vitis_dut(top_name: str, args: Sequence[Arg]) -> str:
 
     for arg in args:
         if arg.is_mmap:
-            dut += f"""
-    .m_axi_{arg.name}_ARADDR  (axi_{arg.name}_araddr ),
-    .m_axi_{arg.name}_ARBURST (axi_{arg.name}_arburst),
-    .m_axi_{arg.name}_ARCACHE (axi_{arg.name}_arcache),
-    .m_axi_{arg.name}_ARID    (axi_{arg.name}_arid   ),
-    .m_axi_{arg.name}_ARLEN   (axi_{arg.name}_arlen  ),
-    .m_axi_{arg.name}_ARLOCK  (axi_{arg.name}_arlock ),
-    .m_axi_{arg.name}_ARPROT  (axi_{arg.name}_arprot ),
-    .m_axi_{arg.name}_ARQOS   (axi_{arg.name}_arqos  ),
-    .m_axi_{arg.name}_ARREADY (axi_{arg.name}_arready),
-    .m_axi_{arg.name}_ARSIZE  (axi_{arg.name}_arsize ),
-    .m_axi_{arg.name}_ARVALID (axi_{arg.name}_arvalid),
-    .m_axi_{arg.name}_AWADDR  (axi_{arg.name}_awaddr ),
-    .m_axi_{arg.name}_AWBURST (axi_{arg.name}_awburst),
-    .m_axi_{arg.name}_AWCACHE (axi_{arg.name}_awcache),
-    .m_axi_{arg.name}_AWID    (axi_{arg.name}_awid   ),
-    .m_axi_{arg.name}_AWLEN   (axi_{arg.name}_awlen  ),
-    .m_axi_{arg.name}_AWLOCK  (axi_{arg.name}_awlock ),
-    .m_axi_{arg.name}_AWPROT  (axi_{arg.name}_awprot ),
-    .m_axi_{arg.name}_AWQOS   (axi_{arg.name}_awqos  ),
-    .m_axi_{arg.name}_AWREADY (axi_{arg.name}_awready),
-    .m_axi_{arg.name}_AWSIZE  (axi_{arg.name}_awsize ),
-    .m_axi_{arg.name}_AWVALID (axi_{arg.name}_awvalid),
-    .m_axi_{arg.name}_BID     (axi_{arg.name}_bid    ),
-    .m_axi_{arg.name}_BREADY  (axi_{arg.name}_bready ),
-    .m_axi_{arg.name}_BRESP   (axi_{arg.name}_bresp  ),
-    .m_axi_{arg.name}_BVALID  (axi_{arg.name}_bvalid ),
-    .m_axi_{arg.name}_RDATA   (axi_{arg.name}_rdata  ),
-    .m_axi_{arg.name}_RID     (axi_{arg.name}_rid    ),
-    .m_axi_{arg.name}_RLAST   (axi_{arg.name}_rlast  ),
-    .m_axi_{arg.name}_RREADY  (axi_{arg.name}_rready ),
-    .m_axi_{arg.name}_RRESP   (axi_{arg.name}_rresp  ),
-    .m_axi_{arg.name}_RVALID  (axi_{arg.name}_rvalid ),
-    .m_axi_{arg.name}_WDATA   (axi_{arg.name}_wdata  ),
-    .m_axi_{arg.name}_WLAST   (axi_{arg.name}_wlast  ),
-    .m_axi_{arg.name}_WREADY  (axi_{arg.name}_wready ),
-    .m_axi_{arg.name}_WSTRB   (axi_{arg.name}_wstrb  ),
-    .m_axi_{arg.name}_WVALID  (axi_{arg.name}_wvalid ),
-"""
+            dut += get_m_axi_connections(arg.name)
         if arg.is_stream:
             dut += f"""
     .{arg.name}_TDATA  (axis_{arg.name}_tdata ),
@@ -367,8 +371,10 @@ def get_hls_dut(
 
     for arg in args:
         if arg.is_mmap:
-            msg = "mmap is not supported in HLS"
-            raise NotImplementedError(msg)
+            dut += get_m_axi_connections(arg.name)
+            dut += f"""
+    .{arg.name}({scalar_to_val.get(arg.name, 0)}),\n
+"""
 
         if arg.is_stream and arg.port.is_istream:
             dut += f"""
@@ -391,7 +397,7 @@ def get_hls_dut(
 
         if arg.is_scalar:
             dut += f"""
-    .{arg.name}({scalar_to_val.get(arg.name, 0)} & REG_MASK_32_BIT),\n
+    .{arg.name}({scalar_to_val.get(arg.name, 0)}),\n
 """
 
     dut += """
@@ -598,7 +604,12 @@ def get_hls_test_signals(args: list[Arg]) -> str:
             msg = f"unexpected arg.port.mode: {arg.port.mode}"
             raise ValueError(msg)
 
+    dump_signals = [
+        f"    axi_ram_{arg.name}_dump_mem <= 1;" for arg in args if arg.is_mmap
+    ]
+
     newline = "\n"
+
     return f"""
   parameter HALF_CLOCK_PERIOD = 2;
   parameter CLOCK_PERIOD = HALF_CLOCK_PERIOD * 2;
@@ -647,16 +658,22 @@ def get_hls_test_signals(args: list[Arg]) -> str:
       end
       begin
         // In some Vitis versions, there is a bug where ap_done is asserted
-        // before the operation is done. Preliminary investigations show that
+        // before the operation is done, if there is no M_AXI interface
+        // connected to the kernel. Preliminary investigations show that
         // ap_done is asserted as soon as the last state is reached, which
         // does not necessarily mean that the operation is done. Instead,
         // wait for ap_idle to be asserted (which is state_1 & !ap_start)
         // seems to be a workaround. We are not sure yet, if there is a
         // possibility that ap_idle has the same bug. If so, there is no
         // reasonable workaround to identify the end of the operation.
-        wait(ap_idle);
+
+        // If there is no M_AXI interface connected to the kernel, wait for
+        // ap_idle to be asserted
+        {"wait(ap_idle);" if not any(arg.is_mmap for arg in args) else ""}
       end
     join
+
+{newline.join(dump_signals)}
 
     #(CLOCK_PERIOD*100);
     $finish;

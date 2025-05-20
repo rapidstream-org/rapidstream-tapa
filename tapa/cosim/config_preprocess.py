@@ -203,6 +203,9 @@ def _parse_zip_update_config(config: dict, tmp_path: str) -> None:
             elif port["cat"] == "ostream":
                 address_qualifier = 4
                 mode = "write_only"
+            elif port["cat"] == "mmap":
+                address_qualifier = 1
+                mode = "read_write"
             elif port["cat"] == "scalar":
                 address_qualifier = 0
                 mode = "read_only"

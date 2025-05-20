@@ -114,10 +114,11 @@ def get_cosim_tb(  # noqa: PLR0913,PLR0917
     """Generate a lightweight testbench to test the HLS RTL."""
     tb = get_begin() + "\n"
 
+    for axi in axi_list:
+        tb += get_axi_ram_inst(axi) + "\n"
+
     if mode == "vitis":
         arg_to_reg_addrs = parse_register_addr(s_axi_control_path)
-        for axi in axi_list:
-            tb += get_axi_ram_inst(axi) + "\n"
         tb += get_s_axi_control() + "\n"
         tb += get_axis(args) + "\n"
         tb += get_vitis_dut(top_name, args) + "\n"
