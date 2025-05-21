@@ -204,12 +204,16 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
           func->getNameAsString() == current_task->getNameAsString();
 
       // Rewrite the function arguments.
-      if (is_top_level_task) {
+      if (is_lower_level_task) {
+        // If the function is a lower-level task, even if the function is the
+        // top-level task, we still need to rewrite the function arguments
+        // as the lower-level task, as it is directly handled by the vendor
+        // toolchain instead of the tapa compiler.
+        current_target->RewriteLowerLevelFuncArguments(func, GetRewriter());
+      } else if (is_top_level_task) {
         current_target->RewriteTopLevelFuncArguments(func, GetRewriter());
       } else if (is_upper_level_task) {
         current_target->RewriteMiddleLevelFuncArguments(func, GetRewriter());
-      } else if (is_lower_level_task) {
-        current_target->RewriteLowerLevelFuncArguments(func, GetRewriter());
       } else {
         current_target->RewriteOtherFuncArguments(func, GetRewriter());
       }
