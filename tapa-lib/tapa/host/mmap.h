@@ -628,41 +628,45 @@ struct accessor<async_mmap<T>&, mmaps<T, S>&> {
   }
 };
 
-#define TAPA_DEFINE_ACCESSER(tag, frt_tag)                         \
-  template <typename T>                                            \
-  struct accessor<mmap<T>, tag##_mmap<T>> {                        \
-    static mmap<T> access(tag##_mmap<T> arg, bool) { return arg; } \
-    static void access(fpga::Instance& instance, int& idx,         \
-                       tag##_mmap<T> arg) {                        \
-      auto buf = fpga::frt_tag(arg.get(), arg.size());             \
-      instance.SetArg(idx++, buf);                                 \
-    }                                                              \
-  };                                                               \
-  template <typename T, uint64_t S>                                \
-  struct accessor<mmaps<T, S>, tag##_mmaps<T, S>> {                \
-    static void access(fpga::Instance& instance, int& idx,         \
-                       tag##_mmaps<T, S> arg) {                    \
-      for (uint64_t i = 0; i < S; ++i) {                           \
-        auto buf = fpga::frt_tag(arg[i].get(), arg[i].size());     \
-        instance.SetArg(idx++, buf);                               \
-      }                                                            \
-    }                                                              \
-  };                                                               \
-  template <typename T, int chan_count, int64_t chan_size>         \
-  struct accessor<hmap<T, chan_count, chan_size>, tag##_mmap<T>> { \
-    static void access(fpga::Instance& instance, int& idx,         \
-                       tag##_mmap<T> arg) {                        \
-      for (int i = 0; i < chan_count; ++i) {                       \
-        auto buf = fpga::frt_tag(&arg[i * chan_size], chan_size);  \
-        instance.SetArg(idx++, buf);                               \
-      }                                                            \
-    }                                                              \
+#define TAPA_DEFINE_ACCESSER(tag, tag_ref, frt_tag)                       \
+  template <typename T>                                                   \
+  struct accessor<mmap<T>, tag##mmap<T> tag_ref> {                        \
+    static mmap<T> access(tag##mmap<T> tag_ref arg, bool) { return arg; } \
+    static void access(fpga::Instance& instance, int& idx,                \
+                       tag##mmap<T> tag_ref arg) {                        \
+      auto buf = fpga::frt_tag(arg.get(), arg.size());                    \
+      instance.SetArg(idx++, buf);                                        \
+    }                                                                     \
+  };                                                                      \
+  template <typename T, uint64_t S>                                       \
+  struct accessor<mmaps<T, S>, tag##mmaps<T, S> tag_ref> {                \
+    static void access(fpga::Instance& instance, int& idx,                \
+                       tag##mmaps<T, S> tag_ref arg) {                    \
+      for (uint64_t i = 0; i < S; ++i) {                                  \
+        auto buf = fpga::frt_tag(arg[i].get(), arg[i].size());            \
+        instance.SetArg(idx++, buf);                                      \
+      }                                                                   \
+    }                                                                     \
+  };                                                                      \
+  template <typename T, int chan_count, int64_t chan_size>                \
+  struct accessor<hmap<T, chan_count, chan_size>, tag##mmap<T tag_ref>> { \
+    static void access(fpga::Instance& instance, int& idx,                \
+                       tag##mmap<T> tag_ref arg) {                        \
+      for (int i = 0; i < chan_count; ++i) {                              \
+        auto buf = fpga::frt_tag(&arg[i * chan_size], chan_size);         \
+        instance.SetArg(idx++, buf);                                      \
+      }                                                                   \
+    }                                                                     \
   }
-TAPA_DEFINE_ACCESSER(placeholder, Placeholder);
+TAPA_DEFINE_ACCESSER(placeholder_, , Placeholder);
 // read/write are with respect to the kernel in tapa but host in frt
-TAPA_DEFINE_ACCESSER(read_only, WriteOnly);
-TAPA_DEFINE_ACCESSER(write_only, ReadOnly);
-TAPA_DEFINE_ACCESSER(read_write, ReadWrite);
+TAPA_DEFINE_ACCESSER(read_only_, , WriteOnly);
+TAPA_DEFINE_ACCESSER(write_only_, , ReadOnly);
+TAPA_DEFINE_ACCESSER(read_write_, , ReadWrite);
+// For tapa::task.invoke(), the mmap is passed as reference to the accessor,
+// so accessor<mmap<T>, mmap<T>&> is used. This is used for simulation and
+// the mmap is passed as read-write buffer.
+TAPA_DEFINE_ACCESSER(, &, ReadWrite);
 #undef TAPA_DEFINE_ACCESSER
 
 // If the user uses mmap/mmaps directly in tapa::invoke, it should be an error.
