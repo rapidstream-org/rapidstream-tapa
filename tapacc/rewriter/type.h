@@ -34,7 +34,7 @@ inline std::string ArrayNameAt(const std::string& name, int idx) {
 }
 
 inline std::string GetArrayElem(const std::string& name, int idx) {
-  return name + "_" + std::to_string(idx);
+  return name + "_" + std::to_string(idx) + "_offset";
 }
 
 template <int idx>

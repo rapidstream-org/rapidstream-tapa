@@ -72,6 +72,7 @@ static void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {
                GetArrayElem(param_name, i) + "); }");
     }
   } else {
+    if (IsTapaType(param, "mmap")) param_name += "_offset";
     auto elem_type = param->getType();
     const bool is_const = elem_type.isConstQualified();
     add_line(std::string("{ auto val = reinterpret_cast<volatile ") +
@@ -177,12 +178,13 @@ void XilinxHLSTarget::AddCodeForMiddleLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::AddCodeForMiddleLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
-  AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS);
+  add_pragma({"HLS interface ap_none port =",
+              param->getNameAsString() + "_offset", "register"});
+  AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS);
 }
 
 void XilinxHLSTarget::AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {
-  // Make sure ap_clk and ap_rst_n are generated for middle-level mmaps and
-  // scalars.
+  // Make sure ap_clk and ap_rst_n are generated for middle-level scalars.
   add_pragma(
       {"HLS interface ap_none port =", param->getNameAsString(), "register"});
   AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS);
@@ -366,6 +368,7 @@ void XilinxHLSTarget::RewriteMiddleLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {
       rewriter.ReplaceText(
           param->getTypeSourceInfo()->getTypeLoc().getSourceRange(),
           "uint64_t");
+      rewriter.ReplaceText(param->getLocation(), param_name + "_offset");
     } else if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
       std::string rewritten_text;
       for (size_t i = 0; i < GetArraySize(param); ++i) {

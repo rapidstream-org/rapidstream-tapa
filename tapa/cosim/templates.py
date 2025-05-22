@@ -373,7 +373,7 @@ def get_hls_dut(
         if arg.is_mmap:
             dut += get_m_axi_connections(arg.name)
             dut += f"""
-    .{arg.name}({scalar_to_val.get(arg.name, 0)}),\n
+    .{arg.name}_offset({scalar_to_val.get(arg.name, 0)}),\n
 """
 
         # for a single stream, Vitis HLS will add a suffix "_s" to the name

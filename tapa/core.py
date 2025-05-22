@@ -691,7 +691,7 @@ class Program(  # TODO: refactor this class
                         generate_m_axi_ports(
                             module=instance.task.module,
                             port=arg.port,
-                            arg=arg.mmap_name,
+                            arg=arg.mmap_name + "_offset",
                             arg_reg=arg_table[arg.name][-1].name,
                         ),
                     )
@@ -701,7 +701,7 @@ class Program(  # TODO: refactor this class
                             generate_async_mmap_ports(
                                 tag=tag,
                                 port=arg.port,
-                                arg=arg.mmap_name,
+                                arg=arg.mmap_name + "_offset",
                                 offset_name=arg_table[arg.name][-1],
                                 instance=instance,
                             ),
