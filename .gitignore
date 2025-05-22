@@ -2,6 +2,7 @@
 *.log
 *.out
 *.pyc
+*.zip
 .venv*
 /.cache/
 /.cmake-format
