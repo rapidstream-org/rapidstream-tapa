@@ -30,5 +30,5 @@ grep '// pragma' "${src_dir}" -RH
 
 expect-pragma 'RS clk port=ap_clk' in "${src_dir}"/Load_fsm.v
 expect-pragma 'RS rst port=ap_rst_n active=low' in "${src_dir}"/Load_fsm.v
-expect-pragma 'RS ap-ctrl ap_start=ap_start ap_done=ap_done ap_idle=ap_idle ap_ready=ap_ready scalar=(srcs|n)' in "${src_dir}"/Load_fsm.v
+expect-pragma 'RS ap-ctrl ap_start=ap_start ap_done=ap_done ap_idle=ap_idle ap_ready=ap_ready scalar=(srcs_offset|n)' in "${src_dir}"/Load_fsm.v
 expect-pragma 'RS ap-ctrl ap_start=Mmap2Stream_0__ap_start ap_done=Mmap2Stream_0__ap_done ap_idle=Mmap2Stream_0__ap_idle ap_ready=Mmap2Stream_0__ap_ready scalar=Mmap2Stream_0___\.\*' in "${src_dir}"/Load_fsm.v

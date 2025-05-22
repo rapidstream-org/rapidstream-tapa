@@ -643,9 +643,10 @@ class Task:  # noqa: PLR0904
             f"{x}={x}" for x in (HANDSHAKE_START, *HANDSHAKE_OUTPUT_PORTS)
         )
         scalar_regex_str = "|".join(
-            x.name
+            name
             for x in self.ports.values()
-            if x.name in self.fsm_module.ports  # skip unused ports
+            for name in [f"{x.name}_offset" if not x.cat.is_scalar else x.name]
+            if name in self.fsm_module.ports  # skip unused ports
             and (not x.cat.is_stream and not x.is_streams)  # TODO: refactor port.cat
         )
         scalar_pragma = f" scalar=({scalar_regex_str})" if scalar_regex_str else ""
