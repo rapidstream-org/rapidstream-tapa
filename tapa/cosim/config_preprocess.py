@@ -215,18 +215,18 @@ def _parse_zip_update_config(config: dict, tmp_path: str) -> None:
                 raise ValueError(msg)
 
             if port["cat"] == "istreams" or port["cat"] == "ostreams":
-                postfixes = [f"_{i}" for i in range(port["chan_count"])]
+                stream_indices = range(port["chan_count"])
             else:
-                postfixes = [""]
+                stream_indices = [None]
 
-            for postfix in postfixes:
-                port_name = port["name"] + postfix
+            for stream_idx in stream_indices:
+                port_name = port["name"]
                 args.append(
                     Arg(
                         name=port_name,
                         address_qualifier=address_qualifier,
-                        is_streams=port["cat"] in {"istreams", "ostreams"},
                         id=idx,
+                        stream_idx=stream_idx,
                         port=Port(
                             name=port_name,
                             mode=mode,
