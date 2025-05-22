@@ -277,15 +277,6 @@ void Visitor::ProcessTaskPorts(const FunctionDecl* func,
             GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
            {"type", GetMmapElemType(param) + "*"}});
     };
-    // TODO: extend to support streams as well
-    auto add_stream_meta = [&](const string& name) {
-      metadata["ports"].push_back(
-          {{"name", name},
-           {"cat", IsTapaType(param, "istream") ? "istream" : "ostream"},
-           {"width",
-            GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
-           {"type", GetStreamElemType(param)}});
-    };
     if (IsTapaType(param, "(async_)?mmap") || IsTapaType(param, "immap") ||
         IsTapaType(param, "ommap")) {
       add_mmap_meta(param_name);
@@ -304,7 +295,20 @@ void Visitor::ProcessTaskPorts(const FunctionDecl* func,
           {"chan_size", GetIntegralTemplateArg<2>(param)},
       });
     } else if (IsStreamInterface(param)) {
-      add_stream_meta(param_name);
+      metadata["ports"].push_back(
+          {{"name", param_name},
+           {"cat", IsTapaType(param, "istream") ? "istream" : "ostream"},
+           {"width",
+            GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
+           {"type", GetStreamElemType(param)}});
+    } else if (IsStreamsInterface(param)) {
+      metadata["ports"].push_back(
+          {{"name", param_name},
+           {"cat", IsTapaType(param, "istreams") ? "istreams" : "ostreams"},
+           {"width",
+            GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
+           {"type", GetStreamElemType(param)},
+           {"chan_count", GetIntegralTemplateArg<1>(param)}});
     } else {
       metadata["ports"].push_back({{"name", param_name},
                                    {"cat", "scalar"},

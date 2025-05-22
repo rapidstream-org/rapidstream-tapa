@@ -64,6 +64,9 @@ class Instance:
             OSTREAM = (1 << 3) | (1 << 1)
             IMMAP = (1 << 4) | (1 << 0)
             OMMAP = (1 << 4) | (1 << 1)
+            STREAMS = 1 << 6
+            ISTREAMS = (1 << 6) | (1 << 0)
+            OSTREAMS = (1 << 6) | (1 << 1)
 
             @property
             def is_scalar(self) -> bool:
@@ -80,6 +83,18 @@ class Instance:
             @property
             def is_stream(self) -> bool:
                 return bool(self.value & self.STREAM.value)
+
+            @property
+            def is_istreams(self) -> bool:
+                return self == self.ISTREAMS
+
+            @property
+            def is_ostreams(self) -> bool:
+                return self == self.OSTREAMS
+
+            @property
+            def is_streams(self) -> bool:
+                return bool(self.value & self.STREAMS.value)
 
             @property
             def is_sync_mmap(self) -> bool:
@@ -115,6 +130,8 @@ class Instance:
                 self.cat = {
                     "istream": Instance.Arg.Cat.ISTREAM,
                     "ostream": Instance.Arg.Cat.OSTREAM,
+                    "istreams": Instance.Arg.Cat.ISTREAMS,
+                    "ostreams": Instance.Arg.Cat.OSTREAMS,
                     "scalar": Instance.Arg.Cat.SCALAR,
                     "mmap": Instance.Arg.Cat.MMAP,
                     "async_mmap": Instance.Arg.Cat.ASYNC_MMAP,
@@ -384,6 +401,8 @@ class Port:
         self.cat = {
             "istream": Instance.Arg.Cat.ISTREAM,
             "ostream": Instance.Arg.Cat.OSTREAM,
+            "istreams": Instance.Arg.Cat.ISTREAMS,
+            "ostreams": Instance.Arg.Cat.OSTREAMS,
             "scalar": Instance.Arg.Cat.SCALAR,
             "mmap": Instance.Arg.Cat.MMAP,
             "immap": Instance.Arg.Cat.IMMAP,
@@ -403,17 +422,17 @@ class Port:
     @property
     def is_istreams(self) -> bool:
         """If port is istreams."""
-        return self.cat.is_scalar and "istreams" in self.ctype
+        return self.cat.is_istreams
 
     @property
     def is_ostreams(self) -> bool:
         """If port is ostreams."""
-        return self.cat.is_scalar and "ostreams" in self.ctype
+        return self.cat.is_ostreams
 
     @property
     def is_streams(self) -> bool:
         """If port is streams."""
-        return self.is_istreams or self.is_ostreams
+        return self.cat.is_streams
 
     @property
     def is_istream(self) -> bool:
