@@ -152,7 +152,8 @@ void XilinxHLSTarget::AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
                   "bundle = control"});
     }
   } else {
-    AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS);
+    add_pragma({"HLS interface s_axilite port =",
+                param->getNameAsString() + "_offset", "bundle = control"});
   }
 
   AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS);
