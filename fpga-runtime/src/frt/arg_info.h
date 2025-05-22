@@ -15,6 +15,7 @@ struct ArgInfo {
     kScalar = 0,
     kMmap = 1,
     kStream = 2,
+    kStreams = 3,
   };
   int index;
   std::string name;

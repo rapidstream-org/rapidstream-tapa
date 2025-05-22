@@ -376,11 +376,17 @@ def get_hls_dut(
     .{arg.name}({scalar_to_val.get(arg.name, 0)}),\n
 """
 
+        # for a single stream, Vitis HLS will add a suffix "_s" to the name
+        if arg.is_stream and not arg.is_streams:
+            qualified_name = f"{arg.name}_s"
+        else:
+            qualified_name = arg.name
+
         if arg.is_stream and arg.port.is_istream:
             dut += f"""
-    .{arg.name}_s_dout(fifo_{arg.name}_data),
-    .{arg.name}_s_empty_n(fifo_{arg.name}_valid),
-    .{arg.name}_s_read(fifo_{arg.name}_ready),
+    .{qualified_name}_dout(fifo_{arg.name}_data),
+    .{qualified_name}_empty_n(fifo_{arg.name}_valid),
+    .{qualified_name}_read(fifo_{arg.name}_ready),
 """
             if top_is_leaf_task:
                 dut += f"""
@@ -390,9 +396,9 @@ def get_hls_dut(
 
         if arg.is_stream and arg.port.is_ostream:
             dut += f"""
-    .{arg.name}_s_din(fifo_{arg.name}_data),
-    .{arg.name}_s_full_n(fifo_{arg.name}_ready),
-    .{arg.name}_s_write(fifo_{arg.name}_valid),
+    .{qualified_name}_din(fifo_{arg.name}_data),
+    .{qualified_name}_full_n(fifo_{arg.name}_ready),
+    .{qualified_name}_write(fifo_{arg.name}_valid),
 """
 
         if arg.is_scalar:

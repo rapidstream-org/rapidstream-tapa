@@ -39,6 +39,7 @@ class Arg(NamedTuple):
     address_qualifier: int  # 0: scalar, 1: mmap, 4: stream
     id: int
     port: Port
+    is_streams: bool = False
 
     @property
     def is_scalar(self) -> bool:

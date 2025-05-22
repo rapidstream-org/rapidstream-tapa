@@ -16,6 +16,8 @@ std::ostream& operator<<(std::ostream& os, const ArgInfo::Cat& cat) {
       return os << "mmap";
     case ArgInfo::kStream:
       return os << "stream";
+    case ArgInfo::kStreams:
+      return os << "streams";
   }
   return os;
 }

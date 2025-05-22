@@ -195,12 +195,13 @@ def _parse_zip_update_config(config: dict, tmp_path: str) -> None:
         )
 
         # parse kernel ports
-        ports = []
-        for idx, port in enumerate(graph["tasks"][config["top_name"]]["ports"]):
-            if port["cat"] == "istream":
+        args = []
+        idx = 0
+        for port in graph["tasks"][config["top_name"]]["ports"]:
+            if port["cat"] == "istream" or port["cat"] == "istreams":
                 address_qualifier = 4
                 mode = "read_only"
-            elif port["cat"] == "ostream":
+            elif port["cat"] == "ostream" or port["cat"] == "ostreams":
                 address_qualifier = 4
                 mode = "write_only"
             elif port["cat"] == "mmap":
@@ -213,19 +214,29 @@ def _parse_zip_update_config(config: dict, tmp_path: str) -> None:
                 msg = f"Unsupported port category: {port['cat']}"
                 raise ValueError(msg)
 
-            ports.append(
-                Arg(
-                    name=port["name"],
-                    address_qualifier=address_qualifier,
-                    id=idx,
-                    port=Port(
-                        name=port["name"],
-                        mode=mode,
-                        data_width=port["width"],
-                    ),
+            if port["cat"] == "istreams" or port["cat"] == "ostreams":
+                postfixes = [f"_{i}" for i in range(port["chan_count"])]
+            else:
+                postfixes = [""]
+
+            for postfix in postfixes:
+                port_name = port["name"] + postfix
+                args.append(
+                    Arg(
+                        name=port_name,
+                        address_qualifier=address_qualifier,
+                        is_streams=port["cat"] in {"istreams", "ostreams"},
+                        id=idx,
+                        port=Port(
+                            name=port_name,
+                            mode=mode,
+                            data_width=port["width"],
+                        ),
+                    )
                 )
-            )
-        config["args"] = ports
+                idx += 1
+
+        config["args"] = args
 
     settings_file_path = Path(tmp_path) / "settings.yaml"
     assert settings_file_path.is_file(), "Fail to extract kernel settings"

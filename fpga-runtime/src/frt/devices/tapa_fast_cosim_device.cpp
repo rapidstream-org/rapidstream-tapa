@@ -172,6 +172,8 @@ void TapaFastCosimDevice::LoadArgsFromTapaYaml() {
       arg.cat = ArgInfo::kMmap;
     } else if (port_cat == "istream" || port_cat == "ostream") {
       arg.cat = ArgInfo::kStream;
+    } else if (port_cat == "istreams" || port_cat == "ostreams") {
+      arg.cat = ArgInfo::kStreams;
     } else {
       LOG(FATAL) << "Unknown argument category: " << port_cat;
     }
