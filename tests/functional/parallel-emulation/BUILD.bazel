@@ -25,16 +25,20 @@ sh_test(
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location cannon-host)",
+        "--scatter_bitstream=$(location scatter)",
         "--proc_elem_bitstream=$(location proc-elem)",
+        "--gather_bitstream=$(location gather)",
         "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
     ],
     data = [
         ":cannon-host",
+        ":gather",
         ":proc-elem",
+        ":scatter",
         "//tapa/cosim:tapa-fast-cosim",
     ],
-    env = {"TAPA_CONCURRENCY": "2"},
-    tags = ["cpu:6"],
+    env = {"TAPA_CONCURRENCY": "1"},
+    tags = ["cpu:8"],
 )
 
 cc_binary(
@@ -54,12 +58,32 @@ cc_binary(
 )
 
 tapa_xo(
+    name = "scatter",
+    src = "cannon.cpp",
+    hdrs = ["cannon.h"],
+    include = ["."],
+    cflags = "-DTAPA_CANNON_P=2",
+    top_name = "Scatter",
+    vitis_mode = False,
+)
+
+tapa_xo(
     name = "proc-elem",
     src = "cannon.cpp",
     hdrs = ["cannon.h"],
     include = ["."],
     cflags = "-DTAPA_CANNON_P=2",
     top_name = "ProcElem",
+    vitis_mode = False,
+)
+
+tapa_xo(
+    name = "gather",
+    src = "cannon.cpp",
+    hdrs = ["cannon.h"],
+    include = ["."],
+    cflags = "-DTAPA_CANNON_P=2",
+    top_name = "Gather",
     vitis_mode = False,
 )
 
@@ -79,17 +103,21 @@ sh_test(
     srcs = ["//bazel:v++_env.sh"],
     args = [
         "$(location cannon-host-4x4)",
+        "--scatter_bitstream=$(location scatter-4x4)",
         "--proc_elem_bitstream=$(location proc-elem-4x4)",
+        "--gather_bitstream=$(location gather-4x4)",
         "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
     ],
     data = [
         ":cannon-host-4x4",
+        ":gather-4x4",
         ":proc-elem-4x4",
+        ":scatter-4x4",
         "//tapa/cosim:tapa-fast-cosim",
     ],
     env = {"TAPA_CONCURRENCY": "1"},
     tags = [
-        "cpu:17",
+        "cpu:20",
         "manual",
     ],
 )
@@ -112,6 +140,17 @@ cc_binary(
 )
 
 tapa_xo(
+    name = "scatter-4x4",
+    src = "cannon.cpp",
+    hdrs = ["cannon.h"],
+    include = ["."],
+    cflags = "-DTAPA_CANNON_P=4",
+    tags = ["manual"],
+    top_name = "Scatter",
+    vitis_mode = False,
+)
+
+tapa_xo(
     name = "proc-elem-4x4",
     src = "cannon.cpp",
     hdrs = ["cannon.h"],
@@ -119,5 +158,16 @@ tapa_xo(
     cflags = "-DTAPA_CANNON_P=4",
     tags = ["manual"],
     top_name = "ProcElem",
+    vitis_mode = False,
+)
+
+tapa_xo(
+    name = "gather-4x4",
+    src = "cannon.cpp",
+    hdrs = ["cannon.h"],
+    include = ["."],
+    cflags = "-DTAPA_CANNON_P=4",
+    tags = ["manual"],
+    top_name = "Gather",
     vitis_mode = False,
 )
