@@ -231,16 +231,16 @@ def get_fifo(args: Sequence[Arg]) -> str:
         lines.append(
             f"""
   // data ports connected to DUT
-  packed_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data;
+  packed_uint{arg.port.data_width + 1}_t fifo_{arg.qualified_name}_data;
 
   // data ports connected to testbench
-  unpacked_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data_unpacked;
-  unpacked_uint{arg.port.data_width + 1}_t fifo_{arg.name}_data_unpacked_next;
+  unpacked_uint{arg.port.data_width + 1}_t fifo_{arg.qualified_name}_data_unpacked;
+  unpacked_uint{arg.port.data_width + 1}_t fifo_{arg.qualified_name}_data_unpacked_next;
 
-  logic fifo_{arg.name}_valid = 0;
-  logic fifo_{arg.name}_ready = 0;
-  logic fifo_{arg.name}_valid_next = 0;
-  logic fifo_{arg.name}_ready_next = 0;
+  logic fifo_{arg.qualified_name}_valid = 0;
+  logic fifo_{arg.qualified_name}_ready = 0;
+  logic fifo_{arg.qualified_name}_valid_next = 0;
+  logic fifo_{arg.qualified_name}_ready_next = 0;
 """
         )
     return "\n".join(lines)
@@ -376,41 +376,28 @@ def get_hls_dut(
     .{arg.name}_offset({scalar_to_val.get(arg.name, 0)}),\n
 """
 
-        # for a single stream, Vitis HLS will add a suffix "_s" to the name
-        if arg.is_stream and arg.stream_idx is None:
-            qualified_name = f"{arg.name}_s"
-            peek_qualified_name = f"{arg.name}_peek"
-
-        elif arg.is_stream and arg.stream_idx is not None:
-            qualified_name = f"{arg.name}_{arg.stream_idx}"
-            peek_qualified_name = f"{arg.name}_peek_{arg.stream_idx}"
-
-        else:
-            qualified_name = arg.name
-            peek_qualified_name = None
-
         if arg.is_stream and arg.port.is_istream:
             dut += f"""
-    .{qualified_name}_dout(fifo_{arg.name}_data),
-    .{qualified_name}_empty_n(fifo_{arg.name}_valid),
-    .{qualified_name}_read(fifo_{arg.name}_ready),
+    .{arg.qualified_name}_dout(fifo_{arg.qualified_name}_data),
+    .{arg.qualified_name}_empty_n(fifo_{arg.qualified_name}_valid),
+    .{arg.qualified_name}_read(fifo_{arg.qualified_name}_ready),
 """
             if top_is_leaf_task:
                 dut += f"""
-    .{peek_qualified_name}_dout(fifo_{arg.name}_data),
-    .{peek_qualified_name}_empty_n(fifo_{arg.name}_valid),
+    .{arg.peek_qualified_name}_dout(fifo_{arg.qualified_name}_data),
+    .{arg.peek_qualified_name}_empty_n(fifo_{arg.qualified_name}_valid),
 """
 
         if arg.is_stream and arg.port.is_ostream:
             dut += f"""
-    .{qualified_name}_din(fifo_{arg.name}_data),
-    .{qualified_name}_full_n(fifo_{arg.name}_ready),
-    .{qualified_name}_write(fifo_{arg.name}_valid),
+    .{arg.qualified_name}_din(fifo_{arg.qualified_name}_data),
+    .{arg.qualified_name}_full_n(fifo_{arg.qualified_name}_ready),
+    .{arg.qualified_name}_write(fifo_{arg.qualified_name}_valid),
 """
 
         if arg.is_scalar:
             dut += f"""
-    .{qualified_name}({scalar_to_val.get(arg.name, 0)}),\n
+    .{arg.name}({scalar_to_val.get(arg.name, 0)}),\n
 """
 
     dut += """
@@ -585,33 +572,35 @@ def get_hls_test_signals(args: list[Arg]) -> str:
         if arg.port.is_istream:
             fifo_dpi_calls.append(f"""
     tapa::istream(
-        fifo_{arg.name}_data_unpacked_next,
-        fifo_{arg.name}_valid_next,
-        fifo_{arg.name}_ready,
-        "{arg.name}"
+        fifo_{arg.qualified_name}_data_unpacked_next,
+        fifo_{arg.qualified_name}_valid_next,
+        fifo_{arg.qualified_name}_ready,
+        "{arg.qualified_name}"
     );
 
-    fifo_{arg.name}_data_unpacked <= fifo_{arg.name}_data_unpacked_next;
-    fifo_{arg.name}_valid <= fifo_{arg.name}_valid_next;
+    fifo_{arg.qualified_name}_data_unpacked <=
+        fifo_{arg.qualified_name}_data_unpacked_next;
+    fifo_{arg.qualified_name}_valid <= fifo_{arg.qualified_name}_valid_next;
 """)
             fifo_assignments.append(f"""
-    assign fifo_{arg.name}_data =
-        packed_uint{arg.port.data_width + 1}_t'(fifo_{arg.name}_data_unpacked);
+    assign fifo_{arg.qualified_name}_data =
+        packed_uint{arg.port.data_width + 1}_t'(
+            fifo_{arg.qualified_name}_data_unpacked);
 """)
         elif arg.port.is_ostream:
             fifo_dpi_calls.append(f"""
     tapa::ostream(
-        fifo_{arg.name}_data_unpacked,
-        fifo_{arg.name}_ready_next,
-        fifo_{arg.name}_valid,
-        "{arg.name}"
+        fifo_{arg.qualified_name}_data_unpacked,
+        fifo_{arg.qualified_name}_ready_next,
+        fifo_{arg.qualified_name}_valid,
+        "{arg.qualified_name}"
     );
 
-    fifo_{arg.name}_ready <= fifo_{arg.name}_ready_next;
+    fifo_{arg.qualified_name}_ready <= fifo_{arg.qualified_name}_ready_next;
 """)
             fifo_assignments.append(f"""
-    assign fifo_{arg.name}_data_unpacked =
-        unpacked_uint{arg.port.data_width + 1}_t'(fifo_{arg.name}_data);
+    assign fifo_{arg.qualified_name}_data_unpacked =
+        unpacked_uint{arg.port.data_width + 1}_t'(fifo_{arg.qualified_name}_data);
 """)
         else:
             msg = f"unexpected arg.port.mode: {arg.port.mode}"

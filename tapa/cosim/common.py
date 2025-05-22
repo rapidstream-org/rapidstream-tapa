@@ -58,5 +58,23 @@ class Arg(NamedTuple):
         # ruff: noqa: PLR2004
         return self.address_qualifier == 4
 
+    @property
+    def qualified_name(self) -> str:
+        """Returns the qualified name of this arg which was manipulated by HLS."""
+        if self.is_stream and self.stream_idx is None:
+            return f"{self.name}_s"
+        if self.is_stream and self.stream_idx is not None:
+            return f"{self.name}_{self.stream_idx}"
+        return self.name
+
+    @property
+    def peek_qualified_name(self) -> str | None:
+        """Returns the name to access the peek port of this arg."""
+        if self.is_stream and self.stream_idx is None:
+            return f"{self.name}_peek"
+        if self.is_stream and self.stream_idx is not None:
+            return f"{self.name}_peek_{self.stream_idx}"
+        return None
+
 
 MAX_AXI_BRAM_ADDR_WIDTH = 32

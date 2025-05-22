@@ -105,7 +105,7 @@ def _parse_and_update_config(config: dict, tb_output_dir: str) -> None:
         raise ValueError(msg)
 
     # convert argument index in the config file to actual names
-    id_to_name = {arg.id: arg.name for arg in config["args"]}
+    id_to_name = {arg.id: arg.qualified_name for arg in config["args"]}
 
     # update scalar arguments
     def change_id_to_name(id_to_val: dict[str, str]) -> dict[str, str]:
