@@ -489,12 +489,19 @@ class Program(  # TODO: refactor this class
                             # Constant literals are not in the width table.
                             width = int(arg.name.split("'d")[0])
 
+                    # For mmap ports, the scalar port is the offset.
+                    upper_name = (
+                        f"{arg.name}_offset"
+                        if arg.cat.is_sync_mmap or arg.cat.is_async_mmap
+                        else arg.name
+                    )
+
                     # Find identifier name of the arg. May be a constant with "'d" in it
-                    # If `arg` is an hmap, `arg.name` refers to the mmap offset, which
+                    # If `arg` is an hmap, `upper_name` refers to the mmap offset, which
                     # needs to be set to 0. The actual address mapping will be handled
                     # between the AXI interconnect and the upstream M-AXI interface.
-                    id_name = "64'd0" if arg.chan_count is not None else arg.name
-                    # arg.name may be a constant
+                    id_name = "64'd0" if arg.chan_count is not None else upper_name
+                    # upper_name may be a constant
 
                     # Instantiate a pipeline for the arg.
                     q = Pipeline(
@@ -513,8 +520,8 @@ class Program(  # TODO: refactor this class
                         task.fsm_module.add_pipeline(q, init=Identifier(id_name))
                         _logger.debug("    pipelined signal: %s => %s", id_name, q.name)
                         fsm_upstream_module_ports.setdefault(
-                            arg.name,
-                            Input(arg.name, make_width(width)),
+                            upper_name,
+                            Input(upper_name, make_width(width)),
                         )
                         fsm_downstream_module_ports.append(
                             Output(q[-1].name, make_width(width)),
@@ -523,7 +530,7 @@ class Program(  # TODO: refactor this class
                             make_port_arg(q[-1].name, q[-1].name),
                         )
 
-                # arg.name is the upper-level name
+                # upper_name is the upper-level name
                 # arg.port is the lower-level name
 
                 # check which ports are used for async_mmap
@@ -534,7 +541,7 @@ class Program(  # TODO: refactor this class
                             for x in generate_async_mmap_ports(
                                 tag=tag,
                                 port=arg.port,
-                                arg=arg.name,
+                                arg=upper_name,
                                 offset_name=arg_table[arg.name][-1],
                                 instance=instance,
                             )
@@ -555,7 +562,7 @@ class Program(  # TODO: refactor this class
                         task.module.add_ports(
                             generate_async_mmap_ioports(
                                 tag=tag,
-                                arg=arg.name,
+                                arg=upper_name,
                                 data_width=width_table[arg.name],
                             ),
                         )
@@ -691,7 +698,7 @@ class Program(  # TODO: refactor this class
                         generate_m_axi_ports(
                             module=instance.task.module,
                             port=arg.port,
-                            arg=arg.mmap_name + "_offset",
+                            arg=arg.mmap_name,
                             arg_reg=arg_table[arg.name][-1].name,
                         ),
                     )
@@ -701,7 +708,7 @@ class Program(  # TODO: refactor this class
                             generate_async_mmap_ports(
                                 tag=tag,
                                 port=arg.port,
-                                arg=arg.mmap_name + "_offset",
+                                arg=arg.mmap_name,
                                 offset_name=arg_table[arg.name][-1],
                                 instance=instance,
                             ),

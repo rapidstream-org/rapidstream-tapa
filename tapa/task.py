@@ -552,7 +552,7 @@ class Task:  # noqa: PLR0904
                                     Assign(
                                         left=Identifier(axi_arg_name),
                                         right=Identifier(
-                                            f"{{{name}[63:{addr_width}], "
+                                            f"{{{name}_offset[63:{addr_width}], "
                                             f"{axi_arg_name_raw}[{addr_width - 1}:0]}}",
                                         ),
                                     ),
