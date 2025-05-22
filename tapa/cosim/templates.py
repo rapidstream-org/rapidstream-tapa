@@ -430,7 +430,7 @@ def get_vitis_test_signals(
         axis_{arg.name}_tdata_unpacked_next,
         axis_{arg.name}_tvalid_next,
         axis_{arg.name}_tready,
-        "{arg.name}"
+        "{arg.qualified_name}"
     );
 
     axis_{arg.name}_tdata_unpacked <= axis_{arg.name}_tdata_unpacked_next;
@@ -450,7 +450,7 @@ def get_vitis_test_signals(
         axis_{arg.name}_tdata_unpacked,
         axis_{arg.name}_tready_next,
         axis_{arg.name}_tvalid,
-        "{arg.name}"
+        "{arg.qualified_name}"
     );
 
     axis_{arg.name}_tready <= axis_{arg.name}_tready_next;
