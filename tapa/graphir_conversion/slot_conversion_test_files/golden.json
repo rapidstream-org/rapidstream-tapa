@@ -1,0 +1,2135 @@
+{
+    "hierarchical_name": [
+        "SLOT_X3Y3_SLOT_X3Y3"
+    ],
+    "metadata": null,
+    "module_type": "grouped_module",
+    "name": "SLOT_X3Y3_SLOT_X3Y3",
+    "parameters": [
+        {
+            "expr": [
+                {
+                    "repr": "3'd1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state1"
+            ],
+            "name": "ap_ST_fsm_state1",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "3'd2",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state2"
+            ],
+            "name": "ap_ST_fsm_state2",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "3'd4",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state3"
+            ],
+            "name": "ap_ST_fsm_state3",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "10'd8",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state4"
+            ],
+            "name": "ap_ST_fsm_state4",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "10'd16",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state5"
+            ],
+            "name": "ap_ST_fsm_state5",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "10'd32",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state6"
+            ],
+            "name": "ap_ST_fsm_state6",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "10'd64",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state7"
+            ],
+            "name": "ap_ST_fsm_state7",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "10'd128",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state8"
+            ],
+            "name": "ap_ST_fsm_state8",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "10'd256",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state9"
+            ],
+            "name": "ap_ST_fsm_state9",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "10'd512",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "ap_ST_fsm_state10"
+            ],
+            "name": "ap_ST_fsm_state10",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_ID_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_ID_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "64",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_ADDR_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_ADDR_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "32",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_DATA_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_DATA_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_AWUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_AWUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_ARUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_ARUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_WUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_WUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_RUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_RUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "1",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_BUSER_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_BUSER_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "0",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_USER_VALUE"
+            ],
+            "name": "C_M_AXI_MMAP_USER_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "0",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_PROT_VALUE"
+            ],
+            "name": "C_M_AXI_MMAP_PROT_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "3",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_CACHE_VALUE"
+            ],
+            "name": "C_M_AXI_MMAP_CACHE_VALUE",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "32",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_DATA_WIDTH"
+            ],
+            "name": "C_M_AXI_DATA_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "(32 / 8)",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_MMAP_WSTRB_WIDTH"
+            ],
+            "name": "C_M_AXI_MMAP_WSTRB_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "(32 / 8)",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_M_AXI_WSTRB_WIDTH"
+            ],
+            "name": "C_M_AXI_WSTRB_WIDTH",
+            "range": null
+        }
+    ],
+    "ports": [
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_dout"
+            ],
+            "name": "a_q_VecAdd_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_empty_n"
+            ],
+            "name": "a_q_VecAdd_empty_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_read"
+            ],
+            "name": "a_q_VecAdd_read",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "ap_clk"
+            ],
+            "name": "ap_clk",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_done"
+            ],
+            "name": "ap_done",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "ap_idle"
+            ],
+            "name": "ap_idle",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "ap_ready"
+            ],
+            "name": "ap_ready",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "ap_rst_n"
+            ],
+            "name": "ap_rst_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_start"
+            ],
+            "name": "ap_start",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_din"
+            ],
+            "name": "c_q_VecAdd_din",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_full_n"
+            ],
+            "name": "c_q_VecAdd_full_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_write"
+            ],
+            "name": "c_q_VecAdd_write",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARADDR"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_ADDR_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARBURST"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARCACHE"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARLEN"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARLOCK"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARLOCK",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARPROT"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARQOS"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARREADY"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARSIZE"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_ARVALID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_ARVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWADDR"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_ADDR_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWBURST"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWCACHE"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWLEN"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWLOCK"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWLOCK",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWPROT"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWQOS"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWREADY"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWSIZE"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_AWVALID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_AWVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_BID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_BID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_BREADY"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_BREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_BRESP"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_BRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_BVALID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_BVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_RDATA"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_RDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_DATA_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_RID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_RID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_ID_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_RLAST"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_RLAST",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_RREADY"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_RREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_RRESP"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_RRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_RVALID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_RVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_WDATA"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_WDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_DATA_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_WLAST"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_WLAST",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_WREADY"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_WREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_WSTRB"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_WSTRB",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_M_AXI_MMAP_WSTRB_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_mmap_Mmap2Stream_1_WVALID"
+            ],
+            "name": "m_axi_mmap_Mmap2Stream_1_WVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "n"
+            ],
+            "name": "n",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        }
+    ],
+    "submodules": [
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_dout",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_s_dout"
+                    ],
+                    "name": "a_s_dout"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_empty_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_s_empty_n"
+                    ],
+                    "name": "a_s_empty_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_read",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_s_read"
+                    ],
+                    "name": "a_s_read"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "b_q_VecAdd_dout",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "b_s_dout"
+                    ],
+                    "name": "b_s_dout"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "b_q_VecAdd_empty_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "b_s_empty_n"
+                    ],
+                    "name": "b_s_empty_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "b_q_VecAdd_read",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "b_s_read"
+                    ],
+                    "name": "b_s_read"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_din",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_s_din"
+                    ],
+                    "name": "c_s_din"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_full_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_s_full_n"
+                    ],
+                    "name": "c_s_full_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_write",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_s_write"
+                    ],
+                    "name": "c_s_write"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "n"
+                    ],
+                    "name": "n"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "Add_0"
+            ],
+            "module": "Add",
+            "name": "Add_0",
+            "parameters": [],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARADDR"
+                    ],
+                    "name": "m_axi_mmap_ARADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARBURST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARBURST"
+                    ],
+                    "name": "m_axi_mmap_ARBURST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARCACHE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARCACHE"
+                    ],
+                    "name": "m_axi_mmap_ARCACHE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARID"
+                    ],
+                    "name": "m_axi_mmap_ARID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARLEN",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARLEN"
+                    ],
+                    "name": "m_axi_mmap_ARLEN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARLOCK",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARLOCK"
+                    ],
+                    "name": "m_axi_mmap_ARLOCK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARPROT",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARPROT"
+                    ],
+                    "name": "m_axi_mmap_ARPROT"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARQOS",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARQOS"
+                    ],
+                    "name": "m_axi_mmap_ARQOS"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARREADY"
+                    ],
+                    "name": "m_axi_mmap_ARREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARSIZE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARSIZE"
+                    ],
+                    "name": "m_axi_mmap_ARSIZE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_ARVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_ARVALID"
+                    ],
+                    "name": "m_axi_mmap_ARVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWADDR"
+                    ],
+                    "name": "m_axi_mmap_AWADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWBURST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWBURST"
+                    ],
+                    "name": "m_axi_mmap_AWBURST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWCACHE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWCACHE"
+                    ],
+                    "name": "m_axi_mmap_AWCACHE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWID"
+                    ],
+                    "name": "m_axi_mmap_AWID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWLEN",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWLEN"
+                    ],
+                    "name": "m_axi_mmap_AWLEN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWLOCK",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWLOCK"
+                    ],
+                    "name": "m_axi_mmap_AWLOCK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWPROT",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWPROT"
+                    ],
+                    "name": "m_axi_mmap_AWPROT"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWQOS",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWQOS"
+                    ],
+                    "name": "m_axi_mmap_AWQOS"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWREADY"
+                    ],
+                    "name": "m_axi_mmap_AWREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWSIZE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWSIZE"
+                    ],
+                    "name": "m_axi_mmap_AWSIZE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_AWVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_AWVALID"
+                    ],
+                    "name": "m_axi_mmap_AWVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_BID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_BID"
+                    ],
+                    "name": "m_axi_mmap_BID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_BREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_BREADY"
+                    ],
+                    "name": "m_axi_mmap_BREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_BRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_BRESP"
+                    ],
+                    "name": "m_axi_mmap_BRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_BVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_BVALID"
+                    ],
+                    "name": "m_axi_mmap_BVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_RDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_RDATA"
+                    ],
+                    "name": "m_axi_mmap_RDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_RID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_RID"
+                    ],
+                    "name": "m_axi_mmap_RID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_RLAST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_RLAST"
+                    ],
+                    "name": "m_axi_mmap_RLAST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_RREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_RREADY"
+                    ],
+                    "name": "m_axi_mmap_RREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_RRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_RRESP"
+                    ],
+                    "name": "m_axi_mmap_RRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_RVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_RVALID"
+                    ],
+                    "name": "m_axi_mmap_RVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_WDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_WDATA"
+                    ],
+                    "name": "m_axi_mmap_WDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_WLAST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_WLAST"
+                    ],
+                    "name": "m_axi_mmap_WLAST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_WREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_WREADY"
+                    ],
+                    "name": "m_axi_mmap_WREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_WSTRB",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_WSTRB"
+                    ],
+                    "name": "m_axi_mmap_WSTRB"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_mmap_Mmap2Stream_1_WVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_WVALID"
+                    ],
+                    "name": "m_axi_mmap_WVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "n"
+                    ],
+                    "name": "n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "b_q_VecAdd_din",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "stream_s_din"
+                    ],
+                    "name": "stream_s_din"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "b_q_VecAdd_full_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "stream_s_full_n"
+                    ],
+                    "name": "stream_s_full_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "b_q_VecAdd_write",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "stream_s_write"
+                    ],
+                    "name": "stream_s_write"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "Mmap2Stream_0"
+            ],
+            "module": "Mmap2Stream",
+            "name": "Mmap2Stream_0",
+            "parameters": [],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0___n__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Add_0___n__q0"
+                    ],
+                    "name": "Add_0___n__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0__ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Add_0__ap_done"
+                    ],
+                    "name": "Add_0__ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0__ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Add_0__ap_idle"
+                    ],
+                    "name": "Add_0__ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0__ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Add_0__ap_ready"
+                    ],
+                    "name": "Add_0__ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0__ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Add_0__ap_start"
+                    ],
+                    "name": "Add_0__ap_start"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0___mmap_Mmap2Stream_1__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Mmap2Stream_0___mmap_Mmap2Stream_1__q0"
+                    ],
+                    "name": "Mmap2Stream_0___mmap_Mmap2Stream_1__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0___n__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Mmap2Stream_0___n__q0"
+                    ],
+                    "name": "Mmap2Stream_0___n__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0__ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Mmap2Stream_0__ap_done"
+                    ],
+                    "name": "Mmap2Stream_0__ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0__ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Mmap2Stream_0__ap_idle"
+                    ],
+                    "name": "Mmap2Stream_0__ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0__ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Mmap2Stream_0__ap_ready"
+                    ],
+                    "name": "Mmap2Stream_0__ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0__ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "Mmap2Stream_0__ap_start"
+                    ],
+                    "name": "Mmap2Stream_0__ap_start"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_clk",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_clk"
+                    ],
+                    "name": "ap_clk"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_done"
+                    ],
+                    "name": "ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_idle"
+                    ],
+                    "name": "ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_ready"
+                    ],
+                    "name": "ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_rst_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_rst_n"
+                    ],
+                    "name": "ap_rst_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_start"
+                    ],
+                    "name": "ap_start"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "mmap_Mmap2Stream_1",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "mmap_Mmap2Stream_1"
+                    ],
+                    "name": "mmap_Mmap2Stream_1"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "n"
+                    ],
+                    "name": "n"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "SLOT_X3Y3_SLOT_X3Y3_fsm_0"
+            ],
+            "module": "SLOT_X3Y3_SLOT_X3Y3_fsm",
+            "name": "SLOT_X3Y3_SLOT_X3Y3_fsm_0",
+            "parameters": [],
+            "pragmas": []
+        }
+    ],
+    "wires": [
+        {
+            "hierarchical_name": [
+                "Add_0__ap_done"
+            ],
+            "name": "Add_0__ap_done",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "Add_0__ap_idle"
+            ],
+            "name": "Add_0__ap_idle",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "Add_0__ap_ready"
+            ],
+            "name": "Add_0__ap_ready",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "Add_0__ap_start"
+            ],
+            "name": "Add_0__ap_start",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "Add_0__n"
+            ],
+            "name": "Add_0__n",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "Mmap2Stream_0__ap_done"
+            ],
+            "name": "Mmap2Stream_0__ap_done",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "Mmap2Stream_0__ap_idle"
+            ],
+            "name": "Mmap2Stream_0__ap_idle",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "Mmap2Stream_0__ap_ready"
+            ],
+            "name": "Mmap2Stream_0__ap_ready",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "Mmap2Stream_0__ap_start"
+            ],
+            "name": "Mmap2Stream_0__ap_start",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "Mmap2Stream_0__n"
+            ],
+            "name": "Mmap2Stream_0__n",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "b_q_VecAdd_din"
+            ],
+            "name": "b_q_VecAdd_din",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "b_q_VecAdd_dout"
+            ],
+            "name": "b_q_VecAdd_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "b_q_VecAdd_empty_n"
+            ],
+            "name": "b_q_VecAdd_empty_n",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "b_q_VecAdd_full_n"
+            ],
+            "name": "b_q_VecAdd_full_n",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "b_q_VecAdd_read"
+            ],
+            "name": "b_q_VecAdd_read",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "b_q_VecAdd_write"
+            ],
+            "name": "b_q_VecAdd_write",
+            "range": null
+        }
+    ]
+}
