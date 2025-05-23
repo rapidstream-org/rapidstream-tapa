@@ -13,6 +13,10 @@ _SCALAR_PRAGMA = (
     "#pragma HLS interface ap_none port = {name} register\n"
     "  {{ auto val = reinterpret_cast<volatile uint8_t &>({name}); }}"
 )
+_MMAP_PRAGMA = (
+    "#pragma HLS interface ap_none port = {name}_offset register\n"
+    "  {{ auto val = reinterpret_cast<volatile uint8_t &>({name}_offset); }}"
+)
 _FIFO_IN_PRAGMA = (
     "#pragma HLS disaggregate variable = {name}\n"
     "#pragma HLS interface ap_fifo port = {name}._\n"
@@ -30,8 +34,8 @@ _FIFO_OUT_PRAGMA = (
 
 _PRAGMA = {
     "scalar": _SCALAR_PRAGMA,
-    "async_mmap": _SCALAR_PRAGMA,
-    "mmap": _SCALAR_PRAGMA,
+    "async_mmap": _MMAP_PRAGMA,
+    "mmap": _MMAP_PRAGMA,
     "hmap": _SCALAR_PRAGMA,
     "istream": _FIFO_IN_PRAGMA,
     "ostream": _FIFO_OUT_PRAGMA,
@@ -40,15 +44,16 @@ _PRAGMA = {
 }
 
 _SCALAR_PORT_TEMPLATE = "{type} {name}"
+_MMAP_PORT_TEMPLATE = "{type} {name}_offset"
 _PORT_TEMPLATE = {
     "istream": "tapa::istream<{type}>& {name}",
     "ostream": "tapa::ostream<{type}>& {name}",
     "istreams": "tapa::istream<{type}>& {name}",
     "ostreams": "tapa::ostream<{type}>& {name}",
     "scalar": _SCALAR_PORT_TEMPLATE,
-    "mmap": _SCALAR_PORT_TEMPLATE,
+    "mmap": _MMAP_PORT_TEMPLATE,
     "hmap": _SCALAR_PORT_TEMPLATE,
-    "async_mmap": _SCALAR_PORT_TEMPLATE,
+    "async_mmap": _MMAP_PORT_TEMPLATE,
 }
 _DEF_TEMPLATE = """void $name($ports) {
     $pragma
