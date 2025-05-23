@@ -39,6 +39,8 @@ DEFINE_bool(xosim_save_waveform, false, "save waveform in the work directory");
 DEFINE_string(xosim_work_dir, "",
               "if not empty, use the specified work directory instead of a "
               "temporary one");
+DEFINE_bool(xosim_work_dir_parallel_cosim, false,
+            "create a work directory for each parallel cosim instance");
 DEFINE_string(xosim_executable, "",
               "if not empty, use the specified executable instead of "
               "`tapa-fast-cosim`");
@@ -56,16 +58,36 @@ namespace {
 using clock = std::chrono::steady_clock;
 
 std::string GetWorkDirectory() {
+  fs::path work_dir;
+
   if (!FLAGS_xosim_work_dir.empty()) {
-    LOG_IF(INFO, fs::create_directories(FLAGS_xosim_work_dir))
-        << "created work directory '" << FLAGS_xosim_work_dir << "'";
-    return fs::absolute(FLAGS_xosim_work_dir).string();
+    // Use the specified work directory.
+    work_dir = fs::path(FLAGS_xosim_work_dir);
+    if (!fs::exists(work_dir)) {
+      LOG_IF(INFO, fs::create_directories(work_dir))
+          << "created directory '" << work_dir << "'";
+    }
+
+    // If running in parallel, create a temporary directory inside the
+    // specified work directory, and use that as the work directory for
+    // this instance.
+    if (FLAGS_xosim_work_dir_parallel_cosim) {
+      std::string dir = (work_dir / "XXXXXX").string();
+      LOG_IF(FATAL, ::mkdtemp(&dir[0]) == nullptr)
+          << "failed to create work directory";
+      work_dir = dir;
+    }
+
+  } else {
+    // Create a temporary directory in the system's temp directory.
+    std::string dir =
+        (fs::temp_directory_path() / "tapa-fast-cosim.XXXXXX").string();
+    LOG_IF(FATAL, ::mkdtemp(&dir[0]) == nullptr)
+        << "failed to create work directory";
+    work_dir = dir;
   }
-  std::string dir =
-      (fs::temp_directory_path() / "tapa-fast-cosim.XXXXXX").string();
-  LOG_IF(FATAL, ::mkdtemp(&dir[0]) == nullptr)
-      << "failed to create work directory";
-  return dir;
+
+  return fs::absolute(work_dir).string();
 }
 
 std::string GetInputDataPath(const std::string& work_dir, int index) {
@@ -182,6 +204,8 @@ void TapaFastCosimDevice::LoadArgsFromTapaYaml() {
 }
 
 TapaFastCosimDevice::~TapaFastCosimDevice() {
+  // Remove the work directory if it is not specified and therefore
+  // created by mkdtemp under /tmp.
   if (FLAGS_xosim_work_dir.empty()) {
     fs::remove_all(work_dir);
   }
