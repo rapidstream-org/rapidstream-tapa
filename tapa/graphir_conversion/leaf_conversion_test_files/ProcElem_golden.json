@@ -724,7 +724,7 @@
             ],
             "name": "ap_done",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -732,7 +732,7 @@
             ],
             "name": "ap_idle",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -740,7 +740,7 @@
             ],
             "name": "ap_ready",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -798,7 +798,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -819,7 +819,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -840,7 +840,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -861,7 +861,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -882,7 +882,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -903,7 +903,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -924,7 +924,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -945,7 +945,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -974,7 +974,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -995,7 +995,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1016,7 +1016,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1024,7 +1024,7 @@
             ],
             "name": "m_axi_edges_ARVALID",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1045,7 +1045,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1066,7 +1066,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1087,7 +1087,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1108,7 +1108,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1129,7 +1129,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1150,7 +1150,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1171,7 +1171,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1192,7 +1192,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1221,7 +1221,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1242,7 +1242,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1263,7 +1263,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1271,7 +1271,7 @@
             ],
             "name": "m_axi_edges_AWVALID",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1300,7 +1300,7 @@
             ],
             "name": "m_axi_edges_BREADY",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1408,7 +1408,7 @@
             ],
             "name": "m_axi_edges_RREADY",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1479,7 +1479,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1500,7 +1500,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1508,7 +1508,7 @@
             ],
             "name": "m_axi_edges_WLAST",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1537,7 +1537,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1558,7 +1558,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1566,7 +1566,7 @@
             ],
             "name": "m_axi_edges_WVALID",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1587,7 +1587,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1608,7 +1608,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1629,7 +1629,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1650,7 +1650,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1671,7 +1671,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1692,7 +1692,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1713,7 +1713,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1734,7 +1734,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1763,7 +1763,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1784,7 +1784,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1805,7 +1805,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1813,7 +1813,7 @@
             ],
             "name": "m_axi_vertices_ARVALID",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1834,7 +1834,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1855,7 +1855,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1876,7 +1876,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1897,7 +1897,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1918,7 +1918,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1939,7 +1939,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1960,7 +1960,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -1981,7 +1981,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2010,7 +2010,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2031,7 +2031,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2052,7 +2052,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2060,7 +2060,7 @@
             ],
             "name": "m_axi_vertices_AWVALID",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2089,7 +2089,7 @@
             ],
             "name": "m_axi_vertices_BREADY",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2197,7 +2197,7 @@
             ],
             "name": "m_axi_vertices_RREADY",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2268,7 +2268,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2289,7 +2289,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2297,7 +2297,7 @@
             ],
             "name": "m_axi_vertices_WLAST",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2326,7 +2326,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2347,7 +2347,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2355,7 +2355,7 @@
             ],
             "name": "m_axi_vertices_WVALID",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2392,7 +2392,7 @@
             ],
             "name": "req_q_peek_read",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2429,7 +2429,7 @@
             ],
             "name": "req_q_s_read",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2471,7 +2471,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2487,7 +2487,7 @@
             ],
             "name": "resp_q_s_write",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2524,7 +2524,7 @@
             ],
             "name": "update_in_q_peek_read",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2561,7 +2561,7 @@
             ],
             "name": "update_in_q_s_read",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2603,7 +2603,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2619,7 +2619,7 @@
             ],
             "name": "update_out_q_s_write",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2661,7 +2661,7 @@
                     }
                 ]
             },
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
@@ -2677,7 +2677,7 @@
             ],
             "name": "update_req_q_s_write",
             "range": null,
-            "type": "output wire"
+            "type": "output reg"
         },
         {
             "hierarchical_name": [
