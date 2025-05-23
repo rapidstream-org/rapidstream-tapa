@@ -29,7 +29,7 @@ py_test(
     name = "leaf_task_conversion_test",
     srcs = ["leaf_task_conversion_test.py"],
     data = glob([
-        "test_files/*",
+        "leaf_conversion_test_files/*",
     ]),
     deps = ["//tapa/graphir_conversion"],
 )
