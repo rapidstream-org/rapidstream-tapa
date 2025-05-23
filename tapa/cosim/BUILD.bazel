@@ -13,7 +13,10 @@ py_binary(
     name = "tapa-fast-cosim",
     srcs = ["__main__.py"],
     main = "__main__.py",
-    visibility = ["//visibility:public"],
+    visibility = [
+        # Used only by tests to minimize dependencies and improve cache hit
+        "//tests:__subpackages__",
+    ],
     deps = [
         ":__main__",
     ],
