@@ -19,9 +19,6 @@
 
 #include <glog/logging.h>
 
-std::string ToBinaryStringImpl(const bool* val);
-void FromBinaryStringImpl(std::string_view str, bool& val);
-
 namespace fpga {
 namespace internal {
 
@@ -29,37 +26,7 @@ bool IsLittleEndian();  // TODO: remove when std::endian is available.
 
 }  // namespace internal
 
-// `HasToBinaryString<T>::value` is `true` if and only if an overload of
-// `ToBinaryStringImpl<T>` is defined.
-template <typename T, typename = void>
-struct HasToBinaryString : std::false_type {};
 template <typename T>
-struct HasToBinaryString<
-    T,
-    std::enable_if_t<std::is_same_v<
-        std::string, decltype(ToBinaryStringImpl(std::declval<const T*>()))>>>
-    : std::true_type {};
-
-// `HasFromBinaryString<T>::value` is `true` if and only if an overload of
-// `FromBinaryStringImpl<T>` is defined.
-template <typename T, typename = void>
-struct HasFromBinaryString : std::false_type {};
-template <typename T>
-struct HasFromBinaryString<
-    T, std::enable_if_t<std::is_void_v<decltype(FromBinaryStringImpl(
-           std::declval<std::string_view>(), std::declval<T&>()))>>>
-    : std::true_type {};
-
-// `ToBinaryStringImpl<T>` is used if it is defined.
-template <typename T,
-          typename std::enable_if_t<HasToBinaryString<T>::value, int> = 0>
-std::string ToBinaryString(const T& val) {
-  return ToBinaryStringImpl(&val);
-}
-
-// Default implementation of if `ToBinaryStringImpl<T>` is not defined.
-template <typename T,
-          typename std::enable_if_t<!HasToBinaryString<T>::value, int> = 0>
 std::string ToBinaryString(const T& val) {
   std::array<char, sizeof(val)> bytes;
   memcpy(bytes.data(), &val, sizeof(val));
@@ -77,18 +44,7 @@ std::string ToBinaryString(const T& val) {
   return str;
 }
 
-// `FromBinaryStringImpl<T>` is used if it is defined.
-template <typename T,
-          typename std::enable_if_t<HasFromBinaryString<T>::value, int> = 0>
-T FromBinaryString(std::string_view str) {
-  T val;
-  FromBinaryStringImpl(str, val);
-  return val;
-}
-
-// Default implementation of if `FromBinaryStringImpl<T>` is not defined.
-template <typename T,
-          typename std::enable_if_t<!HasFromBinaryString<T>::value, int> = 0>
+template <typename T>
 T FromBinaryString(std::string_view str) {
   T val;
   std::array<char, sizeof(val)> bytes;
