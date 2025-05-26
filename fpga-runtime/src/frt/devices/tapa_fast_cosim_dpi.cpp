@@ -67,9 +67,10 @@ SharedMemoryQueue* GetStream(const char* id) {
 
 void StringToOpenArrayHandle(const std::string& bits,
                              svOpenArrayHandle handle) {
+  CHECK_GE(bits.size(), static_cast<size_t>(svSize(handle, 1)));
   const int increment = svIncrement(handle, 1);
   int index = svLeft(handle, 1);
-  for (const char c : bits) {
+  for (const char c : bits.substr(bits.size() - svSize(handle, 1))) {
     svLogic bit = sv_x;
     switch (c) {
       case '0':
@@ -99,9 +100,11 @@ void StringToOpenArrayHandle(const std::string& bits,
   CHECK_EQ(index, svRight(handle, 1) - increment);
 }
 
-std::string OpenArrayHandleToString(svOpenArrayHandle handle) {
+std::string OpenArrayHandleToString(svOpenArrayHandle handle, size_t width) {
   std::string bits;
-  bits.reserve(svSize(handle, 1));
+  CHECK_GE(width, static_cast<size_t>(svSize(handle, 1)));
+  bits.reserve(width);
+  bits.resize(width - svSize(handle, 1), '0');
   const int increment = svIncrement(handle, 1);
   for (int index = svLeft(handle, 1); index != svRight(handle, 1) - increment;
        index -= increment) {
@@ -136,7 +139,7 @@ DPI_DLLESPEC void istream(
     /* input */ const char* id) {
   SharedMemoryQueue* istream = GetStream(id);
   CHECK(istream != nullptr);
-  CHECK_EQ(istream->width(), size_t(svSize(dout, 1)));
+  CHECK_GE(istream->width(), size_t(svSize(dout, 1)));
 
   static std::unordered_map<std::string, bool> last_empty_n;
 
@@ -172,7 +175,7 @@ DPI_DLLESPEC void ostream(
     /* input */ const char* id) {
   SharedMemoryQueue* ostream = GetStream(id);
   CHECK(ostream != nullptr);
-  CHECK_EQ(ostream->width(), size_t(svSize(din, 1)));
+  CHECK_GE(ostream->width(), size_t(svSize(din, 1)));
 
   static std::unordered_map<std::string, bool> last_full_n;
 
@@ -196,7 +199,7 @@ DPI_DLLESPEC void ostream(
     // shall consume data in this cycle if it is available.
     if (last_full_n.find(id) != last_full_n.end() && last_full_n[id] == true &&
         write == sv_1) {
-      const std::string bits = OpenArrayHandleToString(din);
+      const std::string bits = OpenArrayHandleToString(din, ostream->width());
       ostream->push(bits);
     }
 
