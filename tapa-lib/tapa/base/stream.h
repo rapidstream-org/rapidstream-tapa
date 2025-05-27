@@ -23,7 +23,7 @@ inline constexpr uint64_t kFrtUpgradeDepth = 64;
 namespace internal {
 
 template <typename T>
-struct elem_t {
+struct [[gnu::packed]] elem_t {
   T val;
   bool eot;
 };
