@@ -46,6 +46,7 @@ from tapa.graphir.types import (
 )
 from tapa.instance import Port
 from tapa.task import Task
+from tapa.verilog.util import Pipeline
 from tapa.verilog.xilinx.const import ISTREAM_SUFFIXES, OSTREAM_SUFFIXES
 from tapa.verilog.xilinx.m_axi import M_AXI_PREFIX, M_AXI_SUFFIXES
 from tapa.verilog.xilinx.module import Module
@@ -206,6 +207,9 @@ def get_leaf_port_connection_mapping(
             matching_ports[module_port.name] = get_stream_port_name(arg, suffix)
 
     elif task_port.cat.is_mmap:
+        # add offset mapping
+        # note that offset port is pipelined through fsm
+        matching_ports[f"{task_port.name}_offset"] = arg
         for suffix in M_AXI_SUFFIXES:
             m_axi_port_name = get_m_axi_port_name(task_port.name, suffix)
             if m_axi_port_name in task_module.ports:
@@ -226,3 +230,25 @@ def get_stream_port_name(task_port_name: str, suffix: str) -> str:
 def get_m_axi_port_name(task_port_name: str, suffix: str) -> str:
     """Get the m_axi port name from the task port name and suffix."""
     return f"{M_AXI_PREFIX}{task_port_name}{suffix}"
+
+
+def get_task_arg_table(
+    task: Task,
+) -> dict[str, Pipeline]:
+    """Build arg table for fsm pipeline signals."""
+    arg_table: dict[str, Pipeline] = {}
+    for instance in task.instances:
+        for arg in instance.args:
+            if not arg.cat.is_stream:
+                # For mmap ports, the scalar port is the offset.
+                upper_name = (
+                    f"{arg.name}_offset"
+                    if arg.cat.is_sync_mmap or arg.cat.is_async_mmap
+                    else arg.name
+                )
+                id_name = "64'd0" if arg.chan_count is not None else upper_name
+                q = Pipeline(
+                    name=instance.get_instance_arg(id_name),
+                )
+                arg_table[arg.name] = q
+    return arg_table
