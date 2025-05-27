@@ -2,6 +2,9 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
+#include <climits>
+
+#include <bitset>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -65,67 +68,56 @@ SharedMemoryQueue* GetStream(const char* id) {
   return it->second.get();
 }
 
-void StringToOpenArrayHandle(const std::string& bits,
+void StringToOpenArrayHandle(const std::string& bytes,
                              svOpenArrayHandle handle) {
-  CHECK_GE(bits.size(), static_cast<size_t>(svSize(handle, 1)));
+  CHECK_GE(bytes.size() * CHAR_BIT, static_cast<size_t>(svSize(handle, 1)));
   const int increment = svIncrement(handle, 1);
-  int index = svLeft(handle, 1);
-  for (const char c : bits.substr(bits.size() - svSize(handle, 1))) {
-    svLogic bit = sv_x;
-    switch (c) {
-      case '0':
-        bit = sv_0;
-        break;
-      case '1':
-        bit = sv_1;
-        break;
-      case 'z':
-      case 'Z':
-        bit = sv_z;
-        break;
-      case 'x':
-      case 'X':
-        bit = sv_x;
-        break;
-      case '\'':
-      case '_':
-        continue;
-      default:
-        LOG(FATAL) << "unexpected bit character: " << c << " (" << int(c)
-                   << ")";
+  int index = svRight(handle, 1);
+  for (const char byte : bytes) {
+    const std::bitset<CHAR_BIT> bits = byte;
+    for (int i = 0; i < CHAR_BIT; ++i) {
+      svPutLogicArrElem(handle, bits[i] ? sv_1 : sv_0, index);
+      if (index == svLeft(handle, 1)) {
+        return;
+      }
+      index += increment;
     }
-    svPutLogicArrElem(handle, bit, index);
-    index -= increment;
   }
-  CHECK_EQ(index, svRight(handle, 1) - increment);
+  LOG(FATAL) << "unexpected index: " << index;
 }
 
 std::string OpenArrayHandleToString(svOpenArrayHandle handle, size_t width) {
-  std::string bits;
-  CHECK_GE(width, static_cast<size_t>(svSize(handle, 1)));
-  bits.reserve(width);
-  bits.resize(width - svSize(handle, 1), '0');
+  std::string bytes;
+  CHECK_GE(width * CHAR_BIT, static_cast<size_t>(svSize(handle, 1)));
+  bytes.reserve(width);
   const int increment = svIncrement(handle, 1);
-  for (int index = svLeft(handle, 1); index != svRight(handle, 1) - increment;
-       index -= increment) {
-    bits.push_back([&] {
-      const svLogic bit = svGetLogicArrElem(handle, index);
-      switch (bit) {
-        case sv_0:
-          return '0';
-        case sv_1:
-          return '1';
-        case sv_x:
-          return 'x';
-        case sv_z:
-          return 'z';
-        default:
-          LOG(FATAL) << "unexpected bit enum: " << int(bit);
-          return 'x';
-      }
-    }());
+  auto add_bit = [&, i = 0, bits = std::bitset<CHAR_BIT>()](bool bit) mutable {
+    bits[i % CHAR_BIT] = bit;
+    ++i;
+    if (i % CHAR_BIT == 0) {
+      bytes.push_back(bits.to_ulong());
+    }
+  };
+  for (int index = svRight(handle, 1); index != svLeft(handle, 1) + increment;
+       index += increment) {
+    const svLogic bit = svGetLogicArrElem(handle, index);
+    switch (bit) {
+      case sv_x:
+      case sv_z:
+      case sv_0:
+        add_bit(0);
+        break;
+      case sv_1:
+        add_bit(1);
+        break;
+      default:
+        LOG(FATAL) << "unexpected bit enum: " << int(bit);
+    }
   }
-  return bits;
+  while (bytes.size() < width) {
+    add_bit(0);
+  }
+  return bytes;
 }
 
 }  // namespace
@@ -139,7 +131,7 @@ DPI_DLLESPEC void istream(
     /* input */ const char* id) {
   SharedMemoryQueue* istream = GetStream(id);
   CHECK(istream != nullptr);
-  CHECK_GE(istream->width(), size_t(svSize(dout, 1)));
+  CHECK_GE(istream->width() * CHAR_BIT, size_t(svSize(dout, 1)));
 
   static std::unordered_map<std::string, bool> last_empty_n;
 
@@ -175,7 +167,7 @@ DPI_DLLESPEC void ostream(
     /* input */ const char* id) {
   SharedMemoryQueue* ostream = GetStream(id);
   CHECK(ostream != nullptr);
-  CHECK_GE(ostream->width(), size_t(svSize(din, 1)));
+  CHECK_GE(ostream->width() * CHAR_BIT, size_t(svSize(din, 1)));
 
   static std::unordered_map<std::string, bool> last_full_n;
 

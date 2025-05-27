@@ -24,6 +24,8 @@ namespace fs = std::experimental::filesystem;
 namespace tapa {
 namespace {
 
+using namespace std::string_view_literals;
+
 using ::tapa::internal::StrCat;
 
 constexpr char kEnvVarName[] = "TAPA_STREAM_LOG_DIR";
@@ -116,14 +118,13 @@ TEST_F(StreamLogTest, LoggingToNonexistentDirFails) {
 
 TEST(StringifyTest, TapaInternalElemToBinaryString) {
   const internal::elem_t<float> val = {.val = 1.f, .eot = true};
-  EXPECT_EQ(fpga::ToBinaryString(val),
-            "0000000000000000000000000000000100111111100000000000000000000000");
+  EXPECT_EQ(fpga::ToBinaryString(val), "\x00\x00\x80\x3f\x01\00\00\00"sv);
 }
 
 TEST(StringifyTest, TapaInternalElemFromBinaryString) {
   const internal::elem_t<float> val =
       fpga::FromBinaryString<internal::elem_t<float>>(
-          "0000000000000000000000000000000100111111100000000000000000000000");
+          "\x00\x00\x80\x3f\x01\00\00\00"sv);
   EXPECT_TRUE(val.eot);
   EXPECT_EQ(val.val, 1.f);
 }

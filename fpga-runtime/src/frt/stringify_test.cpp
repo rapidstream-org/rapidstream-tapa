@@ -4,23 +4,21 @@
 
 #include "frt/stringify.h"
 
-#include <exception>
+#include <string_view>
 
 #include <gtest/gtest.h>
 
 namespace {
 
+using namespace std::string_view_literals;
+
 TEST(StringifyTest, FloatToBinaryString) {
-  EXPECT_EQ(fpga::ToBinaryString(1.f), "00111111100000000000000000000000");
+  EXPECT_EQ(fpga::ToBinaryString(1.f), "\x00\x00\x80\x3f"sv);
 }
 
 TEST(StringifyTest, FloatFromBinaryString) {
-  EXPECT_EQ(fpga::FromBinaryString<float>("00111111100000000000000000000000"),
-            1.f);
+  EXPECT_EQ(fpga::FromBinaryString<float>("\x00\x00\x80\x3f"sv), 1.f);
   EXPECT_DEATH(fpga::FromBinaryString<float>("010101"), "size()");
-  EXPECT_THROW(
-      fpga::FromBinaryString<float>("12345678901234567890123456789012"),
-      std::exception);
 }
 
 }  // namespace
