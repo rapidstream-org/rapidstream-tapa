@@ -26,11 +26,13 @@ from tapa.graphir_conversion.utils import (
     get_leaf_port_connection_mapping,
     get_m_axi_port_name,
     get_stream_port_name,
+    get_task_arg_table,
     get_task_graphir_parameters,
     get_task_graphir_ports,
 )
 from tapa.instance import Instance
 from tapa.task import Task
+from tapa.verilog.util import Pipeline
 from tapa.verilog.xilinx.const import (
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
@@ -147,6 +149,7 @@ def get_slot_module_definition_ports(
 def get_submodule_inst(
     leaf_tasks: dict[str, Task],
     inst: Instance,
+    arg_table: dict[str, Pipeline],
 ) -> ModuleInstantiation:
     """Get submodule instantiation."""
     task_name = inst.task.name
@@ -158,7 +161,7 @@ def get_submodule_inst(
                 ModuleConnection(
                     name=port_name,
                     hierarchical_name=HierarchicalName.get_name(port_name),
-                    expr=Expression((Token.new_id(f"{arg.name}"),)),
+                    expr=Expression((Token.new_id(arg_table[arg.name][-1].name),)),
                 )
             )
 
@@ -202,7 +205,15 @@ def get_submodule_inst(
                         ),
                     )
                 )
-
+            # offset port
+            offset_port_name = f"{port_name}_offset"
+            connections.append(
+                ModuleConnection(
+                    name=offset_port_name,
+                    hierarchical_name=HierarchicalName.get_name(offset_port_name),
+                    expr=Expression((Token.new_id(arg_table[arg.name][-1].name),)),
+                )
+            )
     # add control signals
     # ap_clk
     connections.append(
@@ -368,6 +379,7 @@ def get_slot_module_submodules(
         get_submodule_inst(
             leaf_tasks,
             inst,
+            get_task_arg_table(slot_task),
         )
         for inst in slot_task.instances
     ]
@@ -462,7 +474,9 @@ def infer_fifo_data_range(
 
 
 def get_slot_module_wires(
-    slot: Task, leaf_ir_defs: dict[str, VerilogModuleDefinition]
+    slot: Task,
+    leaf_ir_defs: dict[str, VerilogModuleDefinition],
+    slot_ports: list[ModulePort],
 ) -> list[ModuleNet]:
     """Get slot module wires."""
     connections = []
@@ -490,21 +504,19 @@ def get_slot_module_wires(
                 )
             )
 
-    # add scalar wires
-    for inst in slot.instances:
-        for port_name, port in inst.task.ports.items():
-            if not port.cat.is_scalar or port.is_streams:
-                continue
-            # infer width from leaf module
-            wire_range = leaf_ir_defs[inst.task.name].get_port(port_name).range
-            wire_name = f"{inst.name}__{port_name}"
-            connections.append(
-                ModuleNet(
-                    name=wire_name,
-                    hierarchical_name=HierarchicalName.get_name(wire_name),
-                    range=wire_range,
-                )
+    # add pipeline signal wires
+    arg_table = get_task_arg_table(slot)
+    port_range_mapping = {port.name: port.range for port in slot_ports}
+    for arg, q in arg_table.items():
+        wire_name = q[-1].name
+        # infer range from fsm module
+        connections.append(
+            ModuleNet(
+                name=wire_name,
+                hierarchical_name=HierarchicalName.get_name(wire_name),
+                range=port_range_mapping[arg],
             )
+        )
 
     # add control signals
     for inst in slot.instances:
@@ -526,16 +538,17 @@ def get_slot_module_definition(
 ) -> GroupedModuleDefinition:
     """Get slot module definition."""
     # TODO: port array support
+    slot_ports = get_slot_module_definition_ports(slot, leaf_ir_defs)
     return GroupedModuleDefinition(
         name=slot.name,
         hierarchical_name=HierarchicalName.get_name(slot.name),
         parameters=tuple(get_slot_module_definition_parameters(leaf_ir_defs)),
-        ports=tuple(get_slot_module_definition_ports(slot, leaf_ir_defs)),
+        ports=tuple(slot_ports),
         submodules=tuple(
             get_slot_module_submodules(
                 slot,
                 leaf_ir_defs,
             )
         ),
-        wires=tuple(get_slot_module_wires(slot, leaf_ir_defs)),
+        wires=tuple(get_slot_module_wires(slot, leaf_ir_defs, slot_ports)),
     )
