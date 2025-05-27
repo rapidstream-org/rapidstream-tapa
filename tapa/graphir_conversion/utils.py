@@ -142,11 +142,11 @@ def get_operator_token(node: Node) -> Token:
     return Token.new_lit(mapping[type(node)])
 
 
-def get_task_graphir_ports(task: Task) -> list[ModulePort]:
+def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
     """Get the graphir ports from a task."""
-    assert task.module.ports
+    assert task_module.ports
     ports = []
-    for name, port in task.module.ports.items():
+    for name, port in task_module.ports.items():
         if port.width:
             port_range = Range(
                 left=Expression(tuple(ast_to_tokens(port.width.msb))),
@@ -166,11 +166,11 @@ def get_task_graphir_ports(task: Task) -> list[ModulePort]:
     return ports
 
 
-def get_task_graphir_parameters(task: Task) -> list[ModuleParameter]:
+def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
     """Get the graphir parameters from a task."""
-    assert task.module.params
+    assert task_module.params
     graphir_params = []
-    for name, param in task.module.params.items():
+    for name, param in task_module.params.items():
         expr = Expression(tuple(ast_to_tokens(param.value)))
         graphir_params.append(
             ModuleParameter(
