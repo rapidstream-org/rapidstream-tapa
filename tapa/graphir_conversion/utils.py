@@ -43,6 +43,7 @@ from tapa.graphir.types import (
     ModulePort,
     Range,
     Token,
+    VerilogModuleDefinition,
 )
 from tapa.instance import Port
 from tapa.task import Task
@@ -56,6 +57,123 @@ PORT_TYPE_MAPPING = {
     "output": ModulePort.Type.OUTPUT,
     "inout": ModulePort.Type.INOUT,
 }
+
+_CTRL_S_AXI_PORT_DIR_RANGE = {
+    "ACLK": (ModulePort.Type.INPUT, None),
+    "ARESET": (ModulePort.Type.INPUT, None),
+    "ACLK_EN": (ModulePort.Type.INPUT, None),
+    "AWADDR": (
+        ModulePort.Type.INPUT,
+        Range(
+            left=Expression(
+                (
+                    Token.new_id("C_S_AXI_ADDR_WIDTH"),
+                    Token.new_lit("-"),
+                    Token.new_lit("1"),
+                )
+            ),
+            right=Expression((Token.new_lit("0"),)),
+        ),
+    ),
+    "AWVALID": (ModulePort.Type.INPUT, None),
+    "AWREADY": (ModulePort.Type.OUTPUT, None),
+    "WDATA": (
+        ModulePort.Type.INPUT,
+        Range(
+            left=Expression(
+                (
+                    Token.new_id("C_S_AXI_DATA_WIDTH"),
+                    Token.new_lit("-"),
+                    Token.new_lit("1"),
+                )
+            ),
+            right=Expression((Token.new_lit("0"),)),
+        ),
+    ),
+    "WSTRB": (
+        ModulePort.Type.INPUT,
+        Range(
+            left=Expression(
+                (
+                    Token.new_id("C_S_AXI_DATA_WIDTH"),
+                    Token.new_lit("/"),
+                    Token.new_lit("8"),
+                    Token.new_lit("-"),
+                    Token.new_lit("1"),
+                )
+            ),
+            right=Expression((Token.new_lit("0"),)),
+        ),
+    ),
+    "WVALID": (ModulePort.Type.INPUT, None),
+    "WREADY": (ModulePort.Type.OUTPUT, None),
+    "BRESP": (
+        ModulePort.Type.OUTPUT,
+        Range(
+            left=Expression((Token.new_lit("1"),)),
+            right=Expression((Token.new_lit("0"),)),
+        ),
+    ),
+    "BVALID": (ModulePort.Type.OUTPUT, None),
+    "BREADY": (ModulePort.Type.INPUT, None),
+    "ARADDR": (
+        ModulePort.Type.INPUT,
+        Range(
+            left=Expression(
+                (
+                    Token.new_id("C_S_AXI_ADDR_WIDTH"),
+                    Token.new_lit("-"),
+                    Token.new_lit("1"),
+                )
+            ),
+            right=Expression((Token.new_lit("0"),)),
+        ),
+    ),
+    "ARVALID": (ModulePort.Type.INPUT, None),
+    "ARREADY": (ModulePort.Type.OUTPUT, None),
+    "RDATA": (
+        ModulePort.Type.OUTPUT,
+        Range(
+            left=Expression(
+                (
+                    Token.new_id("C_S_AXI_DATA_WIDTH"),
+                    Token.new_lit("-"),
+                    Token.new_lit("1"),
+                )
+            ),
+            right=Expression((Token.new_lit("0"),)),
+        ),
+    ),
+    "RRESP": (
+        ModulePort.Type.OUTPUT,
+        Range(
+            left=Expression((Token.new_lit("1"),)),
+            right=Expression((Token.new_lit("0"),)),
+        ),
+    ),
+    "RVALID": (ModulePort.Type.OUTPUT, None),
+    "RREADY": (ModulePort.Type.INPUT, None),
+    "interrupt": (ModulePort.Type.OUTPUT, None),
+    "ap_start": (ModulePort.Type.INPUT, None),
+    "ap_done": (ModulePort.Type.OUTPUT, None),
+    "ap_ready": (ModulePort.Type.OUTPUT, None),
+    "ap_idle": (ModulePort.Type.OUTPUT, None),
+}
+
+_CTRL_S_AXI_PARAMETERS = [
+    ModuleParameter(
+        name="C_S_AXI_ADDR_WIDTH",
+        hierarchical_name=HierarchicalName.get_name("C_S_AXI_ADDR_WIDTH"),
+        expr=Expression((Token.new_lit("6"),)),
+        range=None,
+    ),
+    ModuleParameter(
+        name="C_S_AXI_DATA_WIDTH",
+        hierarchical_name=HierarchicalName.get_name("C_S_AXI_DATA_WIDTH"),
+        expr=Expression((Token.new_lit("32"),)),
+        range=None,
+    ),
+]
 
 
 def ast_to_tokens(node: Node) -> list[Token]:
@@ -142,11 +260,11 @@ def get_operator_token(node: Node) -> Token:
     return Token.new_lit(mapping[type(node)])
 
 
-def get_task_graphir_ports(task: Task) -> list[ModulePort]:
+def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
     """Get the graphir ports from a task."""
-    assert task.module.ports
+    assert task_module.ports
     ports = []
-    for name, port in task.module.ports.items():
+    for name, port in task_module.ports.items():
         if port.width:
             port_range = Range(
                 left=Expression(tuple(ast_to_tokens(port.width.msb))),
@@ -166,11 +284,11 @@ def get_task_graphir_ports(task: Task) -> list[ModulePort]:
     return ports
 
 
-def get_task_graphir_parameters(task: Task) -> list[ModuleParameter]:
+def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
     """Get the graphir parameters from a task."""
-    assert task.module.params
+    assert task_module.params
     graphir_params = []
-    for name, param in task.module.params.items():
+    for name, param in task_module.params.items():
         expr = Expression(tuple(ast_to_tokens(param.value)))
         graphir_params.append(
             ModuleParameter(
@@ -252,3 +370,48 @@ def get_task_arg_table(
                 )
                 arg_table[arg.name] = q
     return arg_table
+
+
+def get_verilog_definition_from_tapa_module(module: Module) -> VerilogModuleDefinition:
+    """Convert a Tapa Module to a VerilogModuleDefinition."""
+    return VerilogModuleDefinition(
+        name=module.name,
+        hierarchical_name=HierarchicalName.get_name(module.name),
+        parameters=tuple(get_task_graphir_parameters(module)),
+        ports=tuple(get_task_graphir_ports(module)),
+        verilog=module.code,
+        submodules_module_names=(),
+    )
+
+
+def get_ctrl_s_axi_def(top: Task, content: str) -> VerilogModuleDefinition:
+    """Get control_s_axi module definition."""
+    ports = [
+        ModulePort(
+            name=port_name,
+            hierarchical_name=HierarchicalName.get_name(port_name),
+            type=port_type,
+            range=port_range,
+        )
+        for port_name, (port_type, port_range) in _CTRL_S_AXI_PORT_DIR_RANGE.items()
+    ]
+    ports.extend(
+        ModulePort(
+            name=port,
+            hierarchical_name=HierarchicalName.get_name(port),
+            type=ModulePort.Type.OUTPUT,  # Control ports are inputs
+            range=Range(
+                left=Expression((Token.new_lit("63"),)),
+                right=Expression((Token.new_lit("0"),)),
+            ),  # No range for control ports
+        )
+        for port in top.ports
+    )
+    return VerilogModuleDefinition(
+        name="VecAdd_control_s_axi",
+        hierarchical_name=HierarchicalName.get_name("VecAdd_control_s_axi"),
+        parameters=tuple(_CTRL_S_AXI_PARAMETERS),
+        ports=tuple(ports),
+        verilog=content,
+        submodules_module_names=(),
+    )
