@@ -18,4 +18,4 @@ struct [[gnu::packed]] input_t {
 static_assert(sizeof(input_t) == 6, "input_t must be 6 bytes");
 
 void StreamAdd(tapa::istream<input_t>& a, tapa::istream<input_t>& b,
-               tapa::ostream<float>& c);
+               tapa::ostream<tapa::vec_t<float, 2>>& c);

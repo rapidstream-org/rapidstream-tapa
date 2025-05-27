@@ -15,10 +15,27 @@ DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 
 void StreamAdd_HostTask(tapa::istream<input_t>& a, tapa::istream<input_t>& b,
                         tapa::ostream<float>& c) {
-  // TEST 1: Invoke an FRT kernel with lock-free streams.
-  // Here, a, b, c had already been handshaked as lock-free streams. Passing the
-  // streams to the FRT kernel requires a passthrough conversion.
-  tapa::task().invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c);
+  tapa::stream<tapa::vec_t<float, 2>> c_vec("c_vec");
+
+  tapa::task()
+      // TEST 1: Invoke an FRT kernel with lock-free streams.
+      // Here, a and b had already been handshaked as lock-free streams. Passing
+      // the streams to the FRT kernel requires a passthrough conversion.
+      .invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c_vec)
+      .invoke(
+          // Convert the vec_t stream to a float stream.
+          [&](tapa::istream<tapa::vec_t<float, 2>>& c_vec,
+              tapa::ostream<float>& c) {
+            tapa::vec_t<float, 2> vec_out;
+            TAPA_WHILE_NOT_EOT(c_vec) {
+              vec_out = c_vec.read();
+              c.write(vec_out[0]);
+              c.write(vec_out[1]);
+            }
+            c_vec.open();
+            c.close();
+          },
+          c_vec, c);
 }
 
 int main(int argc, char* argv[]) {
