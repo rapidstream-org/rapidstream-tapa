@@ -17,5 +17,16 @@ struct [[gnu::packed]] input_t {
 
 static_assert(sizeof(input_t) == 6, "input_t must be 6 bytes");
 
+// TEST 7: Ensure that ap_int can be used in a stream
+typedef ap_int<32> output_ap_int_t;
+static_assert(sizeof(output_ap_int_t) == 4, "output_ap_int_t must be 4 bytes");
+
+typedef tapa::vec_t<output_ap_int_t, 2> output_vec_t;
+static_assert(sizeof(output_vec_t) == 8, "output_vec_t must be 8 bytes");
+
+#ifndef OUTPUT_TYPE
+#define OUTPUT_TYPE output_ap_int_t
+#endif
+
 void StreamAdd(tapa::istream<input_t>& a, tapa::istream<input_t>& b,
-               tapa::ostream<tapa::vec_t<float, 2>>& c);
+               tapa::ostream<tapa::vec_t<OUTPUT_TYPE, 2>>& c);

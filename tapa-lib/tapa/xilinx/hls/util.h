@@ -13,10 +13,29 @@
 #include "etc/ap_utils.h"
 #endif
 
+#include "ap_int.h"
+
 #include <cstring>
 #include <type_traits>
 
 namespace tapa {
+
+// ap_data_bits is a utility function to get the bit width of an ap_int or
+// ap_uint type.
+namespace internal {
+template <typename T>
+inline constexpr int ap_data_bits(T) {
+  return 0;
+}
+template <int width>
+inline constexpr int ap_data_bits(const ap_int<width>&&) {
+  return width;
+}
+template <int width>
+inline constexpr int ap_data_bits(const ap_uint<width>&&) {
+  return width;
+}
+}  // namespace internal
 
 template <typename To, typename From>
 inline typename std::enable_if<sizeof(To) == sizeof(From), To>::type  //

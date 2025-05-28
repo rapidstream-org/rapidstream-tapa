@@ -14,8 +14,8 @@
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 
 void StreamAdd_HostTask(tapa::istream<input_t>& a, tapa::istream<input_t>& b,
-                        tapa::ostream<float>& c) {
-  tapa::stream<tapa::vec_t<float, 2>> c_vec("c_vec");
+                        tapa::ostream<OUTPUT_TYPE>& c) {
+  tapa::stream<tapa::vec_t<OUTPUT_TYPE, 2>> c_vec("c_vec");
 
   tapa::task()
       // TEST 1: Invoke an FRT kernel with lock-free streams.
@@ -23,10 +23,10 @@ void StreamAdd_HostTask(tapa::istream<input_t>& a, tapa::istream<input_t>& b,
       // the streams to the FRT kernel requires a passthrough conversion.
       .invoke(StreamAdd, tapa::executable(FLAGS_bitstream), a, b, c_vec)
       .invoke(
-          // Convert the vec_t stream to a float stream.
-          [&](tapa::istream<tapa::vec_t<float, 2>>& c_vec,
-              tapa::ostream<float>& c) {
-            tapa::vec_t<float, 2> vec_out;
+          // Convert the vec_t stream to a stream.
+          [&](tapa::istream<tapa::vec_t<OUTPUT_TYPE, 2>>& c_vec,
+              tapa::ostream<OUTPUT_TYPE>& c) {
+            tapa::vec_t<OUTPUT_TYPE, 2> vec_out;
             TAPA_WHILE_NOT_EOT(c_vec) {
               vec_out = c_vec.read();
               c.write(vec_out[0]);
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
 
   tapa::stream<input_t> a("a");
   tapa::stream<input_t> b("b");
-  tapa::stream<float> c("c");
+  tapa::stream<OUTPUT_TYPE> c("c");
 
   bool has_error = false;
   tapa::task()
@@ -72,10 +72,10 @@ int main(int argc, char* argv[]) {
           a, b)
       .invoke(StreamAdd_HostTask, a, b, c)
       .invoke(
-          [&](tapa::istream<float>& c) {
+          [&](tapa::istream<OUTPUT_TYPE>& c) {
             for (uint64_t i = 0; i < n; ++i) {
               auto actual = c.read();
-              float expected = 0;
+              OUTPUT_TYPE expected = 0;
               // if a was not skipped, add a.value + a.offset
               if (i % 6 != 1 && i % 7 != 1) expected += i + (i % 32);
               // if b was not skipped, add b.value + b.offset

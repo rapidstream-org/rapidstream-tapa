@@ -25,6 +25,15 @@ struct vec_t : protected std::array<T, N> {
  private:
   using base_type = std::array<T, N>;
 
+  // if T is of type of ap_int or ap_uint, the width must be a multiple of 32,
+  // otherwise, the host alignment will not match the hardware alignment.
+  // e.g. ap_int<32> is 4 bytes, but ap_int<33> is 8 bytes in Vitis's
+  // implementation.
+  static_assert(
+      internal::ap_data_bits(T()) % 32 == 0,
+      "width of ap_int or ap_uint in a vec_t must be a multiple of 32 for "
+      "matched host and hardware alignment");
+
  public:
   // static constexpr metadata
   static constexpr int length = N;
