@@ -22,7 +22,7 @@ compile_zip() {
     --platform xilinx_u250_gen3x16_xdma_4_1_202210_1 \
     -f cannon.cpp \
     -t ProcElem \
-    --no-vitis-mode \
+    --target xilinx-hls \
     -o ${BATS_TMPDIR}/parallel-emulation.zip
 
   [ -f "${BATS_TMPDIR}/parallel-emulation.zip" ]
