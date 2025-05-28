@@ -361,7 +361,7 @@ def run_tapacc(
     tapacc_args = (
         "-top",
         top,
-        *(("-vitis",) if vitis_mode else ()),
+        *(("--target=xilinx-vitis",) if vitis_mode else ()),
         "--",
         *cflags,
         "-DTAPA_TARGET_DEVICE_",

@@ -14,6 +14,7 @@
 #include "clang/AST/ASTConsumer.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendActions.h"
+#include "clang/Lex/Lexer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
@@ -45,6 +46,7 @@ using clang::CompilerInstance;
 using clang::FunctionDecl;
 using clang::Rewriter;
 using clang::StringRef;
+using clang::TapaTargetAttr;
 using clang::tooling::ClangTool;
 using clang::tooling::CommonOptionsParser;
 using clang::tooling::newFrontendActionFactory;
@@ -60,7 +62,8 @@ namespace tapa {
 namespace internal {
 
 const string* top_name;
-bool vitis_mode = true;
+
+TapaTargetAttr::TargetType target = TapaTargetAttr::TargetType::XilinxHLS;
 
 class Consumer : public ASTConsumer {
  public:
@@ -140,9 +143,9 @@ class Consumer : public ASTConsumer {
           .write(oss);
       oss.flush();
       code["tasks"][task_name]["code"] = code_table[task];
-      // if a task is non-synthesizable, it is a lower-level task.
-      bool is_upper = GetTapaTask(task->getBody()) != nullptr &&
-                      !IsTaskNonSynthesizable(task);
+      // if a task is ignored, it is a lower-level task.
+      bool is_upper =
+          GetTapaTask(task->getBody()) != nullptr && !IsTaskIgnored(task);
       code["tasks"][task_name]["level"] = is_upper ? "upper" : "lower";
       code["tasks"][task_name].update(metadata_[task]);
     }
@@ -178,18 +181,33 @@ static OptionCategory tapa_option_category("TAPA Compiler Companion");
 static llvm::cl::opt<string> tapa_opt_top_name(
     "top", NumOccurrencesFlag::Required, ValueExpected::ValueRequired,
     llvm::cl::desc("Top-level task name"), llvm::cl::cat(tapa_option_category));
-static llvm::cl::opt<bool> tapa_opt_vitis_mode(
-    "vitis", llvm::cl::desc("Enable Vitis mode"),
-    llvm::cl::cat(tapa_option_category));
+static llvm::cl::opt<TapaTargetAttr::TargetType> tapa_opt_target(
+    "target", llvm::cl::desc("The target type, default to HLS"),
+    llvm::cl::cat(tapa_option_category),
+    llvm::cl::values(
+        llvm::cl::OptionEnumValue{"xilinx-aie",
+                                  TapaTargetAttr::TargetType::XilinxAIE,
+                                  "Xilina AI Engine target"},
+        llvm::cl::OptionEnumValue{"xilinx-hls",
+                                  TapaTargetAttr::TargetType::XilinxHLS,
+                                  "Xilinx HLS target (default)"},
+        llvm::cl::OptionEnumValue{"xilinx-vitis",
+                                  TapaTargetAttr::TargetType::XilinxVitis,
+                                  "Xilinx Vitis target"}));
 
 int main(int argc, const char** argv) {
   auto expected_parser =
       CommonOptionsParser::create(argc, argv, tapa_option_category);
   auto& parser = expected_parser.get();
   ClangTool tool{parser.getCompilations(), parser.getSourcePathList()};
+
   string top_name{tapa_opt_top_name.getValue()};
   tapa::internal::top_name = &top_name;
-  tapa::internal::vitis_mode = tapa_opt_vitis_mode.getValue();
+
+  if (tapa_opt_target.getNumOccurrences() > 0) {
+    tapa::internal::target = tapa_opt_target.getValue();
+  }
+
   int ret = tool.run(newFrontendActionFactory<tapa::internal::Action>().get());
   return ret;
 }

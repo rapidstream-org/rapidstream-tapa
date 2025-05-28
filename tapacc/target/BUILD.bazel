@@ -13,9 +13,9 @@ cc_library(
     hdrs = ["all_targets.h"],
     deps = [
         ":base_target",
+        ":ignore_target",
         ":xilinx_aie_target",
         ":xilinx_hls_target",
-        ":xilinx_non_synthesizable_target",
     ],
 )
 
@@ -24,6 +24,8 @@ cc_library(
     srcs = ["base_target.cpp"],
     hdrs = ["base_target.h"],
     deps = [
+        "//tapacc/rewriter:mmap",
+        "//tapacc/rewriter:stream",
         "//tapacc/rewriter:type",
         "@tapa-llvm-project//clang:tooling",
     ],
@@ -33,34 +35,19 @@ cc_library(
     name = "xilinx_hls_target",
     srcs = ["xilinx_hls_target.cpp"],
     hdrs = ["xilinx_hls_target.h"],
-    deps = [
-        ":base_target",
-        "//tapacc/rewriter:mmap",
-        "//tapacc/rewriter:stream",
-        "//tapacc/rewriter:type",
-    ],
+    deps = [":base_target"],
 )
 
 cc_library(
     name = "xilinx_aie_target",
     srcs = ["xilinx_aie_target.cpp"],
     hdrs = ["xilinx_aie_target.h"],
-    deps = [
-        ":base_target",
-        "//tapacc/rewriter:mmap",
-        "//tapacc/rewriter:stream",
-        "//tapacc/rewriter:type",
-    ],
+    deps = [":base_target"],
 )
 
 cc_library(
-    name = "xilinx_non_synthesizable_target",
-    srcs = ["xilinx_non_synthesizable_target.cpp"],
-    hdrs = ["xilinx_non_synthesizable_target.h"],
-    deps = [
-        ":base_target",
-        "//tapacc/rewriter:mmap",
-        "//tapacc/rewriter:stream",
-        "//tapacc/rewriter:type",
-    ],
+    name = "ignore_target",
+    srcs = ["ignore_target.cpp"],
+    hdrs = ["ignore_target.h"],
+    deps = [":base_target"],
 )

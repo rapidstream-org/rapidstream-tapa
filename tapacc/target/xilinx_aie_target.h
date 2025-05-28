@@ -2,8 +2,7 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#ifndef TAPA_XILINX_AIE_TARGET_H_
-#define TAPA_XILINX_AIE_TARGET_H_
+#pragma once
 
 #include "base_target.h"
 
@@ -51,5 +50,3 @@ class XilinxAIETarget : public BaseTarget {
 
 }  // namespace internal
 }  // namespace tapa
-
-#endif  // TAPA_XILINX_AIE_TARGET_H_

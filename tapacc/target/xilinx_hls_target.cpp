@@ -4,10 +4,6 @@
 
 #include "xilinx_hls_target.h"
 
-#include "../rewriter/mmap.h"
-#include "../rewriter/stream.h"
-#include "../rewriter/type.h"
-
 #include <cctype>
 #include <string>
 
@@ -18,84 +14,6 @@ using llvm::StringRef;
 
 namespace tapa {
 namespace internal {
-
-extern bool vitis_mode;
-
-static void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {
-  auto param_name = param->getNameAsString();
-  auto add_dummy_read = [&add_line](std::string name) {
-    add_line("{ auto val = " + name + ".read(); }");
-  };
-  auto add_dummy_write = [&add_line](std::string name, std::string type) {
-    add_line(name + ".write(" + type + "());");
-  };
-
-  if (IsTapaType(param, "istream")) {
-    add_dummy_read(param_name);
-
-  } else if (IsTapaType(param, "ostream")) {
-    auto type = GetStreamElemType(param);
-    if (qdma) {
-      int width =
-          param->getASTContext()
-              .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
-              .Width;
-      type = "qdma_axis<" + std::to_string(width) + ", 0, 0, 0>";
-    }
-    add_dummy_write(param_name, type);
-
-  } else if (IsTapaType(param, "istreams")) {
-    if (qdma) {
-      add_line("#error istreams not supported for qdma-based tasks");
-    } else {
-      for (size_t i = 0; i < GetArraySize(param); ++i) {
-        add_dummy_read(ArrayNameAt(param_name, i));
-      }
-    }
-
-  } else if (IsTapaType(param, "ostreams")) {
-    if (qdma) {
-      add_line("#error ostreams not supported for qdma-based tasks");
-    } else {
-      for (size_t i = 0; i < GetArraySize(param); ++i) {
-        add_dummy_write(ArrayNameAt(param_name, i), GetStreamElemType(param));
-      }
-    }
-  }
-}
-
-static void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {
-  auto param_name = param->getNameAsString();
-  if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
-    for (size_t i = 0; i < GetArraySize(param); ++i) {
-      add_line("{ auto val = reinterpret_cast<volatile uint8_t&>(" +
-               GetArrayElem(param_name, i) + "); }");
-    }
-  } else {
-    if (IsTapaType(param, "mmap")) param_name += "_offset";
-    auto elem_type = param->getType();
-    const bool is_const = elem_type.isConstQualified();
-    add_line(std::string("{ auto val = reinterpret_cast<volatile ") +
-             (is_const ? "const " : "") + "uint8_t&>(" + param_name + "); }");
-  }
-}
-
-static void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
-                            std::string pragma) {
-  if (auto compound = llvm::dyn_cast<clang::CompoundStmt>(body)) {
-    rewriter.InsertTextAfterToken(compound->getLBracLoc(),
-                                  std::string("\n#pragma ") + pragma + "\n");
-  } else {
-    rewriter.InsertTextBefore(body->getBeginLoc(),
-                              std::string("_Pragma(\"") + pragma + "\")");
-  }
-}
-
-static void AddPragmaAfterStmt(clang::Rewriter& rewriter,
-                               const clang::Stmt* stmt, std::string pragma) {
-  rewriter.InsertTextAfterToken(stmt->getEndLoc(),
-                                std::string("\n#pragma ") + pragma + "\n");
-}
 
 static void AddPipelinePragma(clang::Rewriter& rewriter,
                               const clang::TapaPipelineAttr* attr,
@@ -109,7 +27,7 @@ static void AddPipelinePragma(clang::Rewriter& rewriter,
 static void AddStreamDepthPragma(clang::Rewriter& rewriter,
                                  const clang::Stmt* stmt, std::string name,
                                  int depth) {
-  std::string pragma = "HLS STREAM";
+  std::string pragma = "HLS stream";
   pragma += " variable = " + name + "._";
   pragma += " depth = " + std::to_string(depth);
   AddPragmaAfterStmt(rewriter, stmt, pragma);
@@ -117,14 +35,14 @@ static void AddStreamDepthPragma(clang::Rewriter& rewriter,
 
 void XilinxHLSTarget::AddCodeForTopLevelFunc(ADD_FOR_FUNC_ARGS_DEF) {
   // Set top-level control to s_axilite for Vitis mode.
-  if (vitis_mode) {
+  if (is_vitis) {
     add_pragma({"HLS interface s_axilite port = return bundle = control"});
     add_line("");
   }
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
-  if (vitis_mode) {
+  if (is_vitis) {
     add_pragma({"HLS interface axis port =", param->getNameAsString()});
     AddDummyStreamRW(ADD_FOR_PARAMS_ARGS, true);
   } else {
@@ -133,7 +51,7 @@ void XilinxHLSTarget::AddCodeForTopLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
-  if (!vitis_mode) {
+  if (!is_vitis) {
     add_line("#error top-level async_mmaps not supported in non-Vitis mode");
     return;
   }
@@ -141,7 +59,7 @@ void XilinxHLSTarget::AddCodeForTopLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
-  if (!vitis_mode) {
+  if (!is_vitis) {
     add_line("#error top-level mmaps not supported in non-Vitis mode");
     return;
   }
@@ -160,7 +78,7 @@ void XilinxHLSTarget::AddCodeForTopLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {
-  if (vitis_mode) {
+  if (is_vitis) {
     add_pragma({"HLS interface s_axilite port =", param->getNameAsString(),
                 "bundle = control"});
     AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS);
@@ -270,7 +188,7 @@ void XilinxHLSTarget::AddCodeForLowerLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
 }
 
 void XilinxHLSTarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {
-  if (vitis_mode) {
+  if (is_vitis) {
     // We need a empty shell for the top-level function body so that TAPA
     // can use the shell to connect the subtasks.
     if (func->isThisDeclarationADefinition()) {
@@ -340,7 +258,7 @@ void XilinxHLSTarget::RewriteTopLevelFuncArguments(REWRITE_FUNC_ARGS_DEF) {
   bool qdma_header_inserted = false;
   // Replace mmaps arguments with 64-bit base addresses.
   for (const auto param : func->parameters()) {
-    if (IsTapaType(param, "(i|o)stream") && vitis_mode) {
+    if (IsTapaType(param, "(i|o)stream") && is_vitis) {
       // For Vitis mode, replace istream and ostream with qdma_axis.
       // TODO: support streams
       int width =

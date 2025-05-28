@@ -2,13 +2,16 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#ifndef TAPA_BASE_TARGET_H_
-#define TAPA_BASE_TARGET_H_
+#pragma once
 
 #include "clang/AST/AST.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/ADT/StringExtras.h"
+
+#include "../rewriter/mmap.h"
+#include "../rewriter/stream.h"
+#include "../rewriter/type.h"
 
 #define ADD_FOR_FUNC_ARGS_DEF                                           \
   const clang::FunctionDecl *func,                                      \
@@ -160,7 +163,13 @@ class BaseTarget : public Target {
   BaseTarget() {}
 };
 
+void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma);
+void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF);
+
+void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
+                     std::string pragma);
+void AddPragmaAfterStmt(clang::Rewriter& rewriter, const clang::Stmt* stmt,
+                        std::string pragma);
+
 }  // namespace internal
 }  // namespace tapa
-
-#endif  // TAPA_BASE_TARGET_H_

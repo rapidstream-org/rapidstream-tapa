@@ -93,11 +93,9 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
                                 llvm::ArrayRef<const clang::Attr*> attrs);
 };
 
-// Check if a task has non-synthesizable label.
-inline bool IsTaskNonSynthesizable(const clang::FunctionDecl* func) {
+inline bool IsTaskIgnored(const clang::FunctionDecl* func) {
   if (auto attr = func->getAttr<clang::TapaTargetAttr>()) {
-    if (attr->getTarget() ==
-        clang::TapaTargetAttr::TargetType::NON_SYNTHESIZABLE) {
+    if (attr->getTarget() == clang::TapaTargetAttr::TargetType::Ignore) {
       return true;
     }
   }
@@ -109,8 +107,8 @@ inline bool IsTaskNonSynthesizable(const clang::FunctionDecl* func) {
 // Lower-level tasks or non-task functions return an empty vector.
 inline std::vector<const clang::FunctionDecl*> FindChildrenTasks(
     const clang::FunctionDecl* upper) {
-  // when a function is non-synthesizable, it does not have any children.
-  if (IsTaskNonSynthesizable(upper)) {
+  // when a function is ignored, it does not have any children.
+  if (IsTaskIgnored(upper)) {
     return {};
   }
 

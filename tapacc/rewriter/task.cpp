@@ -54,25 +54,15 @@ using nlohmann::json;
 namespace tapa {
 namespace internal {
 
-static std::map<TapaTargetAttr::TargetType,
-                std::map<TapaTargetAttr::VendorType, Target*>>
-    target_map{
-        {TapaTargetAttr::TargetType::HLS,
-         {
-             {TapaTargetAttr::VendorType::Xilinx,
-              XilinxHLSTarget::GetInstance()},
-         }},
-        {TapaTargetAttr::TargetType::AIE,
-         {
-             {TapaTargetAttr::VendorType::Xilinx,
-              XilinxAIETarget::GetInstance()},
-         }},
-        {TapaTargetAttr::TargetType::NON_SYNTHESIZABLE,
-         {
-             {TapaTargetAttr::VendorType::Xilinx,
-              XilinxNonSynthesizableTarget::GetInstance()},
-         }},
-    };
+extern TapaTargetAttr::TargetType target;
+static std::map<TapaTargetAttr::TargetType, Target*> target_map{
+    {TapaTargetAttr::TargetType::XilinxAIE, XilinxAIETarget::GetInstance()},
+    {TapaTargetAttr::TargetType::XilinxHLS,
+     XilinxHLSTarget::GetInstance(/*is_vitis=*/false)},
+    {TapaTargetAttr::TargetType::XilinxVitis,
+     XilinxHLSTarget::GetInstance(/*is_vitis=*/true)},
+    {TapaTargetAttr::TargetType::Ignore, IgnoreTarget::GetInstance()},
+};
 
 extern const string* top_name;
 
@@ -123,33 +113,28 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
   current_task = func;
 
   TapaTargetAttr::TargetType target;
-  TapaTargetAttr::VendorType vendor;
   if (auto attr = func->getAttr<TapaTargetAttr>()) {
+    // if overriden by the attribute
     target = attr->getTarget();
-    vendor = attr->getVendor();
   } else {
-    target = TapaTargetAttr::TargetType::HLS;
-    vendor = TapaTargetAttr::VendorType::Xilinx;
+    target = tapa::internal::target;
   }
 
   // The task metadata should only be obtained from the function definition
   if (func->isThisDeclarationADefinition()) {
     auto& metadata = GetMetadata();
     metadata["target"] = TapaTargetAttr::ConvertTargetTypeToStr(target);
-    metadata["vendor"] = TapaTargetAttr::ConvertVendorTypeToStr(vendor);
 
-    if (target_map.find(target) == target_map.end() ||
-        target_map[target].find(vendor) == target_map[target].end()) {
+    if (target_map.find(target) == target_map.end()) {
       static const auto diagnostic_id =
           this->context_.getDiagnostics().getCustomDiagID(
               clang::DiagnosticsEngine::Error, "unsupported target: %0");
       this->context_.getDiagnostics()
           .Report(func->getLocation(), diagnostic_id)
-          .AddString(std::string(metadata["target"]) + " by " +
-                     std::string(metadata["vendor"]));
-      current_target = XilinxHLSTarget::GetInstance();
+          .AddString(std::string(metadata["target"]));
+      assert(false && "unsupported target");
     } else {
-      current_target = target_map[target][vendor];
+      current_target = target_map[target];
     }
   }
 
@@ -183,14 +168,14 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       // FIXME: This is not a perfect way to determine the level of the task,
       // especially when visiting the function signature.
       bool is_upper_level_task = GetTapaTask(func->getBody()) != nullptr;
-      // if the task is non-synthesizable, it is a lower-level tapa task.
-      if (IsTaskNonSynthesizable(func)) {
+      // if the task is ignored, it is treated as a leaf task.
+      if (IsTaskIgnored(func)) {
         is_upper_level_task = false;
         if (is_top_level_task) {
           static const auto diagnostic_id =
               this->context_.getDiagnostics().getCustomDiagID(
                   clang::DiagnosticsEngine::Error,
-                  "tapa top-level task cannot be non-synthesizable");
+                  "tapa top-level task cannot be ignored");
           this->context_.getDiagnostics().Report(func->getLocation(),
                                                  diagnostic_id);
         }

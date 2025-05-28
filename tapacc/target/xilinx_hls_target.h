@@ -2,8 +2,7 @@
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
-#ifndef TAPA_XILINX_HLS_TARGET_H_
-#define TAPA_XILINX_HLS_TARGET_H_
+#pragma once
 
 #include "base_target.h"
 
@@ -40,19 +39,21 @@ class XilinxHLSTarget : public BaseTarget {
   virtual void RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
                                    const clang::Stmt* body);
 
-  static tapa::internal::Target* GetInstance() {
-    static XilinxHLSTarget instance;
-    return &instance;
+  static tapa::internal::Target* GetInstance(bool is_vitis) {
+    static XilinxHLSTarget instance_vitis(true);
+    static XilinxHLSTarget instance_non_vitis(false);
+    return is_vitis ? &instance_vitis : &instance_non_vitis;
   }
 
   XilinxHLSTarget(XilinxHLSTarget const&) = delete;
   void operator=(XilinxHLSTarget const&) = delete;
 
  protected:
-  XilinxHLSTarget() {}
+  XilinxHLSTarget(bool is_vitis) : is_vitis(is_vitis) {}
+
+ private:
+  bool is_vitis = false;  // True if the target is Vitis instead of Vitis HLS.
 };
 
 }  // namespace internal
 }  // namespace tapa
-
-#endif  // TAPA_XILINX_HLS_TARGET_H_

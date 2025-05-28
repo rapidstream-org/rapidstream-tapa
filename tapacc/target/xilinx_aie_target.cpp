@@ -22,12 +22,6 @@ void aie_log_out(std::string path, std::string str, bool append) {
 namespace tapa {
 namespace internal {
 
-extern bool vitis_mode;
-
-static void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {}
-
-static void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {}
-
 void XilinxAIETarget::AddCodeForTopLevelFunc(ADD_FOR_FUNC_ARGS_DEF) {
   // Set top-level control to s_axilite for Vitis mode.
 }
@@ -44,7 +38,6 @@ void XilinxAIETarget::AddCodeForTopLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {}
 
 void XilinxAIETarget::AddCodeForMiddleLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForLowerLevelStream(ADD_FOR_PARAMS_ARGS);
-  AddDummyStreamRW(ADD_FOR_PARAMS_ARGS, false);
 }
 
 void XilinxAIETarget::AddCodeForMiddleLevelAsyncMmap(ADD_FOR_PARAMS_ARGS_DEF) {
@@ -55,9 +48,7 @@ void XilinxAIETarget::AddCodeForMiddleLevelMmap(ADD_FOR_PARAMS_ARGS_DEF) {
   AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS);
 }
 
-void XilinxAIETarget::AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {
-  AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS);
-}
+void XilinxAIETarget::AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) {}
 
 void XilinxAIETarget::AddCodeForLowerLevelStream(ADD_FOR_PARAMS_ARGS_DEF) {
   assert(IsTapaType(param, "(i|o)streams?"));
@@ -167,7 +158,7 @@ void XilinxAIETarget::ProcessNonCurrentTask(REWRITE_FUNC_ARGS_DEF,
     // Remove the TapaTargetAttr defintion if the function has one.
     rewriter.RemoveText(ExtendAttrRemovalRange(rewriter, attr->getRange()));
     // If target is not AIE, remove function definition.
-    if (attr->getTarget() != TapaTargetAttr::TargetType::AIE) {
+    if (attr->getTarget() != TapaTargetAttr::TargetType::XilinxAIE) {
       rewriter.RemoveText(func->getSourceRange());
     }
   } else {
@@ -234,13 +225,6 @@ void XilinxAIETarget::RewriteFuncArguments(const clang::FunctionDecl* func,
       //   adf_header_inserted = true;
       // }
     }
-  }
-}
-
-static void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
-                            std::string pragma) {
-  if (auto compound = llvm::dyn_cast<clang::CompoundStmt>(body)) {
-    rewriter.InsertText(compound->getLBracLoc(), std::string(pragma + "\n"));
   }
 }
 

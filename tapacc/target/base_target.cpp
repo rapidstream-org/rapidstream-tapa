@@ -4,6 +4,8 @@
 
 #include "base_target.h"
 
+#include "../rewriter/mmap.h"
+#include "../rewriter/stream.h"
 #include "../rewriter/type.h"
 
 namespace tapa {
@@ -227,6 +229,102 @@ void BaseTarget::RewriteUnrolledDecl(REWRITE_DECL_ARGS_DEF,
                                      const clang::Stmt* body) {}
 void BaseTarget::RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
                                      const clang::Stmt* body) {}
+
+// Add dummy read and write operations for streams, mmap, and scalar, so that
+// the function arguments will not be optimized out by the vendor compilers.
+void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {
+  auto param_name = param->getNameAsString();
+  auto add_dummy_read = [&add_line](std::string name) {
+    add_line("{ auto val = " + name + ".peek(nullptr); }");
+    add_line("{ auto val = " + name + ".read(); }");
+  };
+  auto add_dummy_write = [&add_line](std::string name, std::string type) {
+    add_line(name + ".write(" + type + "());");
+  };
+
+  if (IsTapaType(param, "istream")) {
+    add_dummy_read(param_name);
+
+  } else if (IsTapaType(param, "ostream")) {
+    auto type = GetStreamElemType(param);
+    if (qdma) {
+      int width =
+          param->getASTContext()
+              .getTypeInfo(GetTemplateArg(param->getType(), 0)->getAsType())
+              .Width;
+      type = "qdma_axis<" + std::to_string(width) + ", 0, 0, 0>";
+    }
+    add_dummy_write(param_name, type);
+
+  } else if (IsTapaType(param, "istreams")) {
+    if (qdma) {
+      add_line("#error istreams not supported for qdma-based tasks");
+    } else {
+      for (size_t i = 0; i < GetArraySize(param); ++i) {
+        add_dummy_read(ArrayNameAt(param_name, i));
+      }
+    }
+
+  } else if (IsTapaType(param, "ostreams")) {
+    if (qdma) {
+      add_line("#error ostreams not supported for qdma-based tasks");
+    } else {
+      for (size_t i = 0; i < GetArraySize(param); ++i) {
+        add_dummy_write(ArrayNameAt(param_name, i), GetStreamElemType(param));
+      }
+    }
+  }
+}
+
+void AddDummyMmapOrScalarRW(ADD_FOR_PARAMS_ARGS_DEF) {
+  auto param_name = param->getNameAsString();
+  if (IsTapaType(param, "((async_)?mmaps|hmap)")) {
+    for (size_t i = 0; i < GetArraySize(param); ++i) {
+      add_line("{ auto val = reinterpret_cast<volatile uint8_t&>(" +
+               GetArrayElem(param_name, i) + "); }");
+    }
+  } else {
+    if (IsTapaType(param, "mmap")) param_name += "_offset";
+    auto elem_type = param->getType();
+    const bool is_const = elem_type.isConstQualified();
+    add_line(std::string("{ auto val = reinterpret_cast<volatile ") +
+             (is_const ? "const " : "") + "uint8_t&>(" + param_name + "); }");
+  }
+}
+
+void AddPragmaToBody(clang::Rewriter& rewriter, const clang::Stmt* body,
+                     std::string pragma) {
+  if (auto compound = llvm::dyn_cast<clang::CompoundStmt>(body)) {
+    rewriter.InsertTextAfterToken(compound->getLBracLoc(),
+                                  std::string("\n#pragma ") + pragma + "\n");
+  } else {
+    rewriter.InsertTextBefore(body->getBeginLoc(),
+                              std::string("_Pragma(\"") + pragma + "\")");
+  }
+}
+
+void AddPragmaAfterStmt(clang::Rewriter& rewriter, const clang::Stmt* stmt,
+                        std::string pragma) {
+  rewriter.InsertTextAfterToken(stmt->getEndLoc(),
+                                std::string("\n#pragma ") + pragma + "\n");
+}
+
+void AddPipelinePragma(clang::Rewriter& rewriter,
+                       const clang::TapaPipelineAttr* attr,
+                       const clang::Stmt* body) {
+  auto II = attr->getII();
+  std::string pragma = "HLS pipeline";
+  if (II) pragma += std::string(" II = ") + std::to_string(II);
+  AddPragmaToBody(rewriter, body, pragma);
+}
+
+void AddStreamDepthPragma(clang::Rewriter& rewriter, const clang::Stmt* stmt,
+                          std::string name, int depth) {
+  std::string pragma = "HLS STREAM";
+  pragma += " variable = " + name + "._";
+  pragma += " depth = " + std::to_string(depth);
+  AddPragmaAfterStmt(rewriter, stmt, pragma);
+}
 
 }  // namespace internal
 }  // namespace tapa

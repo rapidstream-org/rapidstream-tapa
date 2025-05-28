@@ -7,7 +7,7 @@ diff --git a/clang/include/clang/Basic/Attr.td b/clang/include/clang/Basic/Attr.
 index 46d0a66d59c3..4e4c52ced4f8 100644
 --- a/clang/include/clang/Basic/Attr.td
 +++ b/clang/include/clang/Basic/Attr.td
-@@ -4719,3 +4719,36 @@ def ClspvLibclcBuiltin: InheritableAttr {
+@@ -4719,3 +4719,33 @@ def ClspvLibclcBuiltin: InheritableAttr {
    let Documentation = [ClspvLibclcBuiltinDoc];
    let SimpleHandler = 1;
  }
@@ -35,11 +35,8 @@ index 46d0a66d59c3..4e4c52ced4f8 100644
 +                   CXX11<"tapa","target">,
 +                   C23<"tapa", "target">];
 +  let Args = [EnumArgument<"Target", "TargetType", /*is_string=*/true,
-+                           ["hls", "aie", "non_synthesizable"],
-+                           ["HLS", "AIE", "NON_SYNTHESIZABLE"]>,
-+              EnumArgument<"Vendor", "VendorType", /*is_string=*/true,
-+                           ["xilinx"],
-+                           ["Xilinx"], /* optional */1>];
++                           ["xilinx_aie", "xilinx_hls", "xilinx_vitis", "ignore"],
++                           ["XilinxAIE", "XilinxHLS", "XilinxVitis", "Ignore"]>];
 +  let Documentation = [Undocumented];
 +}
 +
@@ -48,7 +45,7 @@ diff --git a/clang/lib/Sema/SemaDeclAttr.cpp b/clang/lib/Sema/SemaDeclAttr.cpp
 index e2eada24f9fc..8f5c69a759d2 100644
 --- a/clang/lib/Sema/SemaDeclAttr.cpp
 +++ b/clang/lib/Sema/SemaDeclAttr.cpp
-@@ -159,6 +159,55 @@ bool Sema::checkStringLiteralArgumentAttr(const ParsedAttr &AL, unsigned ArgNum,
+@@ -159,6 +159,43 @@ bool Sema::checkStringLiteralArgumentAttr(const ParsedAttr &AL, unsigned ArgNum,
    return checkStringLiteralArgumentAttr(AL, ArgExpr, Str, ArgLocation);
  }
  
@@ -69,11 +66,11 @@ index e2eada24f9fc..8f5c69a759d2 100644
 +}
 +
 +static void handleTapaTargetAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
-+  StringRef TargetStr, VendorStr;
++  StringRef TargetStr;
 +  SourceLocation ArgLoc;
 +
 +  if (AL.getNumArgs() == 0)
-+    TargetStr = "hls";
++    TargetStr = "xilinx_hls";
 +  else if (!S.checkStringLiteralArgumentAttr(AL, 0, TargetStr, &ArgLoc))
 +    return;
 +
@@ -84,19 +81,7 @@ index e2eada24f9fc..8f5c69a759d2 100644
 +    return;
 +  }
 +
-+  if (AL.getNumArgs() == 1)
-+    VendorStr = "xilinx";
-+  else if (!S.checkStringLiteralArgumentAttr(AL, 1, VendorStr, &ArgLoc))
-+    return;
-+
-+  TapaTargetAttr::VendorType Vendor;
-+  if (!TapaTargetAttr::ConvertStrToVendorType(VendorStr, Vendor)) {
-+    S.Diag(AL.getLoc(), diag::warn_attribute_type_not_supported)
-+        << AL << VendorStr << ArgLoc;
-+    return;
-+  }
-+
-+  D->addAttr(::new (S.Context) TapaTargetAttr(S.Context, AL, Target, Vendor));
++  D->addAttr(::new (S.Context) TapaTargetAttr(S.Context, AL, Target));
 +}
 +
 +// End TAPA
