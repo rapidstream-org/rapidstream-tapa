@@ -234,9 +234,13 @@ void BaseTarget::RewriteUnrolledStmt(REWRITE_STMT_ARGS_DEF,
 // the function arguments will not be optimized out by the vendor compilers.
 void AddDummyStreamRW(ADD_FOR_PARAMS_ARGS_DEF, bool qdma) {
   auto param_name = param->getNameAsString();
-  auto add_dummy_read = [&add_line](std::string name) {
-    add_line("{ auto val = " + name + ".peek(nullptr); }");
+  auto add_dummy_read = [&add_line, qdma](std::string name) {
     add_line("{ auto val = " + name + ".read(); }");
+    if (!qdma) {
+      // For non-qdma streams, peeks are supported and we need to make sure
+      // it still exists.
+      add_line("{ auto val = " + name + ".peek(nullptr); }");
+    }
   };
   auto add_dummy_write = [&add_line](std::string name, std::string type) {
     add_line(name + ".write(" + type + "());");
