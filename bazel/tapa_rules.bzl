@@ -13,10 +13,13 @@ def _tapa_xo_impl(ctx):
     work_dir = ctx.actions.declare_directory(ctx.attr.name + ".tapa")
 
     output_file = ctx.outputs.output_file
-    if output_file == None and ctx.attr.vitis_mode:
+    if output_file == None and ctx.attr.target == "xilinx-vitis":
         output_file = ctx.actions.declare_file(ctx.attr.name + ".xo")
-    if output_file == None and not ctx.attr.vitis_mode:
+    if output_file == None and ctx.attr.target == "xilinx-hls":
         output_file = ctx.actions.declare_file(ctx.attr.name + ".zip")
+
+    if ctx.attr.target not in ["xilinx-vitis", "xilinx-hls"]:
+        fail("Unsupported target: {}".format(ctx.attr.target))
 
     outputs = [work_dir]
 
@@ -41,10 +44,7 @@ def _tapa_xo_impl(ctx):
         for include in ctx.files.include:
             tapa_cmd.extend(["--cflags", "-I" + include.path])
 
-    if ctx.attr.vitis_mode:
-        tapa_cmd.extend(["--vitis-mode"])
-    else:
-        tapa_cmd.extend(["--no-vitis-mode"])
+    tapa_cmd.extend(["--target", ctx.attr.target])
 
     # Add flatten hierarchy, if specified.
     if ctx.attr.flatten_hierarchy:
@@ -144,9 +144,9 @@ tapa_xo = rule(
         "tapacc": attr.label(allow_single_file = True),
         "tapa_clang": attr.label(allow_single_file = True),
         "cflags": attr.string(),
-        "vitis_mode": attr.bool(
-            default = True,
-            doc = "If true, generate XO as `output_file`. Otherwise, generate RTL in the work dir as `output_file`.",
+        "target": attr.string(
+            default = "xilinx-vitis",
+            doc = "The target platform for the synthesis. Default is 'xilinx-vitis'.",
         ),
         "clock_period": attr.string(),
         "part_num": attr.string(),

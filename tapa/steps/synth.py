@@ -9,12 +9,13 @@ RapidStream Contributor License Agreement.
 import json
 import os
 from pathlib import Path
-from typing import Literal, NoReturn
+from typing import NoReturn
 
 import click
 
 from tapa.abgraph.gen_abgraph import get_top_level_ab_graph
 from tapa.backend.xilinx import parse_device_info
+from tapa.common.target import Target
 from tapa.steps.common import (
     is_pipelined,
     load_persistent_context,
@@ -84,12 +85,6 @@ from tapa.steps.common import (
     help="If non-empty, overrides the schema version in generated reports.",
 )
 @click.option(
-    "--flow-type",
-    type=click.Choice(["hls", "aie"], case_sensitive=False),
-    default="hls",
-    help="Flow Option: 'hls' for FPGA Fabric steps, 'aie' for Versal AIE steps.",
-)
-@click.option(
     "--nonpipeline-fifos",
     type=click.Path(dir_okay=False, writable=True),
     default=None,
@@ -115,13 +110,13 @@ def synth(  # noqa: PLR0913,PLR0917
     enable_synth_util: bool,
     print_fifo_ops: bool,
     override_report_schema_version: str,
-    flow_type: Literal["aie", "hls"],
     nonpipeline_fifos: Path | None,
     gen_ab_graph: bool,
 ) -> None:
     """Synthesize the TAPA program into RTL code."""
     program = load_tapa_program()
     settings = load_persistent_context("settings")
+    target = Target(settings.get("target"))
 
     # Automatically infer the information of the given device
     device = get_device_info(part_num, platform, clock_period)
@@ -132,10 +127,9 @@ def synth(  # noqa: PLR0913,PLR0917
     settings["part_num"] = part_num
     settings["platform"] = platform
     settings["clock_period"] = clock_period
-    settings["flow_type"] = flow_type
 
     # Generate RTL code
-    if flow_type == "aie":
+    if target == Target.XILINX_AIE:
         assert platform is not None, "Platform must be specified for AIE flow."
         program.run_aie(
             clock_period,
@@ -143,7 +137,7 @@ def synth(  # noqa: PLR0913,PLR0917
             keep_hls_work_dir,
             platform,
         )
-    elif flow_type == "hls":
+    elif target in {Target.XILINX_VITIS, Target.XILINX_HLS}:
         program.run_hls(
             clock_period,
             part_num,

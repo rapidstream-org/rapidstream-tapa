@@ -52,7 +52,7 @@ def floorplan(
         store_tapa_program(
             Program(
                 obj=graph_dict,
-                vitis_mode=program.vitis_mode,
+                target=program.target,
                 work_dir=program.work_dir,
                 floorplan_slots=fp_slots,
                 flattened=program.flattened,

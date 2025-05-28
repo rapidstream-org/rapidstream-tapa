@@ -82,6 +82,6 @@ tapa_xo(
     name = "stream-top-hls-zip",
     src = "vadd.cpp",
     hdrs = glob(["*.h"]),
+    target = "xilinx-hls",
     top_name = "StreamAdd",
-    vitis_mode = False,
 )

@@ -101,6 +101,7 @@ py_library(
         ":instance",
         ":task",
         ":util",
+        "//tapa/common:target",
         "//tapa/graphir",
         "//tapa/graphir_conversion",
         "//tapa/program:directory",

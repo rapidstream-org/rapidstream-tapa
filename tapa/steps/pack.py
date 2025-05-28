@@ -13,6 +13,7 @@ from typing import Literal
 
 import click
 
+from tapa.common.target import Target
 from tapa.steps.common import is_pipelined, load_persistent_context, load_tapa_program
 
 _logger = logging.getLogger().getChild(__name__)
@@ -75,17 +76,16 @@ def pack(
     """Pack the generated RTL into a Xilinx object file."""
     program = load_tapa_program()
     settings = load_persistent_context("settings")
-    vitis_mode = settings.get("vitis-mode", True)
-    flow_type = settings.get("flow_type", "hls")
+    target = Target(settings.get("target"))
 
-    if flow_type == "aie":
+    if target == Target.XILINX_AIE:
         return
 
     if custom_rtl:
         templates_info = load_persistent_context("templates_info")
         program.replace_custom_rtl(custom_rtl, templates_info)
 
-    if vitis_mode:
+    if target == Target.XILINX_VITIS:
         output = _enforce_path_suffix(
             output, suffix=".xo", reason="you are in Vitis mode"
         )

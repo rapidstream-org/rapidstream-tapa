@@ -18,6 +18,7 @@ py_library(
         "//tapa/backend",
         "//tapa/common",
         "//tapa/common:paths",
+        "//tapa/common:target",
         requirement("click"),
     ],
 )

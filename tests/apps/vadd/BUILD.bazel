@@ -117,9 +117,9 @@ tapa_xo(
     src = "vadd.cpp",
     hdrs = ["vadd.h"],
     include = ["."],
+    target = "xilinx-hls",
     top_name = "VecAdd",
     visibility = ["//tests/functional:__subpackages__"],
-    vitis_mode = False,
 )
 
 vpp_xclbin(

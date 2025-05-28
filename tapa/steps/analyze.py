@@ -21,6 +21,7 @@ import click
 
 from tapa.common.graph import Graph as TapaGraph
 from tapa.common.paths import find_resource, get_tapa_cflags
+from tapa.common.target import Target
 from tapa.common.task_definition import TaskDefinition
 from tapa.core import Program
 from tapa.steps.common import (
@@ -73,23 +74,17 @@ _logger = logging.getLogger().getChild(__name__)
     ),
 )
 @click.option(
-    "--vitis-mode / --no-vitis-mode",
-    type=bool,
-    default=True,
-    help=(
-        "`--vitis-mode` (default) will generate .xo files for Vitis "
-        "`v++` command, with AXI4-Lite interfaces for task arguments "
-        "and return values, and AXI4-Stream interfaces for task FIFOs; "
-        "`--no-vitis-mode` will only generate RTL code with Vitis HLS "
-        "compatible interfaces"
-    ),
+    "--target",
+    type=click.Choice([t.value for t in Target]),
+    help="Target flow of TAPA compiler, default to `xilinx-vitis`.",
+    default=Target.XILINX_VITIS.value,
 )
 def analyze(
     input_files: tuple[str, ...],
     top: str,
     cflags: tuple[str, ...],
     flatten_hierarchy: bool,
-    vitis_mode: bool,
+    target: str,
 ) -> None:
     """Analyze TAPA program and store the program description."""
     tapacc = find_clang_binary("tapacc-binary")
@@ -110,7 +105,7 @@ def analyze(
         flatten_files,
         top,
         tapacc_cflags + system_cflags,
-        vitis_mode,
+        target,
     )
     graph_dict["cflags"] = tapacc_cflags
 
@@ -122,9 +117,9 @@ def analyze(
     # If the top task is a leaf task, Vitis mode will not work.
     if (
         tapa_graph.get_top_task_def().get_level() == TaskDefinition.Level.LEAF
-        and vitis_mode
+        and target != Target.XILINX_VITIS.name
     ):
-        msg = "The top task is a leaf task, please use `--no-vitis-mode`."
+        msg = "The top task is a leaf task, please use `--target=xilinx-vitis`."
         raise click.UsageError(msg)
 
     fp_slots = []
@@ -132,7 +127,7 @@ def analyze(
     store_tapa_program(
         Program(
             obj=graph_dict,
-            vitis_mode=vitis_mode,
+            target=target,
             work_dir=work_dir,
             floorplan_slots=fp_slots,
             flattened=flatten_hierarchy,
@@ -140,7 +135,7 @@ def analyze(
     )
 
     store_persistent_context("graph", graph_dict)
-    store_persistent_context("settings", {"vitis-mode": vitis_mode})
+    store_persistent_context("settings", {"target": target})
 
     is_pipelined("analyze", True)
 
@@ -344,7 +339,7 @@ def run_tapacc(
     files: tuple[str, ...],
     top: str,
     cflags: tuple[str, ...],
-    vitis_mode: bool,
+    target: str,
 ) -> dict:
     """Execute tapacc and return the program description.
 
@@ -353,7 +348,7 @@ def run_tapacc(
       files: C/C++ files to flatten.
       top: Top task name.
       cflags: User specified CFLAGS with TAPA specific headers.
-      vitis_mode: Insert Vitis compatible interfaces or not.
+      target: Target flow of TAPA compiler, e.g., `xilinx-vitis`.
 
     Returns:
       Output description of the TAPA program.
@@ -361,7 +356,8 @@ def run_tapacc(
     tapacc_args = (
         "-top",
         top,
-        *(("--target=xilinx-vitis",) if vitis_mode else ()),
+        "--target",
+        target,
         "--",
         *cflags,
         "-DTAPA_TARGET_DEVICE_",

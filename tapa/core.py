@@ -42,6 +42,7 @@ from pyverilog.vparser.ast import (
     Wire,
 )
 
+from tapa.common.target import Target
 from tapa.instance import Instance
 from tapa.program.directory import ProgramDirectoryMixin
 from tapa.program.hls import ProgramHlsMixin
@@ -109,14 +110,14 @@ class Program(  # TODO: refactor this class
       is_temp: Whether to delete the working directory after done.
       _tasks: Dict mapping names of tasks to Task objects.
       files: Dict mapping file names to contents that appear in the HDL directory.
-      vitis_mode: Whether the generated RTL should match Vitis XO requirements.
+      target: The target flow of the program, e.g., "xilinx-hls" or "xilinx-vitis".
     """
 
     # ruff: noqa: PLR0913,PLR0917
     def __init__(
         self,
         obj: dict,
-        vitis_mode: bool,
+        target: str,
         work_dir: str | None = None,
         gen_templates: tuple[str, ...] = (),
         floorplan_slots: list[str] = [],
@@ -126,7 +127,7 @@ class Program(  # TODO: refactor this class
 
         Args:
           obj: json object.
-          vitis_mode: Whether the generated RTL should match Vitis XO requirements.
+          target: Target flow of the program, e.g., "xilinx-hls" or "xilinx-vitis".
           work_dir: Specify a working directory as a string. If None, a temporary
               one will be created.
           gen_templates: Tuple of task names that are templates. If a task is
@@ -137,7 +138,7 @@ class Program(  # TODO: refactor this class
         """
         self.top: str = obj["top"]
         self.cflags = " ".join(obj.get("cflags", []))
-        self.vitis_mode = vitis_mode
+        self.target = Target(target)
         if work_dir is None:
             self.work_dir = tempfile.mkdtemp(prefix="tapa-")
             self.is_temp = True
@@ -362,7 +363,8 @@ class Program(  # TODO: refactor this class
 
             if task.is_fifo_external(fifo_name):
                 task.connect_fifo_externally(
-                    fifo_name, task.name == self.top and self.vitis_mode
+                    fifo_name,
+                    task.name == self.top and self.target == Target.XILINX_VITIS,
                 )
 
     def _instantiate_fifos(self, task: Task, print_fifo_ops: bool) -> None:
@@ -822,7 +824,7 @@ class Program(  # TODO: refactor this class
         """Codegen for the top task."""
         # assert task.is_upper
         task.module.cleanup()
-        if task.name == self.top and self.vitis_mode:
+        if task.name == self.top and self.target == Target.XILINX_VITIS:
             task.module.add_rs_pragmas()
 
         # remove top level peek ports

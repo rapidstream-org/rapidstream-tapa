@@ -49,6 +49,6 @@ cc_binary(
 tapa_xo(
     name = "blackhole-zip",
     src = "blackhole.cpp",
+    target = "xilinx-hls",
     top_name = "Blackhole",
-    vitis_mode = False,
 )

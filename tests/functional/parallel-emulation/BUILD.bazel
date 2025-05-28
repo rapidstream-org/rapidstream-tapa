@@ -63,8 +63,8 @@ tapa_xo(
     hdrs = ["cannon.h"],
     include = ["."],
     cflags = "-DTAPA_CANNON_P=2",
+    target = "xilinx-hls",
     top_name = "Scatter",
-    vitis_mode = False,
 )
 
 tapa_xo(
@@ -73,8 +73,8 @@ tapa_xo(
     hdrs = ["cannon.h"],
     include = ["."],
     cflags = "-DTAPA_CANNON_P=2",
+    target = "xilinx-hls",
     top_name = "ProcElem",
-    vitis_mode = False,
 )
 
 tapa_xo(
@@ -83,8 +83,8 @@ tapa_xo(
     hdrs = ["cannon.h"],
     include = ["."],
     cflags = "-DTAPA_CANNON_P=2",
+    target = "xilinx-hls",
     top_name = "Gather",
-    vitis_mode = False,
 )
 
 sh_test(
@@ -146,8 +146,8 @@ tapa_xo(
     include = ["."],
     cflags = "-DTAPA_CANNON_P=4",
     tags = ["manual"],
+    target = "xilinx-hls",
     top_name = "Scatter",
-    vitis_mode = False,
 )
 
 tapa_xo(
@@ -157,8 +157,8 @@ tapa_xo(
     include = ["."],
     cflags = "-DTAPA_CANNON_P=4",
     tags = ["manual"],
+    target = "xilinx-hls",
     top_name = "ProcElem",
-    vitis_mode = False,
 )
 
 tapa_xo(
@@ -168,6 +168,6 @@ tapa_xo(
     include = ["."],
     cflags = "-DTAPA_CANNON_P=4",
     tags = ["manual"],
+    target = "xilinx-hls",
     top_name = "Gather",
-    vitis_mode = False,
 )
