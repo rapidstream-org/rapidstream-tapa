@@ -44,11 +44,16 @@ from tapa.graphir.types import (
     Range,
     Token,
 )
+from tapa.instance import Port
 from tapa.task import Task
+from tapa.verilog.util import Pipeline
+from tapa.verilog.xilinx.const import ISTREAM_SUFFIXES, OSTREAM_SUFFIXES
+from tapa.verilog.xilinx.m_axi import M_AXI_PREFIX, M_AXI_SUFFIXES
+from tapa.verilog.xilinx.module import Module
 
-_PORT_TYPE_MAPPING = {
+PORT_TYPE_MAPPING = {
     "input": ModulePort.Type.INPUT,
-    "output": ModulePort.Type.OUTPUT,
+    "output": ModulePort.Type.OUTPUT_REG,
     "inout": ModulePort.Type.INOUT,
 }
 
@@ -137,11 +142,11 @@ def get_operator_token(node: Node) -> Token:
     return Token.new_lit(mapping[type(node)])
 
 
-def get_task_graphir_ports(task: Task) -> list[ModulePort]:
+def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
     """Get the graphir ports from a task."""
-    assert task.module.ports
+    assert task_module.ports
     ports = []
-    for name, port in task.module.ports.items():
+    for name, port in task_module.ports.items():
         if port.width:
             port_range = Range(
                 left=Expression(tuple(ast_to_tokens(port.width.msb))),
@@ -154,18 +159,18 @@ def get_task_graphir_ports(task: Task) -> list[ModulePort]:
             ModulePort(
                 name=name,
                 hierarchical_name=HierarchicalName.get_name(port.name),
-                type=_PORT_TYPE_MAPPING[port.direction],
+                type=PORT_TYPE_MAPPING[port.direction],
                 range=port_range,
             )
         )
     return ports
 
 
-def get_task_graphir_parameters(task: Task) -> list[ModuleParameter]:
+def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
     """Get the graphir parameters from a task."""
-    assert task.module.params
+    assert task_module.params
     graphir_params = []
-    for name, param in task.module.params.items():
+    for name, param in task_module.params.items():
         expr = Expression(tuple(ast_to_tokens(param.value)))
         graphir_params.append(
             ModuleParameter(
@@ -176,3 +181,74 @@ def get_task_graphir_parameters(task: Task) -> list[ModuleParameter]:
             )
         )
     return graphir_params
+
+
+def get_leaf_port_connection_mapping(
+    task_port: Port, task_module: Module, arg: str
+) -> dict[str, str]:
+    """Get leaf task port and slot port mapping.
+
+    Given a leaf task port and its arg, find all related ports in the task module based
+    on cat. Return a mapping from the leaf module port name to the connected slot port
+    name.
+    """
+    matching_ports = {}
+    if task_port.cat.is_scalar:
+        matching_ports[task_port.name] = arg
+
+    elif task_port.cat.is_istream:
+        for suffix in ISTREAM_SUFFIXES:
+            module_port = task_module.get_port_of(task_port.name, suffix)
+            matching_ports[module_port.name] = get_stream_port_name(arg, suffix)
+
+    elif task_port.cat.is_ostream:
+        for suffix in OSTREAM_SUFFIXES:
+            module_port = task_module.get_port_of(task_port.name, suffix)
+            matching_ports[module_port.name] = get_stream_port_name(arg, suffix)
+
+    elif task_port.cat.is_mmap:
+        # add offset mapping
+        # note that offset port is pipelined through fsm
+        matching_ports[f"{task_port.name}_offset"] = arg
+        for suffix in M_AXI_SUFFIXES:
+            m_axi_port_name = get_m_axi_port_name(task_port.name, suffix)
+            if m_axi_port_name in task_module.ports:
+                matching_ports[m_axi_port_name] = get_m_axi_port_name(arg, suffix)
+
+    else:
+        msg = f"Unknown port type for port {task_port.name}"
+        raise ValueError(msg)
+
+    return matching_ports
+
+
+def get_stream_port_name(task_port_name: str, suffix: str) -> str:
+    """Get the stream port name from the task port name and suffix."""
+    return f"{task_port_name}{suffix}"
+
+
+def get_m_axi_port_name(task_port_name: str, suffix: str) -> str:
+    """Get the m_axi port name from the task port name and suffix."""
+    return f"{M_AXI_PREFIX}{task_port_name}{suffix}"
+
+
+def get_task_arg_table(
+    task: Task,
+) -> dict[str, Pipeline]:
+    """Build arg table for fsm pipeline signals."""
+    arg_table: dict[str, Pipeline] = {}
+    for instance in task.instances:
+        for arg in instance.args:
+            if not arg.cat.is_stream:
+                # For mmap ports, the scalar port is the offset.
+                upper_name = (
+                    f"{arg.name}_offset"
+                    if arg.cat.is_sync_mmap or arg.cat.is_async_mmap
+                    else arg.name
+                )
+                id_name = "64'd0" if arg.chan_count is not None else upper_name
+                q = Pipeline(
+                    name=instance.get_instance_arg(id_name),
+                )
+                arg_table[arg.name] = q
+    return arg_table
