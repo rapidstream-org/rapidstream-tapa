@@ -143,7 +143,13 @@ void Visitor::VisitTask(const TapaTask& task) {
 
 bool Visitor::isFuncTapaTask(const FunctionDecl* func) {
   for (const auto& task : tapa_tasks_) {
-    if (task.func == func) return true;
+    // Compare the function name with the task function name since
+    // template are stored in task.func as the specialized function,
+    // while the currently visited function (func) is the original
+    // declaration.
+    if (task.func->getNameAsString() == func->getNameAsString()) {
+      return true;
+    }
   }
   return false;
 }
@@ -161,7 +167,7 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       if (func->hasBody()) funcs_.push_back(func);
     } else {
       // For all later traversals, process tapa task functions.
-      assert(rewriters_.count(func) > 0);
+      assert(rewriters_.count(*current_task) > 0);
       rewriting_func = func;
 
       // Run this before the function body is purged

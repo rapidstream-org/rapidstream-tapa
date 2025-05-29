@@ -1,4 +1,4 @@
-// Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
+// Copyright (c) 2024 RapidStream Design Automation, Inc. ane contributors.
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
 
@@ -78,12 +78,6 @@ class Consumer : public ASTConsumer {
     visitor_.TraverseDecl(context.getTranslationUnitDecl());
     visitor_.is_first_traversal = false;
 
-    // Create rewriters for all global functions.
-    for (auto func : funcs_) {
-      rewriters_[func] =
-          Rewriter(context.getSourceManager(), context.getLangOpts());
-    }
-
     // Utilities to show diagnostics.
     auto& diagnostics_engine = context.getDiagnostics();
     if (top_name == nullptr) {
@@ -118,13 +112,19 @@ class Consumer : public ASTConsumer {
       for (auto task : tasks) {
         auto task_name = task.func->getNameAsString();
         report_task_redefinition(func_table[task_name]);
-        tapa_tasks_.insert(func_table[task_name][0]);
+        tapa_tasks_.insert(task);
       }
     } else {
       static const auto top_not_found = diagnostics_engine.getCustomDiagID(
           clang::DiagnosticsEngine::Fatal, "top-level task '%0' not found");
       auto diagnostics_builder = diagnostics_engine.Report(top_not_found);
       diagnostics_builder.AddString(*top_name);
+    }
+
+    // Create rewriters for all tasks
+    for (auto task : tapa_tasks_) {
+      rewriters_[task] =
+          Rewriter(context.getSourceManager(), context.getLangOpts());
     }
 
     // tapa_tasks has been reset to only contain the TAPA tasks from the top

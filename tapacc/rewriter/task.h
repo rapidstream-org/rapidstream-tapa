@@ -118,7 +118,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
 
   int64_t EvalAsInt(const clang::Expr* expr);
   int GetTypeWidth(const clang::QualType type) {
-    return context_.getTypeInfo(type).Width;
+    return context_.getTypeSize(type);
   }
 
   template <typename T>
@@ -161,7 +161,7 @@ inline std::vector<TapaTask> FindChildrenTasks(
 
         // If the function is a template instantiation, get the specialization
         // information.
-        if (func_decl->isTemplateInstantiation()) {
+        if (func_decl->isFunctionTemplateSpecialization()) {
           tasks.push_back(TapaTask(func_decl,
                                    func_decl->getTemplateSpecializationInfo(),
                                    upper_func));
