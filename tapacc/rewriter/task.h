@@ -83,6 +83,16 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
     return os.str();
   }
 
+  std::string GetTemplatedFuncName(const clang::FunctionDecl* func) {
+    assert(func->isFunctionTemplateSpecialization());
+    std::string name;
+    llvm::raw_string_ostream os(name);
+    auto p = context_.getPrintingPolicy();
+    func->getNameForDiagnostic(os, p, /*qualified=*/true);
+    os.flush();
+    return os.str();
+  }
+
   // Indicate whether the current traversal is the first one to obtain the
   // full list of functions.
   bool is_first_traversal = true;
