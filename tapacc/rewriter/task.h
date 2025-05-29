@@ -5,11 +5,11 @@
 #ifndef TAPA_TASK_H_
 #define TAPA_TASK_H_
 
+#include <map>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <set>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "clang/AST/AST.h"
@@ -25,20 +25,51 @@
 namespace tapa {
 namespace internal {
 
-const clang::ExprWithCleanups* GetTapaTask(const clang::Stmt* func_body);
+const clang::ExprWithCleanups* GetTapaTaskObjectExpr(
+    const clang::Stmt* func_body);
 
 std::vector<const clang::CXXMemberCallExpr*> GetTapaInvokes(
     const clang::Stmt* task);
 
+static int current_specialization_id = 0;
+
+// A TAPA task is a function that is invoked by a TAPA task::task.invoke call.
+// It can be either a function or a template specialization of a function.
+// The specialization of a TAPA task function and the function invoking this
+// specialization. As the wrapper must be generated right before the invoker,
+// so that the context of the invoker is available, each specialization is
+// associated with the invoker function that is responsible for generating
+// the wrapper.
+struct TapaTask {
+  const clang::FunctionDecl* func;
+  const clang::FunctionTemplateSpecializationInfo* template_info;
+  const clang::FunctionDecl* invoker_func;
+  int specialization_id;
+
+  TapaTask(const clang::FunctionDecl* f,
+           const clang::FunctionTemplateSpecializationInfo* t = nullptr,
+           const clang::FunctionDecl* invoker_func = nullptr)
+      : func(f),
+        template_info(t),
+        invoker_func(t ? f : nullptr),
+        specialization_id(0) {
+    if (t) specialization_id = current_specialization_id++;
+  }
+
+  bool operator<(const TapaTask& other) const {
+    return std::tie(func, template_info, invoker_func, specialization_id) <
+           std::tie(other.func, other.template_info, other.invoker_func,
+                    other.specialization_id);
+  }
+};
+
 class Visitor : public clang::RecursiveASTVisitor<Visitor> {
  public:
-  explicit Visitor(
-      clang::ASTContext& context,
-      std::vector<const clang::FunctionDecl*>& funcs,
-      std::set<const clang::FunctionDecl*>& tapa_tasks,
-      std::unordered_map<const clang::FunctionDecl*, clang::Rewriter>&
-          rewriters,
-      std::unordered_map<const clang::FunctionDecl*, nlohmann::json>& metadata)
+  explicit Visitor(clang::ASTContext& context,
+                   std::vector<const clang::FunctionDecl*>& funcs,
+                   std::set<TapaTask>& tapa_tasks,
+                   std::map<TapaTask, clang::Rewriter>& rewriters,
+                   std::map<TapaTask, nlohmann::json>& metadata)
       : context_{context},
         funcs_{funcs},
         tapa_tasks_{tapa_tasks},
@@ -48,7 +79,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   bool VisitAttributedStmt(clang::AttributedStmt* stmt);
   bool VisitFunctionDecl(clang::FunctionDecl* func);
 
-  void VisitTask(const clang::FunctionDecl* func);
+  void VisitTask(const TapaTask& task);
 
   // Indicate whether the current traversal is the first one to obtain the
   // full list of functions.
@@ -56,32 +87,34 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
 
  private:
   static thread_local const clang::FunctionDecl* rewriting_func;
-  static thread_local const clang::FunctionDecl* current_task;
+  static thread_local const TapaTask* current_task;
   static thread_local Target* current_target;
 
   clang::ASTContext& context_;
   std::vector<const clang::FunctionDecl*>& funcs_;
-  std::set<const clang::FunctionDecl*>& tapa_tasks_;
-  std::unordered_map<const clang::FunctionDecl*, clang::Rewriter>& rewriters_;
-  std::unordered_map<const clang::FunctionDecl*, nlohmann::json>& metadata_;
+  std::set<TapaTask>& tapa_tasks_;
 
-  clang::Rewriter& GetRewriter() { return rewriters_[current_task]; }
+  std::map<TapaTask, clang::Rewriter>& rewriters_;
+  std::map<TapaTask, nlohmann::json>& metadata_;
+
+  clang::Rewriter& GetRewriter() { return rewriters_[*current_task]; }
   nlohmann::json& GetMetadata() {
-    if (metadata_[current_task].is_null())
-      metadata_[current_task] = nlohmann::json::object();
-    return metadata_[current_task];
+    if (metadata_[*current_task].is_null())
+      metadata_[*current_task] = nlohmann::json::object();
+    return metadata_[*current_task];
   }
 
-  void ProcessUpperLevelTask(const clang::ExprWithCleanups* task,
-                             const clang::FunctionDecl* func);
-  void ProcessTaskPorts(const clang::FunctionDecl* func,
-                        nlohmann::json& metadata);
-  void ProcessLowerLevelTask(const clang::FunctionDecl* func);
+  void ProcessUpperLevelTaskFunc(const clang::ExprWithCleanups* task_obj,
+                                 const clang::FunctionDecl* func);
+  void ProcessLowerLevelTaskFunc(const clang::FunctionDecl* func);
   void ProcessOtherFunc(const clang::FunctionDecl* func);
+  void ProcessTaskPorts(const TapaTask& task, nlohmann::json& metadata);
 
   clang::CharSourceRange GetCharSourceRange(const clang::Stmt* stmt);
   clang::CharSourceRange GetCharSourceRange(clang::SourceRange range);
   clang::SourceLocation GetEndOfLoc(clang::SourceLocation loc);
+
+  bool isFuncTapaTask(const clang::FunctionDecl* func);
 
   int64_t EvalAsInt(const clang::Expr* expr);
   int GetTypeWidth(const clang::QualType type) {
@@ -93,7 +126,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
                                 llvm::ArrayRef<const clang::Attr*> attrs);
 };
 
-inline bool IsTaskIgnored(const clang::FunctionDecl* func) {
+inline bool IsFuncIgnored(const clang::FunctionDecl* func) {
   if (auto attr = func->getAttr<clang::TapaTargetAttr>()) {
     if (attr->getTarget() == clang::TapaTargetAttr::TargetType::Ignore) {
       return true;
@@ -105,30 +138,36 @@ inline bool IsTaskIgnored(const clang::FunctionDecl* func) {
 // Find for a given upper-level task, return all direct children tasks (e.g.
 // tasks instanciated directly in upper).
 // Lower-level tasks or non-task functions return an empty vector.
-inline std::vector<const clang::FunctionDecl*> FindChildrenTasks(
-    const clang::FunctionDecl* upper) {
+inline std::vector<TapaTask> FindChildrenTasks(
+    const clang::FunctionDecl* upper_func) {
   // when a function is ignored, it does not have any children.
-  if (IsTaskIgnored(upper)) {
+  if (IsFuncIgnored(upper_func)) {
     return {};
   }
 
-  auto body = upper->getBody();
-  if (auto task = GetTapaTask(body)) {
+  auto body = upper_func->getBody();
+  if (auto task = GetTapaTaskObjectExpr(body)) {
     auto invokes = GetTapaInvokes(task);
-    std::vector<const clang::FunctionDecl*> tasks;
+    std::vector<TapaTask> tasks;
     for (auto invoke : invokes) {
       // Dynamic cast correctness is guaranteed by tapa.h.
       if (auto decl_ref =
               llvm::dyn_cast<clang::DeclRefExpr>(invoke->getArg(0))) {
         auto func_decl =
             llvm::dyn_cast<clang::FunctionDecl>(decl_ref->getDecl());
-        if (func_decl->isTemplateInstantiation()) {
-          func_decl = func_decl->getPrimaryTemplate()->getTemplatedDecl();
-        }
 
-        // skip function definitions.
+        // skip function definitions that has no body.
         if (!func_decl->isThisDeclarationADefinition()) continue;
-        tasks.push_back(func_decl);
+
+        // If the function is a template instantiation, get the specialization
+        // information.
+        if (func_decl->isTemplateInstantiation()) {
+          tasks.push_back(TapaTask(func_decl,
+                                   func_decl->getTemplateSpecializationInfo(),
+                                   upper_func));
+        } else {
+          tasks.push_back(TapaTask(func_decl));
+        }
       }
     }
     return tasks;
@@ -139,22 +178,22 @@ inline std::vector<const clang::FunctionDecl*> FindChildrenTasks(
 // Find all tasks instanciated using breadth-first search.
 // If a task is instantiated more than once, it will only appear once.
 // Lower-level tasks or non-task functions return an empty vector.
-inline std::vector<const clang::FunctionDecl*> FindAllTasks(
+inline std::vector<TapaTask> FindAllTasks(
     const clang::FunctionDecl* root_upper) {
-  std::vector<const clang::FunctionDecl*> tasks{root_upper};
-  std::unordered_set<const clang::FunctionDecl*> task_set{root_upper};
-  std::queue<const clang::FunctionDecl*> task_queue;
-  task_queue.push(root_upper);
-  while (!task_queue.empty()) {
-    auto upper = task_queue.front();
+  std::vector<TapaTask> tasks{root_upper};
+  std::set<TapaTask> task_set{root_upper};
+  std::queue<const clang::FunctionDecl*> task_func_queue;
+  task_func_queue.push(root_upper);
+  while (!task_func_queue.empty()) {
+    auto upper = task_func_queue.front();
     for (auto child : FindChildrenTasks(upper)) {
       if (task_set.count(child) == 0) {
         tasks.push_back(child);
         task_set.insert(child);
-        task_queue.push(child);
+        task_func_queue.push(child.func);
       }
     }
-    task_queue.pop();
+    task_func_queue.pop();
   }
   return tasks;
 }

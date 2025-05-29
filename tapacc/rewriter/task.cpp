@@ -66,8 +66,8 @@ static std::map<TapaTargetAttr::TargetType, Target*> target_map{
 
 extern const string* top_name;
 
-// Given a Stmt, find the first tapa::task in its children.
-const ExprWithCleanups* GetTapaTask(const Stmt* stmt) {
+// Given a Stmt, find the first tapa::task expression in its children.
+const ExprWithCleanups* GetTapaTaskObjectExpr(const Stmt* stmt) {
   if (!stmt) return nullptr;
   for (auto child : stmt->children()) {
     if (auto expr = dyn_cast<ExprWithCleanups>(child)) {
@@ -101,19 +101,19 @@ vector<const CXXMemberCallExpr*> GetTapaInvokes(const Stmt* stmt) {
   return invokes;
 }
 
-bool IsTapaTopLevel(const FunctionDecl* func) {
+bool IsFuncTapaTopLevel(const FunctionDecl* func) {
   return *top_name == func->getNameAsString();
 }
 
 thread_local const FunctionDecl* Visitor::rewriting_func{nullptr};
-thread_local const FunctionDecl* Visitor::current_task{nullptr};
+thread_local const TapaTask* Visitor::current_task{nullptr};
 thread_local Target* Visitor::current_target{nullptr};
 
-void Visitor::VisitTask(const clang::FunctionDecl* func) {
-  current_task = func;
+void Visitor::VisitTask(const TapaTask& task) {
+  current_task = &task;
 
   TapaTargetAttr::TargetType target;
-  if (auto attr = func->getAttr<TapaTargetAttr>()) {
+  if (auto attr = task.func->getAttr<TapaTargetAttr>()) {
     // if overriden by the attribute
     target = attr->getTarget();
   } else {
@@ -121,7 +121,7 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
   }
 
   // The task metadata should only be obtained from the function definition
-  if (func->isThisDeclarationADefinition()) {
+  if (task.func->isThisDeclarationADefinition()) {
     auto& metadata = GetMetadata();
     metadata["target"] = TapaTargetAttr::ConvertTargetTypeToStr(target);
 
@@ -130,7 +130,7 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
           this->context_.getDiagnostics().getCustomDiagID(
               clang::DiagnosticsEngine::Error, "unsupported target: %0");
       this->context_.getDiagnostics()
-          .Report(func->getLocation(), diagnostic_id)
+          .Report(task.func->getLocation(), diagnostic_id)
           .AddString(std::string(metadata["target"]));
       assert(false && "unsupported target");
     } else {
@@ -138,7 +138,14 @@ void Visitor::VisitTask(const clang::FunctionDecl* func) {
     }
   }
 
-  TraverseDecl(func->getASTContext().getTranslationUnitDecl());
+  TraverseDecl(task.func->getASTContext().getTranslationUnitDecl());
+}
+
+bool Visitor::isFuncTapaTask(const FunctionDecl* func) {
+  for (const auto& task : tapa_tasks_) {
+    if (task.func == func) return true;
+  }
+  return false;
 }
 
 // Apply tapa s2s transformations on a function.
@@ -153,7 +160,7 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       // For the first traversal, collect all functions with body.
       if (func->hasBody()) funcs_.push_back(func);
     } else {
-      // For the second traversal, process tapa task functions.
+      // For all later traversals, process tapa task functions.
       assert(rewriters_.count(func) > 0);
       rewriting_func = func;
 
@@ -162,31 +169,32 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
         HandleAttrOnNodeWithBody(func, func->getBody(), func->getAttrs());
       }
 
-      bool is_top_level_task = IsTapaTopLevel(func);
+      bool is_top_level_task = IsFuncTapaTopLevel(func);
       // If the first tapa::task is obtained in the function body, this is a
       // upper-level tapa task.
       // FIXME: This is not a perfect way to determine the level of the task,
       // especially when visiting the function signature.
-      bool is_upper_level_task = GetTapaTask(func->getBody()) != nullptr;
+      bool is_upper_level_task =
+          GetTapaTaskObjectExpr(func->getBody()) != nullptr;
       // if the task is ignored, it is treated as a leaf task.
-      if (IsTaskIgnored(func)) {
+      if (IsFuncIgnored(func)) {
         is_upper_level_task = false;
         if (is_top_level_task) {
           static const auto diagnostic_id =
               this->context_.getDiagnostics().getCustomDiagID(
                   clang::DiagnosticsEngine::Error,
-                  "tapa top-level task cannot be ignored");
+                  "tapa top-level task function cannot be ignored");
           this->context_.getDiagnostics().Report(func->getLocation(),
                                                  diagnostic_id);
         }
       }
+
       // If the task is in the task invocation graph from the top-level task,
       // it is a lower-level tapa task.
-      bool is_lower_level_task =
-          !is_upper_level_task && tapa_tasks_.count(func) > 0;
+      bool is_lower_level_task = !is_upper_level_task && isFuncTapaTask(func);
       // If the decl is the one being visited or its signature.
       bool is_current_task =
-          func->getNameAsString() == current_task->getNameAsString();
+          func->getNameAsString() == current_task->func->getNameAsString();
 
       // Rewrite the function arguments.
       if (is_lower_level_task) {
@@ -208,15 +216,18 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
         // We deal with AIE and HLS differently.
         // For HLS, we reserve the function signature and remove the body.
         // For AIE, we remove the function signature and body.
+        // TODO: If the non current task is the invoker of the current task,
+        // we should create a specialized version of the function right before
+        // the task declaration.
         current_target->ProcessNonCurrentTask(func, GetRewriter(),
-                                              IsTapaTopLevel(current_task));
+                                              IsFuncTapaTopLevel(func));
 
       } else if (is_upper_level_task) {
-        auto task = GetTapaTask(func->getBody());
-        ProcessUpperLevelTask(task, func);
+        auto task_obj = GetTapaTaskObjectExpr(func->getBody());
+        ProcessUpperLevelTaskFunc(task_obj, func);
 
       } else if (is_lower_level_task) {
-        ProcessLowerLevelTask(func);
+        ProcessLowerLevelTaskFunc(func);
 
       } else {
         // Otherwise, it is a non-tapa task function.
@@ -230,19 +241,19 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
 }
 
 bool Visitor::VisitAttributedStmt(clang::AttributedStmt* stmt) {
-  bool rewriting_current_task = current_task && rewriting_func == current_task;
-  bool is_other_func = tapa_tasks_.count(rewriting_func) == 0;
+  bool rewriting_current_task =
+      current_task && rewriting_func == current_task->func;
+  bool is_other_func = !isFuncTapaTask(rewriting_func);
   bool should_rewrite = rewriting_current_task || is_other_func;
-  if (should_rewrite && rewriters_.count(current_task) > 0) {
+  if (should_rewrite && rewriters_.count(*current_task) > 0) {
     HandleAttrOnNodeWithBody(stmt, GetLoopBody(stmt->getSubStmt()),
                              stmt->getAttrs());
   }
   return clang::RecursiveASTVisitor<Visitor>::VisitAttributedStmt(stmt);
 }
 
-void Visitor::ProcessTaskPorts(const FunctionDecl* func,
-                               nlohmann::json& metadata) {
-  for (const auto param : func->parameters()) {
+void Visitor::ProcessTaskPorts(const TapaTask& task, nlohmann::json& metadata) {
+  for (const auto param : task.func->parameters()) {
     const auto param_name = param->getNameAsString();
     auto add_mmap_meta = [&](const string& name) {
       std::string cat;
@@ -304,9 +315,9 @@ void Visitor::ProcessTaskPorts(const FunctionDecl* func,
 }
 
 // Apply tapa s2s transformations on a upper-level task.
-void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
-                                    const FunctionDecl* func) {
-  if (IsTapaTopLevel(func)) {
+void Visitor::ProcessUpperLevelTaskFunc(const ExprWithCleanups* task_obj,
+                                        const FunctionDecl* func) {
+  if (IsFuncTapaTopLevel(func)) {
     current_target->RewriteTopLevelFunc(func, GetRewriter());
   } else {
     current_target->RewriteMiddleLevelFunc(func, GetRewriter());
@@ -314,7 +325,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 
   // The task metadata should only be obtained from the function definition
   if (!func->isThisDeclarationADefinition()) return;
-  assert(task != nullptr);
+  assert(task_obj != nullptr);
 
   // Obtain the connection schema from the task.
   // metadata: {tasks, fifos}
@@ -322,7 +333,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   // fifos: {fifo_name: {depth, produced_by, consumed_by}}
   auto& metadata = GetMetadata();
   metadata["fifos"] = json::object();
-  ProcessTaskPorts(func, metadata);
+  ProcessTaskPorts(*current_task, metadata);
 
   // Process stream declarations.
   unordered_map<string, const VarDecl*> fifo_decls;
@@ -351,7 +362,7 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
   }
 
   // Instanciate tasks.
-  vector<const CXXMemberCallExpr*> invokes = GetTapaInvokes(task);
+  vector<const CXXMemberCallExpr*> invokes = GetTapaInvokes(task_obj);
 
   unordered_map<string, int> istreams_access_pos;
   unordered_map<string, int> ostreams_access_pos;
@@ -643,14 +654,14 @@ void Visitor::ProcessUpperLevelTask(const ExprWithCleanups* task,
 }
 
 // Apply tapa s2s transformations on a lower-level task.
-void Visitor::ProcessLowerLevelTask(const FunctionDecl* func) {
+void Visitor::ProcessLowerLevelTaskFunc(const clang::FunctionDecl* func) {
   current_target->RewriteLowerLevelFunc(func, GetRewriter());
 
   // The task metadata should only be obtained from the function definition
   if (!func->isThisDeclarationADefinition()) return;
 
   auto& metadata = GetMetadata();
-  ProcessTaskPorts(func, metadata);
+  ProcessTaskPorts(*current_task, metadata);
 }
 
 void Visitor::ProcessOtherFunc(const FunctionDecl* func) {

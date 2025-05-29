@@ -3,12 +3,12 @@
 // RapidStream Contributor License Agreement.
 
 #include <iostream>
+#include <map>
 #include <memory>
 #include <regex>
 #include <set>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 
 #include "clang/AST/AST.h"
 #include "clang/AST/ASTConsumer.h"
@@ -26,6 +26,7 @@
 #include "rewriter/task.h"
 
 using std::make_shared;
+using std::map;
 using std::regex;
 using std::regex_match;
 using std::regex_replace;
@@ -36,7 +37,6 @@ using std::string;
 using std::tie;
 using std::tuple;
 using std::unique_ptr;
-using std::unordered_map;
 using std::vector;
 
 using clang::ASTConsumer;
@@ -68,7 +68,7 @@ TapaTargetAttr::TargetType target = TapaTargetAttr::TargetType::XilinxHLS;
 class Consumer : public ASTConsumer {
  public:
   explicit Consumer(ASTContext& context, vector<const FunctionDecl*>& funcs,
-                    set<const FunctionDecl*>& tapa_tasks)
+                    set<TapaTask>& tapa_tasks)
       : visitor_{context, funcs, tapa_tasks, rewriters_, metadata_},
         funcs_{funcs},
         tapa_tasks_{tapa_tasks} {}
@@ -91,7 +91,7 @@ class Consumer : public ASTConsumer {
           clang::DiagnosticsEngine::Fatal, "top not set");
       diagnostics_engine.Report(diagnostic_id);
     }
-    unordered_map<string, vector<const FunctionDecl*>> func_table;
+    map<string, vector<const FunctionDecl*>> func_table;
     for (auto func : funcs_) {
       auto func_name = func->getNameAsString();
       // skip function definitions.
@@ -116,7 +116,7 @@ class Consumer : public ASTConsumer {
       auto tasks = FindAllTasks(func_table[*top_name][0]);
       tapa_tasks_.clear();
       for (auto task : tasks) {
-        auto task_name = task->getNameAsString();
+        auto task_name = task.func->getNameAsString();
         report_task_redefinition(func_table[task_name]);
         tapa_tasks_.insert(func_table[task_name][0]);
       }
@@ -133,10 +133,10 @@ class Consumer : public ASTConsumer {
     for (auto task : tapa_tasks_) {
       visitor_.VisitTask(task);
     }
-    unordered_map<const FunctionDecl*, string> code_table;
+    map<TapaTask, string> code_table;
     json code;
     for (auto task : tapa_tasks_) {
-      auto task_name = task->getNameAsString();
+      auto task_name = task.func->getNameAsString();
       raw_string_ostream oss{code_table[task]};
       rewriters_[task]
           .getEditBuffer(rewriters_[task].getSourceMgr().getMainFileID())
@@ -144,8 +144,8 @@ class Consumer : public ASTConsumer {
       oss.flush();
       code["tasks"][task_name]["code"] = code_table[task];
       // if a task is ignored, it is a lower-level task.
-      bool is_upper =
-          GetTapaTask(task->getBody()) != nullptr && !IsTaskIgnored(task);
+      bool is_upper = GetTapaTaskObjectExpr(task.func->getBody()) != nullptr &&
+                      !IsFuncIgnored(task.func);
       code["tasks"][task_name]["level"] = is_upper ? "upper" : "lower";
       code["tasks"][task_name].update(metadata_[task]);
     }
@@ -156,9 +156,9 @@ class Consumer : public ASTConsumer {
  private:
   Visitor visitor_;
   vector<const FunctionDecl*>& funcs_;
-  set<const FunctionDecl*>& tapa_tasks_;
-  unordered_map<const FunctionDecl*, Rewriter> rewriters_;
-  unordered_map<const FunctionDecl*, json> metadata_;
+  set<TapaTask>& tapa_tasks_;
+  map<TapaTask, Rewriter> rewriters_;
+  map<TapaTask, json> metadata_;
 };
 
 class Action : public ASTFrontendAction {
@@ -171,7 +171,7 @@ class Action : public ASTFrontendAction {
 
  private:
   vector<const FunctionDecl*> funcs_;
-  set<const FunctionDecl*> tapa_tasks_;
+  set<TapaTask> tapa_tasks_;
 };
 
 }  // namespace internal
