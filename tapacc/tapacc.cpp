@@ -137,6 +137,10 @@ class Consumer : public ASTConsumer {
     json code;
     for (auto task : tapa_tasks_) {
       auto task_name = task.func->getNameAsString();
+      // For template specializations, use the mangled name
+      if (task.func->isFunctionTemplateSpecialization()) {
+        task_name = visitor_.GetMangledFuncName(task.func);
+      }
       raw_string_ostream oss{code_table[task]};
       rewriters_[task]
           .getEditBuffer(rewriters_[task].getSourceMgr().getMainFileID())

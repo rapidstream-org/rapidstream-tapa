@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "clang/AST/AST.h"
+#include "clang/AST/Mangle.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -31,8 +32,6 @@ const clang::ExprWithCleanups* GetTapaTaskObjectExpr(
 std::vector<const clang::CXXMemberCallExpr*> GetTapaInvokes(
     const clang::Stmt* task);
 
-static int current_specialization_id = 0;
-
 // A TAPA task is a function that is invoked by a TAPA task::task.invoke call.
 // It can be either a function or a template specialization of a function.
 // The specialization of a TAPA task function and the function invoking this
@@ -44,22 +43,15 @@ struct TapaTask {
   const clang::FunctionDecl* func;
   const clang::FunctionTemplateSpecializationInfo* template_info;
   const clang::FunctionDecl* invoker_func;
-  int specialization_id;
 
   TapaTask(const clang::FunctionDecl* f,
            const clang::FunctionTemplateSpecializationInfo* t = nullptr,
            const clang::FunctionDecl* invoker_func = nullptr)
-      : func(f),
-        template_info(t),
-        invoker_func(t ? f : nullptr),
-        specialization_id(0) {
-    if (t) specialization_id = current_specialization_id++;
-  }
+      : func(f), template_info(t), invoker_func(t ? f : nullptr) {}
 
   bool operator<(const TapaTask& other) const {
-    return std::tie(func, template_info, invoker_func, specialization_id) <
-           std::tie(other.func, other.template_info, other.invoker_func,
-                    other.specialization_id);
+    return std::tie(func, template_info, invoker_func) <
+           std::tie(other.func, other.template_info, other.invoker_func);
   }
 };
 
@@ -71,6 +63,8 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
                    std::map<TapaTask, clang::Rewriter>& rewriters,
                    std::map<TapaTask, nlohmann::json>& metadata)
       : context_{context},
+        mangling_context_(clang::ItaniumMangleContext::create(
+            context, context.getDiagnostics())),
         funcs_{funcs},
         tapa_tasks_{tapa_tasks},
         rewriters_{rewriters},
@@ -80,6 +74,14 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   bool VisitFunctionDecl(clang::FunctionDecl* func);
 
   void VisitTask(const TapaTask& task);
+
+  std::string GetMangledFuncName(const clang::FunctionDecl* func) {
+    std::string name;
+    llvm::raw_string_ostream os(name);
+    mangling_context_->mangleName(func, os);
+    os.flush();
+    return os.str();
+  }
 
   // Indicate whether the current traversal is the first one to obtain the
   // full list of functions.
@@ -91,6 +93,7 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   static thread_local Target* current_target;
 
   clang::ASTContext& context_;
+  clang::MangleContext* mangling_context_;
   std::vector<const clang::FunctionDecl*>& funcs_;
   std::set<TapaTask>& tapa_tasks_;
 

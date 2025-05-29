@@ -489,7 +489,13 @@ void Visitor::ProcessUpperLevelTaskFunc(const ExprWithCleanups* task_obj,
           }
 
           if (i == 0) {
-            task_name = arg_name;
+            auto func_decl = decl_ref->getDecl()->getAsFunction();
+            if (func_decl->isFunctionTemplateSpecialization()) {
+              // use mangled name for template specialization
+              task_name = GetMangledFuncName(func_decl);
+            } else {
+              task_name = arg_name;
+            }
             metadata["tasks"][task_name].push_back({{"step", step}});
             task = decl_ref->getDecl()->getAsFunction();
           } else {
