@@ -98,13 +98,19 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   std::string GenerateWrapperCode(const TapaTask& task) {
     std::string code;
     llvm::raw_string_ostream os(code);
+
+    // Avoid printing the tag keyword (`class` tapa::mmap) in the wrapper
+    // since the target may have a different definition of the TAPA types.
+    clang::PrintingPolicy policy = context_.getPrintingPolicy();
+    policy.SuppressTagKeyword = true;
+
     os << "\n\nvoid " << GetMangledFuncName(task.func) << "(";
     // TAPA parameters are guaranteed to be in the format of type_name
     // variable_name. Therefore, simply iterate through the parameters
     // and append the type and name to the function signature works.
     for (size_t i = 0; i < task.func->getNumParams(); ++i) {
       if (i > 0) os << ", ";
-      os << task.func->getParamDecl(i)->getType().getAsString();
+      os << task.func->getParamDecl(i)->getType().getAsString(policy);
       os << " " << task.func->getParamDecl(i)->getNameAsString();
     }
     os << ") {\n";

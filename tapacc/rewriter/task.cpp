@@ -272,6 +272,10 @@ bool Visitor::VisitAttributedStmt(clang::AttributedStmt* stmt) {
 
 void Visitor::ProcessTaskPorts(const TapaTask& task, nlohmann::json& metadata) {
   for (const auto param : task.func->parameters()) {
+    auto arg_width = [&]() -> int {
+      return GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType());
+    };
+
     const auto param_name = param->getNameAsString();
     auto add_mmap_meta = [&](const string& name) {
       std::string cat;
@@ -284,12 +288,10 @@ void Visitor::ProcessTaskPorts(const TapaTask& task, nlohmann::json& metadata) {
       } else {
         cat = "mmap";
       }
-      metadata["ports"].push_back(
-          {{"name", name},
-           {"cat", cat},
-           {"width",
-            GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
-           {"type", GetMmapElemType(param) + "*"}});
+      metadata["ports"].push_back({{"name", name},
+                                   {"cat", cat},
+                                   {"width", arg_width()},
+                                   {"type", GetMmapElemType(param) + "*"}});
     };
     if (IsTapaType(param, "(async_)?mmap") || IsTapaType(param, "immap") ||
         IsTapaType(param, "ommap")) {
@@ -302,8 +304,7 @@ void Visitor::ProcessTaskPorts(const TapaTask& task, nlohmann::json& metadata) {
       metadata["ports"].push_back({
           {"name", param_name},
           {"cat", "hmap"},
-          {"width",
-           GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
+          {"width", arg_width()},
           {"type", GetMmapElemType(param) + "*"},
           {"chan_count", GetArraySize(param)},
           {"chan_size", GetIntegralTemplateArg<2>(param)},
@@ -312,15 +313,13 @@ void Visitor::ProcessTaskPorts(const TapaTask& task, nlohmann::json& metadata) {
       metadata["ports"].push_back(
           {{"name", param_name},
            {"cat", IsTapaType(param, "istream") ? "istream" : "ostream"},
-           {"width",
-            GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
+           {"width", arg_width()},
            {"type", GetStreamElemType(param)}});
     } else if (IsStreamsInterface(param)) {
       metadata["ports"].push_back(
           {{"name", param_name},
            {"cat", IsTapaType(param, "istreams") ? "istreams" : "ostreams"},
-           {"width",
-            GetTypeWidth(GetTemplateArg(param->getType(), 0)->getAsType())},
+           {"width", arg_width()},
            {"type", GetStreamElemType(param)},
            {"chan_count", GetIntegralTemplateArg<1>(param)}});
     } else {
