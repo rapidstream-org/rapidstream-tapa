@@ -47,7 +47,7 @@ struct TapaTask {
   TapaTask(const clang::FunctionDecl* f,
            const clang::FunctionTemplateSpecializationInfo* t = nullptr,
            const clang::FunctionDecl* invoker_func = nullptr)
-      : func(f), template_info(t), invoker_func(t ? f : nullptr) {}
+      : func(f), template_info(t), invoker_func(t ? invoker_func : nullptr) {}
 
   bool operator<(const TapaTask& other) const {
     return std::tie(func, template_info, invoker_func) <
@@ -78,6 +78,8 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   std::string GetMangledFuncName(const clang::FunctionDecl* func) {
     std::string name;
     llvm::raw_string_ostream os(name);
+    os << "tapa_mangled";  // Otherwise, Vivado will complain about the
+                           // function name being started with _.
     mangling_context_->mangleName(func, os);
     os.flush();
     return os.str();
@@ -90,6 +92,28 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
     auto p = context_.getPrintingPolicy();
     func->getNameForDiagnostic(os, p, /*qualified=*/true);
     os.flush();
+    return os.str();
+  }
+
+  std::string GenerateWrapperCode(const TapaTask& task) {
+    std::string code;
+    llvm::raw_string_ostream os(code);
+    os << "\n\nvoid " << GetMangledFuncName(task.func) << "(";
+    // TAPA parameters are guaranteed to be in the format of type_name
+    // variable_name. Therefore, simply iterate through the parameters
+    // and append the type and name to the function signature works.
+    for (size_t i = 0; i < task.func->getNumParams(); ++i) {
+      if (i > 0) os << ", ";
+      os << task.func->getParamDecl(i)->getType().getAsString();
+      os << " " << task.func->getParamDecl(i)->getNameAsString();
+    }
+    os << ") {\n";
+    os << "  " << GetTemplatedFuncName(task.func) << "(";
+    for (size_t i = 0; i < task.func->getNumParams(); ++i) {
+      if (i > 0) os << ", ";
+      os << task.func->getParamDecl(i)->getNameAsString();
+    }
+    os << ");\n}\n";
     return os.str();
   }
 
