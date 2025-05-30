@@ -139,7 +139,7 @@ class Consumer : public ASTConsumer {
       auto task_name = task.func->getNameAsString();
       auto readable_name = task_name;
       // For template specializations, use the mangled name
-      if (task.func->isFunctionTemplateSpecialization()) {
+      if (task.is_template_specialization) {
         task_name = visitor_.GetMangledFuncName(task.func);
         readable_name = visitor_.GetTemplatedFuncName(task.func);
       }

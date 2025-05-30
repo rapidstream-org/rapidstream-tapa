@@ -41,17 +41,19 @@ std::vector<const clang::CXXMemberCallExpr*> GetTapaInvokes(
 // the wrapper.
 struct TapaTask {
   const clang::FunctionDecl* func;
-  const clang::FunctionTemplateSpecializationInfo* template_info;
   const clang::FunctionDecl* invoker_func;
+  const bool is_template_specialization;
 
   TapaTask(const clang::FunctionDecl* f,
-           const clang::FunctionTemplateSpecializationInfo* t = nullptr,
-           const clang::FunctionDecl* invoker_func = nullptr)
-      : func(f), template_info(t), invoker_func(t ? invoker_func : nullptr) {}
+           const clang::FunctionDecl* invoker_func = nullptr,
+           const bool is_template_specialization = false)
+      : func(f),
+        invoker_func(invoker_func),
+        is_template_specialization(is_template_specialization) {}
 
   bool operator<(const TapaTask& other) const {
-    return std::tie(func, template_info, invoker_func) <
-           std::tie(other.func, other.template_info, other.invoker_func);
+    return std::tie(func, is_template_specialization) <
+           std::tie(other.func, is_template_specialization);
   }
 };
 
@@ -86,7 +88,6 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
   }
 
   std::string GetTemplatedFuncName(const clang::FunctionDecl* func) {
-    assert(func->isFunctionTemplateSpecialization());
     std::string name;
     llvm::raw_string_ostream os(name);
     auto p = context_.getPrintingPolicy();
@@ -219,9 +220,7 @@ inline std::vector<TapaTask> FindChildrenTasks(
         // If the function is a template instantiation, get the specialization
         // information.
         if (func_decl->isFunctionTemplateSpecialization()) {
-          tasks.push_back(TapaTask(func_decl,
-                                   func_decl->getTemplateSpecializationInfo(),
-                                   upper_func));
+          tasks.push_back(TapaTask(func_decl, upper_func, true));
         } else {
           tasks.push_back(TapaTask(func_decl));
         }
