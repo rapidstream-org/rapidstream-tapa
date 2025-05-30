@@ -201,6 +201,9 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       // If the decl is the one being visited or its signature.
       bool is_current_task =
           func->getNameAsString() == current_task->func->getNameAsString();
+      // If the decl is the one instantiating this template task.
+      bool is_invoker_of_current_task =
+          current_task->invoker_func && func == current_task->invoker_func;
 
       // Rewrite the function arguments.
       if (is_lower_level_task) {
@@ -238,6 +241,15 @@ bool Visitor::VisitFunctionDecl(FunctionDecl* func) {
       } else {
         // Otherwise, it is a non-tapa task function.
         ProcessOtherFunc(func);
+      }
+
+      // Create the mangled wrapper for the current task after the invoker
+      // function is processed.
+      if (is_invoker_of_current_task) {
+        auto& rewriter = GetRewriter();
+        auto end_loc = GetEndOfLoc(func->getEndLoc());
+        rewriter.InsertTextAfterToken(end_loc,
+                                      GenerateWrapperCode(*current_task));
       }
     }
   }

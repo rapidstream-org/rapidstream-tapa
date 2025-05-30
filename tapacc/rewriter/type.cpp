@@ -20,9 +20,16 @@ using clang::RecordDecl;
 using clang::TemplateArgument;
 using clang::TemplateSpecializationType;
 
-bool IsTapaType(const RecordDecl* decl, const string& type_name) {
-  return decl != nullptr && regex_match(decl->getQualifiedNameAsString(),
-                                        regex{"tapa::" + type_name});
+bool IsTapaType(const std::string& qualified_name,
+                const std::string& type_name) {
+  return regex_match(qualified_name, regex{"tapa::" + type_name});
+}
+
+bool IsTapaType(clang::QualType type, const std::string& type_name) {
+  return IsTapaType(type->getAsRecordDecl(), type_name) ||
+         IsTapaType(type->getAs<clang::LValueReferenceType>(), type_name) ||
+         IsTapaType(type->getAs<clang::TemplateSpecializationType>(),
+                    type_name);
 }
 
 const TemplateArgument* GetTemplateArg(QualType qual_type, size_t idx) {

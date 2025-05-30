@@ -11,19 +11,33 @@
 
 #include "clang/AST/AST.h"
 
-bool IsTapaType(const clang::RecordDecl* decl, const std::string& type_name);
+bool IsTapaType(const std::string& qualified_name,
+                const std::string& type_name);
+bool IsTapaType(clang::QualType type, const std::string& type_name);
+
+inline bool IsTapaType(const clang::RecordDecl* decl,
+                       const std::string& type_name) {
+  return decl != nullptr &&
+         IsTapaType(decl->getQualifiedNameAsString(), type_name);
+}
+
 inline bool IsTapaType(const clang::LValueReferenceType* type,
                        const std::string& type_name) {
-  return type != nullptr &&
-         IsTapaType(type->getPointeeType()->getAsRecordDecl(), type_name);
+  return type != nullptr && IsTapaType(type->getPointeeType(), type_name);
 }
-inline bool IsTapaType(clang::QualType type, const std::string& type_name) {
-  return IsTapaType(type->getAsRecordDecl(), type_name) ||
-         IsTapaType(type->getAs<clang::LValueReferenceType>(), type_name);
+
+inline bool IsTapaType(const clang::TemplateSpecializationType* type,
+                       const std::string& type_name) {
+  return type != nullptr && IsTapaType(type->getTemplateName()
+                                           .getAsTemplateDecl()
+                                           ->getQualifiedNameAsString(),
+                                       type_name);
 }
+
 inline bool IsTapaType(const clang::Expr* expr, const std::string& type_name) {
   return expr != nullptr && IsTapaType(expr->getType(), type_name);
 }
+
 inline bool IsTapaType(const clang::ParmVarDecl* param,
                        const std::string& type_name) {
   return IsTapaType(param->getType(), type_name);
