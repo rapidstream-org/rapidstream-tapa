@@ -1,0 +1,62 @@
+"""The test for invocation of template tasks for TAPA."""
+
+# Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//bazel:tapa_rules.bzl", "tapa_xo")
+
+sh_test(
+    name = "template-tasks",
+    size = "medium",
+    srcs = ["//bazel:v++_env.sh"],
+    args = ["$(location template-tasks-host)"],
+    data = [":template-tasks-host"],
+    env = {"TAPA_CONCURRENCY": "2"},
+    tags = ["cpu:2"],
+)
+
+sh_test(
+    name = "template-tasks-zipsim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:xrt_env.sh"],
+    args = [
+        "$(location template-tasks-host)",
+        "--bitstream=$(location template-tasks-zip)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "1000",
+    ],
+    data = [
+        ":template-tasks-host",
+        ":template-tasks-zip",
+        "//tapa/cosim:tapa-fast-cosim",
+    ],
+    tags = ["cpu:2"],
+)
+
+cc_binary(
+    name = "template-tasks-host",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]) + ["//tests/apps/vadd:vadd-host.cpp"],
+    includes = ["."],
+    deps = [
+        "//tapa-lib:tapa",
+        "@gflags",
+        "@vitis_hls//:include",
+    ],
+)
+
+tapa_xo(
+    name = "template-tasks-zip",
+    src = "vadd.cpp",
+    hdrs = ["vadd.h"],
+    include = ["."],
+    target = "xilinx-hls",
+    top_name = "VecAdd",
+    visibility = ["//tests/functional:__subpackages__"],
+)
