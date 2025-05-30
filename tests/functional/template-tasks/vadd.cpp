@@ -23,8 +23,8 @@ void Mmap2Stream(tapa::mmap<mmap_type> mmap, uint64_t n,
 }
 
 // TEST 3: mixed template parameters
-template <typename mmap_type, typename stream_type, int offset>
-void Stream2Mmap(tapa::istream<stream_type>& stream, tapa::mmap<mmap_type> mmap,
+template <typename tapa_mmap_type, typename stream_type, int offset>
+void Stream2Mmap(tapa::istream<stream_type>& stream, tapa_mmap_type mmap,
                  uint64_t n) {
   for (uint64_t i = 0; i < n; ++i) {
     stream >> mmap[i];
@@ -42,8 +42,8 @@ void VecAdd(tapa::mmap<const float> a, tapa::mmap<const float> b,
       .invoke(Mmap2Stream<const float, float>, a, n, a_q)
       .invoke(Mmap2Stream<const float, int>, b, n, b_q)
       .invoke(Add<1>, a_q, b_q, c_q, n)
-      .invoke(Stream2Mmap<float, float, -1>, c_q, c, n);
+      // TEST 4: tapa::mmap as a template parameter
+      .invoke(Stream2Mmap<tapa::mmap<float>, float, -1>, c_q, c, n);
 }
 
 // TODO: support non-leaf template tasks
-// TODO: support tapa::i/ostream and tapa::mmap as part of the parameter
