@@ -108,7 +108,21 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
       os << " " << task.func->getParamDecl(i)->getNameAsString();
     }
     os << ") {\n";
+
+    // Add target-dependent code for wrapper parameters.
+    // TODO: Currently it only supports adding code for lower-level wrapper
+    // tasks.
+    auto add_line = [&os](llvm::StringRef line) { os << "  " << line << "\n"; };
+    auto add_pragma = [&os](std::initializer_list<llvm::StringRef> args) {
+      os << "  #pragma " << llvm::join(args, " ") << "\n";
+    };
+    for (size_t i = 0; i < task.func->getNumParams(); ++i) {
+      current_target->AddCodeForLowerLevelParameter(task.func->getParamDecl(i),
+                                                    add_line, add_pragma);
+    }
+
     os << "  " << GetTemplatedFuncName(task.func) << "(";
+
     for (size_t i = 0; i < task.func->getNumParams(); ++i) {
       if (i > 0) os << ", ";
       os << task.func->getParamDecl(i)->getNameAsString();

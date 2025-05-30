@@ -68,6 +68,11 @@ class Target {
   virtual void AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForLowerLevelScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void AddCodeForOtherScalar(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForParameter(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForTopLevelParameter(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForMiddleLevelParameter(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForLowerLevelParameter(ADD_FOR_PARAMS_ARGS_DEF) = 0;
+  virtual void AddCodeForOtherParameter(ADD_FOR_PARAMS_ARGS_DEF) = 0;
   virtual void RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
   virtual void RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) = 0;
@@ -122,6 +127,12 @@ class BaseTarget : public Target {
   virtual void AddCodeForMiddleLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForLowerLevelScalar(ADD_FOR_PARAMS_ARGS_DEF);
   virtual void AddCodeForOtherScalar(ADD_FOR_PARAMS_ARGS_DEF);
+
+  virtual void AddCodeForParameter(ADD_FOR_PARAMS_ARGS_DEF);
+  virtual void AddCodeForTopLevelParameter(ADD_FOR_PARAMS_ARGS_DEF);
+  virtual void AddCodeForMiddleLevelParameter(ADD_FOR_PARAMS_ARGS_DEF);
+  virtual void AddCodeForLowerLevelParameter(ADD_FOR_PARAMS_ARGS_DEF);
+  virtual void AddCodeForOtherParameter(ADD_FOR_PARAMS_ARGS_DEF);
 
   virtual std::vector<std::string> GenerateCodeForTopLevelFunc(
       const clang::FunctionDecl* func);
