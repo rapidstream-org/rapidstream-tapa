@@ -211,16 +211,9 @@ class basic_stream {
   void set_name(const std::string& name) { this->name = name; }
 
   // not protected since we'll use std::vector<basic_stream<T>>
-  basic_stream()
-      : name(""),
-        depth(0),
-        simulation_depth(0),
-        queue(make_queue<elem_t<T>>(depth, name)) {}
-  basic_stream(const std::string& name, int depth, int simulation_depth)
-      : name(name),
-        depth(depth),
-        simulation_depth(simulation_depth),
-        queue(make_queue<elem_t<T>>(simulation_depth, name)) {}
+  basic_stream() {}
+  basic_stream(const std::string& name, int depth)
+      : name(name), queue(make_queue<elem_t<T>>(depth, name)) {}
 
   basic_stream(const basic_stream&) = default;
   basic_stream(basic_stream&&) = default;
@@ -229,8 +222,6 @@ class basic_stream {
 
  protected:
   std::string name;
-  int depth;
-  int simulation_depth;
 
   base_queue<elem_t<T>>* ensure_queue() const {
     return CHECK_NOTNULL(queue).get();
@@ -702,14 +693,14 @@ class stream : public internal::unbound_stream<T> {
   constexpr static int depth = N;
 
   /// Constructs a @c tapa::stream.
-  stream() : internal::basic_stream<T>("", N, SimulationDepth) {}
+  stream() : internal::basic_stream<T>("", SimulationDepth) {}
 
   /// Constructs a @c tapa::stream with the given name for debugging.
   ///
   /// @param[in] name Name of the communication channel (for debugging only).
   template <size_t S>
   stream(const char (&name)[S])
-      : internal::basic_stream<T>(name, N, SimulationDepth) {}
+      : internal::basic_stream<T>(name, SimulationDepth) {}
 
  private:
   template <typename U, uint64_t friend_length, uint64_t friend_depth,
@@ -723,7 +714,7 @@ class stream : public internal::unbound_stream<T> {
 
   // internal constructor for stream with given name and simulation depth
   stream(const std::string name, uint64_t simulation_depth = SimulationDepth)
-      : internal::basic_stream<T>(name, N, simulation_depth) {}
+      : internal::basic_stream<T>(name, simulation_depth) {}
 };
 
 /// Provides consumer-side operations to an array of @c tapa::stream where they
@@ -865,7 +856,7 @@ class streams : public internal::unbound_streams<T, S> {
             std::make_shared<typename internal::basic_streams<T>::metadata_t>(
                 "", 0)) {
     for (int i = 0; i < S; ++i) {
-      this->ptr->refs.emplace_back("", N, SimulationDepth);
+      this->ptr->refs.emplace_back("", SimulationDepth);
     }
   }
 
@@ -882,8 +873,7 @@ class streams : public internal::unbound_streams<T, S> {
                 name, 0)) {
     for (int i = 0; i < S; ++i) {
       this->ptr->refs.emplace_back(
-          std::string(name) + "[" + std::to_string(i) + "]", N,
-          SimulationDepth);
+          std::string(name) + "[" + std::to_string(i) + "]", SimulationDepth);
     }
   }
 
