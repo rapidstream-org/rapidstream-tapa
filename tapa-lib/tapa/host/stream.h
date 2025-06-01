@@ -190,20 +190,9 @@ class frt_queue : public base_queue<T> {
 };
 
 template <typename T>
-std::shared_ptr<base_queue<T>> make_queue(bool is_frt, uint64_t depth,
+std::shared_ptr<base_queue<T>> make_queue(uint64_t depth,
                                           const std::string& name) {
-  if (is_frt) {
-    VLOG(1) << "channel '" << name << "' created as an FRT stream";
-#ifndef TAPA_ACCURATE_FRT_STREAM_DEPTH
-    if (depth < kFrtUpgradeDepth) {
-      depth = kFrtUpgradeDepth;
-      VLOG(1) << "fpga channel '" << name << "' created with a depth of "
-              << depth << " to improve performance; programs that deadlock on"
-              << " software simulation may not deadlock now";
-    }
-#endif
-    return std::make_shared<frt_queue<T>>(depth, name);
-  } else if (depth == ::tapa::kStreamInfiniteDepth) {
+  if (depth == ::tapa::kStreamInfiniteDepth) {
     // It's too expensive to make the lock-free queue have infinite depth.
     VLOG(1) << "channel '" << name << "' created as a locked queue";
     return std::make_shared<locked_queue<T>>(depth, name);
@@ -273,7 +262,7 @@ class shared_queue {
   void initialize_queue(bool is_frt = false, uint64_t depth = 0,
                         const std::string& name = "") {
     CHECK(!is_initialized()) << "queue is already initialized";
-    queue_ptr = make_queue<T>(is_frt, depth, name);
+    queue_ptr = make_queue<T>(depth, name);
   }
 
   std::shared_ptr<base_queue<T>> queue_ptr;
