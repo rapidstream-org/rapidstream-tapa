@@ -202,74 +202,6 @@ std::shared_ptr<base_queue<T>> make_queue(uint64_t depth,
   }
 }
 
-// A shared pointer of a queue that can be shared among multiple tasks.
-// The pointer cannot be copied so that one task can create the queue and
-// the other can wait for the queue to be created.
-template <typename T>
-class shared_queue {
- public:
-  shared_queue() : queue_ptr(nullptr) {}
-  shared_queue(const shared_queue&) = delete;
-  shared_queue(shared_queue&&) = delete;
-
-  // basic queue operations
-  bool empty() const { return queue_ptr->empty(); }
-  bool full() const { return queue_ptr->full(); }
-  T front() const { return queue_ptr->front(); }
-  T pop() { return queue_ptr->pop(); }
-  void push(const T& val) { queue_ptr->push(val); }
-
-  // check if the queue is initialized or being initialized
-  bool is_initialized() { return bool(queue_ptr); }
-  bool is_handshaking() {
-    std::lock_guard<std::mutex> lock(handshake_mtx);
-    return task_id > 0;
-  }
-
-  // return the raw pointer for the queue
-  base_queue<T>* get() { return queue_ptr.get(); }
-
-  // initialize the queue without handshaking two tasks, such as in a leaf task
-  // in this case, frt is always false.
-  void initialize_queue_without_handshake(uint64_t depth = 0,
-                                          const std::string& name = "") {
-    std::lock_guard<std::mutex> lock(handshake_mtx);
-    CHECK(task_id == 0) << "handshake is already in progress";
-    initialize_queue(false, depth, name);
-  }
-
-  // handshaking two tasks to initialize the queue and decide whether it is an
-  // FRT queue or not
-  void initialize_queue_by_handshake(bool is_frt = false, uint64_t depth = 0,
-                                     const std::string& name = "") {
-    // ensure that the function is sequentially called to avoid complications
-    std::lock_guard<std::mutex> lock(handshake_mtx);
-    task_id++;
-
-    if (task_id == 1) {
-      // the first task simply returns and allows the second task to create
-      // the queue, unless it is already known as an FRT queue
-      if (is_frt) initialize_queue(is_frt, depth, name);
-    } else if (task_id == 2) {
-      // the second task creates the queue if the first task hasn't done it yet
-      if (!queue_ptr) initialize_queue(is_frt, depth, name);
-    } else {
-      LOG(FATAL) << "more than two tasks are trying to connect to a channel";
-    }
-  }
-
- private:
-  void initialize_queue(bool is_frt = false, uint64_t depth = 0,
-                        const std::string& name = "") {
-    CHECK(!is_initialized()) << "queue is already initialized";
-    queue_ptr = make_queue<T>(depth, name);
-  }
-
-  std::shared_ptr<base_queue<T>> queue_ptr;
-  std::mutex handshake_mtx;
-  int task_id = 0;
-};
-
 // shared pointer of a queue
 template <typename T>
 class basic_stream {
@@ -283,12 +215,12 @@ class basic_stream {
       : name(""),
         depth(0),
         simulation_depth(0),
-        queue(std::make_shared<shared_queue<elem_t<T>>>()) {}
+        queue(make_queue<elem_t<T>>(depth, name)) {}
   basic_stream(const std::string& name, int depth, int simulation_depth)
       : name(name),
         depth(depth),
         simulation_depth(simulation_depth),
-        queue(std::make_shared<shared_queue<elem_t<T>>>()) {}
+        queue(make_queue<elem_t<T>>(simulation_depth, name)) {}
 
   basic_stream(const basic_stream&) = default;
   basic_stream(basic_stream&&) = default;
@@ -300,22 +232,8 @@ class basic_stream {
   int depth;
   int simulation_depth;
 
-  std::shared_ptr<shared_queue<elem_t<T>>> ensure_queue() {
-    // if the queue is already initialized, return it
-    if (queue->is_initialized()) return queue;
-
-    // if the queue is handshaking, wait for it to be initialized
-    if (queue->is_handshaking()) {
-      while (!queue->is_initialized())
-        internal::yield("channel '" + name + "' is handshaking");
-      return queue;
-    }
-
-    // if reaching this point, the handshake is not performed and the queue is
-    // not initialized. we initialize it without handshaking. this happens when
-    // the queue is created in a leaf task.
-    queue->initialize_queue_without_handshake(simulation_depth, name);
-    return queue;
+  base_queue<elem_t<T>>* ensure_queue() const {
+    return CHECK_NOTNULL(queue).get();
   }
 
  private:
@@ -326,19 +244,17 @@ class basic_stream {
   template <typename Param, typename Arg>
   friend struct internal::accessor;
 
-  void initialize_queue_by_handshake(bool is_frt = false) {
-    queue->initialize_queue_by_handshake(is_frt, simulation_depth, name);
-  }
+  void initialize_queue_by_handshake(bool is_frt = false) {}
 
   void frt_set_arg(fpga::Instance& instance, int& idx) {
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(ensure_queue()->get());
+    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(ensure_queue());
     CHECK(ptr != nullptr) << "channel '" << get_name()
                           << "' is not an FRT stream, please report a bug";
     instance.SetArg(idx++, ptr->get_frt_stream());
   }
 
   // Child class must access `queue` using `ensure_queue()`.
-  std::shared_ptr<shared_queue<elem_t<T>>> queue;
+  std::shared_ptr<base_queue<elem_t<T>>> queue;
 };
 
 // shared pointer of multiple queues
