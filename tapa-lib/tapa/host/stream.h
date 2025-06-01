@@ -98,6 +98,9 @@ class base_queue : public type_erased_queue {
   virtual T pop() = 0;
   virtual T front() const = 0;
 
+  // Returns a stream suitable for passing to FRT. Crashes if incompatible.
+  virtual fpga::Stream<T>& get_frt_stream() = 0;
+
  protected:
   using type_erased_queue::type_erased_queue;
 };
@@ -136,6 +139,10 @@ class locked_queue : public base_queue<T> {
     std::unique_lock<std::mutex> lock(this->mtx);
     this->maybe_log(val);
     this->buffer.push_back(val);
+  }
+
+  fpga::Stream<T>& get_frt_stream() override {
+    LOG(FATAL) << "Cannot pass this stream to FRT: " << this->get_name();
   }
 
   ~locked_queue() { this->check_leftover(); }
@@ -179,7 +186,7 @@ class frt_queue : public base_queue<T> {
   T pop() override { return stream_.pop(); };
   T front() const override { return stream_.front(); }
 
-  fpga::Stream<T>& get_frt_stream() {
+  fpga::Stream<T>& get_frt_stream() override {
     is_frt_arg_.store(true, std::memory_order_relaxed);
     return stream_;
   }
@@ -234,13 +241,6 @@ class basic_stream {
   friend void access_stream(fpga::Instance&, int&, Arg arg);
   template <typename Param, typename Arg>
   friend struct internal::accessor;
-
-  void frt_set_arg(fpga::Instance& instance, int& idx) {
-    auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(ensure_queue());
-    CHECK(ptr != nullptr) << "channel '" << get_name()
-                          << "' is not an FRT stream, please report a bug";
-    instance.SetArg(idx++, ptr->get_frt_stream());
-  }
 
   // Child class must access `queue` using `ensure_queue()`.
   std::shared_ptr<base_queue<elem_t<T>>> queue;
@@ -943,7 +943,7 @@ T access_stream(T arg, bool sequential) {
 }
 template <typename T>
 void access_stream(fpga::Instance& instance, int& idx, T arg) {
-  arg.frt_set_arg(instance, idx);
+  instance.SetArg(idx++, arg.ensure_queue()->get_frt_stream());
 }
 template <typename T>
 T access_streams(T arg, bool sequential) {
