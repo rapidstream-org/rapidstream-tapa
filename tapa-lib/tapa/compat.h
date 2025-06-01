@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include <cstdint>
+
+#include "tapa.h"
+
 namespace tapa {
 namespace hls {
 
