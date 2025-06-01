@@ -244,8 +244,6 @@ class basic_stream {
   template <typename Param, typename Arg>
   friend struct internal::accessor;
 
-  void initialize_queue_by_handshake(bool is_frt = false) {}
-
   void frt_set_arg(fpga::Instance& instance, int& idx) {
     auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(ensure_queue());
     CHECK(ptr != nullptr) << "channel '" << get_name()
@@ -951,12 +949,10 @@ namespace internal {
 // Helper functions for accessing stream(s), friended by `basic_stream`.
 template <typename T>
 T access_stream(T arg, bool sequential) {
-  if (!sequential) arg.initialize_queue_by_handshake(/*is_frt=*/false);
   return arg;
 }
 template <typename T>
 void access_stream(fpga::Instance& instance, int& idx, T arg) {
-  arg.initialize_queue_by_handshake(/*is_frt=*/true);
   arg.frt_set_arg(instance, idx);
 }
 template <typename T>
@@ -1074,8 +1070,6 @@ struct accessor<istream<T>&, istream<T>&> {
     tapa::stream<T, kFrtUpgradeDepth> frt(arg.name + "/frt");
 #endif
 
-    frt.initialize_queue_by_handshake(/*is_frt=*/true);
-
     // captured by value so scheduler does not lose the queue
     internal::schedule(/*detach=*/true, [arg, frt]() mutable {
       auto arg_queue = arg.ensure_queue();
@@ -1123,8 +1117,6 @@ struct accessor<ostream<T>&, ostream<T>&> {
     // use a large depth to avoid blocking the device
     tapa::stream<T, kFrtUpgradeDepth> frt(arg.name + "/frt");
 #endif
-
-    frt.initialize_queue_by_handshake(/*is_frt=*/true);
 
     // captured by value so scheduler does not lose the queue
     internal::schedule(/*detach=*/true, [arg, frt]() mutable {
