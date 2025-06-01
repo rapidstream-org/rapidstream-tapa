@@ -103,41 +103,6 @@ class base_queue : public type_erased_queue {
 };
 
 template <typename T>
-class lock_free_queue : public base_queue<T> {
-  // producer writes to head and consumer reads from tail
-  // okay to keep incrementing because it'll take > 100 yr to overflow uint64_t
-  std::atomic<uint64_t> tail{0};
-  std::atomic<uint64_t> head{0};
-
-  std::vector<T> buffer;
-
- public:
-  // constructors
-  lock_free_queue(size_t depth, const std::string& name) : base_queue<T>(name) {
-    this->buffer.resize(depth);
-  }
-
-  // basic queue operations
-  bool empty() const override { return this->head - this->tail <= 0; }
-  bool full() const override {
-    return this->head - this->tail >= this->buffer.size();
-  }
-  T front() const override { return this->buffer[this->tail % buffer.size()]; }
-  T pop() override {
-    auto val = this->front();
-    ++this->tail;
-    return val;
-  }
-  void push(const T& val) override {
-    this->maybe_log(val);
-    this->buffer[this->head % buffer.size()] = val;
-    ++this->head;
-  }
-
-  ~lock_free_queue() { this->check_leftover(); }
-};
-
-template <typename T>
 class locked_queue : public base_queue<T> {
   size_t depth;
   mutable std::mutex mtx;
@@ -180,31 +145,48 @@ class locked_queue : public base_queue<T> {
 template <typename T>
 class frt_queue : public base_queue<T> {
  public:
-  fpga::Stream<T> stream;
-
   explicit frt_queue(int64_t depth, const std::string& name)
-      : base_queue<T>(name), stream(depth) {}
+      : base_queue<T>(name), stream_(depth) {}
+
+  ~frt_queue() override { this->check_leftover(); }
+
   bool empty() const override {
-    if (this->stream.empty()) {
-      // Yield to the OS to allow the simulation to produce data.
-      sleep(0);
+    if (this->stream_.empty()) {
+      if (is_frt_arg_.load(std::memory_order_relaxed)) {
+        // Yield to the OS to allow the simulation to produce data.
+        sleep(0);
+      }
       return true;
     } else {
       return false;
     }
   }
   bool full() const override {
-    if (this->stream.full()) {
-      // Yield to the OS to allow the simulation to consume data.
-      sleep(0);
+    if (this->stream_.full()) {
+      if (is_frt_arg_.load(std::memory_order_relaxed)) {
+        // Yield to the OS to allow the simulation to consume data.
+        sleep(0);
+      }
       return true;
     } else {
       return false;
     }
   }
-  void push(const T& val) override { stream.push(val); }
-  T pop() override { return stream.pop(); };
-  T front() const override { return stream.front(); }
+  void push(const T& val) override {
+    this->maybe_log(val);
+    stream_.push(val);
+  }
+  T pop() override { return stream_.pop(); };
+  T front() const override { return stream_.front(); }
+
+  fpga::Stream<T>& get_frt_stream() {
+    is_frt_arg_.store(true, std::memory_order_relaxed);
+    return stream_;
+  }
+
+ private:
+  fpga::Stream<T> stream_;
+  std::atomic<bool> is_frt_arg_ = false;
 };
 
 template <typename T>
@@ -227,7 +209,7 @@ std::shared_ptr<base_queue<T>> make_queue(bool is_frt, uint64_t depth,
     return std::make_shared<locked_queue<T>>(depth, name);
   } else {
     VLOG(1) << "channel '" << name << "' created as a lock-free queue";
-    return std::make_shared<lock_free_queue<T>>(depth, name);
+    return std::make_shared<frt_queue<T>>(depth, name);
   }
 }
 
@@ -363,7 +345,7 @@ class basic_stream {
     auto ptr = dynamic_cast<frt_queue<elem_t<T>>*>(ensure_queue()->get());
     CHECK(ptr != nullptr) << "channel '" << get_name()
                           << "' is not an FRT stream, please report a bug";
-    instance.SetArg(idx++, ptr->stream);
+    instance.SetArg(idx++, ptr->get_frt_stream());
   }
 
   // Child class must access `queue` using `ensure_queue()`.
