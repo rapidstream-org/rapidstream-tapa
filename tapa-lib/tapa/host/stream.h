@@ -236,8 +236,6 @@ class basic_stream {
 
  private:
   template <typename Arg>
-  friend Arg access_stream(Arg arg, bool sequential);
-  template <typename Arg>
   friend void access_stream(fpga::Instance&, int&, Arg arg);
   template <typename Param, typename Arg>
   friend struct internal::accessor;
@@ -938,19 +936,8 @@ namespace internal {
 
 // Helper functions for accessing stream(s), friended by `basic_stream`.
 template <typename T>
-T access_stream(T arg, bool sequential) {
-  return arg;
-}
-template <typename T>
 void access_stream(fpga::Instance& instance, int& idx, T arg) {
   instance.SetArg(idx++, arg.ensure_queue()->get_frt_stream());
-}
-template <typename T>
-T access_streams(T arg, bool sequential) {
-  for (int i = 0; i < T::length; ++i) {
-    access_stream(arg[i], sequential);
-  }
-  return arg;
 }
 template <typename T>
 void access_streams(fpga::Instance& instance, int& idx, T arg) {
@@ -1023,7 +1010,7 @@ TAPA_DEFINE_DISALLOWED_ACCESSOR(o)
   template <typename T, uint64_t N, typename U>                                \
   struct accessor<io##stream<T>&, stream<U, N> arg_ref> {                      \
     static io##stream<T> access(stream<U, N> arg_ref arg, bool sequential) {   \
-      return access_stream(arg, sequential);                                   \
+      return arg;                                                              \
     }                                                                          \
     static void access(fpga::Instance& instance, int& idx,                     \
                        stream<U, N> arg_ref arg) {                             \
@@ -1148,7 +1135,7 @@ struct accessor<ostream<T>&, ostream<T>&> {
   struct accessor<io##stream<T> reference, streams<T, length, depth>&> {       \
     static io##stream<T> access(streams<T, length, depth>& arg,                \
                                 bool sequential) {                             \
-      return access_stream(arg.access_as_##io##stream(), sequential);          \
+      return arg.access_as_##io##stream();                                     \
     }                                                                          \
     static void access(fpga::Instance& instance, int& idx,                     \
                        streams<T, length, depth>& arg) {                       \
@@ -1171,8 +1158,7 @@ struct accessor<ostream<T>&, ostream<T>&> {
                   streams<T, arg_length, depth>&> {                            \
     static io##streams<T, param_length> access(                                \
         streams<T, arg_length, depth>& arg, bool sequential) {                 \
-      return access_streams(                                                   \
-          arg.template access_as_##io##streams<param_length>(), sequential);   \
+      return arg.template access_as_##io##streams<param_length>();             \
     }                                                                          \
     static void access(fpga::Instance& instance, int& idx,                     \
                        streams<T, arg_length, depth>& arg) {                   \
