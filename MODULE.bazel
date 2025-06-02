@@ -13,7 +13,7 @@ module(name = "rapidstream-tapa")
 bazel_dep(name = "aspect_rules_js", version = "2.3.7", dev_dependency = True)
 bazel_dep(name = "aspect_rules_webpack", version = "0.17.0", dev_dependency = True)
 bazel_dep(name = "bazel_skylib", version = "1.7.1", dev_dependency = True)
-bazel_dep(name = "platforms", version = "0.0.11", dev_dependency = True)
+bazel_dep(name = "platforms", version = "1.0.0", dev_dependency = True)
 bazel_dep(name = "rules_cc", version = "0.1.1", dev_dependency = True)
 bazel_dep(name = "rules_nodejs", version = "6.4.0", dev_dependency = True)
 bazel_dep(name = "rules_pkg", version = "1.1.0", dev_dependency = True)
@@ -311,11 +311,11 @@ LLVM_VERSION_MAJOR = 20
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 5
+LLVM_VERSION_PATCH = 6
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
-LLVM_SHA256 = "a069565cd1c6aee48ee0f36de300635b5781f355d7b3c96a28062d50d575fa3e"
+LLVM_SHA256 = "5c70549d524284c184fe9fbff862c3d2d7a61b787570611b5a30e5cc345f145e"
 
 # Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/707c0f939d1a801370aeb3a795e1a253a880f4f7/modules/llvm-project/17.0.3/patches
 http_archive(
@@ -339,7 +339,7 @@ module(
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
 # Library dependencies
-bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.1.1")
 EOF
         """.format(LLVM_VERSION),
