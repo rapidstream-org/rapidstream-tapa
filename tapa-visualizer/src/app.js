@@ -83,7 +83,8 @@ const renderGraph = async (graph, graphData) => {
   await graph.render();
 };
 
-/** @param {Graph} graph */
+/** Re-render graph when grouping or options changed
+ * @param {Graph} graph */
 const setupRadioToggles = graph => {
 
   /** Re-render graph with new option;
@@ -144,6 +145,49 @@ if (fileInput === null) {
   throw new TypeError("Element input.fileInput not found!");
 }
 
+/** Fine-tune a graph after its first render
+ * @param {Graph} graph
+ * @param {GraphJSON} graphJSON */
+const setupGraph = async (graph, graphJSON) => {
+
+  const expand = optionsForm?.elements.expand.value === "true";
+  const topChildren = graph.getChildrenData(getComboId(graphJSON.top));
+  const visibleElements = expand ? graphData.nodes : topChildren;
+
+  // Setup kg for force-atlas2, based on visible element amount
+  const layout = graph.getLayout();
+  if (!Array.isArray(layout) && layout.type === "force-atlas2") {
+    const kg =  visibleElements.length >= 25 ? 10 : 1;
+    forceAtlas2.kg = kg;
+    graph.setLayout(prev => ({ ...prev, kg }));
+    await graph.layout();
+  }
+
+  // Run a 2nd layout if amount of visible elements is acceptable
+  visibleElements.length >= 10 &&
+  visibleElements.length <= 500 &&
+  await graph.layout(getLayout());
+
+  // Put edges in front of nodes
+  await graph.frontElement(
+    graph.getEdgeData()
+    .map(({ id }) => id)
+    .filter(id => typeof id === "string")
+  );
+
+  // Run translateElementTo() twice to reset position for collapsed combo
+  !expand &&
+  topChildren.forEach(item => {
+    if (item.type === "circle" && item.style?.collapsed) {
+      const position = graph.getElementPosition(item.id);
+      void (async () => {
+        await graph.translateElementTo(item.id, position, false);
+        await graph.translateElementTo(item.id, position, false);
+      })();
+    }
+  });
+};
+
 /** @param {Graph} graph */
 const setupFileInput = (graph) => {
 
@@ -152,6 +196,7 @@ const setupFileInput = (graph) => {
     /** @type {File | undefined} */
     const file = fileInput.files[0];
 
+    // Return false when there is no file to reset sidebar later
     if (!file) return false;
     if (file.type !== "application/json") {
       console.warn("File type is not application/json!");
@@ -163,6 +208,8 @@ const setupFileInput = (graph) => {
     resetSidebar("Loading...");
     file.text().then(async text => {
 
+      // 1. Get graphJSON, update explorer
+
       /** @satisfies {GraphJSON} */
       graphJSON = JSON.parse(text);
       if (!graphJSON?.tasks) {
@@ -171,13 +218,11 @@ const setupFileInput = (graph) => {
       }
       updateExplorer(graphJSON);
 
+      // 2. Get graphData, set global variable, log debug info
+
       options = getOptions();
       graphData = getGraphData(graphJSON, options);
       Object.assign(globalThis, { graphJSON, graphData });
-
-      // Update options form's className for hint about only one combo
-      const classListMethod = graphData.combos.length <= 1 ? "add" : "remove";
-      optionsForm?.classList[classListMethod]("only-one-combo");
 
       console.debug(
         `${filename}:\n`, graphJSON,
@@ -185,39 +230,16 @@ const setupFileInput = (graph) => {
         "\ngetGraphData() options:", options,
       );
 
-      // Render graph
+      // 3. Render & fine-tune graph
+
       resetInstance("Rendering...");
       await renderGraph(graph, graphData);
-
-      const expand = optionsForm?.elements.expand.value === "true";
-      const topChildren = graph.getChildrenData(getComboId(graphJSON.top));
-      const visibleElements = expand ? graphData.nodes : topChildren;
-
-      // Put edges in front of nodes
-      await graph.frontElement(
-        graph.getEdgeData()
-        .map(({id}) => id)
-        .filter(id => typeof id === "string")
-      );
-
-      // Run a 2nd layout if amount of visible elements is acceptable
-      visibleElements.length >= 10 &&
-      visibleElements.length <= 500 &&
-      await graph.layout(getLayout());
-
-      // Run translateElementTo() twice to reset position for collapsed combo
-      !expand &&
-      graph.getChildrenData(getComboId(graphJSON.top)).forEach(item => {
-        if (item.type === "circle" && item.style?.collapsed) {
-          const position = graph.getElementPosition(item.id);
-          void (async () => {
-            await graph.translateElementTo(item.id, position, false);
-            await graph.translateElementTo(item.id, position, false);
-          })();
-        }
-      });
-
+      await setupGraph(graph, graphJSON);
       resetInstance();
+
+      // 4. Update options form's className for hint about only one combo
+      const classListMethod = graphData.combos.length <= 1 ? "add" : "remove";
+      optionsForm?.classList[classListMethod]("only-one-combo");
 
     }).catch(error => {
       console.error(error);
