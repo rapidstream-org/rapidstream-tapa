@@ -214,8 +214,8 @@ template <typename T>
 class basic_stream {
  public:
   // debug helpers
-  const std::string& get_name() const { return name; }
-  void set_name(const std::string& name) { this->name = name; }
+  const std::string& get_name() const { return get_queue().get_name(); }
+  void set_name(const std::string& name) { get_queue().set_name(name); }
 
   // not protected since we'll use std::vector<basic_stream<T>>
   basic_stream() {}
@@ -230,9 +230,7 @@ class basic_stream {
  protected:
   std::string name;
 
-  base_queue<elem_t<T>>* ensure_queue() const {
-    return CHECK_NOTNULL(queue).get();
-  }
+  base_queue<elem_t<T>>& get_queue() const { return *CHECK_NOTNULL(queue); }
 
  private:
   template <typename Arg>
@@ -333,7 +331,7 @@ class istream : virtual public internal::basic_stream<T> {
   ///
   /// @return Whether the stream is empty.
   bool empty() {
-    bool is_empty = this->ensure_queue()->empty();
+    bool is_empty = this->get_queue().empty();
     if (is_empty) {
       internal::yield("channel '" + this->get_name() + "' is empty");
     }
@@ -349,7 +347,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return            Whether @c is_eot is updated.
   bool try_eot(bool& is_eot) {
     if (!empty()) {
-      is_eot = this->ensure_queue()->front().eot;
+      is_eot = this->get_queue().front().eot;
       return true;
     }
     return false;
@@ -389,7 +387,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return           Whether @c value is updated.
   bool try_peek(T& value) {
     if (!empty()) {
-      auto elem = this->ensure_queue()->front();
+      auto elem = this->get_queue().front();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' peeked when closed";
       }
@@ -441,7 +439,7 @@ class istream : virtual public internal::basic_stream<T> {
   ///                        returned.
   T peek(bool& is_success, bool& is_eot) {
     if (!empty()) {
-      auto elem = this->ensure_queue()->front();
+      auto elem = this->get_queue().front();
       is_success = true;
       is_eot = elem.eot;
       return elem.val;
@@ -462,7 +460,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return           Whether @c value is updated.
   bool try_read(T& value) {
     if (!empty()) {
-      auto elem = this->ensure_queue()->pop();
+      auto elem = this->get_queue().pop();
       if (elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name() << "' read when closed";
       }
@@ -557,7 +555,7 @@ class istream : virtual public internal::basic_stream<T> {
   /// @return Whether an EoT token is consumed.
   bool try_open() {
     if (!empty()) {
-      auto elem = this->ensure_queue()->pop();
+      auto elem = this->get_queue().pop();
       if (!elem.eot) {
         LOG(FATAL) << "channel '" << this->get_name()
                    << "' opened when not closed";
@@ -605,7 +603,7 @@ class ostream : virtual public internal::basic_stream<T> {
   ///
   /// @return Whether the stream is full.
   bool full() {
-    bool is_full = this->ensure_queue()->full();
+    bool is_full = this->get_queue().full();
     if (is_full) {
       internal::yield("channel '" + this->get_name() + "' is full");
     }
@@ -620,7 +618,7 @@ class ostream : virtual public internal::basic_stream<T> {
   /// @return          Whether @c value has been written successfully.
   bool try_write(const T& value) {
     if (!full()) {
-      this->ensure_queue()->push({value, false});
+      this->get_queue().push({value, false});
       return true;
     }
     return false;
@@ -654,7 +652,7 @@ class ostream : virtual public internal::basic_stream<T> {
   /// @return Whether the EoT token has been written successfully.
   bool try_close() {
     if (!full()) {
-      this->ensure_queue()->push({{}, true});
+      this->get_queue().push({{}, true});
       return true;
     }
     return false;
@@ -937,7 +935,7 @@ namespace internal {
 // Helper functions for accessing stream(s), friended by `basic_stream`.
 template <typename T>
 void access_stream(fpga::Instance& instance, int& idx, T arg) {
-  instance.SetArg(idx++, arg.ensure_queue()->get_frt_stream());
+  instance.SetArg(idx++, arg.get_queue().get_frt_stream());
 }
 
 template <typename T>
