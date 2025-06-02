@@ -1,0 +1,5209 @@
+{
+    "hierarchical_name": [
+        "VecAdd"
+    ],
+    "metadata": null,
+    "module_type": "grouped_module",
+    "name": "VecAdd",
+    "parameters": [
+        {
+            "expr": [
+                {
+                    "repr": "32",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_S_AXI_CONTROL_DATA_WIDTH"
+            ],
+            "name": "C_S_AXI_CONTROL_DATA_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "6",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_S_AXI_CONTROL_ADDR_WIDTH"
+            ],
+            "name": "C_S_AXI_CONTROL_ADDR_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "32",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_S_AXI_DATA_WIDTH"
+            ],
+            "name": "C_S_AXI_DATA_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "(32 / 8)",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_S_AXI_CONTROL_WSTRB_WIDTH"
+            ],
+            "name": "C_S_AXI_CONTROL_WSTRB_WIDTH",
+            "range": null
+        },
+        {
+            "expr": [
+                {
+                    "repr": "(32 / 8)",
+                    "type": "lit"
+                }
+            ],
+            "hierarchical_name": [
+                "C_S_AXI_WSTRB_WIDTH"
+            ],
+            "name": "C_S_AXI_WSTRB_WIDTH",
+            "range": null
+        }
+    ],
+    "ports": [
+        {
+            "hierarchical_name": [
+                "ap_clk"
+            ],
+            "name": "ap_clk",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "ap_rst_n"
+            ],
+            "name": "ap_rst_n",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "interrupt"
+            ],
+            "name": "interrupt",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARADDR"
+            ],
+            "name": "m_axi_a_ARADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARBURST"
+            ],
+            "name": "m_axi_a_ARBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARCACHE"
+            ],
+            "name": "m_axi_a_ARCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARID"
+            ],
+            "name": "m_axi_a_ARID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARLEN"
+            ],
+            "name": "m_axi_a_ARLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARLOCK"
+            ],
+            "name": "m_axi_a_ARLOCK",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARPROT"
+            ],
+            "name": "m_axi_a_ARPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARQOS"
+            ],
+            "name": "m_axi_a_ARQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARREADY"
+            ],
+            "name": "m_axi_a_ARREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARSIZE"
+            ],
+            "name": "m_axi_a_ARSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_ARVALID"
+            ],
+            "name": "m_axi_a_ARVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWADDR"
+            ],
+            "name": "m_axi_a_AWADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWBURST"
+            ],
+            "name": "m_axi_a_AWBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWCACHE"
+            ],
+            "name": "m_axi_a_AWCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWID"
+            ],
+            "name": "m_axi_a_AWID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWLEN"
+            ],
+            "name": "m_axi_a_AWLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWLOCK"
+            ],
+            "name": "m_axi_a_AWLOCK",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWPROT"
+            ],
+            "name": "m_axi_a_AWPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWQOS"
+            ],
+            "name": "m_axi_a_AWQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWREADY"
+            ],
+            "name": "m_axi_a_AWREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWSIZE"
+            ],
+            "name": "m_axi_a_AWSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_AWVALID"
+            ],
+            "name": "m_axi_a_AWVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_BID"
+            ],
+            "name": "m_axi_a_BID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_BREADY"
+            ],
+            "name": "m_axi_a_BREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_BRESP"
+            ],
+            "name": "m_axi_a_BRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_BVALID"
+            ],
+            "name": "m_axi_a_BVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_RDATA"
+            ],
+            "name": "m_axi_a_RDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "31",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_RID"
+            ],
+            "name": "m_axi_a_RID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_RLAST"
+            ],
+            "name": "m_axi_a_RLAST",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_RREADY"
+            ],
+            "name": "m_axi_a_RREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_RRESP"
+            ],
+            "name": "m_axi_a_RRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_RVALID"
+            ],
+            "name": "m_axi_a_RVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_WDATA"
+            ],
+            "name": "m_axi_a_WDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "31",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_WLAST"
+            ],
+            "name": "m_axi_a_WLAST",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_WREADY"
+            ],
+            "name": "m_axi_a_WREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_WSTRB"
+            ],
+            "name": "m_axi_a_WSTRB",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_a_WVALID"
+            ],
+            "name": "m_axi_a_WVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARADDR"
+            ],
+            "name": "m_axi_b_ARADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARBURST"
+            ],
+            "name": "m_axi_b_ARBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARCACHE"
+            ],
+            "name": "m_axi_b_ARCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARID"
+            ],
+            "name": "m_axi_b_ARID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARLEN"
+            ],
+            "name": "m_axi_b_ARLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARLOCK"
+            ],
+            "name": "m_axi_b_ARLOCK",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARPROT"
+            ],
+            "name": "m_axi_b_ARPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARQOS"
+            ],
+            "name": "m_axi_b_ARQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARREADY"
+            ],
+            "name": "m_axi_b_ARREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARSIZE"
+            ],
+            "name": "m_axi_b_ARSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_ARVALID"
+            ],
+            "name": "m_axi_b_ARVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWADDR"
+            ],
+            "name": "m_axi_b_AWADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWBURST"
+            ],
+            "name": "m_axi_b_AWBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWCACHE"
+            ],
+            "name": "m_axi_b_AWCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWID"
+            ],
+            "name": "m_axi_b_AWID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWLEN"
+            ],
+            "name": "m_axi_b_AWLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWLOCK"
+            ],
+            "name": "m_axi_b_AWLOCK",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWPROT"
+            ],
+            "name": "m_axi_b_AWPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWQOS"
+            ],
+            "name": "m_axi_b_AWQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWREADY"
+            ],
+            "name": "m_axi_b_AWREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWSIZE"
+            ],
+            "name": "m_axi_b_AWSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_AWVALID"
+            ],
+            "name": "m_axi_b_AWVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_BID"
+            ],
+            "name": "m_axi_b_BID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_BREADY"
+            ],
+            "name": "m_axi_b_BREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_BRESP"
+            ],
+            "name": "m_axi_b_BRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_BVALID"
+            ],
+            "name": "m_axi_b_BVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_RDATA"
+            ],
+            "name": "m_axi_b_RDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "31",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_RID"
+            ],
+            "name": "m_axi_b_RID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_RLAST"
+            ],
+            "name": "m_axi_b_RLAST",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_RREADY"
+            ],
+            "name": "m_axi_b_RREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_RRESP"
+            ],
+            "name": "m_axi_b_RRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_RVALID"
+            ],
+            "name": "m_axi_b_RVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_WDATA"
+            ],
+            "name": "m_axi_b_WDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "31",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_WLAST"
+            ],
+            "name": "m_axi_b_WLAST",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_WREADY"
+            ],
+            "name": "m_axi_b_WREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_WSTRB"
+            ],
+            "name": "m_axi_b_WSTRB",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_b_WVALID"
+            ],
+            "name": "m_axi_b_WVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARADDR"
+            ],
+            "name": "m_axi_c_ARADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARBURST"
+            ],
+            "name": "m_axi_c_ARBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARCACHE"
+            ],
+            "name": "m_axi_c_ARCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARID"
+            ],
+            "name": "m_axi_c_ARID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARLEN"
+            ],
+            "name": "m_axi_c_ARLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARLOCK"
+            ],
+            "name": "m_axi_c_ARLOCK",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARPROT"
+            ],
+            "name": "m_axi_c_ARPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARQOS"
+            ],
+            "name": "m_axi_c_ARQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARREADY"
+            ],
+            "name": "m_axi_c_ARREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARSIZE"
+            ],
+            "name": "m_axi_c_ARSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_ARVALID"
+            ],
+            "name": "m_axi_c_ARVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWADDR"
+            ],
+            "name": "m_axi_c_AWADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWBURST"
+            ],
+            "name": "m_axi_c_AWBURST",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWCACHE"
+            ],
+            "name": "m_axi_c_AWCACHE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWID"
+            ],
+            "name": "m_axi_c_AWID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWLEN"
+            ],
+            "name": "m_axi_c_AWLEN",
+            "range": {
+                "left": [
+                    {
+                        "repr": "7",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWLOCK"
+            ],
+            "name": "m_axi_c_AWLOCK",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWPROT"
+            ],
+            "name": "m_axi_c_AWPROT",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWQOS"
+            ],
+            "name": "m_axi_c_AWQOS",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWREADY"
+            ],
+            "name": "m_axi_c_AWREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWSIZE"
+            ],
+            "name": "m_axi_c_AWSIZE",
+            "range": {
+                "left": [
+                    {
+                        "repr": "2",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_AWVALID"
+            ],
+            "name": "m_axi_c_AWVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_BID"
+            ],
+            "name": "m_axi_c_BID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_BREADY"
+            ],
+            "name": "m_axi_c_BREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_BRESP"
+            ],
+            "name": "m_axi_c_BRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_BVALID"
+            ],
+            "name": "m_axi_c_BVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_RDATA"
+            ],
+            "name": "m_axi_c_RDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "31",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_RID"
+            ],
+            "name": "m_axi_c_RID",
+            "range": {
+                "left": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_RLAST"
+            ],
+            "name": "m_axi_c_RLAST",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_RREADY"
+            ],
+            "name": "m_axi_c_RREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_RRESP"
+            ],
+            "name": "m_axi_c_RRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_RVALID"
+            ],
+            "name": "m_axi_c_RVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_WDATA"
+            ],
+            "name": "m_axi_c_WDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "31",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_WLAST"
+            ],
+            "name": "m_axi_c_WLAST",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_WREADY"
+            ],
+            "name": "m_axi_c_WREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_WSTRB"
+            ],
+            "name": "m_axi_c_WSTRB",
+            "range": {
+                "left": [
+                    {
+                        "repr": "3",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "m_axi_c_WVALID"
+            ],
+            "name": "m_axi_c_WVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_ARADDR"
+            ],
+            "name": "s_axi_control_ARADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_S_AXI_CONTROL_ADDR_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_ARREADY"
+            ],
+            "name": "s_axi_control_ARREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_ARVALID"
+            ],
+            "name": "s_axi_control_ARVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_AWADDR"
+            ],
+            "name": "s_axi_control_AWADDR",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_S_AXI_CONTROL_ADDR_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_AWREADY"
+            ],
+            "name": "s_axi_control_AWREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_AWVALID"
+            ],
+            "name": "s_axi_control_AWVALID",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_BREADY"
+            ],
+            "name": "s_axi_control_BREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_BRESP"
+            ],
+            "name": "s_axi_control_BRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_BVALID"
+            ],
+            "name": "s_axi_control_BVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_RDATA"
+            ],
+            "name": "s_axi_control_RDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_S_AXI_CONTROL_DATA_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_RREADY"
+            ],
+            "name": "s_axi_control_RREADY",
+            "range": null,
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_RRESP"
+            ],
+            "name": "s_axi_control_RRESP",
+            "range": {
+                "left": [
+                    {
+                        "repr": "1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_RVALID"
+            ],
+            "name": "s_axi_control_RVALID",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_WDATA"
+            ],
+            "name": "s_axi_control_WDATA",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_S_AXI_CONTROL_DATA_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_WREADY"
+            ],
+            "name": "s_axi_control_WREADY",
+            "range": null,
+            "type": "output reg"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_WSTRB"
+            ],
+            "name": "s_axi_control_WSTRB",
+            "range": {
+                "left": [
+                    {
+                        "repr": "C_S_AXI_CONTROL_WSTRB_WIDTH - 1",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            },
+            "type": "input wire"
+        },
+        {
+            "hierarchical_name": [
+                "s_axi_control_WVALID"
+            ],
+            "name": "s_axi_control_WVALID",
+            "range": null,
+            "type": "input wire"
+        }
+    ],
+    "submodules": [
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_din",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_q_VecAdd_din"
+                    ],
+                    "name": "a_q_VecAdd_din"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_full_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_q_VecAdd_full_n"
+                    ],
+                    "name": "a_q_VecAdd_full_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_write",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_q_VecAdd_write"
+                    ],
+                    "name": "a_q_VecAdd_write"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARADDR"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARBURST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARBURST"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARBURST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARCACHE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARCACHE"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARCACHE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARLEN",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARLEN"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARLEN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARLOCK",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARLOCK"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARLOCK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARPROT",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARPROT"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARPROT"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARQOS",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARQOS"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARQOS"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARSIZE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARSIZE"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARSIZE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_ARVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_ARVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_ARVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWADDR"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWBURST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWBURST"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWBURST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWCACHE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWCACHE"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWCACHE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWLEN",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWLEN"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWLEN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWLOCK",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWLOCK"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWLOCK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWPROT",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWPROT"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWPROT"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWQOS",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWQOS"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWQOS"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWSIZE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWSIZE"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWSIZE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_AWVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_AWVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_AWVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_BID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_BID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_BID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_BREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_BREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_BREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_BRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_BRESP"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_BRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_BVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_BVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_BVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_RDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_RDATA"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_RDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_RID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_RID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_RID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_RLAST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_RLAST"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_RLAST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_RREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_RREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_RREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_RRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_RRESP"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_RRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_RVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_RVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_RVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_WDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_WDATA"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_WDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_WLAST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_WLAST"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_WLAST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_WREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_WREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_WREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_WSTRB",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_WSTRB"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_WSTRB"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_a_WVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_0_WVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_0_WVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X0Y2_SLOT_X0Y2_0___a_offset__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "mmap_Mmap2Stream_0_offset"
+                    ],
+                    "name": "mmap_Mmap2Stream_0_offset"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0___n__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "n"
+                    ],
+                    "name": "n"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "SLOT_X0Y2_SLOT_X0Y2_0"
+            ],
+            "module": "SLOT_X0Y2_SLOT_X0Y2",
+            "name": "SLOT_X0Y2_SLOT_X0Y2_0",
+            "parameters": [],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_dout",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_q_VecAdd_dout"
+                    ],
+                    "name": "c_q_VecAdd_dout"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_empty_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_q_VecAdd_empty_n"
+                    ],
+                    "name": "c_q_VecAdd_empty_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_read",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_q_VecAdd_read"
+                    ],
+                    "name": "c_q_VecAdd_read"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARADDR"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARBURST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARBURST"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARBURST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARCACHE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARCACHE"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARCACHE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARLEN",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARLEN"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARLEN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARLOCK",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARLOCK"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARLOCK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARPROT",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARPROT"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARPROT"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARQOS",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARQOS"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARQOS"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARREADY"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARSIZE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARSIZE"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARSIZE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_ARVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_ARVALID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_ARVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWADDR"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWBURST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWBURST"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWBURST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWCACHE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWCACHE"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWCACHE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWLEN",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWLEN"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWLEN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWLOCK",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWLOCK"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWLOCK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWPROT",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWPROT"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWPROT"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWQOS",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWQOS"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWQOS"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWREADY"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWSIZE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWSIZE"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWSIZE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_AWVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_AWVALID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_AWVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_BID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_BID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_BID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_BREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_BREADY"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_BREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_BRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_BRESP"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_BRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_BVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_BVALID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_BVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_RDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_RDATA"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_RDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_RID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_RID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_RID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_RLAST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_RLAST"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_RLAST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_RREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_RREADY"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_RREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_RRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_RRESP"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_RRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_RVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_RVALID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_RVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_WDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_WDATA"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_WDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_WLAST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_WLAST"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_WLAST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_WREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_WREADY"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_WREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_WSTRB",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_WSTRB"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_WSTRB"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_c_WVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Stream2Mmap_0_WVALID"
+                    ],
+                    "name": "m_axi_mmap_Stream2Mmap_0_WVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X2Y3_SLOT_X2Y3_0___c_offset__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "mmap_Stream2Mmap_0_offset"
+                    ],
+                    "name": "mmap_Stream2Mmap_0_offset"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0___n__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "n"
+                    ],
+                    "name": "n"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "SLOT_X2Y3_SLOT_X2Y3_0"
+            ],
+            "module": "SLOT_X2Y3_SLOT_X2Y3",
+            "name": "SLOT_X2Y3_SLOT_X2Y3_0",
+            "parameters": [],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_dout",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_q_VecAdd_dout"
+                    ],
+                    "name": "a_q_VecAdd_dout"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_empty_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_q_VecAdd_empty_n"
+                    ],
+                    "name": "a_q_VecAdd_empty_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd_read",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a_q_VecAdd_read"
+                    ],
+                    "name": "a_q_VecAdd_read"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_din",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_q_VecAdd_din"
+                    ],
+                    "name": "c_q_VecAdd_din"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_full_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_q_VecAdd_full_n"
+                    ],
+                    "name": "c_q_VecAdd_full_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd_write",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c_q_VecAdd_write"
+                    ],
+                    "name": "c_q_VecAdd_write"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARADDR"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARBURST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARBURST"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARBURST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARCACHE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARCACHE"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARCACHE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARLEN",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARLEN"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARLEN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARLOCK",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARLOCK"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARLOCK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARPROT",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARPROT"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARPROT"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARQOS",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARQOS"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARQOS"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARSIZE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARSIZE"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARSIZE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_ARVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_ARVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_ARVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWADDR"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWBURST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWBURST"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWBURST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWCACHE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWCACHE"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWCACHE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWLEN",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWLEN"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWLEN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWLOCK",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWLOCK"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWLOCK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWPROT",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWPROT"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWPROT"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWQOS",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWQOS"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWQOS"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWSIZE",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWSIZE"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWSIZE"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_AWVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_AWVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_AWVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_BID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_BID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_BID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_BREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_BREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_BREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_BRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_BRESP"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_BRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_BVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_BVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_BVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_RDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_RDATA"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_RDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_RID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_RID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_RID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_RLAST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_RLAST"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_RLAST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_RREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_RREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_RREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_RRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_RRESP"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_RRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_RVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_RVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_RVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_WDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_WDATA"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_WDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_WLAST",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_WLAST"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_WLAST"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_WREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_WREADY"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_WREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_WSTRB",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_WSTRB"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_WSTRB"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "m_axi_b_WVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "m_axi_mmap_Mmap2Stream_1_WVALID"
+                    ],
+                    "name": "m_axi_mmap_Mmap2Stream_1_WVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0___b_offset__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "mmap_Mmap2Stream_1_offset"
+                    ],
+                    "name": "mmap_Mmap2Stream_1_offset"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0___n__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "n"
+                    ],
+                    "name": "n"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "SLOT_X3Y3_SLOT_X3Y3_0"
+            ],
+            "module": "SLOT_X3Y3_SLOT_X3Y3",
+            "name": "SLOT_X3Y3_SLOT_X3Y3_0",
+            "parameters": [],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X0Y2_SLOT_X0Y2_0___a__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X0Y2_SLOT_X0Y2_0___a__q0"
+                    ],
+                    "name": "SLOT_X0Y2_SLOT_X0Y2_0___a__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X0Y2_SLOT_X0Y2_0___n__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X0Y2_SLOT_X0Y2_0___n__q0"
+                    ],
+                    "name": "SLOT_X0Y2_SLOT_X0Y2_0___n__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X0Y2_SLOT_X0Y2_0__ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X0Y2_SLOT_X0Y2_0__ap_done"
+                    ],
+                    "name": "SLOT_X0Y2_SLOT_X0Y2_0__ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X0Y2_SLOT_X0Y2_0__ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X0Y2_SLOT_X0Y2_0__ap_idle"
+                    ],
+                    "name": "SLOT_X0Y2_SLOT_X0Y2_0__ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X0Y2_SLOT_X0Y2_0__ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X0Y2_SLOT_X0Y2_0__ap_ready"
+                    ],
+                    "name": "SLOT_X0Y2_SLOT_X0Y2_0__ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X0Y2_SLOT_X0Y2_0__ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X0Y2_SLOT_X0Y2_0__ap_start"
+                    ],
+                    "name": "SLOT_X0Y2_SLOT_X0Y2_0__ap_start"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X2Y3_SLOT_X2Y3_0___c__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X2Y3_SLOT_X2Y3_0___c__q0"
+                    ],
+                    "name": "SLOT_X2Y3_SLOT_X2Y3_0___c__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X2Y3_SLOT_X2Y3_0___n__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X2Y3_SLOT_X2Y3_0___n__q0"
+                    ],
+                    "name": "SLOT_X2Y3_SLOT_X2Y3_0___n__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X2Y3_SLOT_X2Y3_0__ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X2Y3_SLOT_X2Y3_0__ap_done"
+                    ],
+                    "name": "SLOT_X2Y3_SLOT_X2Y3_0__ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X2Y3_SLOT_X2Y3_0__ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X2Y3_SLOT_X2Y3_0__ap_idle"
+                    ],
+                    "name": "SLOT_X2Y3_SLOT_X2Y3_0__ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X2Y3_SLOT_X2Y3_0__ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X2Y3_SLOT_X2Y3_0__ap_ready"
+                    ],
+                    "name": "SLOT_X2Y3_SLOT_X2Y3_0__ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X2Y3_SLOT_X2Y3_0__ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X2Y3_SLOT_X2Y3_0__ap_start"
+                    ],
+                    "name": "SLOT_X2Y3_SLOT_X2Y3_0__ap_start"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0___b__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X3Y3_SLOT_X3Y3_0___b__q0"
+                    ],
+                    "name": "SLOT_X3Y3_SLOT_X3Y3_0___b__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0___n__q0",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X3Y3_SLOT_X3Y3_0___n__q0"
+                    ],
+                    "name": "SLOT_X3Y3_SLOT_X3Y3_0___n__q0"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0__ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X3Y3_SLOT_X3Y3_0__ap_done"
+                    ],
+                    "name": "SLOT_X3Y3_SLOT_X3Y3_0__ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0__ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X3Y3_SLOT_X3Y3_0__ap_idle"
+                    ],
+                    "name": "SLOT_X3Y3_SLOT_X3Y3_0__ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0__ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X3Y3_SLOT_X3Y3_0__ap_ready"
+                    ],
+                    "name": "SLOT_X3Y3_SLOT_X3Y3_0__ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "SLOT_X3Y3_SLOT_X3Y3_0__ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "SLOT_X3Y3_SLOT_X3Y3_0__ap_start"
+                    ],
+                    "name": "SLOT_X3Y3_SLOT_X3Y3_0__ap_start"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a"
+                    ],
+                    "name": "a"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_clk",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_clk"
+                    ],
+                    "name": "ap_clk"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_done"
+                    ],
+                    "name": "ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_idle"
+                    ],
+                    "name": "ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_ready"
+                    ],
+                    "name": "ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_rst_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_rst_n"
+                    ],
+                    "name": "ap_rst_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_start"
+                    ],
+                    "name": "ap_start"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "b",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "b"
+                    ],
+                    "name": "b"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c"
+                    ],
+                    "name": "c"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "n"
+                    ],
+                    "name": "n"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "VecAdd_fsm_0"
+            ],
+            "module": "VecAdd_fsm",
+            "name": "VecAdd_fsm_0",
+            "parameters": [],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_clk",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "clk"
+                    ],
+                    "name": "clk"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd__din",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_din"
+                    ],
+                    "name": "if_din"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd__dout",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_dout"
+                    ],
+                    "name": "if_dout"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd__empty_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_empty_n"
+                    ],
+                    "name": "if_empty_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd__full_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_full_n"
+                    ],
+                    "name": "if_full_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd__read",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_read"
+                    ],
+                    "name": "if_read"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "1'b1",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_read_ce"
+                    ],
+                    "name": "if_read_ce"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a_q_VecAdd__write",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_write"
+                    ],
+                    "name": "if_write"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "1'b1",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_write_ce"
+                    ],
+                    "name": "if_write_ce"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "~",
+                            "type": "lit"
+                        },
+                        {
+                            "repr": "ap_rst_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "reset"
+                    ],
+                    "name": "reset"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "a_q_VecAdd"
+            ],
+            "module": "fifo",
+            "name": "a_q_VecAdd",
+            "parameters": [
+                {
+                    "expr": [
+                        {
+                            "repr": "1",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ADDR_WIDTH"
+                    ],
+                    "name": "ADDR_WIDTH"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "-31",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "DATA_WIDTH"
+                    ],
+                    "name": "DATA_WIDTH"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "2",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "DEPTH"
+                    ],
+                    "name": "DEPTH"
+                }
+            ],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_clk",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "clk"
+                    ],
+                    "name": "clk"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd__din",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_din"
+                    ],
+                    "name": "if_din"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd__dout",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_dout"
+                    ],
+                    "name": "if_dout"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd__empty_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_empty_n"
+                    ],
+                    "name": "if_empty_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd__full_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_full_n"
+                    ],
+                    "name": "if_full_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd__read",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_read"
+                    ],
+                    "name": "if_read"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "1'b1",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_read_ce"
+                    ],
+                    "name": "if_read_ce"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c_q_VecAdd__write",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_write"
+                    ],
+                    "name": "if_write"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "1'b1",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "if_write_ce"
+                    ],
+                    "name": "if_write_ce"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "~",
+                            "type": "lit"
+                        },
+                        {
+                            "repr": "ap_rst_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "reset"
+                    ],
+                    "name": "reset"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "c_q_VecAdd"
+            ],
+            "module": "fifo",
+            "name": "c_q_VecAdd",
+            "parameters": [
+                {
+                    "expr": [
+                        {
+                            "repr": "1",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ADDR_WIDTH"
+                    ],
+                    "name": "ADDR_WIDTH"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "-31",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "DATA_WIDTH"
+                    ],
+                    "name": "DATA_WIDTH"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "2",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "DEPTH"
+                    ],
+                    "name": "DEPTH"
+                }
+            ],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_clk",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ACLK"
+                    ],
+                    "name": "ACLK"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "1'b1",
+                            "type": "lit"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ACLK_EN"
+                    ],
+                    "name": "ACLK_EN"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_ARADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ARADDR"
+                    ],
+                    "name": "ARADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ARESET",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ARESET"
+                    ],
+                    "name": "ARESET"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_ARREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ARREADY"
+                    ],
+                    "name": "ARREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_ARVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ARVALID"
+                    ],
+                    "name": "ARVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_AWADDR",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "AWADDR"
+                    ],
+                    "name": "AWADDR"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_AWREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "AWREADY"
+                    ],
+                    "name": "AWREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_AWVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "AWVALID"
+                    ],
+                    "name": "AWVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_BREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "BREADY"
+                    ],
+                    "name": "BREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_BRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "BRESP"
+                    ],
+                    "name": "BRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_BVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "BVALID"
+                    ],
+                    "name": "BVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_RDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "RDATA"
+                    ],
+                    "name": "RDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_RREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "RREADY"
+                    ],
+                    "name": "RREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_RRESP",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "RRESP"
+                    ],
+                    "name": "RRESP"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_RVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "RVALID"
+                    ],
+                    "name": "RVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_WDATA",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "WDATA"
+                    ],
+                    "name": "WDATA"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_WREADY",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "WREADY"
+                    ],
+                    "name": "WREADY"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_WSTRB",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "WSTRB"
+                    ],
+                    "name": "WSTRB"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "s_axi_control_WVALID",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "WVALID"
+                    ],
+                    "name": "WVALID"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "a",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "a"
+                    ],
+                    "name": "a"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_done"
+                    ],
+                    "name": "ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_idle"
+                    ],
+                    "name": "ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_ready"
+                    ],
+                    "name": "ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_start"
+                    ],
+                    "name": "ap_start"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "b",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "b"
+                    ],
+                    "name": "b"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "c",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "c"
+                    ],
+                    "name": "c"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "interrupt",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "interrupt"
+                    ],
+                    "name": "interrupt"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "n"
+                    ],
+                    "name": "n"
+                }
+            ],
+            "floorplan_region": null,
+            "hierarchical_name": [
+                "control_s_axi_U"
+            ],
+            "module": "VecAdd_control_s_axi",
+            "name": "control_s_axi_U",
+            "parameters": [
+                {
+                    "expr": [
+                        {
+                            "repr": "C_S_AXI_CONTROL_ADDR_WIDTH",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "C_S_AXI_ADDR_WIDTH"
+                    ],
+                    "name": "C_S_AXI_ADDR_WIDTH"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "C_S_AXI_CONTROL_DATA_WIDTH",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "C_S_AXI_DATA_WIDTH"
+                    ],
+                    "name": "C_S_AXI_DATA_WIDTH"
+                }
+            ],
+            "pragmas": []
+        }
+    ],
+    "wires": [
+        {
+            "hierarchical_name": [
+                "ARESET"
+            ],
+            "name": "ARESET",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X0Y2_SLOT_X0Y2_0___a_offset__q0"
+            ],
+            "name": "SLOT_X0Y2_SLOT_X0Y2_0___a_offset__q0",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X0Y2_SLOT_X0Y2_0__ap_done"
+            ],
+            "name": "SLOT_X0Y2_SLOT_X0Y2_0__ap_done",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X0Y2_SLOT_X0Y2_0__ap_idle"
+            ],
+            "name": "SLOT_X0Y2_SLOT_X0Y2_0__ap_idle",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X0Y2_SLOT_X0Y2_0__ap_ready"
+            ],
+            "name": "SLOT_X0Y2_SLOT_X0Y2_0__ap_ready",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X0Y2_SLOT_X0Y2_0__ap_start"
+            ],
+            "name": "SLOT_X0Y2_SLOT_X0Y2_0__ap_start",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X2Y3_SLOT_X2Y3_0___c_offset__q0"
+            ],
+            "name": "SLOT_X2Y3_SLOT_X2Y3_0___c_offset__q0",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X2Y3_SLOT_X2Y3_0__ap_done"
+            ],
+            "name": "SLOT_X2Y3_SLOT_X2Y3_0__ap_done",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X2Y3_SLOT_X2Y3_0__ap_idle"
+            ],
+            "name": "SLOT_X2Y3_SLOT_X2Y3_0__ap_idle",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X2Y3_SLOT_X2Y3_0__ap_ready"
+            ],
+            "name": "SLOT_X2Y3_SLOT_X2Y3_0__ap_ready",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X2Y3_SLOT_X2Y3_0__ap_start"
+            ],
+            "name": "SLOT_X2Y3_SLOT_X2Y3_0__ap_start",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X3Y3_SLOT_X3Y3_0___b_offset__q0"
+            ],
+            "name": "SLOT_X3Y3_SLOT_X3Y3_0___b_offset__q0",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X3Y3_SLOT_X3Y3_0___n__q0"
+            ],
+            "name": "SLOT_X3Y3_SLOT_X3Y3_0___n__q0",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X3Y3_SLOT_X3Y3_0__ap_done"
+            ],
+            "name": "SLOT_X3Y3_SLOT_X3Y3_0__ap_done",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X3Y3_SLOT_X3Y3_0__ap_idle"
+            ],
+            "name": "SLOT_X3Y3_SLOT_X3Y3_0__ap_idle",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X3Y3_SLOT_X3Y3_0__ap_ready"
+            ],
+            "name": "SLOT_X3Y3_SLOT_X3Y3_0__ap_ready",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "SLOT_X3Y3_SLOT_X3Y3_0__ap_start"
+            ],
+            "name": "SLOT_X3Y3_SLOT_X3Y3_0__ap_start",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "a"
+            ],
+            "name": "a",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_din"
+            ],
+            "name": "a_q_VecAdd_din",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_dout"
+            ],
+            "name": "a_q_VecAdd_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_empty_n"
+            ],
+            "name": "a_q_VecAdd_empty_n",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_full_n"
+            ],
+            "name": "a_q_VecAdd_full_n",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_read"
+            ],
+            "name": "a_q_VecAdd_read",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "a_q_VecAdd_write"
+            ],
+            "name": "a_q_VecAdd_write",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "ap_done"
+            ],
+            "name": "ap_done",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "ap_idle"
+            ],
+            "name": "ap_idle",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "ap_ready"
+            ],
+            "name": "ap_ready",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "ap_start"
+            ],
+            "name": "ap_start",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "b"
+            ],
+            "name": "b",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "c"
+            ],
+            "name": "c",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_din"
+            ],
+            "name": "c_q_VecAdd_din",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_dout"
+            ],
+            "name": "c_q_VecAdd_dout",
+            "range": {
+                "left": [
+                    {
+                        "repr": "32",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_empty_n"
+            ],
+            "name": "c_q_VecAdd_empty_n",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_full_n"
+            ],
+            "name": "c_q_VecAdd_full_n",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_read"
+            ],
+            "name": "c_q_VecAdd_read",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "c_q_VecAdd_write"
+            ],
+            "name": "c_q_VecAdd_write",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "interrupt"
+            ],
+            "name": "interrupt",
+            "range": null
+        },
+        {
+            "hierarchical_name": [
+                "n"
+            ],
+            "name": "n",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        }
+    ]
+}

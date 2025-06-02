@@ -55,3 +55,16 @@ py_test(
         "//tapa/graphir_conversion",
     ],
 )
+
+py_test(
+    name = "top_task_conversion_test",
+    srcs = ["top_task_conversion_test.py"],
+    data = glob([
+        "top_conversion_test_files/*",
+    ]),
+    deps = [
+        ":leaf_task_conversion_lib",
+        "//tapa:core",
+        "//tapa/graphir_conversion",
+    ],
+)
