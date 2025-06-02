@@ -8,7 +8,9 @@ RapidStream Contributor License Agreement.
 
 import logging
 from collections.abc import Generator
+from pathlib import Path
 
+from tapa.core import Program
 from tapa.graphir.types import (
     AnyModuleDefinition,
     Expression,
@@ -19,12 +21,15 @@ from tapa.graphir.types import (
     ModuleNet,
     ModuleParameter,
     ModulePort,
+    Modules,
+    Project,
     Range,
     Token,
     VerilogModuleDefinition,
 )
 from tapa.graphir_conversion.utils import (
     PORT_TYPE_MAPPING,
+    get_ctrl_s_axi_def,
     get_leaf_port_connection_mapping,
     get_m_axi_port_name,
     get_stream_port_name,
@@ -857,3 +862,43 @@ def get_top_module_definition(
         submodules=tuple(top_subinsts),
         wires=tuple(top_wires),
     )
+
+
+def get_project_from_floorplanned_program(program: Program) -> Project:
+    """Get a graphir project from a floorplanned TAPA program."""
+    top_task = program.top_task
+
+    slot_tasks = {inst.task.name: inst.task for inst in top_task.instances}
+    assert all(task.is_slot for _, task in slot_tasks.items())
+
+    leaf_tasks = {
+        inst.task.name: inst.task
+        for slot_task in slot_tasks.values()
+        for inst in slot_task.instances
+    }
+
+    leaf_irs = {
+        task.name: get_verilog_module_from_leaf_task(task)
+        for task in leaf_tasks.values()
+    }
+    slot_irs = {
+        task.name: get_slot_module_definition(task, leaf_irs)
+        for task in slot_tasks.values()
+    }
+
+    with open(
+        Path(program.rtl_dir) / f"{top_task.name}_control_s_axi.v",
+        encoding="utf-8",
+    ) as f:
+        ctrl_s_axi_verilog = f.read()
+
+    ctrl_s_axi = get_ctrl_s_axi_def(program.top_task, ctrl_s_axi_verilog)
+    top_ir = get_top_module_definition(top_task, slot_irs, ctrl_s_axi)
+    all_ir_defs = [top_ir, *list(slot_irs.values()), *list(leaf_irs.values())]
+
+    modules_obj = Modules(
+        name="$root",
+        module_definitions=tuple(all_ir_defs),
+        top_name=top_task.name,
+    )
+    return Project(modules=modules_obj)

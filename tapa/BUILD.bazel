@@ -103,7 +103,6 @@ py_library(
         ":util",
         "//tapa/common:target",
         "//tapa/graphir",
-        "//tapa/graphir_conversion",
         "//tapa/program:directory",
         "//tapa/program:hls",
         "//tapa/program:pack",
