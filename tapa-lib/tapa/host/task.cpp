@@ -4,6 +4,7 @@
 
 #include "tapa/host/tapa.h"
 
+#include <chrono>
 #include <csignal>
 #include <cstring>
 
@@ -56,6 +57,14 @@ using unique_lock = boost::unique_lock<mutex>;
 
 namespace tapa {
 
+namespace {
+
+void reschedule_this_thread() {
+  std::this_thread::sleep_for(std::chrono::milliseconds(1));
+}
+
+}  // namespace
+
 namespace internal {
 
 // Signal handler for SIGINT to kill running kernel instance,
@@ -104,7 +113,7 @@ void yield(const string& msg) {
 #endif  // TAPA_ENABLE_STACKTRACE
   }
   if (current_handle == nullptr) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    reschedule_this_thread();
   } else {
     (*current_handle)();
   }
@@ -166,8 +175,7 @@ class worker {
             bool pred =
                 this->done || !this->coroutines.empty() || !this->tasks.empty();
             // yield to the OS for every idle spin
-            if (!pred)
-              std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            if (!pred) reschedule_this_thread();
             return pred;
           });
 
@@ -232,7 +240,7 @@ class worker {
         // check if coroutines are executed
         if (!coroutine_executed) {
           // yield to the OS every time the thread is idle
-          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+          reschedule_this_thread();
         }
       }
     });
@@ -252,7 +260,7 @@ class worker {
       bool pred = this->tasks.empty() && this->coroutines[false].empty();
       if (!pred) {
         // yield to the OS for every idle spin
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        reschedule_this_thread();
       }
       return pred;
     });
@@ -408,9 +416,7 @@ __attribute__((weak)) void __sanitizer_finish_switch_fiber(void*, const void**,
 namespace tapa {
 namespace internal {
 
-void yield(const std::string& msg) {
-  std::this_thread::sleep_for(std::chrono::milliseconds(1));
-}
+void yield(const std::string& msg) { reschedule_this_thread(); }
 
 namespace {
 
@@ -460,7 +466,7 @@ task::~task() {
       if (t.joinable()) {
         t.join();
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      reschedule_this_thread();
     }
     internal::top_task = nullptr;
   }
@@ -497,7 +503,7 @@ task& task::invoke_frt(std::shared_ptr<fpga::Instance> instance) {
         while (!instance->IsFinished()) {
           // Yield to the OS for every idle spin, so that a thread waiting
           // for the FPGA to finish will not spin in a 100% CPU loop.
-          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+          reschedule_this_thread();
           internal::yield("fpga::Instance() is not finished");
         }
         instance->Finish();
