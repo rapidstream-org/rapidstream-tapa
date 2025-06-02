@@ -19,6 +19,7 @@ py_library(
         "//tapa:__subpackages__",
     ],
     deps = [
+        "//tapa:core",
         "//tapa:task",
         "//tapa/graphir",
         requirement("pyverilog"),
