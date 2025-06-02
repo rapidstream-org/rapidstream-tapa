@@ -163,7 +163,7 @@ body>main>.graph-container>.tooltip {
 	font-size: .9rem;
 }
 
-/* dialog */
+/* C++ Code dialog */
 dialog {
 	/* 100% - 2rem margin - 2rem padding - 2px border */
 	max-height: calc(100% - 4rem - 2px);
@@ -181,11 +181,20 @@ dialog>header>h2 {
 	margin-inline-end: auto;
 }
 
+/* C++ code block in the dialog */
 dialog>pre,
 dialog>pre[class*="language-"] {
-	max-height: calc(100vh - 12rem);
 	width: calc(100% - 4rem);
+	/* 36rem + 2rem gap */
+	min-width: 38rem;
+	max-width: 80rem;
+	max-height: calc(100vh - 12rem);
 	margin-left: -3px;
 	overflow: auto;
 	font-size: .9rem;
+}
+
+code[class*="language-"],
+pre[class*="language-"] {
+	white-space: pre-wrap;
 }
