@@ -144,6 +144,7 @@ body>main {
 
 body>main>.graph-container>.tooltip {
 	overflow-wrap: anywhere;
+	font-size: .8rem;
 }
 
 /* aside */

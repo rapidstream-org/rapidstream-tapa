@@ -83,68 +83,6 @@ const renderGraph = async (graph, graphData) => {
   await graph.render();
 };
 
-/** Re-render graph when grouping or options changed
- * @param {Graph} graph */
-const setupRadioToggles = graph => {
-
-  /** Re-render graph with new option;
-   * update options & re-render graph when option changed.
-   * @type {(newOption: GetGraphDataOptions) => Promise<void>} */
-  const updateGraph = async (newOption) => {
-    Object.assign(options, newOption);
-
-    // Only re-render if graph exist
-    if (!graphJSON) return;
-    graphData = getGraphData(graphJSON, options);
-    console.debug(
-      "graphData:\n", graphData,
-      "\ngetGraphData() options:", options,
-    );
-
-    resetSidebar("Loading...");
-    await renderGraph(graph, graphData);
-    resetInstance();
-  };
-
-  if (groupingForm) {
-    for (let i = 0; i < groupingForm.elements.length; i++) {
-      groupingForm.elements[i].addEventListener("change",
-        () => void updateGraph({ grouping: groupingForm.grouping.value }));
-    }
-  }
-
-  if (optionsForm) {
-    for (let i = 0; i < optionsForm.elements.length; i++) {
-      const element = optionsForm.elements[i];
-      if (!(element instanceof HTMLInputElement)) continue;
-
-      element.addEventListener(
-        "change",
-        element.name === "layout"
-          // layout option
-          ? () => {
-            graph.setLayout(getLayout());
-            void graph.layout().then(() => graph.fitView());
-          }
-          // other options
-          : ({ target }) => {
-            target instanceof HTMLInputElement &&
-            void updateGraph({ [target.name]: target.value === "true" });
-          }
-      );
-    }
-  }
-};
-
-
-// File Input + graph rendering for new file
-
-/** @satisfies {HTMLInputElement & { files: FileList } | null} */
-const fileInput = document.querySelector("input.fileInput");
-if (fileInput === null) {
-  throw new TypeError("Element input.fileInput not found!");
-}
-
 /** Fine-tune a graph after its first render
  * @param {Graph} graph
  * @param {GraphJSON} graphJSON */
@@ -187,6 +125,14 @@ const setupGraph = async (graph, graphJSON) => {
     }
   });
 };
+
+// File Input + graph rendering for new file
+
+/** @satisfies {HTMLInputElement & { files: FileList } | null} */
+const fileInput = document.querySelector("input.fileInput");
+if (fileInput === null) {
+  throw new TypeError("Element input.fileInput not found!");
+}
 
 /** @param {Graph} graph */
 const setupFileInput = (graph) => {
@@ -256,6 +202,61 @@ const setupFileInput = (graph) => {
   fileInput.addEventListener("change", readFile);
 };
 
+
+/** Re-render graph when grouping or options changed
+ * @param {Graph} graph */
+const setupRadioToggles = graph => {
+
+  /** Re-render graph with new option;
+   * update options & re-render graph when option changed.
+   * @type {(newOption: GetGraphDataOptions) => Promise<void>} */
+  const updateGraph = async (newOption) => {
+    Object.assign(options, newOption);
+
+    // Only re-render if graph exist
+    if (!graphJSON) return;
+    graphData = getGraphData(graphJSON, options);
+    console.debug(
+      "graphData:\n", graphData,
+      "\ngetGraphData() options:", options,
+    );
+
+    resetSidebar("Loading...");
+    await renderGraph(graph, graphData);
+    resetInstance();
+  };
+
+  if (groupingForm) {
+    for (let i = 0; i < groupingForm.elements.length; i++) {
+      groupingForm.elements[i].addEventListener("change",
+        () => void updateGraph({ grouping: groupingForm.grouping.value }));
+    }
+  }
+
+  if (optionsForm) {
+    for (let i = 0; i < optionsForm.elements.length; i++) {
+      const element = optionsForm.elements[i];
+      if (!(element instanceof HTMLInputElement)) continue;
+
+      element.addEventListener(
+        "change",
+        element.name === "layout"
+          // layout option
+          ? () => {
+            graph.setLayout(getLayout());
+            void graph.layout().then(() => graph.fitView());
+          }
+          // other options
+          : ({ target }) => {
+            target instanceof HTMLInputElement &&
+            void updateGraph({ [target.name]: target.value === "true" });
+          }
+      );
+    }
+  }
+};
+
+
 // Buttons
 
 /** Button selector and click event callback
@@ -267,6 +268,7 @@ const getGraphButtons = (graph) => [[
     filename = "";
     graphJSON = undefined;
     graphData = { nodes: [], edges: [], combos: [] };
+
     resetSidebar("Please load a file.");
   })
 ], [
