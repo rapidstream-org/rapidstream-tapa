@@ -220,7 +220,7 @@ class basic_stream {
   // not protected since we'll use std::vector<basic_stream<T>>
   basic_stream() {}
   basic_stream(const std::string& name, int depth)
-      : name(name), queue(make_queue<elem_t<T>>(depth, name)) {}
+      : queue(make_queue<elem_t<T>>(depth, name)) {}
 
   basic_stream(const basic_stream&) = default;
   basic_stream(basic_stream&&) = default;
@@ -228,8 +228,6 @@ class basic_stream {
   basic_stream& operator=(basic_stream&&) = delete;  // -Wvirtual-move-assign
 
  protected:
-  std::string name;
-
   base_queue<elem_t<T>>& get_queue() const { return *CHECK_NOTNULL(queue); }
 
  private:
