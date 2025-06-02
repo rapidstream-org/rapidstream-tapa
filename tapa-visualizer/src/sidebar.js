@@ -69,6 +69,30 @@ const parseArgs = args => append(
   ),
 );
 
+/** Parse fifos into <table>
+ * @type {(fifos: [string, FIFO][], taskName: string) => HTMLTableElement} */
+const parseFifos = (fifos, taskName) => append(
+  $("table", { style: "text-align: center;" }),
+  append(
+    $("tr"),
+    $text("th", "Name"),
+    $text("th", "Source -> Target"),
+    $text("th", "Depth"),
+  ),
+  ...fifos.map(
+    ([name, { produced_by, consumed_by, depth }]) => {
+      const source = produced_by?.join("/") ?? taskName;
+      const target = consumed_by?.join("/") ?? taskName;
+      return append(
+        $("tr"),
+        $text("td", name),
+        $text("td", `${source} -> ${target}`),
+        $text("td", depth ?? "/"),
+      );
+    }
+  ),
+);
+
 /** Parse ports into <table>
  * @type {(ports: Port[]) => HTMLTableElement} */
 const parsePorts = ports => append(
@@ -295,6 +319,8 @@ const getTaskInfo = (task, id) => {
   ];
 
   if (task.level === "upper") {
+    const fifos = Object.entries(task.fifos);
+
     /** @type {HTMLLIElement[]} */
     const tasks = [];
     for (const name in task.tasks) {
@@ -304,29 +330,15 @@ const getTaskInfo = (task, id) => {
       }
     }
 
-    /** get sub-tasks' name for fifo
-     * @type {(by: [string, number] | undefined) => string}
-     * @param by fifo.produced_by / fifo.consumed_by */
-    const getName = by => by?.join("/") ?? taskName;
-
-    /** @type {HTMLLIElement[]} */
-    const fifos = [];
-    for (const name in task.fifos) {
-      const { produced_by: p, consumed_by: c, depth: d } = task.fifos[name];
-      const depth = d !== undefined ? ` (depth: ${d})` : "";
-      const fifo = `${getName(p)} -> ${getName(c)}`;
-      fifos.push($text("li", `${name}${depth}:\n${fifo}`));
-    }
-
     listInfo.append(
+      $text("dt", "FIFO Streams"),
+      fifos.length !== 0
+        ? append($("dd"), parseFifos(fifos, taskName))
+        : $text("dd", "none"),
+
       $text("dt", "Sub-Tasks"),
       tasks.length !== 0
         ? append($("dd"), ul(tasks))
-        : $text("dd", "none"),
-
-      $text("dt", "FIFO Streams"),
-      fifos.length !== 0
-        ? append($("dd"), ul(fifos))
         : $text("dd", "none"),
     );
   }
@@ -339,7 +351,7 @@ const sourcesTitle = append(
   $("br"),
   $("code", {
     className: "hint",
-    textContent: "Format: connection name -> target task name",
+    textContent: "Format: connection name -> target name",
   }),
 );
 const targetsTitle = append(
@@ -347,7 +359,7 @@ const targetsTitle = append(
   $("br"),
   $("code", {
     className: "hint",
-    textContent: "Format: connection name <- source task name",
+    textContent: "Format: connection name <- source name",
   }),
 );
 
@@ -389,11 +401,23 @@ export const updateSidebarForNode = (id, graph) => {
     : $text("p", `Node ${node.id} has no neighbors.`),
   );
 
+  neighborIds.size > 0
+  ? neighbors.replaceChildren(
+    append($("p", { className: "hint" }), $text("code", node.id), "'s neighbors:"),
+    ul([...neighborIds.values().map(id => $text("li", id))]),
+  )
+  : neighbors.replaceChildren($text("p", `Node ${node.id} has no neighbors.`));
+
   connections.replaceChildren(
+    append($("p", { className: "hint" }), $text("code", node.id), "'s connections:"),
     sourcesTitle,
-    ul(sources.map(edge => $text("li", `${edge.id} -> ${edge.target}`))),
+    sources.length !== 0
+    ? ul(sources.map(edge => $text("li", `${edge.id} -> ${edge.target}`)))
+    : $("p", { textContent: "none", style: "padding-inline-start: 1em; font-size: .85rem;" }),
     targetsTitle,
-    ul(targets.map(edge => $text("li", `${edge.id} <- ${edge.source}`))),
+    targets.length !== 0
+    ? ul(targets.map(edge => $text("li", `${edge.id} <- ${edge.source}`)))
+    : $("p", { textContent: "none", style: "padding-inline-start: 1em; font-size: .85rem;" }),
   );
 
 };
