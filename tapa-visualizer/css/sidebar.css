@@ -74,6 +74,7 @@
 	padding: .5rem;
 }
 .sidebar-content-instance>dl>dt:first-child,
+.sidebar-content-neighbors>p:first-child,
 .sidebar-content-connections>p:first-child {
 	margin-top: 0;
 }

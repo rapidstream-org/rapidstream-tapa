@@ -7,9 +7,9 @@
 "use strict";
 
 import { DragCanvas, Graph } from "@antv/g6";
-import { createIcons, icons } from 'lucide';
+import { createIcons, icons } from "lucide";
 
-createIcons({icons});
+createIcons({ icons });
 
 import { antvDagre, dagre, forceAtlas2, graphOptions } from "./graph-config.js";
 import {
