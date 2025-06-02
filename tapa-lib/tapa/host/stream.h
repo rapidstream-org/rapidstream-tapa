@@ -939,12 +939,6 @@ template <typename T>
 void access_stream(fpga::Instance& instance, int& idx, T arg) {
   instance.SetArg(idx++, arg.ensure_queue()->get_frt_stream());
 }
-template <typename T>
-void access_streams(fpga::Instance& instance, int& idx, T arg) {
-  for (int i = 0; i < T::length; ++i) {
-    access_stream(instance, idx, arg[i]);
-  }
-}
 
 template <typename T>
 constexpr bool dependent_false() {
@@ -1082,9 +1076,9 @@ struct accessor<ostream<T>&, ostream<T>&> {
     }                                                                          \
     static void access(fpga::Instance& instance, int& idx,                     \
                        streams<T, arg_length, depth>& arg) {                   \
-      return access_streams(                                                   \
-          instance, idx,                                                       \
-          arg.template access_as_##io##streams<param_length>());               \
+      for (int i = 0; i < param_length; ++i) {                                 \
+        access_stream(instance, idx, arg[i]);                                  \
+      }                                                                        \
     }                                                                          \
   };                                                                           \
                                                                                \
