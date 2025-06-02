@@ -178,8 +178,8 @@ export const dagre = {
 };
 
 /** `force-atlas2` specifc config for large graph:
- * - `kr`:    much larger than kg
- * - `kg`:    much smaller than kr, larger than 1 to work with small graph
+ * - `kr`:    roughly match up with nodeSize
+ * - `kg`:    much smaller than kr; larger than 1 to work with small graph
  * - `ks`:    speed, at least 0.01 * nodeSize
  * - `ksmax`: max speed, not very important
  * - `tao`:   10 is the sweet point
@@ -197,6 +197,41 @@ export const forceAtlas2 = {
   preLayout: true,
 };
 
+/** @type {(items: import("@antv/g6").ElementDatum[]) => HTMLElement | string} */
+const getContentForTooltip = items =>
+  items
+  .filter(item => !item.id?.startsWith("combo:"))
+  .map(item => {
+    if (!item.id) {
+      return "";
+    } else if (
+      typeof item.source === "string" &&
+      typeof item.target === "string"
+    ) {
+      // Edge
+      return [
+        `Edge ID: <code>${item.id}</code>`,
+        `Source: <code>${item.source}</code>`,
+        `Target: <code>${item.target}</code>`,
+      ].join("<br>");
+    } else {
+      // Node
+      const [taskName, subTaskIndex, treeIndex] = item.id.split("/");
+      const lines = [`Node ID: <code>${item.id}</code>`];
+
+      if (subTaskIndex) {
+        lines.push(
+          `- Task Name: <code>${taskName}</code>`,
+          `- Sub-Task Index: ${subTaskIndex}`
+        );
+        treeIndex &&
+        lines.push(`- Expand Task Tree Index: ${treeIndex}`);
+      }
+
+      return lines.join("<br>");
+    }
+  })
+  .join("<br>");
 
 /** @type {Omit<import("@antv/g6").GraphOptions, "data">} */
 export const graphOptions = {
@@ -216,12 +251,7 @@ export const graphOptions = {
     /** @type {import("@antv/g6").TooltipOptions} */
     ({
       type: "tooltip",
-      getContent: (_event, items) => Promise.resolve(
-        items
-        .filter(item => !item.id?.startsWith("combo:"))
-        .map(item => `${ item.source ? "Edge" : "Node"} ID: <code>${item.id}</code>`)
-        .join("<br>")
-      ),
+      getContent: (_e, items) => Promise.resolve(getContentForTooltip(items)),
     }),
   ],
 

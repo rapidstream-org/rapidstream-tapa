@@ -100,6 +100,10 @@ const showCode = codeDialog && codeContainer
       codeContainer.textContent = code;
       Prism.highlightElement(codeContainer);
 
+      code.length >= 2500
+      ? codeContainer.setAttribute("style", "font-size: .8rem;")
+      : codeContainer.removeAttribute("style");
+
       const title = codeDialog.querySelector(":scope h2");
       if (title) title.textContent = taskName;
 
@@ -288,8 +292,7 @@ const getTaskInfo = (task, id) => {
   const elements = [
     compactInfo,
     listInfo,
-  ]
-
+  ];
 
   if (task.level === "upper") {
     /** @type {HTMLLIElement[]} */
@@ -428,7 +431,6 @@ export const updateSidebarForCombo = (id, graph) => {
 
   const taskInfo = getTaskInfo(combo.data, getComboName(combo.id));
   task.replaceChildren(...taskInfo);
-
 
   neighbors.replaceChildren($text("p", "Please select a node."));
   connections.replaceChildren($text("p", "Please select a node."));
