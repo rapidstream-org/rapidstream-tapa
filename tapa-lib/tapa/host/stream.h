@@ -1,14 +1,6 @@
 // Copyright (c) 2024 RapidStream Design Automation, Inc. and contributors.
 // All rights reserved. The contributor(s) of this file has/have agreed to the
 // RapidStream Contributor License Agreement.
-//
-// IMPORTANT: You may find it too complex to handshake streams during the task
-// invocation using accessors, and connect initialized stream endpoints to
-// FPGA simulation using passthrough tasks. You may be tempted to refactor
-// the method to "handshake on use". However, please use your pencil and paper
-// to prove that your method WILL NOT DEADLOCK in any way, before implementing
-// it. See poc/deadlock-stream-init-on-use for the second failed attempt to
-// implement this method and don't waste your time on it.
 
 #ifndef TAPA_HOST_STREAM_H_
 #define TAPA_HOST_STREAM_H_
@@ -991,9 +983,6 @@ TAPA_DEFINE_DISALLOWED_ACCESSOR(i)
 TAPA_DEFINE_DISALLOWED_ACCESSOR(o)
 
 #undef TAPA_DEFINE_DISALLOWED_ACCESSOR
-
-// See the IMPORTANT NOTE in the header before you are tempted to refactor
-// this accessor-based handshake method.
 
 #define TAPA_DEFINE_DEVICE_ACCESSOR(io, arg_ref) /***************************/ \
   /* param = i/ostream, arg = stream */                                        \
