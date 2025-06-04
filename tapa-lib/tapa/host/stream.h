@@ -223,12 +223,10 @@ class basic_stream {
   base_queue<elem_t<T>>& get_queue() const { return *CHECK_NOTNULL(queue); }
 
  private:
-  template <typename Arg>
-  friend void access_stream(fpga::Instance&, int&, Arg arg);
   template <typename Param, typename Arg>
   friend struct internal::accessor;
 
-  // Child class must access `queue` using `ensure_queue()`.
+  // Child class must access `queue` using `get_queue()`.
   std::shared_ptr<base_queue<elem_t<T>>> queue;
 };
 
@@ -922,12 +920,6 @@ class streams : public internal::unbound_streams<T, S> {
 
 namespace internal {
 
-// Helper functions for accessing stream(s), friended by `basic_stream`.
-template <typename T>
-void access_stream(fpga::Instance& instance, int& idx, T arg) {
-  instance.SetArg(idx++, arg.get_queue().get_frt_stream());
-}
-
 // TODO: Remove when all staging builds pass. This is not needed with CWG2518,
 // but older compilers do not implement it.
 template <typename T>
@@ -935,8 +927,7 @@ constexpr bool dependent_false() {
   return false;
 }
 
-#define TAPA_DEFINE_DISALLOWED_ACCESSOR(io,                                    \
-                                        arg_ref) /***************************/ \
+#define TAPA_DEFINE_DISALLOWED_ACCESSOR(io, arg_ref) /***********************/ \
   /* param = i/ostream, arg = stream */                                        \
   template <typename T, uint64_t N, typename U>                                \
   struct accessor<io##stream<T>, stream<U, N> arg_ref> {                       \
@@ -962,7 +953,7 @@ TAPA_DEFINE_DISALLOWED_ACCESSOR(o, &)
 
 #undef TAPA_DEFINE_DISALLOWED_ACCESSOR
 
-#define TAPA_DEFINE_DISALLOWED_ACCESSOR(io) /***************************/      \
+#define TAPA_DEFINE_DISALLOWED_ACCESSOR(io) /********************************/ \
   /* param = i/ostream, arg = i/ostream */                                     \
   template <typename T>                                                        \
   struct accessor<io##stream<T>, io##stream<T>&> {                             \
@@ -995,7 +986,7 @@ TAPA_DEFINE_DISALLOWED_ACCESSOR(o)
     }                                                                          \
     static void access(fpga::Instance& instance, int& idx,                     \
                        stream<U, N> arg_ref arg) {                             \
-      return access_stream(instance, idx, arg);                                \
+      return instance.SetArg(idx++, arg.get_queue().get_frt_stream());         \
     }                                                                          \
   };
 
@@ -1018,7 +1009,7 @@ template <typename T>
 struct accessor<istream<T>&, istream<T>&> {
   static istream<T> access(istream<T>& arg, bool sequential) { return arg; }
   static void access(fpga::Instance& instance, int& idx, istream<T>& arg) {
-    access_stream(instance, idx, arg);
+    instance.SetArg(idx++, arg.get_queue().get_frt_stream());
   }
 };
 
@@ -1026,7 +1017,7 @@ template <typename T>
 struct accessor<ostream<T>&, ostream<T>&> {
   static ostream<T> access(ostream<T>& arg, bool sequential) { return arg; }
   static void access(fpga::Instance& instance, int& idx, ostream<T>& arg) {
-    access_stream(instance, idx, arg);
+    instance.SetArg(idx++, arg.get_queue().get_frt_stream());
   }
 };
 
@@ -1040,7 +1031,8 @@ struct accessor<ostream<T>&, ostream<T>&> {
     }                                                                          \
     static void access(fpga::Instance& instance, int& idx,                     \
                        streams<T, length, depth>& arg) {                       \
-      return access_stream(instance, idx, arg.access_as_##io##stream());       \
+      return instance.SetArg(                                                  \
+          idx++, arg.access_as_##io##stream().get_queue().get_frt_stream());   \
     }                                                                          \
   };                                                                           \
                                                                                \
@@ -1064,7 +1056,7 @@ struct accessor<ostream<T>&, ostream<T>&> {
     static void access(fpga::Instance& instance, int& idx,                     \
                        streams<T, arg_length, depth>& arg) {                   \
       for (int i = 0; i < param_length; ++i) {                                 \
-        access_stream(instance, idx, arg[i]);                                  \
+        instance.SetArg(idx++, arg[i].get_queue().get_frt_stream());           \
       }                                                                        \
     }                                                                          \
   };                                                                           \
