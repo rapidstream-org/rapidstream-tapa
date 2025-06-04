@@ -928,6 +928,8 @@ void access_stream(fpga::Instance& instance, int& idx, T arg) {
   instance.SetArg(idx++, arg.get_queue().get_frt_stream());
 }
 
+// TODO: Remove when all staging builds pass. This is not needed with CWG2518,
+// but older compilers do not implement it.
 template <typename T>
 constexpr bool dependent_false() {
   return false;
