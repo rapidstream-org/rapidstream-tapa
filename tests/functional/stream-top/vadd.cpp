@@ -8,8 +8,9 @@
 
 #include "vadd.h"
 
-void StreamAdd(tapa::istream<input_t>& a, tapa::istream<input_t>& b,
-               tapa::ostream<tapa::vec_t<OUTPUT_TYPE, 2>>& c) {
+// TEST 7: Ensure that inline will not break Vitis HLS (issues/136).
+inline void StreamAdd(tapa::istream<input_t>& a, tapa::istream<input_t>& b,
+                      tapa::ostream<tapa::vec_t<OUTPUT_TYPE, 2>>& c) {
   // TEST 6: Ensure that tapa::vec_t can be used as a stream type.
   tapa::vec_t<OUTPUT_TYPE, 2> vec_out;
   int vec_idx = 0;

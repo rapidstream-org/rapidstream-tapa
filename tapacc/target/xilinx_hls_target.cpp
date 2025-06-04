@@ -33,6 +33,30 @@ static void AddStreamDepthPragma(clang::Rewriter& rewriter,
   AddPragmaAfterStmt(rewriter, stmt, pragma);
 }
 
+static void RemoveInlineSpecifier(clang::Rewriter& rewriter,
+                                  const clang::FunctionDecl* func) {
+  if (!func->isInlineSpecified()) return;
+
+  // Get the beginning token of the function declaration.
+  auto loc = func->getBeginLoc();
+  clang::Token token;
+  Lexer::getRawToken(loc, token, rewriter.getSourceMgr(),
+                     rewriter.getLangOpts());
+
+  if (token.getRawIdentifier().str() != "inline") {
+    // I am not aware of any case where the inline specifier is not at the
+    // beginning of the function declaration. If this actually happens, we will
+    // issue an error and not remove the inline specifier.
+    llvm::errs()
+        << "Warning: Expected 'inline' keyword at the beginning of function "
+           "declaration. The inline specifier will not be removed. Note that "
+           "Vitis HLS does not support inline functions as TAPA tasks.\n";
+  } else {
+    rewriter.RemoveText(token.getLocation(),
+                        token.getLength());  // Remove 'inline' keyword.
+  }
+}
+
 void XilinxHLSTarget::AddCodeForTopLevelFunc(ADD_FOR_FUNC_ARGS_DEF) {
   // Set top-level control to s_axilite for Vitis mode.
   if (is_vitis) {
@@ -211,6 +235,7 @@ void XilinxHLSTarget::RewriteTopLevelFunc(REWRITE_FUNC_ARGS_DEF) {
 
     rewriter.InsertText(beginLoc, "extern \"C\" {\n\n");
     rewriter.InsertTextAfterToken(endLoc, "\n\n}  // extern \"C\"\n");
+    RemoveInlineSpecifier(rewriter, func);
   } else {
     // Otherwise, treat it as a normal HLS kernel.
     RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS);
@@ -221,6 +246,7 @@ void XilinxHLSTarget::RewriteMiddleLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   auto lines = GenerateCodeForMiddleLevelFunc(func);
   rewriter.ReplaceText(func->getBody()->getSourceRange(),
                        "{\n" + llvm::join(lines, "\n") + "}\n");
+  RemoveInlineSpecifier(rewriter, func);
 }
 
 static void RewriteStreamDefinitions(REWRITE_FUNC_ARGS_DEF) {
@@ -245,6 +271,7 @@ void XilinxHLSTarget::RewriteLowerLevelFunc(REWRITE_FUNC_ARGS_DEF) {
   rewriter.InsertTextAfterToken(func->getBody()->getBeginLoc(),
                                 llvm::join(lines, "\n"));
   RewriteStreamDefinitions(REWRITE_FUNC_ARGS);
+  RemoveInlineSpecifier(rewriter, func);
 }
 
 void XilinxHLSTarget::RewriteOtherFunc(REWRITE_FUNC_ARGS_DEF) {
