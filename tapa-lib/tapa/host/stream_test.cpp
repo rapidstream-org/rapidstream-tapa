@@ -9,9 +9,12 @@
 #include <string>
 #include <string_view>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <tapa/host/internal_util.h>
+#include <tapa/scoped_log_sink_mock.h>
+#include <tapa/scoped_set_env.h>
 
 #ifdef __cpp_lib_filesystem
 #include <filesystem>
@@ -27,6 +30,11 @@ namespace {
 using namespace std::string_view_literals;
 
 using ::tapa::internal::StrCat;
+using ::tapa_testing::ScopedLogSinkMock;
+using ::tapa_testing::ScopedSetEnv;
+using ::testing::HasSubstr;
+using ::testing::InSequence;
+using ::testing::NiceMock;
 
 constexpr char kEnvVarName[] = "TAPA_STREAM_LOG_DIR";
 
@@ -134,6 +142,43 @@ TEST(StreamNameTest, StreamsHaveIndexedNames) {
   EXPECT_EQ(data_q[0].get_name(), "data[0]");
   EXPECT_EQ(data_q[1].get_name(), "data[1]");
   EXPECT_EQ(data_q[2].get_name(), "data[2]");
+}
+
+TEST(LeftoverLogTest, SingleLeftoverIsReported) {
+  NiceMock<ScopedLogSinkMock> log;
+
+  tapa::stream<int> stream("foo");
+  stream.write(2333);
+
+  InSequence seq;
+  EXPECT_CALL(log, Warning(HasSubstr("'foo' destructed with leftovers")));
+  EXPECT_CALL(log, Warning(HasSubstr("'foo' leftover: 2333")));
+}
+
+TEST(LeftoverLogTest, ExcessiveLeftoverIsOmitted) {
+  NiceMock<ScopedLogSinkMock> log;
+  ScopedSetEnv env("TAPA_STREAM_LEFTOVER_LOG_COUNT", "3");
+
+  tapa::stream<int, 10> stream("foo");
+  for (int i = 0; i < 10; ++i) {
+    stream.write(i);
+  }
+
+  InSequence seq;
+  EXPECT_CALL(log, Warning(HasSubstr("'foo' destructed with leftovers")));
+  EXPECT_CALL(log, Warning(HasSubstr("'foo' leftover: "))).Times(3);
+  EXPECT_CALL(
+      log, Warning("Set TAPA_STREAM_LEFTOVER_LOG_COUNT to log more leftovers"));
+}
+
+TEST(LeftoverLogTest, InvalidLeftoverLogCountIsReported) {
+  NiceMock<ScopedLogSinkMock> log;
+  ScopedSetEnv env("TAPA_STREAM_LEFTOVER_LOG_COUNT", "x");
+
+  tapa::stream<int> stream("foo");
+  stream.write(2333);
+
+  EXPECT_CALL(log, Error("Invalid TAPA_STREAM_LEFTOVER_LOG_COUNT value: 'x'"));
 }
 
 }  // namespace

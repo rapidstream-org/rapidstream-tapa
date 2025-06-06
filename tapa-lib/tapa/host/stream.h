@@ -61,6 +61,9 @@ class type_erased_queue {
   virtual bool full() const = 0;
 
  protected:
+  // Pops up to `n` elements and logs them as leftovers.
+  virtual void log_leftovers(int n) = 0;
+
   struct LogContext {
     static std::unique_ptr<LogContext> New(std::string_view name);
     std::ofstream ofs;
@@ -72,7 +75,7 @@ class type_erased_queue {
 
   type_erased_queue(const std::string& name);
 
-  void check_leftover() const;
+  void check_leftover();
 
   template <typename T>
   void maybe_log(const T& elem) {
@@ -95,6 +98,13 @@ class base_queue : public type_erased_queue {
 
  protected:
   using type_erased_queue::type_erased_queue;
+
+  void log_leftovers(int n) final override {
+    for (int i = 0; i < n && !this->empty(); ++i) {
+      LOG(WARNING) << "channel '" << this->name
+                   << "' leftover: " << this->pop();
+    }
+  }
 };
 
 template <typename T>

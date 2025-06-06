@@ -4,6 +4,8 @@
 
 #include "tapa/host/stream.h"
 
+#include <cstdlib>
+
 #include <memory>
 #include <string>
 #include <string_view>
@@ -14,6 +16,22 @@
 
 namespace tapa {
 namespace internal {
+namespace {
+
+constexpr char kLeftoverLogCountEnvVar[] = "TAPA_STREAM_LEFTOVER_LOG_COUNT";
+
+int GetLeftoverLogCount() {
+  int n = 10;  // Log up to 10 by default.
+  if (const char* env = getenv(kLeftoverLogCountEnvVar); env != nullptr) {
+    if (n = atoi(env); n <= 0) {
+      LOG(ERROR) << "Invalid " << kLeftoverLogCountEnvVar << " value: '" << env
+                 << "'";
+    }
+  }
+  return n;
+}
+
+}  // namespace
 
 std::unique_ptr<type_erased_queue::LogContext>
 type_erased_queue::LogContext::New(std::string_view name) {
@@ -42,11 +60,16 @@ void type_erased_queue::set_name(const std::string& name) { this->name = name; }
 type_erased_queue::type_erased_queue(const std::string& name)
     : name(name), log(LogContext::New(name)) {}
 
-void type_erased_queue::check_leftover() const {
+void type_erased_queue::check_leftover() {
   if (!this->empty()) {
     LOG(WARNING) << "channel '" << this->name
                  << "' destructed with leftovers; hardware behavior may be "
                     "unexpected in consecutive invocations";
+    this->log_leftovers(GetLeftoverLogCount());
+    if (!this->empty()) {
+      LOG(WARNING) << "Set " << kLeftoverLogCountEnvVar
+                   << " to log more leftovers";
+    }
   }
 }
 
