@@ -19,17 +19,53 @@ py_library(
         "//tapa:__subpackages__",
     ],
     deps = [
+        "//tapa:core",
         "//tapa:task",
         "//tapa/graphir",
         requirement("pyverilog"),
     ],
 )
 
+py_library(
+    name = "leaf_task_conversion_lib",
+    srcs = ["leaf_task_conversion_test.py"],
+    visibility = [
+        "//tapa/graphir_conversion:__subpackages__",
+    ],
+    deps = ["//tapa/graphir_conversion"],
+)
+
 py_test(
     name = "leaf_task_conversion_test",
     srcs = ["leaf_task_conversion_test.py"],
     data = glob([
-        "test_files/*",
+        "leaf_conversion_test_files/*",
     ]),
     deps = ["//tapa/graphir_conversion"],
+)
+
+py_test(
+    name = "slot_task_conversion_test",
+    srcs = ["slot_task_conversion_test.py"],
+    data = glob([
+        "slot_conversion_test_files/*",
+    ]),
+    deps = [
+        ":leaf_task_conversion_lib",
+        "//tapa:core",
+        "//tapa/graphir_conversion",
+    ],
+)
+
+py_test(
+    name = "top_task_conversion_test",
+    srcs = ["top_task_conversion_test.py"],
+    data = glob([
+        "top_conversion_test_files/*",
+    ]),
+    deps = [
+        ":leaf_task_conversion_lib",
+        "//tapa:core",
+        "//tapa/graphir_conversion",
+    ],
 )
