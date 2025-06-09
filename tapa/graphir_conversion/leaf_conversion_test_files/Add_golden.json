@@ -82,7 +82,7 @@
             ],
             "name": "a_peek_read",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -119,7 +119,7 @@
             ],
             "name": "a_s_read",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -135,7 +135,7 @@
             ],
             "name": "ap_done",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -143,7 +143,7 @@
             ],
             "name": "ap_idle",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -151,7 +151,7 @@
             ],
             "name": "ap_ready",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -204,7 +204,7 @@
             ],
             "name": "b_peek_read",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -241,7 +241,7 @@
             ],
             "name": "b_s_read",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -283,7 +283,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -299,7 +299,7 @@
             ],
             "name": "c_s_write",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
