@@ -10,17 +10,21 @@ import logging
 import os
 import os.path
 import re
+import shutil
 import tempfile
 import zipfile
 from pathlib import Path
 
 from yaml import safe_dump
 
+from tapa.graphir.types import Project
 from tapa.program.abc import ProgramInterface
 from tapa.program.directory import ProgramDirectoryInterface
+from tapa.verilog.graphir_exporter.main import export_design
 from tapa.verilog.xilinx import pack
 
 _logger = logging.getLogger().getChild(__name__)
+graphir_export_path = "graphir_hdl"
 
 
 class ProgramPackMixin(
@@ -31,10 +35,32 @@ class ProgramPackMixin(
 
     top: str
 
-    def pack_xo(self, output_file: str) -> None:
+    def pack_xo(self, output_file: str, graphir_path: Path | None = None) -> None:
+        """Pack program to xo.
+
+        If graphir_path is provided, it will be exported and included in the xo file.
+        """
         _logger.info("packaging RTL code")
         with contextlib.ExitStack() as stack:  # avoid nested with statement
             tmp_fp = stack.enter_context(tempfile.TemporaryFile())
+
+            if graphir_path:
+                with open(graphir_path, encoding="utf-8") as f:
+                    project = Project.model_validate_json(f.read())
+
+                full_export_path = Path(self.work_dir) / graphir_export_path
+                export_design(
+                    project,
+                    str(full_export_path),
+                )
+
+                # merge the graphir export into the RTL directory
+                for filename in os.listdir(full_export_path):
+                    src_file = os.path.join(full_export_path, filename)
+                    dst_file = os.path.join(self.rtl_dir, filename)
+                    if os.path.isfile(src_file):
+                        shutil.copy2(src_file, dst_file)
+
             pack(
                 top_name=self.top,
                 ports=self.top_task.ports.values(),

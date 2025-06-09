@@ -19,6 +19,7 @@ py_library(
         "//tapa/common",
         "//tapa/common:paths",
         "//tapa/common:target",
+        "//tapa/graphir_conversion",
         requirement("click"),
     ],
 )

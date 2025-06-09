@@ -68,10 +68,18 @@ NEWLINE = [""]
     'Use [[tapa::target("non_synthesizable", "xilinx")]] to generate the'
     "template for the custom rtl",
 )
+@click.option(
+    "--graphir-path",
+    type=Path,
+    default=None,
+    help="Path to the GraphIR file."
+    "If provided, the GraphIR will be exported and included in the .xo file. ",
+)
 def pack(
     output: str | None,
     bitstream_script: str | None,
     custom_rtl: tuple[Path, ...],
+    graphir_path: Path | None = None,
 ) -> None:
     """Pack the generated RTL into a Xilinx object file."""
     program = load_tapa_program()
@@ -89,7 +97,7 @@ def pack(
         output = _enforce_path_suffix(
             output, suffix=".xo", reason="you are in Vitis mode"
         )
-        program.pack_xo(output)
+        program.pack_xo(output, graphir_path)
         if bitstream_script is not None:
             with open(bitstream_script, "w", encoding="utf-8") as script:
                 script.write(
