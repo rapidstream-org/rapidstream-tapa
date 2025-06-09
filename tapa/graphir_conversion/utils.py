@@ -377,14 +377,16 @@ def get_task_arg_table(
     return arg_table
 
 
-def get_verilog_definition_from_tapa_module(module: Module) -> VerilogModuleDefinition:
+def get_verilog_definition_from_tapa_module(
+    module: Module, code: str | None = None
+) -> VerilogModuleDefinition:
     """Convert a Tapa Module to a VerilogModuleDefinition."""
     return VerilogModuleDefinition(
         name=module.name,
         hierarchical_name=HierarchicalName.get_name(module.name),
         parameters=tuple(get_task_graphir_parameters(module)),
         ports=tuple(get_task_graphir_ports(module)),
-        verilog=module.code,
+        verilog=code if code else module.code,
         submodules_module_names=(),
     )
 

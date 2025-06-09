@@ -47,6 +47,7 @@ from tapa.verilog.xilinx.const import (
     STREAM_DATA_SUFFIXES,
 )
 from tapa.verilog.xilinx.m_axi import M_AXI_SUFFIXES
+from tapa.verilog.xilinx.module import Module
 
 _logger = logging.getLogger().getChild(__name__)
 _FIFO_MODULE_NAME = "fifo"
@@ -74,7 +75,7 @@ _CTRL_S_AXI_PORT_MAPPING = {
     "BREADY": Expression((Token.new_id("s_axi_control_BREADY"),)),
     "BRESP": Expression((Token.new_id("s_axi_control_BRESP"),)),
     "ACLK": Expression((Token.new_id("ap_clk"),)),
-    "ARESETN": Expression(
+    "ARESET": Expression(
         (
             Token.new_lit("~"),
             Token.new_id("ap_rst_n"),
@@ -84,14 +85,16 @@ _CTRL_S_AXI_PORT_MAPPING = {
 }
 
 
-def get_verilog_module_from_leaf_task(task: Task) -> VerilogModuleDefinition:
+def get_verilog_module_from_leaf_task(
+    task: Task, code: str | None = None
+) -> VerilogModuleDefinition:
     """Get the verilog module from a task."""
     assert task.is_lower
     if not task.module:
         msg = "Task contains no module"
         raise ValueError(msg)
 
-    return get_verilog_definition_from_tapa_module(task.module)
+    return get_verilog_definition_from_tapa_module(task.module, code)
 
 
 def get_slot_module_definition_parameters(
@@ -885,10 +888,16 @@ def get_project_from_floorplanned_program(program: Program) -> Project:
         for inst in slot_task.instances
     }
 
-    leaf_irs = {
-        task.name: get_verilog_module_from_leaf_task(task)
-        for task in leaf_tasks.values()
-    }
+    # get non_trimmed code of leaf tasks
+    leaf_irs = {}
+    for task in leaf_tasks.values():
+        full_task_module = Module(
+            files=[Path(program.get_rtl_path(task.name))],
+            is_trimming_enabled=False,
+        )
+        leaf_irs[task.name] = get_verilog_module_from_leaf_task(
+            task, full_task_module.code
+        )
     slot_irs = {
         task.name: get_slot_module_definition(task, leaf_irs)
         for task in slot_tasks.values()
