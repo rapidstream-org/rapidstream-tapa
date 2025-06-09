@@ -7,6 +7,7 @@ RapidStream Contributor License Agreement.
 """
 
 import logging
+import re
 from collections.abc import Generator
 from pathlib import Path
 
@@ -84,6 +85,8 @@ _CTRL_S_AXI_PORT_MAPPING = {
     "ACLK_EN": Expression((Token.new_lit("1'b1"),)),
 }
 
+FIFO_PORT_PATTERN = r"([a-zA-Z_]\w*)\[(\d+)\]"
+
 
 def get_verilog_module_from_leaf_task(
     task: Task, code: str | None = None
@@ -125,16 +128,25 @@ def get_slot_module_definition_ports(
     leaf_module_tasks = {inst.task.name: inst.task for inst in slot.instances}
     for port in slot.ports:
         # find connected leaf module port
-        connected_leaf_ports = {}
+        connected_leaf_ports: dict[str, tuple[str, int | None]] = {}
         for inst in slot.instances:
             for arg in inst.args:
                 if arg.name == port:
-                    connected_leaf_ports[inst.task.name] = arg.port
+                    match = re.match(FIFO_PORT_PATTERN, arg.port)
+                    if match:
+                        connected_leaf_ports[inst.task.name] = (
+                            match.group(1),
+                            int(match.group(2)),
+                        )
+                    else:
+                        connected_leaf_ports[inst.task.name] = (arg.port, None)
         if len(connected_leaf_ports) == 0:
             continue
 
         # find matching port on leaf module
-        leaf_module_name, leaf_inst_port = next(iter(connected_leaf_ports.items()))
+        leaf_module_name, (leaf_inst_port, idx) = next(
+            iter(connected_leaf_ports.items())
+        )
         leaf_module_ir = leaf_modules[leaf_module_name]
 
         leaf_module_task = leaf_module_tasks[leaf_module_name]
@@ -143,7 +155,7 @@ def get_slot_module_definition_ports(
         # infer port rtl based on port type
         task_port = leaf_module_task.ports[leaf_inst_port]
         port_map = get_leaf_port_connection_mapping(
-            task_port, leaf_module_task.module, port
+            task_port, leaf_module_task.module, port, idx
         )
 
         for leaf_port, slot_port in port_map.items():
@@ -328,9 +340,12 @@ def get_fifo_inst(
             Token.new_lit("1"),
         )
     )
+
+    match = re.match(FIFO_PORT_PATTERN, fifo_name)
+    fifo_name_no_bracket = f"{match.group(1)}_{match.group(2)}" if match else fifo_name
     return ModuleInstantiation(
-        name=fifo_name,
-        hierarchical_name=HierarchicalName.get_name(fifo_name),
+        name=fifo_name_no_bracket,
+        hierarchical_name=HierarchicalName.get_name(fifo_name_no_bracket),
         module=_FIFO_MODULE_NAME,
         connections=(
             ModuleConnection(
@@ -351,17 +366,17 @@ def get_fifo_inst(
             ModuleConnection(
                 name="if_dout",
                 hierarchical_name=HierarchicalName.get_name("if_dout"),
-                expr=Expression((Token.new_id(f"{fifo_name}_dout"),)),
+                expr=Expression((Token.new_id(f"{fifo_name_no_bracket}_dout"),)),
             ),
             ModuleConnection(
                 name="if_empty_n",
                 hierarchical_name=HierarchicalName.get_name("if_empty_n"),
-                expr=Expression((Token.new_id(f"{fifo_name}_empty_n"),)),
+                expr=Expression((Token.new_id(f"{fifo_name_no_bracket}_empty_n"),)),
             ),
             ModuleConnection(
                 name="if_read",
                 hierarchical_name=HierarchicalName.get_name("if_read"),
-                expr=Expression((Token.new_id(f"{fifo_name}_read"),)),
+                expr=Expression((Token.new_id(f"{fifo_name_no_bracket}_read"),)),
             ),
             ModuleConnection(
                 name="if_read_ce",
@@ -371,17 +386,17 @@ def get_fifo_inst(
             ModuleConnection(
                 name="if_din",
                 hierarchical_name=HierarchicalName.get_name("if_din"),
-                expr=Expression((Token.new_id(f"{fifo_name}_din"),)),
+                expr=Expression((Token.new_id(f"{fifo_name_no_bracket}_din"),)),
             ),
             ModuleConnection(
                 name="if_full_n",
                 hierarchical_name=HierarchicalName.get_name("if_full_n"),
-                expr=Expression((Token.new_id(f"{fifo_name}_full_n"),)),
+                expr=Expression((Token.new_id(f"{fifo_name_no_bracket}_full_n"),)),
             ),
             ModuleConnection(
                 name="if_write",
                 hierarchical_name=HierarchicalName.get_name("if_write"),
-                expr=Expression((Token.new_id(f"{fifo_name}_write"),)),
+                expr=Expression((Token.new_id(f"{fifo_name_no_bracket}_write"),)),
             ),
             ModuleConnection(
                 name="if_write_ce",
@@ -536,7 +551,7 @@ def infer_fifo_data_range(
     return range0
 
 
-def get_upper_task_ir_wires(
+def get_upper_task_ir_wires(  # noqa: C901
     upper_task: Task,
     submodule_ir_defs: dict[str, AnyModuleDefinition],
     upper_task_ir_ports: list[ModulePort],
@@ -550,7 +565,12 @@ def get_upper_task_ir_wires(
         if upper_task.is_fifo_external(fifo_name):
             continue
         for suffix in ISTREAM_SUFFIXES + OSTREAM_SUFFIXES:
-            wire_name = get_stream_port_name(fifo_name, suffix)
+            match = re.match(FIFO_PORT_PATTERN, fifo_name)
+            if match:
+                fifo_name_no_bracket = f"{match.group(1)}_{match.group(2)}"
+            else:
+                fifo_name_no_bracket = fifo_name
+            wire_name = get_stream_port_name(fifo_name_no_bracket, suffix)
             if suffix in STREAM_DATA_SUFFIXES:
                 # infer fifo width from leaf module
                 fifo_range = infer_fifo_data_range(

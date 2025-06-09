@@ -302,7 +302,10 @@ def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
 
 
 def get_leaf_port_connection_mapping(
-    task_port: Port, task_module: Module, arg: str
+    task_port: Port,
+    task_module: Module,
+    arg: str,
+    idx: int | None,
 ) -> dict[str, str]:
     """Get leaf task port and slot port mapping.
 
@@ -314,14 +317,20 @@ def get_leaf_port_connection_mapping(
     if task_port.cat.is_scalar:
         matching_ports[task_port.name] = arg
 
-    elif task_port.cat.is_istream:
+    elif task_port.cat.is_istream or task_port.cat.is_istreams:
         for suffix in ISTREAM_SUFFIXES:
-            module_port = task_module.get_port_of(task_port.name, suffix)
+            full_port_name = (
+                task_port.name if idx is None else f"{task_port.name}_{idx}"
+            )
+            module_port = task_module.get_port_of(full_port_name, suffix)
             matching_ports[module_port.name] = get_stream_port_name(arg, suffix)
 
-    elif task_port.cat.is_ostream:
+    elif task_port.cat.is_ostream or task_port.cat.is_ostreams:
         for suffix in OSTREAM_SUFFIXES:
-            module_port = task_module.get_port_of(task_port.name, suffix)
+            full_port_name = (
+                task_port.name if idx is None else f"{task_port.name}_{idx}"
+            )
+            module_port = task_module.get_port_of(full_port_name, suffix)
             matching_ports[module_port.name] = get_stream_port_name(arg, suffix)
 
     elif task_port.cat.is_mmap:
@@ -334,7 +343,10 @@ def get_leaf_port_connection_mapping(
                 matching_ports[m_axi_port_name] = get_m_axi_port_name(arg, suffix)
 
     else:
-        msg = f"Unknown port type for port {task_port.name}"
+        msg = (
+            f"Unknown port type for port {task_port.name}, "
+            f"category {task_port.cat}, arg {arg}."
+        )
         raise ValueError(msg)
 
     return matching_ports
