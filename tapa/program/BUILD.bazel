@@ -55,6 +55,7 @@ py_library(
     deps = [
         ":abc",
         ":directory",
+        "//tapa/verilog/graphir_exporter",
         "//tapa/verilog/xilinx",
         requirement("pyyaml"),
     ],

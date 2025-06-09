@@ -16,6 +16,7 @@ import click
 from tapa.abgraph.gen_abgraph import get_top_level_ab_graph
 from tapa.backend.xilinx import parse_device_info
 from tapa.common.target import Target
+from tapa.graphir_conversion.gen_rs_graphir import get_project_from_floorplanned_program
 from tapa.steps.common import (
     is_pipelined,
     load_persistent_context,
@@ -99,6 +100,11 @@ from tapa.steps.common import (
     default=False,
     help="Specifies whether to generate the AutoBridge graph for partitioning.",
 )
+@click.option(
+    "--gen-graphir",
+    is_flag=True,
+    help="Generate GraphIR for the TAPA program.",
+)
 def synth(  # noqa: PLR0913,PLR0917
     part_num: str | None,
     platform: str | None,
@@ -112,6 +118,7 @@ def synth(  # noqa: PLR0913,PLR0917
     override_report_schema_version: str,
     nonpipeline_fifos: Path | None,
     gen_ab_graph: bool,
+    gen_graphir: bool,
 ) -> None:
     """Synthesize the TAPA program into RTL code."""
     program = load_tapa_program()
@@ -170,6 +177,16 @@ def synth(  # noqa: PLR0913,PLR0917
                 encoding="utf-8",
             ) as json_file:
                 json_file.write(graph.model_dump_json())
+
+        if gen_graphir:
+            project = get_project_from_floorplanned_program(program)
+            with open(
+                os.path.join(program.work_dir, "graphir.json"),
+                "w",
+                encoding="utf-8",
+            ) as json_file:
+                json_file.write(project.model_dump_json())
+                os.path.abspath(program.work_dir)
 
         settings["synthed"] = True
         store_persistent_context("settings")
