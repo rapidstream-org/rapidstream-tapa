@@ -88,10 +88,15 @@ def _tapa_xo_impl(ctx):
         tapa_cmd.extend(["--gen-ab-graph"])
         ab_graph_file = ctx.actions.declare_file(ctx.attr.name + ".json")
 
+    if ctx.attr.use_graphir:
+        tapa_cmd.extend(["--gen-graphir"])
+
     # Complete the command sequence with the pack command.
     if output_file != None:
         tapa_cmd.extend(["pack", "--output", output_file.path])
         outputs = [output_file] + outputs
+    if ctx.attr.use_graphir:
+        tapa_cmd.extend(["--graphir-path", work_dir.path + "/graphir.json"])
 
     # Add custom rtl
     for rtl_file in ctx.files.custom_rtl_files:
@@ -159,5 +164,6 @@ tapa_xo = rule(
             default = Label("//bazel:vitis_hls_env"),
             executable = True,
         ),
+        "use_graphir": attr.bool(),
     },
 )
