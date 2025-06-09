@@ -327,7 +327,7 @@ def get_leaf_port_connection_mapping(
     elif task_port.cat.is_mmap:
         # add offset mapping
         # note that offset port is pipelined through fsm
-        matching_ports[f"{task_port.name}_offset"] = arg
+        matching_ports[f"{task_port.name}_offset"] = f"{arg}_offset"
         for suffix in M_AXI_SUFFIXES:
             m_axi_port_name = get_m_axi_port_name(task_port.name, suffix)
             if m_axi_port_name in task_module.ports:
@@ -352,10 +352,14 @@ def get_m_axi_port_name(task_port_name: str, suffix: str) -> str:
 
 def get_task_arg_table(
     task: Task,
-) -> dict[str, Pipeline]:
-    """Build arg table for fsm pipeline signals."""
-    arg_table: dict[str, Pipeline] = {}
+) -> dict[str, dict[str, Pipeline]]:
+    """Build arg table for fsm pipeline signals.
+
+    The upper key is instance name, the lower key is the arg name.
+    """
+    arg_table: dict[str, dict[str, Pipeline]] = {}
     for instance in task.instances:
+        inst_table: dict[str, Pipeline] = {}
         for arg in instance.args:
             if not arg.cat.is_stream:
                 # For mmap ports, the scalar port is the offset.
@@ -368,7 +372,8 @@ def get_task_arg_table(
                 q = Pipeline(
                     name=instance.get_instance_arg(id_name),
                 )
-                arg_table[arg.name] = q
+                inst_table[arg.name] = q
+        arg_table[instance.name] = inst_table
     return arg_table
 
 
@@ -395,18 +400,21 @@ def get_ctrl_s_axi_def(top: Task, content: str) -> VerilogModuleDefinition:
         )
         for port_name, (port_type, port_range) in _CTRL_S_AXI_PORT_DIR_RANGE.items()
     ]
-    ports.extend(
-        ModulePort(
-            name=port,
-            hierarchical_name=HierarchicalName.get_name(port),
-            type=ModulePort.Type.OUTPUT,  # Control ports are inputs
-            range=Range(
-                left=Expression((Token.new_lit("63"),)),
-                right=Expression((Token.new_lit("0"),)),
-            ),  # No range for control ports
+    for port_name, port in top.ports.items():
+        ctrl_s_axi_port_name = (
+            port_name if not port.cat.is_mmap else f"{port_name}_offset"
         )
-        for port in top.ports
-    )
+        ports.append(
+            ModulePort(
+                name=ctrl_s_axi_port_name,
+                hierarchical_name=HierarchicalName.get_name(ctrl_s_axi_port_name),
+                type=ModulePort.Type.OUTPUT,  # Control ports are inputs
+                range=Range(
+                    left=Expression((Token.new_lit("63"),)),
+                    right=Expression((Token.new_lit("0"),)),
+                ),  # No range for control ports
+            )
+        )
     return VerilogModuleDefinition(
         name="VecAdd_control_s_axi",
         hierarchical_name=HierarchicalName.get_name("VecAdd_control_s_axi"),
