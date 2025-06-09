@@ -182,7 +182,7 @@ def get_slot_module_definition_ports(
 def get_submodule_inst(
     subtasks: dict[str, Task],
     inst: Instance,
-    arg_table: dict[str, Pipeline],
+    arg_table: dict[str, dict[str, Pipeline]],
 ) -> ModuleInstantiation:
     """Get submodule instantiation."""
     task_name = inst.task.name
@@ -194,7 +194,9 @@ def get_submodule_inst(
                 ModuleConnection(
                     name=port_name,
                     hierarchical_name=HierarchicalName.get_name(port_name),
-                    expr=Expression((Token.new_id(arg_table[arg.name][-1].name),)),
+                    expr=Expression(
+                        (Token.new_id(arg_table[inst.name][arg.name][-1].name),)
+                    ),
                 )
             )
 
@@ -244,7 +246,9 @@ def get_submodule_inst(
                 ModuleConnection(
                     name=offset_port_name,
                     hierarchical_name=HierarchicalName.get_name(offset_port_name),
-                    expr=Expression((Token.new_id(arg_table[arg.name][-1].name),)),
+                    expr=Expression(
+                        (Token.new_id(arg_table[inst.name][arg.name][-1].name),)
+                    ),
                 )
             )
     # add control signals
@@ -568,16 +572,20 @@ def get_upper_task_ir_wires(
     port_range_mapping = {
         port.name: port.range for port in upper_task_ir_ports + ctrl_s_axi_ir_ports
     }
-    for arg, q in arg_table.items():
-        wire_name = q[-1].name
-        # infer range from fsm module
-        connections.append(
-            ModuleNet(
-                name=wire_name,
-                hierarchical_name=HierarchicalName.get_name(wire_name),
-                range=port_range_mapping[arg],
+    for inst_arg_table in arg_table.values():
+        for arg, q in inst_arg_table.items():
+            port_range_key = arg
+            if port_range_key not in port_range_mapping:
+                port_range_key = f"{arg}_offset"
+            wire_name = q[-1].name
+            # infer range from fsm module
+            connections.append(
+                ModuleNet(
+                    name=wire_name,
+                    hierarchical_name=HierarchicalName.get_name(wire_name),
+                    range=port_range_mapping[port_range_key],
+                )
             )
-        )
 
     # add control signals
     for inst in upper_task.instances:
@@ -786,7 +794,7 @@ def get_top_ir_subinsts(
         get_top_level_slot_inst(
             slot_defs[inst.task.name],
             inst,
-            get_task_arg_table(top_task),
+            get_task_arg_table(top_task)[inst.name],
         )
         for inst in top_task.instances
     ]
