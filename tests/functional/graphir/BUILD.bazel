@@ -39,3 +39,36 @@ sh_test(
         "cpu:2",
     ],
 )
+
+# cannon
+tapa_xo(
+    name = "cannon-graphir-xo",
+    src = "//tests/apps/cannon:cannon.cpp",
+    hdrs = ["//tests/apps/cannon:cannon.h"],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/cannon.json",
+    top_name = "Cannon",
+    use_graphir = True,
+)
+
+sh_test(
+    name = "cannon-xosim",
+    size = "enormous",
+    timeout = "long",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location //tests/apps/cannon:cannon-host)",
+        "--bitstream=$(location cannon-graphir-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "1000",
+    ],
+    data = [
+        ":cannon-graphir-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+        "//tests/apps/cannon:cannon-host",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)
