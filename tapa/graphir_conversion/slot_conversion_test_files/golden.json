@@ -355,7 +355,7 @@
             ],
             "name": "a_q_VecAdd_read",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -371,7 +371,7 @@
             ],
             "name": "ap_done",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -379,7 +379,7 @@
             ],
             "name": "ap_idle",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -387,7 +387,7 @@
             ],
             "name": "ap_ready",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -424,7 +424,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -440,7 +440,7 @@
             ],
             "name": "c_q_VecAdd_write",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -461,7 +461,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -482,7 +482,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -503,7 +503,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -524,7 +524,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -545,7 +545,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -566,7 +566,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -587,7 +587,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -608,7 +608,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -637,7 +637,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -645,7 +645,7 @@
             ],
             "name": "m_axi_mmap_Mmap2Stream_1_ARVALID",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -666,7 +666,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -687,7 +687,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -708,7 +708,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -729,7 +729,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -750,7 +750,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -771,7 +771,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -792,7 +792,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -813,7 +813,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -842,7 +842,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -850,7 +850,7 @@
             ],
             "name": "m_axi_mmap_Mmap2Stream_1_AWVALID",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -879,7 +879,7 @@
             ],
             "name": "m_axi_mmap_Mmap2Stream_1_BREADY",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -966,7 +966,7 @@
             ],
             "name": "m_axi_mmap_Mmap2Stream_1_RREADY",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -1016,7 +1016,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -1024,7 +1024,7 @@
             ],
             "name": "m_axi_mmap_Mmap2Stream_1_WLAST",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -1053,7 +1053,7 @@
                     }
                 ]
             },
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
@@ -1061,13 +1061,13 @@
             ],
             "name": "m_axi_mmap_Mmap2Stream_1_WVALID",
             "range": null,
-            "type": "output reg"
+            "type": "output wire"
         },
         {
             "hierarchical_name": [
-                "mmap_Mmap2Stream_1"
+                "mmap_Mmap2Stream_1_offset"
             ],
-            "name": "mmap_Mmap2Stream_1",
+            "name": "mmap_Mmap2Stream_1_offset",
             "range": {
                 "left": [
                     {
@@ -1149,6 +1149,78 @@
                 {
                     "expr": [
                         {
+                            "repr": "ap_clk",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_clk"
+                    ],
+                    "name": "ap_clk"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0__ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_done"
+                    ],
+                    "name": "ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0__ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_idle"
+                    ],
+                    "name": "ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0__ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_ready"
+                    ],
+                    "name": "ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_rst_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_rst_n"
+                    ],
+                    "name": "ap_rst_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Add_0__ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_start"
+                    ],
+                    "name": "ap_start"
+                },
+                {
+                    "expr": [
+                        {
                             "repr": "b_q_VecAdd_dout",
                             "type": "id"
                         }
@@ -1221,7 +1293,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "Mmap2Stream_0___n__q0",
+                            "repr": "Add_0___n__q0",
                             "type": "id"
                         }
                     ],
@@ -1243,6 +1315,78 @@
         {
             "area": null,
             "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_clk",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_clk"
+                    ],
+                    "name": "ap_clk"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0__ap_done",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_done"
+                    ],
+                    "name": "ap_done"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0__ap_idle",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_idle"
+                    ],
+                    "name": "ap_idle"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0__ap_ready",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_ready"
+                    ],
+                    "name": "ap_ready"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_rst_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_rst_n"
+                    ],
+                    "name": "ap_rst_n"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "Mmap2Stream_0__ap_start",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "ap_start"
+                    ],
+                    "name": "ap_start"
+                },
                 {
                     "expr": [
                         {
@@ -2016,7 +2160,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "b_q_VecAdd__din",
+                            "repr": "b_q_VecAdd_din",
                             "type": "id"
                         }
                     ],
@@ -2028,7 +2172,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "b_q_VecAdd__dout",
+                            "repr": "b_q_VecAdd_dout",
                             "type": "id"
                         }
                     ],
@@ -2040,7 +2184,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "b_q_VecAdd__empty_n",
+                            "repr": "b_q_VecAdd_empty_n",
                             "type": "id"
                         }
                     ],
@@ -2052,7 +2196,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "b_q_VecAdd__full_n",
+                            "repr": "b_q_VecAdd_full_n",
                             "type": "id"
                         }
                     ],
@@ -2064,7 +2208,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "b_q_VecAdd__read",
+                            "repr": "b_q_VecAdd_read",
                             "type": "id"
                         }
                     ],
@@ -2088,7 +2232,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "b_q_VecAdd__write",
+                            "repr": "b_q_VecAdd_write",
                             "type": "id"
                         }
                     ],
@@ -2148,7 +2292,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "-31",
+                            "repr": "33",
                             "type": "lit"
                         }
                     ],
@@ -2174,6 +2318,26 @@
         }
     ],
     "wires": [
+        {
+            "hierarchical_name": [
+                "Add_0___n__q0"
+            ],
+            "name": "Add_0___n__q0",
+            "range": {
+                "left": [
+                    {
+                        "repr": "63",
+                        "type": "lit"
+                    }
+                ],
+                "right": [
+                    {
+                        "repr": "0",
+                        "type": "lit"
+                    }
+                ]
+            }
+        },
         {
             "hierarchical_name": [
                 "Add_0__ap_done"
