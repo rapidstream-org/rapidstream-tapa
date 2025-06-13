@@ -301,17 +301,18 @@ def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
     return graphir_params
 
 
-def get_leaf_port_connection_mapping(
+def get_child_port_connection_mapping(
     task_port: Port,
     task_module: Module,
     arg: str,
     idx: int | None,
 ) -> dict[str, str]:
-    """Get leaf task port and slot port mapping.
+    """Get child task port and slot port mapping.
 
-    Given a leaf task port and its arg, find all related ports in the task module based
-    on cat. Return a mapping from the leaf module port name to the connected slot port
-    name.
+    Given a child task port and its arg, find all related ports in the task module based
+    on cat. Return a mapping from the child module port name to the connected parent
+    slot port name. This is for inferring the slot port range and direction from its
+    connected child port.
     """
     matching_ports = {}
     if task_port.cat.is_scalar:

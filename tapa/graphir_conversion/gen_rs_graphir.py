@@ -29,9 +29,8 @@ from tapa.graphir.types import (
     VerilogModuleDefinition,
 )
 from tapa.graphir_conversion.utils import (
-    PORT_TYPE_MAPPING,
+    get_child_port_connection_mapping,
     get_ctrl_s_axi_def,
-    get_leaf_port_connection_mapping,
     get_m_axi_port_name,
     get_stream_port_name,
     get_task_arg_table,
@@ -43,6 +42,8 @@ from tapa.instance import Instance
 from tapa.task import Task
 from tapa.verilog.util import Pipeline
 from tapa.verilog.xilinx.const import (
+    HANDSHAKE_INPUT_PORTS,
+    HANDSHAKE_OUTPUT_PORTS,
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
     STREAM_DATA_SUFFIXES,
@@ -119,76 +120,94 @@ def get_slot_module_definition_parameters(
     return list(parameters.values())
 
 
-def get_slot_module_definition_ports(
+def get_slot_module_definition_ports(  # noqa: C901
     slot: Task,
-    leaf_modules: dict[str, VerilogModuleDefinition],
+    child_modules: dict[str, VerilogModuleDefinition],
 ) -> list[ModulePort]:
-    """Get slot module ports."""
+    """Get slot module ports.
+
+    Args:
+        slot: task of slot
+        child_modules: graphir module definitions of its child modules. The key is the
+            task name of the child module.
+
+    Returns:
+        List of the graphir ports of slot module definition.
+    """
     ports = []
-    leaf_module_tasks = {inst.task.name: inst.task for inst in slot.instances}
+    child_module_tasks = {inst.task.name: inst.task for inst in slot.instances}
     for port in slot.ports:
-        # find connected leaf module port
-        connected_leaf_ports: dict[str, tuple[str, int | None]] = {}
+        # find connected child module port
+        child_module_name = None
+        child_inst_port = None
+        child_inst_port_idx = None
         for inst in slot.instances:
             for arg in inst.args:
                 if arg.name == port:
                     match = re.match(FIFO_PORT_PATTERN, arg.port)
                     if match:
-                        connected_leaf_ports[inst.task.name] = (
-                            match.group(1),
-                            int(match.group(2)),
-                        )
+                        child_module_name = inst.task.name
+                        child_inst_port = match.group(1)
+                        child_inst_port_idx = int(match.group(2))
                     else:
-                        connected_leaf_ports[inst.task.name] = (arg.port, None)
-        if len(connected_leaf_ports) == 0:
+                        child_module_name = inst.task.name
+                        child_inst_port = arg.port
+                        child_inst_port_idx = None
+                    break
+        if not child_module_name:
             continue
 
-        # find matching port on leaf module
-        leaf_module_name, (leaf_inst_port, idx) = next(
-            iter(connected_leaf_ports.items())
-        )
-        leaf_module_ir = leaf_modules[leaf_module_name]
+        # find matching port on child module
+        assert child_module_name
+        assert child_inst_port
+        child_module_ir = child_modules[child_module_name]
 
-        leaf_module_task = leaf_module_tasks[leaf_module_name]
-        assert leaf_inst_port in leaf_module_task.ports
+        child_module_task = child_module_tasks[child_module_name]
+        assert child_inst_port in child_module_task.ports
 
         # infer port rtl based on port type
-        task_port = leaf_module_task.ports[leaf_inst_port]
-        port_map = get_leaf_port_connection_mapping(
-            task_port, leaf_module_task.module, port, idx
+        task_port = child_module_task.ports[child_inst_port]
+        port_map = get_child_port_connection_mapping(
+            task_port, child_module_task.module, port, child_inst_port_idx
         )
 
-        for leaf_port, slot_port in port_map.items():
-            leaf_module_ir_port = leaf_module_ir.get_port(leaf_port)
+        for child_port, slot_port in port_map.items():
+            child_module_ir_port = child_module_ir.get_port(child_port)
             ports.append(
                 ModulePort(
                     name=slot_port,
                     hierarchical_name=HierarchicalName.get_name(slot_port),
-                    type=leaf_module_ir_port.type,
-                    range=leaf_module_ir_port.range,
+                    type=child_module_ir_port.type,
+                    range=child_module_ir_port.range,
                 )
             )
 
     # add other signals
-    def add_port(name: str, direction: str) -> None:
+    def add_port(name: str, direction: ModulePort.Type) -> None:
         ports.append(
             ModulePort(
                 name=name,
                 hierarchical_name=HierarchicalName.get_name(name),
-                type=PORT_TYPE_MAPPING[direction],
+                type=direction,
                 range=None,
             )
         )
 
     signal_ports = [
-        ("ap_clk", "input"),
-        ("ap_rst_n", "input"),
-        ("ap_start", "input"),
-        ("ap_done", "output"),
-        ("ap_ready", "output"),
-        ("ap_idle", "output"),
+        "ap_clk",
+        "ap_rst_n",
+        "ap_start",
+        "ap_done",
+        "ap_ready",
+        "ap_idle",
     ]
-    for name, direction in signal_ports:
+    for name in signal_ports:
+        direction = None
+        if name in HANDSHAKE_INPUT_PORTS:
+            direction = ModulePort.Type.INPUT
+        elif name in HANDSHAKE_OUTPUT_PORTS:
+            direction = ModulePort.Type.OUTPUT
+        assert direction
         add_port(name, direction)
 
     return ports
