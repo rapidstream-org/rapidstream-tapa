@@ -15,7 +15,7 @@ X = TypeVar("X")
 
 
 class ModelMixin:
-    """The base model for immutable and hashable tapa graph IR types."""
+    """The base model for immutable and hashable RapidStream graph IR types."""
 
     def updated(self, **update: object) -> Self:
         """Return a new object attached to the original namespace with fields updated.
@@ -94,7 +94,7 @@ class ModelMixin:
 
 
 class Model(BaseModel, ModelMixin):
-    """The base model of immutable and hashable tapa graph IR types."""
+    """The base model of immutable and hashable RapidStream graph IR types."""
 
     # This must be implemented by this class instead of in the mixin class.
     # Otherwise, super() solves the MRO incorrectly.
@@ -103,5 +103,5 @@ class Model(BaseModel, ModelMixin):
         super().__init__(**(self.sanitze_fields(**kwargs)))
 
 
-class RootModel(PydanticRootModel[X], ModelMixin):
-    """The base model of immutable and hashable tapa graph IR types."""
+class RootModel[X](PydanticRootModel[X], ModelMixin):
+    """The base model of immutable and hashable RapidStream graph IR types."""
