@@ -11,8 +11,8 @@ from pydantic import BaseModel, RootModel
 
 
 class MutableModel(BaseModel):
-    """The base model of tapa graph IR types."""
+    """The base model of RapidStream graph IR types."""
 
 
 class MutableRootModel[X](RootModel[X]):
-    """The base model of graph IR types."""
+    """The base model of RapidStream graph IR types."""
