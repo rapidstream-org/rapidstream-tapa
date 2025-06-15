@@ -7,7 +7,10 @@ RapidStream Contributor License Agreement.
 """
 
 from collections.abc import ItemsView, Iterator, KeysView, ValuesView
-from typing import Any
+from typing import Any, Generic, TypeVar
+
+Key = TypeVar("Key")
+Value = TypeVar("Value")
 
 
 class CommonRootMixin:
@@ -32,7 +35,7 @@ class CommonRootMixin:
         return str(self.root)
 
 
-class DictLikeRootMixin[Key, Value](CommonRootMixin):
+class DictLikeRootMixin(CommonRootMixin, Generic[Key, Value]):
     """A mixin class to mock a dict from the root attribute."""
 
     root: dict[Key, Value]
@@ -77,7 +80,7 @@ class DictLikeRootMixin[Key, Value](CommonRootMixin):
         return self.root.values()
 
 
-class TupleLikeRootMixin[Value](CommonRootMixin):
+class TupleLikeRootMixin(CommonRootMixin, Generic[Value]):
     """A mixin class to mock a tuple from the root attribute."""
 
     root: list[Value] | tuple[Value, ...]
@@ -106,7 +109,7 @@ class TupleLikeRootMixin[Value](CommonRootMixin):
         return self.root.__iter__()
 
 
-class ListLikeRootMixin[Value](TupleLikeRootMixin[Value]):
+class ListLikeRootMixin(TupleLikeRootMixin[Value]):
     """A mixin class to mock a list from the root attribute."""
 
     root: list[Value]

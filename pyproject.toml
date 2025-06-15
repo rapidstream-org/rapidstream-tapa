@@ -111,6 +111,7 @@ ignore = [
   "Q001",
   "Q002",
   "Q003",
+  "UP046",  # Nuitka doesn't support PEP 695, https://github.com/Nuitka/Nuitka/issues/3423
   "W191",
 ]
 

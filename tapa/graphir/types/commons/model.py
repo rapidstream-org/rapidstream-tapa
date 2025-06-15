@@ -6,10 +6,12 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 from collections.abc import Iterable, Sized
-from typing import Self
+from typing import Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict
 from pydantic import RootModel as PydanticRootModel
+
+X = TypeVar("X")
 
 
 class ModelMixin:
@@ -101,5 +103,5 @@ class Model(BaseModel, ModelMixin):
         super().__init__(**(self.sanitze_fields(**kwargs)))
 
 
-class RootModel[X](PydanticRootModel[X], ModelMixin):
+class RootModel(PydanticRootModel[X], ModelMixin):
     """The base model of immutable and hashable tapa graph IR types."""
