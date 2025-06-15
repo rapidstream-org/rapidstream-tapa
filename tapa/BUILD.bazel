@@ -9,6 +9,7 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("@rules_python//python:packaging.bzl", "py_wheel")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("@tapa_deps//:requirements.bzl", "requirement")
 load("//bazel:nuitka_rules.bzl", "nuitka_binary")
 load("//bazel:pytest_rules.bzl", "py_test")
@@ -34,6 +35,13 @@ nuitka_binary(
         "--python-flag=isolated,no_site",
     ],
     output_name = "tapa-bin",
+)
+
+sh_test(
+    name = "nuitka_test",
+    srcs = ["nuitka_test.sh"],
+    args = ["$(location :nuitka)/tapa-bin"],
+    data = [":nuitka"],
 )
 
 py_binary(
