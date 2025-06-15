@@ -629,6 +629,12 @@ def get_hls_test_signals(args: list[Arg]) -> str:
     if (kernel_started) begin
       {newline.join(fifo_dpi_calls)}
     end
+    if (ap_done) begin
+      kernel_done <= 1'b1;
+    end
+    if (ap_ready) begin
+      ap_start <= 1'b0;
+    end
   end
 
 {newline.join(fifo_assignments)}
@@ -649,31 +655,7 @@ def get_hls_test_signals(args: list[Arg]) -> str:
     kernel_started <= 1;
     @(posedge ap_clk);
 
-    fork
-      begin
-        wait(ap_ready);
-        ap_start <= 1'b0;
-        @(posedge ap_clk);
-      end
-      begin
-        wait(ap_done);
-      end
-      begin
-        // In some Vitis versions, there is a bug where ap_done is asserted
-        // before the operation is done, if there is no M_AXI interface
-        // connected to the kernel. Preliminary investigations show that
-        // ap_done is asserted as soon as the last state is reached, which
-        // does not necessarily mean that the operation is done. Instead,
-        // wait for ap_idle to be asserted (which is state_1 & !ap_start)
-        // seems to be a workaround. We are not sure yet, if there is a
-        // possibility that ap_idle has the same bug. If so, there is no
-        // reasonable workaround to identify the end of the operation.
-
-        // If there is no M_AXI interface connected to the kernel, wait for
-        // ap_idle to be asserted
-        {"wait(ap_idle);" if not any(arg.is_mmap for arg in args) else ""}
-      end
-    join
+    wait(kernel_done);
 
 {newline.join(dump_signals)}
 
@@ -712,6 +694,7 @@ module test();
   wire ap_idle;
 
   reg kernel_started = 0;
+  reg kernel_done = 0;
 
   wire [31:0] REG_MASK_32_BIT = {{32{{1\'b1}}}};
 
