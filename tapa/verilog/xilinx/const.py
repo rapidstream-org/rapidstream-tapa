@@ -67,6 +67,16 @@ OSTREAM_SUFFIXES = (
     "_write",
 )
 
+ISTREAM_ROLES = {
+    "valid": "_empty_n",
+    "ready": "_read",
+}
+
+OSTREAM_ROLES = {
+    "ready": "_full_n",
+    "valid": "_write",
+}
+
 STREAM_DATA_SUFFIXES = (
     "_dout",
     "_din",
