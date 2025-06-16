@@ -12,7 +12,9 @@ py_library(
     name = "graphir_conversion",
     srcs = [
         "__init__.py",
+        "add_iface.py",
         "gen_rs_graphir.py",
+        "templates.py",
         "utils.py",
     ],
     visibility = [
