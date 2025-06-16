@@ -5,6 +5,7 @@ Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
+from pathlib import Path
 
 from pyverilog.vparser.ast import (
     And,
@@ -45,12 +46,15 @@ from tapa.graphir.types import (
     Token,
     VerilogModuleDefinition,
 )
+from tapa.graphir_conversion.templates import FIFO_TEMPLATE
 from tapa.instance import Port
 from tapa.task import Task
 from tapa.verilog.util import Pipeline
 from tapa.verilog.xilinx.const import ISTREAM_SUFFIXES, OSTREAM_SUFFIXES
 from tapa.verilog.xilinx.m_axi import M_AXI_PREFIX, M_AXI_SUFFIXES
 from tapa.verilog.xilinx.module import Module
+
+FIFO_PORT_PATTERN = r"([a-zA-Z_]\w*)\[(\d+)\]"
 
 PORT_TYPE_MAPPING = {
     "input": ModulePort.Type.INPUT,
@@ -154,10 +158,10 @@ _CTRL_S_AXI_PORT_DIR_RANGE = {
     "RVALID": (ModulePort.Type.OUTPUT, None),
     "RREADY": (ModulePort.Type.INPUT, None),
     "interrupt": (ModulePort.Type.OUTPUT, None),
-    "ap_start": (ModulePort.Type.INPUT, None),
-    "ap_done": (ModulePort.Type.OUTPUT, None),
-    "ap_ready": (ModulePort.Type.OUTPUT, None),
-    "ap_idle": (ModulePort.Type.OUTPUT, None),
+    "ap_start": (ModulePort.Type.OUTPUT, None),
+    "ap_done": (ModulePort.Type.INPUT, None),
+    "ap_ready": (ModulePort.Type.INPUT, None),
+    "ap_idle": (ModulePort.Type.INPUT, None),
 }
 
 _CTRL_S_AXI_PARAMETERS = [
@@ -286,7 +290,8 @@ def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
 
 def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
     """Get the graphir parameters from a task."""
-    assert task_module.params
+    if not task_module.params:
+        return []
     graphir_params = []
     for name, param in task_module.params.items():
         expr = Expression(tuple(ast_to_tokens(param.value)))
@@ -438,3 +443,116 @@ def get_ctrl_s_axi_def(top: Task, content: str) -> VerilogModuleDefinition:
         verilog=content,
         submodules_module_names=(),
     )
+
+
+def get_fifo_def() -> VerilogModuleDefinition:
+    """Get fifo module definition."""
+    return VerilogModuleDefinition(
+        name="fifo",
+        hierarchical_name=HierarchicalName.get_name("fifo"),
+        parameters=(
+            ModuleParameter(
+                name="DATA_WIDTH",
+                hierarchical_name=HierarchicalName.get_name("DATA_WIDTH"),
+                expr=Expression((Token.new_lit("32"),)),
+                range=None,
+            ),
+            ModuleParameter(
+                name="ADDR_WIDTH",
+                hierarchical_name=HierarchicalName.get_name("ADDR_WIDTH"),
+                expr=Expression((Token.new_lit("5"),)),
+                range=None,
+            ),
+            ModuleParameter(
+                name="DEPTH",
+                hierarchical_name=HierarchicalName.get_name("DEPTH"),
+                expr=Expression((Token.new_lit("32"),)),
+                range=None,
+            ),
+        ),
+        ports=(
+            ModulePort(
+                name="if_full_n",
+                hierarchical_name=HierarchicalName.get_name("if_full_n"),
+                type=ModulePort.Type.OUTPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_write_ce",
+                hierarchical_name=HierarchicalName.get_name("if_write_ce"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_write",
+                hierarchical_name=HierarchicalName.get_name("if_write"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_din",
+                hierarchical_name=HierarchicalName.get_name("if_din"),
+                type=ModulePort.Type.INPUT,
+                range=Range(
+                    left=Expression(
+                        (
+                            Token.new_id("DATA_WIDTH"),
+                            Token.new_lit("-"),
+                            Token.new_lit("1"),
+                        )
+                    ),
+                    right=Expression((Token.new_lit("0"),)),
+                ),
+            ),
+            ModulePort(
+                name="if_empty_n",
+                hierarchical_name=HierarchicalName.get_name("if_empty_n"),
+                type=ModulePort.Type.OUTPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_read_ce",
+                hierarchical_name=HierarchicalName.get_name("if_read_ce"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_read",
+                hierarchical_name=HierarchicalName.get_name("if_read"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_dout",
+                hierarchical_name=HierarchicalName.get_name("if_dout"),
+                type=ModulePort.Type.OUTPUT,
+                range=Range(
+                    left=Expression(
+                        (
+                            Token.new_id("DATA_WIDTH"),
+                            Token.new_lit("-"),
+                            Token.new_lit("1"),
+                        )
+                    ),
+                    right=Expression((Token.new_lit("0"),)),
+                ),
+            ),
+        ),
+        verilog=FIFO_TEMPLATE,
+        submodules_module_names=(),
+    )
+
+
+def get_top_fsm_def(
+    fsm_name: str,
+    fsm_file: Path,
+) -> VerilogModuleDefinition:
+    """Get top FSM module definition."""
+    with open(fsm_file, encoding="utf-8") as f:
+        content = f.read()
+    module = Module(
+        (fsm_file,),
+        True,
+        name=fsm_name,
+    )
+    return get_verilog_definition_from_tapa_module(module, content)

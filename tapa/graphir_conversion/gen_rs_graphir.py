@@ -28,14 +28,18 @@ from tapa.graphir.types import (
     Token,
     VerilogModuleDefinition,
 )
+from tapa.graphir_conversion.add_iface import get_graphir_iface
 from tapa.graphir_conversion.utils import (
+    FIFO_PORT_PATTERN,
     get_child_port_connection_mapping,
     get_ctrl_s_axi_def,
+    get_fifo_def,
     get_m_axi_port_name,
     get_stream_port_name,
     get_task_arg_table,
     get_task_graphir_parameters,
     get_task_graphir_ports,
+    get_top_fsm_def,
     get_verilog_definition_from_tapa_module,
 )
 from tapa.instance import Instance
@@ -85,8 +89,6 @@ _CTRL_S_AXI_PORT_MAPPING = {
     ),
     "ACLK_EN": Expression((Token.new_lit("1'b1"),)),
 }
-
-FIFO_PORT_PATTERN = r"([a-zA-Z_]\w*)\[(\d+)\]"
 
 
 def get_verilog_module_from_leaf_task(
@@ -950,11 +952,32 @@ def get_project_from_floorplanned_program(program: Program) -> Project:
 
     ctrl_s_axi = get_ctrl_s_axi_def(program.top_task, ctrl_s_axi_verilog)
     top_ir = get_top_module_definition(top_task, slot_irs, ctrl_s_axi)
-    all_ir_defs = [top_ir, *list(slot_irs.values()), *list(leaf_irs.values())]
+
+    fsm_name = f"{top_task.name}_fsm"
+    fsm_file = Path(program.rtl_dir) / f"{fsm_name}.v"
+    fsm_def = get_top_fsm_def(
+        fsm_name,
+        fsm_file,
+    )
+
+    all_ir_defs = [
+        top_ir,
+        ctrl_s_axi,
+        fsm_def,
+        get_fifo_def(),
+        *list(slot_irs.values()),
+        *list(leaf_irs.values()),
+    ]
 
     modules_obj = Modules(
         name="$root",
         module_definitions=tuple(all_ir_defs),
         top_name=top_task.name,
     )
-    return Project(modules=modules_obj)
+    prj = Project(modules=modules_obj)
+    prj.ifaces = get_graphir_iface(
+        prj,
+        slot_tasks.values(),
+        top_task,
+    )
+    return prj
