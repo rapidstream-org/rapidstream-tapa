@@ -12,7 +12,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <tapa/host/internal_util.h>
+#include <tapa/host/private_util.h>
 #include <tapa/scoped_log_sink_mock.h>
 #include <tapa/scoped_set_env.h>
 

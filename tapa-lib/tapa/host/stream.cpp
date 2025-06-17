@@ -12,7 +12,7 @@
 
 #include <glog/logging.h>
 
-#include "tapa/host/internal_util.h"
+#include "tapa/host/private_util.h"
 
 namespace tapa {
 namespace internal {
