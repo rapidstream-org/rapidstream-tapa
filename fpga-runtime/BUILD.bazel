@@ -8,31 +8,45 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_filegroup", "pkg_files", "strip_prefix")
 load("//bazel:dpi_rules.bzl", "dpi_legacy_rdi_library", "dpi_library")
 
+_PUBLIC_HEADERS = [
+    "frt.h",
+    "frt/arg_info.h",
+    "frt/buffer.h",
+    "frt/buffer_arg.h",
+    "frt/device.h",
+    "frt/devices/shared_memory_queue.h",
+    "frt/devices/shared_memory_stream.h",
+    "frt/stream.h",
+    "frt/stream_arg.h",
+    "frt/stringify.h",
+    "frt/tag.h",
+]
+
 cc_library(
     name = "frt",
-    srcs = glob(
-        [
-            "**/*.cpp",
-            "**/*.h",
-        ],
-        exclude = [
-            "frt/**/*_test.cpp",
-            "frt/devices/tapa_fast_cosim_dpi.cpp",
-        ],
-    ),
-    hdrs = [
-        "frt.h",
-        "frt/arg_info.h",
-        "frt/buffer.h",
-        "frt/buffer_arg.h",
-        "frt/device.h",
-        "frt/devices/shared_memory_queue.h",
-        "frt/devices/shared_memory_stream.h",
-        "frt/stream.h",
-        "frt/stream_arg.h",
-        "frt/stringify.h",
-        "frt/tag.h",
+    srcs = [
+        "frt.cpp",
+        "frt/arg_info.cpp",
+        "frt/devices/filesystem.h",
+        "frt/devices/intel_opencl_device.cpp",
+        "frt/devices/intel_opencl_device.h",
+        "frt/devices/opencl_device.cpp",
+        "frt/devices/opencl_device.h",
+        "frt/devices/opencl_device_matcher.h",
+        "frt/devices/opencl_util.h",
+        "frt/devices/shared_memory_queue.cpp",
+        "frt/devices/shared_memory_stream.cpp",
+        "frt/devices/tapa_fast_cosim_device.cpp",
+        "frt/devices/tapa_fast_cosim_device.h",
+        "frt/devices/xilinx_environ.cpp",
+        "frt/devices/xilinx_environ.h",
+        "frt/devices/xilinx_opencl_device.cpp",
+        "frt/devices/xilinx_opencl_device.h",
+        "frt/stringify.cpp",
+        "frt/subprocess.h",
+        "frt/zip_file.h",
     ],
+    hdrs = _PUBLIC_HEADERS,
     copts = [
         "-DCL_HPP_CL_1_2_DEFAULT_BUILD",
         "-DCL_HPP_TARGET_OPENCL_VERSION=120",
@@ -102,19 +116,7 @@ dpi_legacy_rdi_library(
 
 filegroup(
     name = "include",
-    srcs = [
-        "frt.h",
-        "frt/arg_info.h",
-        "frt/buffer.h",
-        "frt/buffer_arg.h",
-        "frt/device.h",
-        "frt/devices/shared_memory_queue.h",
-        "frt/devices/shared_memory_stream.h",
-        "frt/stream.h",
-        "frt/stream_arg.h",
-        "frt/stringify.h",
-        "frt/tag.h",
-    ],
+    srcs = _PUBLIC_HEADERS,
     visibility = ["//visibility:public"],
 )
 
