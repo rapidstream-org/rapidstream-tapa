@@ -8,17 +8,19 @@
 
 #include <gtest/gtest.h>
 
+namespace fpga::internal {
 namespace {
 
 using namespace std::string_view_literals;
 
 TEST(StringifyTest, FloatToBinaryString) {
-  EXPECT_EQ(fpga::ToBinaryString(1.f), "\x00\x00\x80\x3f"sv);
+  EXPECT_EQ(ToBinaryString(1.f), "\x00\x00\x80\x3f"sv);
 }
 
 TEST(StringifyTest, FloatFromBinaryString) {
-  EXPECT_EQ(fpga::FromBinaryString<float>("\x00\x00\x80\x3f"sv), 1.f);
-  EXPECT_DEATH(fpga::FromBinaryString<float>("010101"), "size()");
+  EXPECT_EQ(FromBinaryString<float>("\x00\x00\x80\x3f"sv), 1.f);
+  EXPECT_DEATH(FromBinaryString<float>("010101"), "size()");
 }
 
 }  // namespace
+}  // namespace fpga::internal

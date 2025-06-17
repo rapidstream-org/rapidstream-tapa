@@ -18,10 +18,6 @@
 namespace fpga {
 namespace internal {
 
-bool IsLittleEndian();  // TODO: remove when std::endian is available.
-
-}  // namespace internal
-
 template <typename T>
 std::string ToBinaryString(const T& val) {
   std::string bytes(sizeof(val), '\0');
@@ -37,6 +33,7 @@ T FromBinaryString(std::string_view bytes) {
   return val;
 }
 
+}  // namespace internal
 }  // namespace fpga
 
 #endif  // FPGA_RUNTIME_STRINGIFY_H_

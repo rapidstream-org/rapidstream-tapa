@@ -42,7 +42,6 @@ cc_library(
         "frt/devices/xilinx_environ.h",
         "frt/devices/xilinx_opencl_device.cpp",
         "frt/devices/xilinx_opencl_device.h",
-        "frt/stringify.cpp",
         "frt/subprocess.h",
         "frt/zip_file.h",
     ],
@@ -60,7 +59,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "@boost//:endian",
         "@glog",
         "@nlohmann_json//:json",
         "@tinyxml2",
