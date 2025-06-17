@@ -12,26 +12,26 @@ cc_library(
     name = "frt",
     srcs = glob(
         [
-            "src/**/*.cpp",
-            "src/**/*.h",
+            "**/*.cpp",
+            "**/*.h",
         ],
         exclude = [
-            "src/frt/**/*_test.cpp",
-            "src/frt/devices/tapa_fast_cosim_dpi.cpp",
+            "frt/**/*_test.cpp",
+            "frt/devices/tapa_fast_cosim_dpi.cpp",
         ],
     ),
     hdrs = [
-        "src/frt.h",
-        "src/frt/arg_info.h",
-        "src/frt/buffer.h",
-        "src/frt/buffer_arg.h",
-        "src/frt/device.h",
-        "src/frt/devices/shared_memory_queue.h",
-        "src/frt/devices/shared_memory_stream.h",
-        "src/frt/stream.h",
-        "src/frt/stream_arg.h",
-        "src/frt/stringify.h",
-        "src/frt/tag.h",
+        "frt.h",
+        "frt/arg_info.h",
+        "frt/buffer.h",
+        "frt/buffer_arg.h",
+        "frt/device.h",
+        "frt/devices/shared_memory_queue.h",
+        "frt/devices/shared_memory_stream.h",
+        "frt/stream.h",
+        "frt/stream_arg.h",
+        "frt/stringify.h",
+        "frt/tag.h",
     ],
     copts = [
         "-DCL_HPP_CL_1_2_DEFAULT_BUILD",
@@ -39,7 +39,7 @@ cc_library(
         "-DCL_HPP_MINIMUM_OPENCL_VERSION=120",
         "-DCL_TARGET_OPENCL_VERSION=120",
     ],
-    includes = ["src"],
+    includes = ["."],
     linkopts = [
         "-lstdc++fs",
         "-lrt",
@@ -69,13 +69,13 @@ cc_test(
 dpi_library(
     name = "tapa_fast_cosim_dpi_xv",
     srcs = [
-        "src/frt/devices/shared_memory_queue.cpp",
-        "src/frt/devices/tapa_fast_cosim_dpi.cpp",
+        "frt/devices/shared_memory_queue.cpp",
+        "frt/devices/tapa_fast_cosim_dpi.cpp",
     ],
     hdrs = [
-        "src/frt/devices/shared_memory_queue.h",
+        "frt/devices/shared_memory_queue.h",
     ],
-    includes = ["src"],
+    includes = ["."],
     visibility = ["//tapa/cosim:__pkg__"],
     deps = [
         "@glog",
@@ -86,13 +86,13 @@ dpi_library(
 dpi_legacy_rdi_library(
     name = "tapa_fast_cosim_dpi_legacy_rdi",
     srcs = [
-        "src/frt/devices/shared_memory_queue.cpp",
-        "src/frt/devices/tapa_fast_cosim_dpi.cpp",
+        "frt/devices/shared_memory_queue.cpp",
+        "frt/devices/tapa_fast_cosim_dpi.cpp",
     ],
     hdrs = [
-        "src/frt/devices/shared_memory_queue.h",
+        "frt/devices/shared_memory_queue.h",
     ],
-    includes = ["src"],
+    includes = ["."],
     visibility = ["//tapa/cosim:__pkg__"],
     deps = [
         "@glog",
@@ -103,17 +103,17 @@ dpi_legacy_rdi_library(
 filegroup(
     name = "include",
     srcs = [
-        "src/frt.h",
-        "src/frt/arg_info.h",
-        "src/frt/buffer.h",
-        "src/frt/buffer_arg.h",
-        "src/frt/device.h",
-        "src/frt/devices/shared_memory_queue.h",
-        "src/frt/devices/shared_memory_stream.h",
-        "src/frt/stream.h",
-        "src/frt/stream_arg.h",
-        "src/frt/stringify.h",
-        "src/frt/tag.h",
+        "frt.h",
+        "frt/arg_info.h",
+        "frt/buffer.h",
+        "frt/buffer_arg.h",
+        "frt/device.h",
+        "frt/devices/shared_memory_queue.h",
+        "frt/devices/shared_memory_stream.h",
+        "frt/stream.h",
+        "frt/stream_arg.h",
+        "frt/stringify.h",
+        "frt/tag.h",
     ],
     visibility = ["//visibility:public"],
 )
@@ -134,7 +134,7 @@ pkg_files(
     name = "pkg-include",
     srcs = [":include"],
     prefix = "usr/include",
-    strip_prefix = strip_prefix.from_pkg("src"),
+    strip_prefix = strip_prefix.from_pkg(""),
 )
 
 pkg_files(

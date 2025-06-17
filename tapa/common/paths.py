@@ -20,7 +20,7 @@ _logger = logging.getLogger().getChild(__name__)
 # resolve relative paths.
 POTENTIAL_PATHS: dict[str, tuple[str, ...]] = {
     "fpga-runtime-include": (
-        "fpga-runtime/src",
+        "fpga-runtime",
         "usr/include",
     ),
     "fpga-runtime-lib": (
