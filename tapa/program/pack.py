@@ -143,9 +143,28 @@ def _redact_and_zip(zip_in: zipfile.ZipFile, zip_out: zipfile.ZipFile) -> None:
 
 def _redact(xo: zipfile.ZipFile, info: zipfile.ZipInfo) -> bytes:
     content = xo.read(info)
-    if not info.filename.endswith(".xml"):
-        return content
+    if info.filename.endswith(".rpt"):
+        return _redact_rpt(content)
+    if info.filename.endswith(".xml"):
+        return _redact_xml(content)
+    return content
 
+
+def _redact_rpt(content: bytes) -> bytes:
+    text = content.decode()
+
+    # Redact the timestamp stored in rpt. The same timestamp is used by files in
+    # the xo zip file and is the earliest timestamp supported by the zip format.
+    text = re.sub(
+        r"Date:           ... ... .. ..:..:.. ....",
+        r"Date:           Tue Jan 01 00:00:00 1980",
+        text,
+    )
+
+    return text.encode()
+
+
+def _redact_xml(content: bytes) -> bytes:
     # Although we only redact xml files, regex substitution seems more readable
     # than parsing and mutating xml. We'll add tests to prevent regression in
     # case of file format change.

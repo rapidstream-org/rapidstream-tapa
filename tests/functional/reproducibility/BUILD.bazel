@@ -17,7 +17,7 @@ tapa_xo(
 
 sh_test(
     name = "reproducible-xo-test",
-    srcs = ["xo-diff.sh"],
+    srcs = ["zip-diff.sh"],
     args = [
         "$(location :vadd-xo)",
         "$(location //tests/apps/vadd:vadd-xo)",
@@ -25,6 +25,28 @@ sh_test(
     data = [
         ":vadd-xo",
         "//tests/apps/vadd:vadd-xo",
+    ],
+)
+
+tapa_xo(
+    name = "vadd-zip",
+    src = "//tests/apps/vadd:vadd.cpp",
+    hdrs = ["//tests/apps/vadd:vadd.h"],
+    include = ["//tests/apps/vadd:."],
+    target = "xilinx-hls",
+    top_name = "VecAdd",
+)
+
+sh_test(
+    name = "reproducible-zip-test",
+    srcs = ["zip-diff.sh"],
+    args = [
+        "$(location :vadd-zip)",
+        "$(location //tests/apps/vadd:vadd-zip)",
+    ],
+    data = [
+        ":vadd-zip",
+        "//tests/apps/vadd:vadd-zip",
     ],
 )
 
@@ -67,7 +89,7 @@ $(location //bazel:vitis_hls_env) $(location //tapa) --work-dir "$${work_dir}" \
 # XO generated step-by-step should be the same as XO generated in one step.
 sh_test(
     name = "reuse-work-dir-test",
-    srcs = ["xo-diff.sh"],
+    srcs = ["zip-diff.sh"],
     args = [
         "$(location :reuse-work-dir-vadd-xo)",
         "$(location //tests/apps/vadd:vadd-xo)",
