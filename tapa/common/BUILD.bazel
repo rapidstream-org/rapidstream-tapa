@@ -36,6 +36,12 @@ py_library(
 py_library(
     name = "paths",
     srcs = ["paths.py"],
+    data = [
+        "//tapa-system-include",
+    ],
+    deps = [
+        "//tapa:util",
+    ],
 )
 
 py_library(

@@ -20,7 +20,7 @@ from pathlib import Path
 import click
 
 from tapa.common.graph import Graph as TapaGraph
-from tapa.common.paths import find_resource, get_tapa_cflags
+from tapa.common.paths import find_resource, find_tapacc_cflags
 from tapa.common.target import Target
 from tapa.common.task_definition import TaskDefinition
 from tapa.core import Program
@@ -30,7 +30,7 @@ from tapa.steps.common import (
     store_persistent_context,
     store_tapa_program,
 )
-from tapa.util import clang_format, get_vendor_include_paths
+from tapa.util import clang_format
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -194,53 +194,6 @@ def find_clang_binary(name: str) -> str:
         raise ValueError(msg)
 
     return str(binary.resolve())
-
-
-def find_tapacc_cflags(
-    cflags: tuple[str, ...],
-) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Append tapa, system and vendor libraries to tapacc cflags.
-
-    Args:
-      tapacc: The path of the tapacc binary.
-      cflags: User-given CFLAGS.
-
-    Returns:
-      A tuple, the first element is the CFLAGS with vendor libraries for HLS,
-      including the tapa and HLS vendor libraries, and the second element is
-      the CFLAGS for system libraries, such as clang and libc++.
-
-    Raises:
-      click.UsageError: Unable to find the include folders.
-    """
-    # Add vendor include files to tapacc cflags
-    vendor_include_paths = ()
-    for vendor_path in get_vendor_include_paths():
-        vendor_include_paths += ("-isystem" + vendor_path,)
-        _logger.info("added vendor include path `%s`", vendor_path)
-
-    # Add system include files to tapacc cflags
-    system_includes = []
-    system_include_path = find_resource("tapa-system-include")
-    if system_include_path:
-        system_includes.extend(["-isystem" + str(system_include_path)])
-
-    # TODO: Vitis HLS highly depends on the assert to be defined in
-    #       the system include path in a certain way. One attempt was
-    #       to disable NDEBUG but this causes hls::assume to fail.
-    #       A full solution is to provide tapa::assume that guarantees
-    #       the produce the pattern that HLS likes.
-    #       For now, newer versions of glibc will not be supported.
-    return (
-        (
-            *cflags,
-            # Use the stdc++ library from the HLS toolchain.
-            "-nostdinc++",
-            *get_tapa_cflags(),
-            *vendor_include_paths,
-        ),
-        tuple(system_includes),
-    )
 
 
 def run_and_check(cmd: tuple[str, ...]) -> str:
