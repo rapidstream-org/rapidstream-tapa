@@ -164,34 +164,17 @@ def get_tapa_ldflags() -> tuple[str, ...]:
     )
 
 
-def find_tapacc_cflags(
-    cflags: tuple[str, ...],
-) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Append tapa, system and vendor libraries to tapacc cflags.
+@cache
+def get_tapacc_cflags() -> tuple[str, ...]:
+    """Return CFLAGS with vendor libraries for HLS.
 
-    Args:
-      tapacc: The path of the tapacc binary.
-      cflags: User-given CFLAGS.
-
-    Returns:
-      A tuple, the first element is the CFLAGS with vendor libraries for HLS,
-      including the tapa and HLS vendor libraries, and the second element is
-      the CFLAGS for system libraries, such as clang and libc++.
-
-    Raises:
-      click.UsageError: Unable to find the include folders.
+    This CFLAGS include the tapa and HLS vendor libraries.
     """
     # Add vendor include files to tapacc cflags
     vendor_include_paths = ()
     for vendor_path in get_vendor_include_paths():
         vendor_include_paths += ("-isystem" + vendor_path,)
         _logger.info("added vendor include path `%s`", vendor_path)
-
-    # Add system include files to tapacc cflags
-    system_includes = []
-    system_include_path = find_resource("tapa-system-include")
-    if system_include_path:
-        system_includes.extend(["-isystem" + str(system_include_path)])
 
     # TODO: Vitis HLS highly depends on the assert to be defined in
     #       the system include path in a certain way. One attempt was
@@ -200,12 +183,16 @@ def find_tapacc_cflags(
     #       the produce the pattern that HLS likes.
     #       For now, newer versions of glibc will not be supported.
     return (
-        (
-            *cflags,
-            # Use the stdc++ library from the HLS toolchain.
-            "-nostdinc++",
-            *get_tapa_cflags(),
-            *vendor_include_paths,
-        ),
-        tuple(system_includes),
+        # Use the stdc++ library from the HLS toolchain.
+        "-nostdinc++",
+        *get_tapa_cflags(),
+        *vendor_include_paths,
     )
+
+
+@cache
+def get_system_cflags() -> tuple[str, ...]:
+    """Return CFLAGS for system libraries, such as clang and libc++."""
+    if system_include_path := find_resource("tapa-system-include"):
+        return ("-isystem" + str(system_include_path),)
+    return ()

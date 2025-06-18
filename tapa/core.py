@@ -42,6 +42,7 @@ from pyverilog.vparser.ast import (
     Wire,
 )
 
+from tapa.common.paths import get_tapacc_cflags
 from tapa.common.target import Target
 from tapa.instance import Instance
 from tapa.program.directory import ProgramDirectoryMixin
@@ -137,7 +138,7 @@ class Program(  # TODO: refactor this class
           flattened: Whether the TAPA graph has been flattened.
         """
         self.top: str = obj["top"]
-        self.cflags = " ".join(obj.get("cflags", []))
+        self.cflags = " ".join((*(obj.get("cflags", [])), *get_tapacc_cflags()))
         self.target = Target(target)
         if work_dir is None:
             self.work_dir = tempfile.mkdtemp(prefix="tapa-")

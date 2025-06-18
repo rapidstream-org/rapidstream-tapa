@@ -109,6 +109,7 @@ py_library(
         ":instance",
         ":task",
         ":util",
+        "//tapa/common:paths",
         "//tapa/common:target",
         "//tapa/graphir",
         "//tapa/program:directory",

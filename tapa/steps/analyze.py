@@ -20,7 +20,7 @@ from pathlib import Path
 import click
 
 from tapa.common.graph import Graph as TapaGraph
-from tapa.common.paths import find_resource, find_tapacc_cflags
+from tapa.common.paths import find_resource, get_system_cflags, get_tapacc_cflags
 from tapa.common.target import Target
 from tapa.common.task_definition import TaskDefinition
 from tapa.core import Program
@@ -96,18 +96,21 @@ def analyze(
     # template argument deduction, which is not supported by Vitis HLS.
     cflags += ("-std=c++14",)
 
-    tapacc_cflags, system_cflags = find_tapacc_cflags(cflags)
+    all_cflags = cflags + get_tapacc_cflags() + get_system_cflags()
     flatten_files = run_flatten(
-        tapa_cpp, input_files, tapacc_cflags + system_cflags, work_dir
+        tapa_cpp,
+        input_files,
+        all_cflags,
+        work_dir,
     )
     graph_dict = run_tapacc(
         tapacc,
         flatten_files,
         top,
-        tapacc_cflags + system_cflags,
+        all_cflags,
         target,
     )
-    graph_dict["cflags"] = tapacc_cflags
+    graph_dict["cflags"] = cflags
 
     # Flatten the graph if flatten_hierarchy is set
     tapa_graph = TapaGraph(None, graph_dict)
