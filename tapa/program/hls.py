@@ -15,15 +15,12 @@ from typing import Literal
 from psutil import cpu_count
 
 from tapa.backend.xilinx import RunAie, RunHls
-from tapa.common.paths import find_resource
+from tapa.common.paths import find_resource, get_xpfm_path
 from tapa.program.abc import ProgramInterface
 from tapa.program.directory import ProgramDirectoryInterface
 from tapa.safety_check import check_mmap_arg_name
 from tapa.task import Task
-from tapa.util import (
-    clang_format,
-    get_xpfm_path,
-)
+from tapa.util import clang_format
 
 _logger = logging.getLogger().getChild(__name__)
 

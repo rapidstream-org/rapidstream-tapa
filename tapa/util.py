@@ -15,8 +15,7 @@ import shutil
 import socket
 import subprocess
 import time
-from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import coloredlogs
 
@@ -90,79 +89,6 @@ def get_instance_name(item: tuple[str, int]) -> str:
 
 def get_module_name(module: str) -> str:
     return f"{module}"
-
-
-def get_xilinx_tool_path(tool_name: Literal["HLS", "VITIS"] = "HLS") -> str | None:
-    """Returns the XILINX_<TOOL> path."""
-    xilinx_tool_path = os.environ.get(f"XILINX_{tool_name}")
-    if xilinx_tool_path is None:
-        _logger.critical("not adding vendor include paths;")
-        _logger.critical("please set XILINX_%s", tool_name)
-        _logger.critical("you may run `source /path/to/Vitis/settings64.sh`")
-    elif not Path(xilinx_tool_path).exists():
-        _logger.critical(
-            "XILINX_%s path does not exist: %s", tool_name, xilinx_tool_path
-        )
-        xilinx_tool_path = None
-    return xilinx_tool_path
-
-
-def get_xpfm_path(platform: str) -> str | None:
-    """Returns the XPFM path for a platform."""
-    xilinx_vitis_path = get_xilinx_tool_path("VITIS")
-    path_in_vitis = f"{xilinx_vitis_path}/base_platforms/{platform}/{platform}.xpfm"
-    path_in_opt = f"/opt/xilinx/platforms/{platform}/{platform}.xpfm"
-    if os.path.exists(path_in_vitis):
-        return path_in_vitis
-    if os.path.exists(path_in_opt):
-        return path_in_opt
-
-    _logger.critical("Cannot find XPFM for platform %s", platform)
-    return None
-
-
-def get_vendor_include_paths() -> Iterable[str]:
-    """Yields include paths that are automatically available in vendor tools."""
-    xilinx_hls: str | None = None
-    for tool_name in "HLS", "VITIS":
-        # 2024.2 moved the HLS include path from Vitis_HLS to Vitis
-        xilinx_hls = get_xilinx_tool_path(tool_name)
-        if xilinx_hls is not None:
-            include = os.path.join(xilinx_hls, "include")
-            if os.path.exists(include):
-                yield include
-                break
-
-    if xilinx_hls is not None:
-        # there are multiple versions of gcc, such as 6.2.0, 9.3.0, 11.4.0,
-        # we choose the latest version based on numerical order
-        tps_lnx64 = Path(xilinx_hls) / "tps" / "lnx64"
-        gcc_paths = tps_lnx64.glob("gcc-*.*.*")
-        gcc_versions = [path.name.split("-")[1] for path in gcc_paths]
-        if not gcc_versions:
-            _logger.critical("cannot find HLS vendor GCC")
-            _logger.critical("it should be at %s", tps_lnx64)
-            return
-        gcc_versions.sort(key=lambda x: tuple(map(int, x.split("."))))
-        latest_gcc = gcc_versions[-1]
-
-        # include VITIS_HLS/tps/lnx64/g++-<version>/include/c++/<version>
-        cpp_include = tps_lnx64 / f"gcc-{latest_gcc}" / "include" / "c++" / latest_gcc
-        if not cpp_include.exists():
-            _logger.critical("cannot find HLS vendor paths for C++")
-            _logger.critical("it should be at %s", cpp_include)
-            return
-        yield str(cpp_include)
-
-        # there might be a x86_64-pc-linux-gnu or x86_64-linux-gnu
-        if (cpp_include / "x86_64-pc-linux-gnu").exists():
-            yield os.path.join(cpp_include, "x86_64-pc-linux-gnu")
-        elif (cpp_include / "x86_64-linux-gnu").exists():
-            yield os.path.join(cpp_include, "x86_64-linux-gnu")
-        else:
-            _logger.critical("cannot find HLS vendor paths for C++ (x86_64)")
-            _logger.critical("it should be at %s", cpp_include)
-            return
 
 
 def setup_logging(

@@ -39,9 +39,6 @@ py_library(
     data = [
         "//tapa-system-include",
     ],
-    deps = [
-        "//tapa:util",
-    ],
 )
 
 py_library(

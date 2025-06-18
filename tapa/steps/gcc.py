@@ -15,8 +15,11 @@ from pathlib import Path
 
 import click
 
-from tapa.common.paths import get_tapa_cflags, get_tapa_ldflags
-from tapa.util import get_xilinx_tool_path
+from tapa.common.paths import (
+    get_tapa_cflags,
+    get_tapa_ldflags,
+    get_xilinx_tool_path,
+)
 
 _logger = logging.getLogger().getChild(__name__)
 
