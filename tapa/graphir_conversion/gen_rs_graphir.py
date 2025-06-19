@@ -668,7 +668,9 @@ def get_slot_module_definition(
 
 
 def get_top_ctrl_s_axi_inst(
-    top: Task, ctrl_s_axi_ir: VerilogModuleDefinition
+    top: Task,
+    top_ir_param: list[ModuleParameter],
+    ctrl_s_axi_ir: VerilogModuleDefinition,
 ) -> ModuleInstantiation:
     """Get top ctrl_s_axi instantiation."""
     connections = []
@@ -686,11 +688,18 @@ def get_top_ctrl_s_axi_inst(
         )
     parameters = []
     for param, value in _CTRL_S_AXI_PARAM_MAPPING.items():
+        # find id in top def and replace to make parameter constant
+        tokens = None
+        for top_param in top_ir_param:
+            if top_param.name == value:
+                tokens = top_param.expr.root
+                break
+        assert tokens
         parameters.append(
             ModuleConnection(
                 name=param,
                 hierarchical_name=HierarchicalName.get_name(param),
-                expr=Expression((Token.new_id(value),)),
+                expr=Expression(tokens),
             )
         )
     return ModuleInstantiation(
@@ -890,12 +899,13 @@ def get_top_module_definition(
 ) -> GroupedModuleDefinition:
     """Get top module definition."""
     top_ports = get_task_graphir_ports(top.module)
+    top_param = get_task_graphir_parameters(top.module)
 
     top_subinsts = get_top_ir_subinsts(
         top,
         slot_defs,
     )
-    top_subinsts.append(get_top_ctrl_s_axi_inst(top, ctrl_s_axi_ir))
+    top_subinsts.append(get_top_ctrl_s_axi_inst(top, top_param, ctrl_s_axi_ir))
 
     top_wires = get_upper_task_ir_wires(  # not work
         top,
@@ -909,7 +919,7 @@ def get_top_module_definition(
     return GroupedModuleDefinition(
         name=top.name,
         hierarchical_name=HierarchicalName.get_name(top.name),
-        parameters=tuple(get_task_graphir_parameters(top.module)),
+        parameters=tuple(top_param),
         ports=tuple(top_ports),
         submodules=tuple(top_subinsts),
         wires=tuple(top_wires),
