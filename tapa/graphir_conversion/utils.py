@@ -472,6 +472,18 @@ def get_fifo_def() -> VerilogModuleDefinition:
         ),
         ports=(
             ModulePort(
+                name="clk",
+                hierarchical_name=HierarchicalName.get_name("clk"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="reset",
+                hierarchical_name=HierarchicalName.get_name("rst"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
                 name="if_full_n",
                 hierarchical_name=HierarchicalName.get_name("if_full_n"),
                 type=ModulePort.Type.OUTPUT,

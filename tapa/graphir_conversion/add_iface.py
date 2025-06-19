@@ -204,6 +204,15 @@ def get_graphir_iface(  # noqa: C901, PLR0912, PLR0915, PLR0914
     # fifo
     project.get_module("fifo")
     ifaces["fifo"] = [
+        ClockInterface(
+            ports=("clk",),
+            origin_info="",
+        ),
+        FeedForwardResetInterface(
+            ports=("clk", "reset"),
+            clk_port="clk",
+            origin_info="",
+        ),
         HandShakeInterface(
             ports=(
                 "if_din",
