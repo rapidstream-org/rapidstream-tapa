@@ -5,6 +5,7 @@ Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
+import re
 from pathlib import Path
 
 from pyverilog.vparser.ast import (
@@ -188,7 +189,52 @@ def ast_to_tokens(node: Node) -> list[Token]:
         tokens.append(Token.new_id(node.name))
 
     elif isinstance(node, Constant):
-        tokens.append(Token.new_lit(node.value))
+        # TODO: refactor with pyslang
+        elems = re.sub(r"([\[\]\(\)\{\}])", r" \1 ", node.value).split()
+        for elem in elems:
+            if (
+                elem.isdigit()
+                or elem
+                in {
+                    "~",
+                    "-",
+                    "+",
+                    "*",
+                    "/",
+                    "%",
+                    "**",
+                    "==",
+                    "!=",
+                    ">",
+                    "<",
+                    ">=",
+                    "<=",
+                    "&&",
+                    "||",
+                    "&",
+                    "|",
+                    "^",
+                    "~^",
+                    "<<",
+                    ">>",
+                    ">>>",
+                    "(",
+                    ")",
+                    "[",
+                    "]",
+                    "{",
+                    "}",
+                }
+                or any(
+                    item in elem
+                    for item in ("'d", "'b", "'h", "'o", "'D", "'B", "'H", "'O")
+                )
+            ):
+                # numeric literal or operator
+                tokens.append(Token.new_lit(elem))
+            else:
+                # identifier
+                tokens.append(Token.new_id(elem))
 
     elif isinstance(node, UnaryOperator):
         # e.g., 'ulnot', 'unot', etc.
