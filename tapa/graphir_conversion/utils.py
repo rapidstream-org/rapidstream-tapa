@@ -603,11 +603,11 @@ def get_fifo_def() -> VerilogModuleDefinition:
     )
 
 
-def get_top_fsm_def(
+def get_fsm_def(
     fsm_name: str,
     fsm_file: Path,
 ) -> VerilogModuleDefinition:
-    """Get top FSM module definition."""
+    """Get FSM module definition."""
     with open(fsm_file, encoding="utf-8") as f:
         content = f.read()
     module = Module(
