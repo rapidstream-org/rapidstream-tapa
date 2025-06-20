@@ -41,13 +41,15 @@ from pyverilog.vparser.ast import (
 from tapa.graphir.types import (
     Expression,
     HierarchicalName,
+    ModuleConnection,
+    ModuleInstantiation,
     ModuleParameter,
     ModulePort,
     Range,
     Token,
     VerilogModuleDefinition,
 )
-from tapa.graphir_conversion.templates import FIFO_TEMPLATE
+from tapa.graphir_conversion.templates import FIFO_TEMPLATE, RESET_INVERTER_TEMPLATE
 from tapa.instance import Port
 from tapa.task import Task
 from tapa.verilog.util import Pipeline
@@ -614,3 +616,63 @@ def get_top_fsm_def(
         name=fsm_name,
     )
     return get_verilog_definition_from_tapa_module(module, content)
+
+
+def get_reset_inverter_def() -> VerilogModuleDefinition:
+    """Get reset inverter module definition."""
+    return VerilogModuleDefinition(
+        name="reset_inverter",
+        hierarchical_name=HierarchicalName.get_name("reset_inverter"),
+        parameters=(),
+        ports=(
+            ModulePort(
+                name="clk",
+                hierarchical_name=HierarchicalName.get_name("clk"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="rst",
+                hierarchical_name=HierarchicalName.get_name("rst"),
+                type=ModulePort.Type.OUTPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="rst_n",
+                hierarchical_name=HierarchicalName.get_name("rst_n"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+        ),
+        verilog=RESET_INVERTER_TEMPLATE,
+        submodules_module_names=(),
+    )
+
+
+def get_reset_inverter_inst() -> ModuleInstantiation:
+    """Get reset inverter module instantiation."""
+    return ModuleInstantiation(
+        name="reset_inverter_0",
+        hierarchical_name=HierarchicalName.get_name("reset_inverter_0"),
+        module="reset_inverter",
+        parameters=(),
+        connections=(
+            ModuleConnection(
+                name="clk",
+                hierarchical_name=HierarchicalName.get_name("clk"),
+                expr=Expression((Token.new_id("ap_clk"),)),
+            ),
+            ModuleConnection(
+                name="rst",
+                hierarchical_name=HierarchicalName.get_name("rst"),
+                expr=Expression((Token.new_id("rst"),)),
+            ),
+            ModuleConnection(
+                name="rst_n",
+                hierarchical_name=HierarchicalName.get_name("rst_n"),
+                expr=Expression((Token.new_id("ap_rst_n"),)),
+            ),
+        ),
+        floorplan_region=None,
+        area=None,
+    )
