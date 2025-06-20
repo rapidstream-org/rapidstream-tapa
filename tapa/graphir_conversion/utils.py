@@ -673,6 +673,6 @@ def get_reset_inverter_inst() -> ModuleInstantiation:
                 expr=Expression((Token.new_id("ap_rst_n"),)),
             ),
         ),
-        floorplan_region=None,
+        floorplan_region="SLOT_X0Y0_TO_SLOT_X0Y0",
         area=None,
     )
