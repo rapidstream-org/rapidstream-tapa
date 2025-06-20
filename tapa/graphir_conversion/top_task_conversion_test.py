@@ -50,7 +50,7 @@ def get_test_slot_def(program: Program, slot_name: str) -> GroupedModuleDefiniti
         is_trimming_enabled=True,
     )
 
-    return get_slot_module_definition(slot_task, leaf_irs)
+    return get_slot_module_definition(slot_task, leaf_irs, slot_task.name)
 
 
 def test_top_task_conversion() -> None:
@@ -94,6 +94,7 @@ def test_top_task_conversion() -> None:
         program.top_task,
         slot_irs,
         get_ctrl_s_axi_def(program.top_task, ctrl_s_axi_verilog),
+        {task_name: task_name for task_name in slot_irs},
     )
 
     with open(_TEST_FILES_DIR / "golden.json", encoding="utf-8") as f:

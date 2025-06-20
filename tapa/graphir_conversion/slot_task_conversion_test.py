@@ -63,7 +63,7 @@ def test_slot_task_conversion() -> None:
         is_trimming_enabled=True,
     )
 
-    slot_ir = get_slot_module_definition(slot_task, leaf_irs)
+    slot_ir = get_slot_module_definition(slot_task, leaf_irs, slot_task.name)
     with open(_TEST_FILES_DIR / "golden.json", encoding="utf-8") as f:
         golden = json.load(f)
         generated = slot_ir.model_dump_json(indent=2)

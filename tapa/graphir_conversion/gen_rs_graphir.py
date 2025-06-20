@@ -216,6 +216,7 @@ def get_submodule_inst(
     subtasks: dict[str, Task],
     inst: Instance,
     arg_table: dict[str, dict[str, Pipeline]],
+    floorplan_region: str | None = None,
 ) -> ModuleInstantiation:
     """Get submodule instantiation."""
     task_name = inst.task.name
@@ -320,17 +321,18 @@ def get_submodule_inst(
         module=task_name,
         connections=tuple(connections),
         parameters=(),
-        floorplan_region=None,
+        floorplan_region=floorplan_region,
         area=None,
     )
 
 
-def get_fifo_inst(
+def get_fifo_inst(  # noqa: PLR0917, PLR0913
     upper_task: Task,
     fifo_name: str,
     fifo: dict,
     submodule_ir_defs: dict[str, AnyModuleDefinition],
     is_top: bool = False,
+    floorplan_region: str | None = None,
 ) -> ModuleInstantiation:
     """Get slot fifo module instantiation."""
     depth = int(fifo["depth"])
@@ -443,7 +445,7 @@ def get_fifo_inst(
                 expr=data_width,
             ),
         ),
-        floorplan_region=None,
+        floorplan_region=floorplan_region,
         area=None,
     )
 
@@ -451,6 +453,7 @@ def get_fifo_inst(
 def get_upper_module_ir_subinsts(
     upper_task: Task,
     submodule_ir_defs: dict[str, AnyModuleDefinition],
+    floorplan_region: str | None = None,
 ) -> list[ModuleInstantiation]:
     """Get leaf module instantiations of slot module."""
     subtasks = {inst.task.name: inst.task for inst in upper_task.instances}
@@ -459,6 +462,7 @@ def get_upper_module_ir_subinsts(
             subtasks,
             inst,
             get_task_arg_table(upper_task),
+            floorplan_region,
         )
         for inst in upper_task.instances
     ]
@@ -480,7 +484,7 @@ def get_upper_module_ir_subinsts(
             module=fsm_module.name,
             connections=tuple(connections),
             parameters=(),
-            floorplan_region=None,
+            floorplan_region=floorplan_region,
             area=None,
         )
     )
@@ -496,6 +500,7 @@ def get_upper_module_ir_subinsts(
                 fifo_name,
                 fifo,
                 submodule_ir_defs,
+                floorplan_region=floorplan_region,
             )
         )
 
@@ -648,7 +653,9 @@ def get_upper_task_ir_wires(  # noqa: C901
 
 
 def get_slot_module_definition(
-    slot: Task, leaf_ir_defs: dict[str, VerilogModuleDefinition]
+    slot: Task,
+    leaf_ir_defs: dict[str, VerilogModuleDefinition],
+    floorplan_region: str,
 ) -> GroupedModuleDefinition:
     """Get slot module definition."""
     # TODO: port array support
@@ -662,6 +669,7 @@ def get_slot_module_definition(
             get_upper_module_ir_subinsts(
                 slot,
                 leaf_ir_defs,
+                floorplan_region,
             )
         ),
         wires=tuple(get_upper_task_ir_wires(slot, leaf_ir_defs, slot_ports)),
@@ -672,6 +680,7 @@ def get_top_ctrl_s_axi_inst(
     top: Task,
     top_ir_param: list[ModuleParameter],
     ctrl_s_axi_ir: VerilogModuleDefinition,
+    floorplan_region: str,
 ) -> ModuleInstantiation:
     """Get top ctrl_s_axi instantiation."""
     connections = []
@@ -709,7 +718,7 @@ def get_top_ctrl_s_axi_inst(
         module=f"{top.name}_control_s_axi",
         connections=tuple(connections),
         parameters=tuple(parameters),
-        floorplan_region=None,
+        floorplan_region=floorplan_region,
         area=None,
     )
 
@@ -731,6 +740,7 @@ def get_top_level_slot_inst(
     slot_def: AnyModuleDefinition,
     slot_inst: Instance,
     arg_table: dict[str, Pipeline],
+    floorplan_task_name_region_mapping: dict[str, str],
 ) -> ModuleInstantiation:
     """Get top level slot instantiation."""
     slot_def_port_names = [port.name for port in slot_def.ports]
@@ -834,7 +844,7 @@ def get_top_level_slot_inst(
         module=task_name,
         connections=tuple(connections),
         parameters=(),
-        floorplan_region=None,
+        floorplan_region=floorplan_task_name_region_mapping[task_name],
         area=None,
     )
 
@@ -842,6 +852,8 @@ def get_top_level_slot_inst(
 def get_top_ir_subinsts(
     top_task: Task,
     slot_defs: dict[str, AnyModuleDefinition],
+    floorplan_task_name_region_mapping: dict[str, str],
+    fsm_floorplan_region: str,
 ) -> list[ModuleInstantiation]:
     """Get leaf module instantiations of slot module."""
     ir_insts = [
@@ -849,6 +861,7 @@ def get_top_ir_subinsts(
             slot_defs[inst.task.name],
             inst,
             get_task_arg_table(top_task)[inst.name],
+            floorplan_task_name_region_mapping,
         )
         for inst in top_task.instances
     ]
@@ -870,7 +883,7 @@ def get_top_ir_subinsts(
             module=fsm_module.name,
             connections=tuple(connections),
             parameters=(),
-            floorplan_region=None,
+            floorplan_region=fsm_floorplan_region,
             area=None,
         )
     )
@@ -887,6 +900,7 @@ def get_top_ir_subinsts(
                 fifo,
                 slot_defs,
                 True,
+                floorplan_task_name_region_mapping[fifo["consumed_by"][0]],
             )
         )
 
@@ -897,17 +911,25 @@ def get_top_module_definition(
     top: Task,
     slot_defs: dict[str, AnyModuleDefinition],
     ctrl_s_axi_ir: VerilogModuleDefinition,
+    floorplan_task_name_region_mapping: dict[str, str],
 ) -> GroupedModuleDefinition:
     """Get top module definition."""
     top_ports = get_task_graphir_ports(top.module)
     top_param = get_task_graphir_parameters(top.module)
 
+    # Assign a default region for fsm and ctrl_s_axi instantiation
+    default_region = next(iter(floorplan_task_name_region_mapping.values()))
+
     top_subinsts = get_top_ir_subinsts(
         top,
         slot_defs,
+        floorplan_task_name_region_mapping,
+        default_region,
     )
-    top_subinsts.append(get_top_ctrl_s_axi_inst(top, top_param, ctrl_s_axi_ir))
-    top_subinsts.append(get_reset_inverter_inst())
+    top_subinsts.append(
+        get_top_ctrl_s_axi_inst(top, top_param, ctrl_s_axi_ir, default_region)
+    )
+    top_subinsts.append(get_reset_inverter_inst(default_region))
 
     top_wires = get_upper_task_ir_wires(
         top,
@@ -959,7 +981,9 @@ def get_project_from_floorplanned_program(program: Program) -> Project:  # noqa:
             task, full_task_module.code
         )
     slot_irs = {
-        task.name: get_slot_module_definition(task, leaf_irs)
+        task.name: get_slot_module_definition(
+            task, leaf_irs, program.slot_task_name_to_fp_region[task.name]
+        )
         for task in slot_tasks.values()
     }
 
@@ -970,7 +994,9 @@ def get_project_from_floorplanned_program(program: Program) -> Project:  # noqa:
         ctrl_s_axi_verilog = f.read()
 
     ctrl_s_axi = get_ctrl_s_axi_def(program.top_task, ctrl_s_axi_verilog)
-    top_ir = get_top_module_definition(top_task, slot_irs, ctrl_s_axi)
+    top_ir = get_top_module_definition(
+        top_task, slot_irs, ctrl_s_axi, program.slot_task_name_to_fp_region
+    )
 
     top_fsm_name = top_task.fsm_module.name
     top_fsm_file = Path(program.rtl_dir) / f"{top_fsm_name}.v"
