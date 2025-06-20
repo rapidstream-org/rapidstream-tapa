@@ -649,7 +649,7 @@ def get_reset_inverter_def() -> VerilogModuleDefinition:
     )
 
 
-def get_reset_inverter_inst() -> ModuleInstantiation:
+def get_reset_inverter_inst(floorplan_region: str) -> ModuleInstantiation:
     """Get reset inverter module instantiation."""
     return ModuleInstantiation(
         name="reset_inverter_0",
@@ -673,6 +673,6 @@ def get_reset_inverter_inst() -> ModuleInstantiation:
                 expr=Expression((Token.new_id("ap_rst_n"),)),
             ),
         ),
-        floorplan_region=None,
+        floorplan_region=floorplan_region,
         area=None,
     )
