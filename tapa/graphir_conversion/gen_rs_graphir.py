@@ -34,6 +34,7 @@ from tapa.graphir_conversion.utils import (
     get_child_port_connection_mapping,
     get_ctrl_s_axi_def,
     get_fifo_def,
+    get_fsm_def,
     get_m_axi_port_name,
     get_reset_inverter_def,
     get_reset_inverter_inst,
@@ -41,7 +42,6 @@ from tapa.graphir_conversion.utils import (
     get_task_arg_table,
     get_task_graphir_parameters,
     get_task_graphir_ports,
-    get_top_fsm_def,
     get_verilog_definition_from_tapa_module,
 )
 from tapa.instance import Instance
@@ -935,7 +935,7 @@ def get_top_module_definition(
     )
 
 
-def get_project_from_floorplanned_program(program: Program) -> Project:
+def get_project_from_floorplanned_program(program: Program) -> Project:  # noqa: PLR0914
     """Get a graphir project from a floorplanned TAPA program."""
     top_task = program.top_task
 
@@ -972,20 +972,29 @@ def get_project_from_floorplanned_program(program: Program) -> Project:
     ctrl_s_axi = get_ctrl_s_axi_def(program.top_task, ctrl_s_axi_verilog)
     top_ir = get_top_module_definition(top_task, slot_irs, ctrl_s_axi)
 
-    fsm_name = f"{top_task.name}_fsm"
-    fsm_file = Path(program.rtl_dir) / f"{fsm_name}.v"
-    fsm_def = get_top_fsm_def(
-        fsm_name,
-        fsm_file,
+    top_fsm_name = top_task.fsm_module.name
+    top_fsm_file = Path(program.rtl_dir) / f"{top_fsm_name}.v"
+    top_fsm_def = get_fsm_def(
+        top_fsm_name,
+        top_fsm_file,
     )
+
+    slot_fsms = [
+        get_fsm_def(
+            slot_task.fsm_module.name,
+            Path(program.get_rtl_path(slot_task.fsm_module.name)),
+        )
+        for slot_task in slot_tasks.values()
+    ]
 
     all_ir_defs = [
         top_ir,
         ctrl_s_axi,
-        fsm_def,
+        top_fsm_def,
         get_fifo_def(),
         # wrap inversion logic in module to avoid logic at top level
         get_reset_inverter_def(),
+        *slot_fsms,
         *list(slot_irs.values()),
         *list(leaf_irs.values()),
     ]
