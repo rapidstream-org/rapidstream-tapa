@@ -35,6 +35,8 @@ from tapa.graphir_conversion.utils import (
     get_ctrl_s_axi_def,
     get_fifo_def,
     get_m_axi_port_name,
+    get_reset_inverter_def,
+    get_reset_inverter_inst,
     get_stream_port_name,
     get_task_arg_table,
     get_task_graphir_parameters,
@@ -81,12 +83,7 @@ _CTRL_S_AXI_PORT_MAPPING = {
     "BREADY": Expression((Token.new_id("s_axi_control_BREADY"),)),
     "BRESP": Expression((Token.new_id("s_axi_control_BRESP"),)),
     "ACLK": Expression((Token.new_id("ap_clk"),)),
-    "ARESET": Expression(
-        (
-            Token.new_lit("~"),
-            Token.new_id("ap_rst_n"),
-        )
-    ),
+    "ARESET": Expression((Token.new_id("rst"),)),
     "ACLK_EN": Expression((Token.new_lit("1'b1"),)),
 }
 
@@ -377,10 +374,14 @@ def get_fifo_inst(
             ModuleConnection(
                 name="reset",
                 hierarchical_name=HierarchicalName.get_name("reset"),
-                expr=Expression(
-                    (
-                        Token.new_lit("~"),
-                        Token.new_id("ap_rst_n"),
+                expr=(
+                    Expression((Token.new_id("rst"),))
+                    if is_top
+                    else Expression(
+                        (
+                            Token.new_lit("~"),
+                            Token.new_id("ap_rst_n"),
+                        )
                     )
                 ),
             ),
@@ -906,8 +907,9 @@ def get_top_module_definition(
         slot_defs,
     )
     top_subinsts.append(get_top_ctrl_s_axi_inst(top, top_param, ctrl_s_axi_ir))
+    top_subinsts.append(get_reset_inverter_inst())
 
-    top_wires = get_upper_task_ir_wires(  # not work
+    top_wires = get_upper_task_ir_wires(
         top,
         slot_defs,
         top_ports,
@@ -915,6 +917,13 @@ def get_top_module_definition(
         True,
     )
     top_wires.extend(get_top_extra_wires(ctrl_s_axi_ir))
+    top_wires.append(
+        ModuleNet(
+            name="rst",
+            hierarchical_name=HierarchicalName.get_name("rst"),
+            range=None,
+        )
+    )
 
     return GroupedModuleDefinition(
         name=top.name,
@@ -975,6 +984,8 @@ def get_project_from_floorplanned_program(program: Program) -> Project:
         ctrl_s_axi,
         fsm_def,
         get_fifo_def(),
+        # wrap inversion logic in module to avoid logic at top level
+        get_reset_inverter_def(),
         *list(slot_irs.values()),
         *list(leaf_irs.values()),
     ]

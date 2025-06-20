@@ -420,6 +420,23 @@ def get_graphir_iface(  # noqa: C901, PLR0912, PLR0915, PLR0914
         ),
     ]
 
+    ifaces["reset_inverter"] = [
+        ClockInterface(
+            ports=("clk",),
+            origin_info="",
+        ),
+        FeedForwardResetInterface(
+            ports=("clk", "rst_n"),
+            clk_port="clk",
+            origin_info="",
+        ),
+        FeedForwardResetInterface(
+            ports=("clk", "rst"),
+            clk_port="clk",
+            origin_info="",
+        ),
+    ]
+
     # check all top module submodule ports in ifaces
     top_submodules = [
         project.get_module(inst.module) for inst in project.get_top_module().submodules

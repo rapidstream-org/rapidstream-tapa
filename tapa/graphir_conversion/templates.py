@@ -119,3 +119,19 @@ endmodule  // fifo
 
 `default_nettype wire
 """
+
+RESET_INVERTER_TEMPLATE = """
+// Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
+// All rights reserved. The contributor(s) of this file has/have agreed to the
+// RapidStream Contributor License Agreement.
+
+module reset_inverter (
+  input wire clk,
+  input wire rst_n,
+  output wire rst
+);
+
+  assign rst = ~rst_n;
+
+endmodule
+"""
