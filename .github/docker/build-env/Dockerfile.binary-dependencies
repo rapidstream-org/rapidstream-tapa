@@ -38,7 +38,7 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
       # Update the following line to the latest date for retriggering the docker build
-      echo "Installing system dependencies as of 20250602" && \
+      echo "Installing system dependencies as of 20250620" && \
       apt-get upgrade -y && \
       apt-get install --no-install-recommends -y \
         apt-transport-https \
@@ -84,7 +84,7 @@ RUN curl -sSL \
 
 # Install Pre-Commit
 RUN curl -sSL \
-        https://github.com/astral-sh/python-build-standalone/releases/download/20250517/cpython-3.13.3+20250517-x86_64-unknown-linux-gnu-install_only.tar.gz \
+        https://github.com/astral-sh/python-build-standalone/releases/download/20250612/cpython-3.13.5+20250612-x86_64-unknown-linux-gnu-install_only.tar.gz \
         | tar -xz -C /opt && \
     /opt/python/bin/python3 -m pip install pre-commit && \
     ln -s /opt/python/bin/pre-commit /usr/local/bin/pre-commit && \

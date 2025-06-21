@@ -10,15 +10,15 @@ programming model and generates high-frequency FPGA accelerators.
 module(name = "rapidstream-tapa")
 
 # Bazel dependencies
-bazel_dep(name = "aspect_rules_js", version = "2.3.7", dev_dependency = True)
+bazel_dep(name = "aspect_rules_js", version = "2.3.8", dev_dependency = True)
 bazel_dep(name = "aspect_rules_webpack", version = "0.17.0", dev_dependency = True)
 bazel_dep(name = "bazel_skylib", version = "1.7.1", dev_dependency = True)
 bazel_dep(name = "platforms", version = "1.0.0", dev_dependency = True)
-bazel_dep(name = "rules_cc", version = "0.1.1", dev_dependency = True)
+bazel_dep(name = "rules_cc", version = "0.1.2", dev_dependency = True)
 bazel_dep(name = "rules_nodejs", version = "6.4.0", dev_dependency = True)
 bazel_dep(name = "rules_pkg", version = "1.1.0", dev_dependency = True)
-bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
-bazel_dep(name = "rules_shell", version = "0.4.1", dev_dependency = True)
+bazel_dep(name = "rules_python", version = "1.5.0-rc2", dev_dependency = True)
+bazel_dep(name = "rules_shell", version = "0.5.0", dev_dependency = True)
 bazel_dep(name = "toolchains_llvm", version = "1.4.0", dev_dependency = True)
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -70,9 +70,9 @@ register_toolchains(
 python.toolchain(
     configure_coverage_tool = True,
     is_default = True,
-    python_version = "3.13.2",
+    python_version = "3.13.4",
 )
-use_repo(python, python_3_13 = "python_3_13_2")
+use_repo(python, python_3_13 = "python_3_13_4")
 
 # Node toolchain
 node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node", dev_dependency = True)
@@ -81,7 +81,7 @@ node.toolchain(node_version = "17.9.1")  # lastest version supporting Ubuntu 18.
 # Required by tapa Python libraries
 pip.parse(
     hub_name = "tapa_deps",
-    python_version = "3.13.2",
+    python_version = "3.13.4",
     requirements_lock = "//tapa:requirements_lock.txt",
 )
 use_repo(pip, "tapa_deps")
@@ -234,9 +234,9 @@ EOF
     urls = ["https://github.com/KhronosGroup/OpenCL-CLHPP/archive/refs/tags/v{}.tar.gz".format(OPENCL_CLHPP_VERSION)],
 )
 
-XRT_VERSION = "202420.2.18.179"
+XRT_VERSION = "202510.2.19.194"
 
-XRT_SHA256 = "8c03891c8a121631853c2144e4224e456f5658c81857585ac81ea990c8a00f1b"
+XRT_SHA256 = "a901127412261d4ad8c1c6978f1d69680573af33a8702366031805c6acf42ebd"
 
 http_archive(
     name = "xilinx_xrt",
@@ -248,7 +248,7 @@ cc_library(
     hdrs = [
         "src/include/1_2/CL/cl2xrt.hpp",
         "src/include/1_2/CL/cl_ext_xilinx.h",
-    ] + glob(["src/runtime_src/core/include/*.h"]),
+    ] + glob(["src/runtime_src/core/include/**/*.h"]),
     includes = [
         "src/runtime_src/core/include",
         "src/include/1_2"
@@ -311,11 +311,11 @@ LLVM_VERSION_MAJOR = 20
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 6
+LLVM_VERSION_PATCH = 7
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
-LLVM_SHA256 = "5c70549d524284c184fe9fbff862c3d2d7a61b787570611b5a30e5cc345f145e"
+LLVM_SHA256 = "cd8fd55d97ad3e360b1d5aaf98388d1f70dfffb7df36beee478be3b839ff9008"
 
 # Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/707c0f939d1a801370aeb3a795e1a253a880f4f7/modules/llvm-project/17.0.3/patches
 http_archive(
@@ -340,7 +340,7 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 
 # Library dependencies
 bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_cc", version = "0.1.2")
 EOF
         """.format(LLVM_VERSION),
         # 0004-Add-BUILD.bazel.patch
