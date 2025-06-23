@@ -10,6 +10,7 @@ from collections import defaultdict
 from collections.abc import Collection
 
 from tapa.graphir.types import (
+    AnyInterface,
     ApCtrlInterface,
     ClockInterface,
     FalsePathInterface,
@@ -65,7 +66,7 @@ CTRL_S_AXI_FIXED_PORTS = (
 )
 
 
-def get_graphir_iface(  # noqa: C901, PLR0912, PLR0915, PLR0914
+def get_graphir_iface(  # noqa: PLR0914
     project: Project,
     slot_tasks: Collection[Task],
     top_task: Task,
@@ -74,132 +75,17 @@ def get_graphir_iface(  # noqa: C901, PLR0912, PLR0915, PLR0914
     ifaces = defaultdict(list)
     scalars = {}
 
-    for slot_task in slot_tasks:  # noqa: PLR1702
-        slot_ifaces = []
-        slot_scalars = []
-        slot_ir = project.get_module(slot_task.name)
-        slot_ir_ports = [port.name for port in slot_ir.ports]
-        for port_name, port in slot_task.ports.items():
-            if port.cat.is_scalar:
-                slot_scalars.append(port_name)
-
-            elif port.cat.is_istream:
-                real_port_name = sanitize_array_name(port_name)
-                ports = tuple(
-                    f"{real_port_name}{suffix}" for suffix in ISTREAM_SUFFIXES
-                )
-                ports += HANDSHAKE_CLK, HANDSHAKE_RST_N
-                valid_port = f"{real_port_name}{ISTREAM_ROLES['valid']}"
-                ready_port = f"{real_port_name}{ISTREAM_ROLES['ready']}"
-                slot_ifaces.append(
-                    HandShakeInterface(
-                        ports=ports,
-                        clk_port=HANDSHAKE_CLK,
-                        rst_port=HANDSHAKE_RST_N,
-                        valid_port=valid_port,
-                        ready_port=ready_port,
-                        origin_info="",
-                    )
-                )
-
-            elif port.cat.is_ostream:
-                real_port_name = sanitize_array_name(port_name)
-                ports = tuple(
-                    f"{real_port_name}{suffix}" for suffix in OSTREAM_SUFFIXES
-                )
-                ports += HANDSHAKE_CLK, HANDSHAKE_RST_N
-                ready_port = f"{real_port_name}{OSTREAM_ROLES['ready']}"
-                valid_port = f"{real_port_name}{OSTREAM_ROLES['valid']}"
-                slot_ifaces.append(
-                    HandShakeInterface(
-                        ports=ports,
-                        clk_port=HANDSHAKE_CLK,
-                        rst_port=HANDSHAKE_RST_N,
-                        valid_port=valid_port,
-                        ready_port=ready_port,
-                        origin_info="",
-                    )
-                )
-
-            elif port.cat.is_mmap:
-                # offset
-                slot_scalars.append(f"{port_name}_offset")
-                for channel in M_AXI_SUFFIXES_BY_CHANNEL.values():
-                    channel_ports = []
-                    for suffix in channel["ports"]:
-                        ir_port_name = get_m_axi_port_name(port_name, suffix)
-                        if ir_port_name not in slot_ir_ports:
-                            # not all suffixes are necessary
-                            continue
-                        channel_ports.append(ir_port_name)
-                    channel_ports.extend(
-                        [
-                            HANDSHAKE_CLK,
-                            HANDSHAKE_RST_N,
-                        ]
-                    )
-                    valid_port = get_m_axi_port_name(port_name, channel["valid"])
-                    ready_port = get_m_axi_port_name(port_name, channel["ready"])
-                    slot_ifaces.append(
-                        HandShakeInterface(
-                            ports=tuple(channel_ports),
-                            clk_port=HANDSHAKE_CLK,
-                            rst_port=HANDSHAKE_RST_N,
-                            valid_port=valid_port,
-                            ready_port=ready_port,
-                            origin_info="",
-                        )
-                    )
-
-            else:
-                msg = (
-                    f"Unsupported port category {port.cat} for port "
-                    f"{port_name} in task {slot_task.name}"
-                )
-                raise ValueError(msg)
-
-            # ap_ctrl
-            ap_ctrl_ports = (
-                *tuple(slot_scalars),
-                HANDSHAKE_CLK,
-                HANDSHAKE_RST_N,
-                HANDSHAKE_START,
-                HANDSHAKE_DONE,
-                HANDSHAKE_READY,
-                HANDSHAKE_IDLE,
-            )
-
-            slot_ifaces.append(
-                ApCtrlInterface(
-                    ports=ap_ctrl_ports,
-                    clk_port=HANDSHAKE_CLK,
-                    rst_port=HANDSHAKE_RST_N,
-                    ap_start_port=HANDSHAKE_START,
-                    ap_done_port=HANDSHAKE_DONE,
-                    ap_ready_port=HANDSHAKE_READY,
-                    ap_idle_port=HANDSHAKE_IDLE,
-                    ap_continue_port=None,
-                    origin_info="",
-                )
-            )
-
-            # clk iface
-            slot_ifaces.append(ClockInterface(ports=(HANDSHAKE_CLK,), origin_info=""))
-
-            # rst iface
-            slot_ifaces.append(
-                FeedForwardResetInterface(
-                    ports=(
-                        HANDSHAKE_CLK,
-                        HANDSHAKE_RST_N,
-                    ),
-                    clk_port=HANDSHAKE_CLK,
-                    origin_info="",
-                )
-            )
-
+    # slots
+    for slot_task in slot_tasks:
+        slot_ifaces, slot_scalars = get_upper_task_ir_ifaces_and_scalars(
+            project, slot_task, is_top=False
+        )
         ifaces[slot_task.name] = slot_ifaces
         scalars[slot_task.name] = slot_scalars
+
+    # top
+    top_ifaces, _ = get_upper_task_ir_ifaces_and_scalars(project, top_task, is_top=True)
+    ifaces[top_task.name] = top_ifaces
 
     # fifo
     project.get_module("fifo")
@@ -256,7 +142,7 @@ def get_graphir_iface(  # noqa: C901, PLR0912, PLR0915, PLR0914
     fsm_ifaces = []
     fsm_name = f"{project.get_top_name()}_fsm"
     fsm_ir = project.get_module(fsm_name)
-    for slot_name, slot_scalars in scalars.items():
+    for slot_name in scalars:
         ap_ctrl_ports = (
             HANDSHAKE_CLK,
             HANDSHAKE_RST_N,
@@ -457,3 +343,216 @@ def get_graphir_iface(  # noqa: C901, PLR0912, PLR0915, PLR0914
                 raise ValueError(msg)
 
     return Interfaces(ifaces)
+
+
+def get_upper_task_ir_ifaces_and_scalars(
+    project: Project,
+    task: Task,
+    is_top: bool,
+) -> tuple[list[AnyInterface], list[str]]:
+    """Get the interface of the upper task IR."""
+    ifaces = []
+    scalars = []
+    task_ir = project.get_module(task.name)
+    ir_ports = [port.name for port in task_ir.ports]
+    for port_name, port in task.ports.items():
+        if port.cat.is_scalar:
+            scalars.append(port_name)
+
+        elif port.cat.is_istream or port.cat.is_istreams:
+            real_port_name = sanitize_array_name(port_name)
+            ports = tuple(f"{real_port_name}{suffix}" for suffix in ISTREAM_SUFFIXES)
+            ports += HANDSHAKE_CLK, HANDSHAKE_RST_N
+            valid_port = f"{real_port_name}{ISTREAM_ROLES['valid']}"
+            ready_port = f"{real_port_name}{ISTREAM_ROLES['ready']}"
+            ifaces.append(
+                HandShakeInterface(
+                    ports=ports,
+                    clk_port=HANDSHAKE_CLK,
+                    rst_port=HANDSHAKE_RST_N,
+                    valid_port=valid_port,
+                    ready_port=ready_port,
+                    origin_info="",
+                )
+            )
+
+        elif port.cat.is_ostream or port.cat.is_ostreams:
+            real_port_name = sanitize_array_name(port_name)
+            ports = tuple(f"{real_port_name}{suffix}" for suffix in OSTREAM_SUFFIXES)
+            ports += HANDSHAKE_CLK, HANDSHAKE_RST_N
+            ready_port = f"{real_port_name}{OSTREAM_ROLES['ready']}"
+            valid_port = f"{real_port_name}{OSTREAM_ROLES['valid']}"
+            ifaces.append(
+                HandShakeInterface(
+                    ports=ports,
+                    clk_port=HANDSHAKE_CLK,
+                    rst_port=HANDSHAKE_RST_N,
+                    valid_port=valid_port,
+                    ready_port=ready_port,
+                    origin_info="",
+                )
+            )
+
+        elif port.cat.is_mmap:
+            # offset
+            scalars.append(f"{port_name}_offset")
+            for channel in M_AXI_SUFFIXES_BY_CHANNEL.values():
+                channel_ports = []
+                for suffix in channel["ports"]:
+                    ir_port_name = get_m_axi_port_name(port_name, suffix)
+                    if ir_port_name not in ir_ports:
+                        # not all suffixes are necessary
+                        continue
+                    channel_ports.append(ir_port_name)
+                channel_ports.extend(
+                    [
+                        HANDSHAKE_CLK,
+                        HANDSHAKE_RST_N,
+                    ]
+                )
+                valid_port = get_m_axi_port_name(port_name, channel["valid"])
+                ready_port = get_m_axi_port_name(port_name, channel["ready"])
+                ifaces.append(
+                    HandShakeInterface(
+                        ports=tuple(channel_ports),
+                        clk_port=HANDSHAKE_CLK,
+                        rst_port=HANDSHAKE_RST_N,
+                        valid_port=valid_port,
+                        ready_port=ready_port,
+                        origin_info="",
+                    )
+                )
+
+        else:
+            msg = (
+                f"Unsupported port category {port.cat} for port "
+                f"{port_name} in task {task.name}"
+            )
+            raise ValueError(msg)
+
+        if is_top:
+            # s_axi_ctrl
+            ifaces.append(
+                HandShakeInterface(
+                    ports=(
+                        "s_axi_control_ARADDR",
+                        "s_axi_control_ARREADY",
+                        "s_axi_control_ARVALID",
+                        HANDSHAKE_CLK,
+                        HANDSHAKE_RST_N,
+                    ),
+                    clk_port=HANDSHAKE_CLK,
+                    rst_port=HANDSHAKE_RST_N,
+                    valid_port="s_axi_control_ARVALID",
+                    ready_port="s_axi_control_ARREADY",
+                    origin_info="",
+                )
+            )
+            ifaces.append(
+                HandShakeInterface(
+                    ports=(
+                        "s_axi_control_AWADDR",
+                        "s_axi_control_AWREADY",
+                        "s_axi_control_AWVALID",
+                        HANDSHAKE_CLK,
+                        HANDSHAKE_RST_N,
+                    ),
+                    clk_port=HANDSHAKE_CLK,
+                    rst_port=HANDSHAKE_RST_N,
+                    valid_port="s_axi_control_AWVALID",
+                    ready_port="s_axi_control_AWREADY",
+                    origin_info="",
+                )
+            )
+            ifaces.append(
+                HandShakeInterface(
+                    ports=(
+                        "s_axi_control_BREADY",
+                        "s_axi_control_BRESP",
+                        "s_axi_control_BVALID",
+                        HANDSHAKE_CLK,
+                        HANDSHAKE_RST_N,
+                    ),
+                    clk_port=HANDSHAKE_CLK,
+                    rst_port=HANDSHAKE_RST_N,
+                    valid_port="s_axi_control_BVALID",
+                    ready_port="s_axi_control_BREADY",
+                    origin_info="",
+                )
+            )
+            ifaces.append(
+                HandShakeInterface(
+                    ports=(
+                        "s_axi_control_RDATA",
+                        "s_axi_control_RREADY",
+                        "s_axi_control_RRESP",
+                        "s_axi_control_RVALID",
+                        HANDSHAKE_CLK,
+                        HANDSHAKE_RST_N,
+                    ),
+                    clk_port=HANDSHAKE_CLK,
+                    rst_port=HANDSHAKE_RST_N,
+                    valid_port="s_axi_control_RVALID",
+                    ready_port="s_axi_control_RREADY",
+                    origin_info="",
+                )
+            )
+            ifaces.append(
+                HandShakeInterface(
+                    ports=(
+                        "s_axi_control_WDATA",
+                        "s_axi_control_WREADY",
+                        "s_axi_control_WSTRB",
+                        "s_axi_control_WVALID",
+                        HANDSHAKE_CLK,
+                        HANDSHAKE_RST_N,
+                    ),
+                    clk_port=HANDSHAKE_CLK,
+                    rst_port=HANDSHAKE_RST_N,
+                    valid_port="s_axi_control_WVALID",
+                    ready_port="s_axi_control_WREADY",
+                    origin_info="",
+                )
+            )
+        else:
+            # ap_ctrl
+            ap_ctrl_ports = (
+                *tuple(scalars),
+                HANDSHAKE_CLK,
+                HANDSHAKE_RST_N,
+                HANDSHAKE_START,
+                HANDSHAKE_DONE,
+                HANDSHAKE_READY,
+                HANDSHAKE_IDLE,
+            )
+
+            ifaces.append(
+                ApCtrlInterface(
+                    ports=ap_ctrl_ports,
+                    clk_port=HANDSHAKE_CLK,
+                    rst_port=HANDSHAKE_RST_N,
+                    ap_start_port=HANDSHAKE_START,
+                    ap_done_port=HANDSHAKE_DONE,
+                    ap_ready_port=HANDSHAKE_READY,
+                    ap_idle_port=HANDSHAKE_IDLE,
+                    ap_continue_port=None,
+                    origin_info="",
+                )
+            )
+
+        # clk iface
+        ifaces.append(ClockInterface(ports=(HANDSHAKE_CLK,), origin_info=""))
+
+        # rst iface
+        ifaces.append(
+            FeedForwardResetInterface(
+                ports=(
+                    HANDSHAKE_CLK,
+                    HANDSHAKE_RST_N,
+                ),
+                clk_port=HANDSHAKE_CLK,
+                origin_info="",
+            )
+        )
+
+    return ifaces, scalars
