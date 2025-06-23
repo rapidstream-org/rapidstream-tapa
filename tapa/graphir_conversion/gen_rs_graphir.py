@@ -1018,5 +1018,6 @@ def get_project_from_floorplanned_program(program: Program) -> Project:  # noqa:
     prj.ifaces = get_graphir_iface(
         prj,
         list(slot_tasks.values()),
+        top_task,
     )
     return prj
