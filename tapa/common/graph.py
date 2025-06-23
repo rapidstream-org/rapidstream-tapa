@@ -150,8 +150,8 @@ class Graph(Base):
 
         # obj['ports']:
         # Reconstruct the ports of the slot
-        # Remove all ports that are not used by the insts in the slot
-        used_args: set[str] = set()
+        # Add scalars to the slot ports
+        scalar_args: set[str] = set()
         for inst in new_insts:
             assert isinstance(inst.obj["args"], dict)
             args = inst.obj["args"]
@@ -159,9 +159,10 @@ class Graph(Base):
             for arg in args.values():
                 assert isinstance(arg, dict)
                 assert isinstance(arg["arg"], str)
-                used_args.add(arg["arg"])
+                if arg["cat"] == "scalar":
+                    scalar_args.add(arg["arg"])
         assert isinstance(new_obj["ports"], list)
-        new_ports = [port for port in new_obj["ports"] if port["name"] in used_args]
+        new_ports = [port for port in new_obj["ports"] if port["name"] in scalar_args]
 
         # Add fifos connecting the slot and the outside as ports
         # Find the port on inst that connects to the fifo and copy
