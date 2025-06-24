@@ -11,28 +11,23 @@ import tempfile
 from collections.abc import Collection, Generator, Iterable, Iterator
 from pathlib import Path
 
+import jinja2
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
     Assign,
     Constant,
     Decl,
-    Description,
     Identifier,
     Input,
     Instance,
     InstanceList,
-    ModuleDef,
     Node,
     Output,
     ParamArg,
     Parameter,
-    Paramlist,
-    Port,
     PortArg,
-    Portlist,
     Reg,
-    Source,
     Unot,
     Width,
     Wire,
@@ -392,36 +387,19 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return str(self._syntax_tree.root)
 
     def get_template_code(self) -> str:
-        portlist = []
-        items = []
-        for port in self.ports.values():
-            ast_port = port.ast_port
-            portlist.append(
-                Port(
-                    name=ast_port.name,
-                    width=None,
-                    dimensions=None,
-                    type=None,
-                )
-            )
-            items.append(Decl((ast_port,)))
+        return jinja2.Template("""
+module {{name}}
+(
+{%- for port in ports %}
+  {{ port.name }}{% if not loop.last %},{% endif %}
+{%- endfor %}
+);
+{%- for port in ports %}
+  {{ port }}
+{%- endfor %}
+endmodule
 
-        # Create the module definition
-        template_ast = Source(
-            self.name,
-            Description(
-                [
-                    ModuleDef(
-                        name=self.name,
-                        paramlist=Paramlist(()),
-                        portlist=Portlist(tuple(portlist)),
-                        items=tuple(items),
-                    )
-                ]
-            ),
-        )
-
-        return _CODEGEN.visit(template_ast)
+""").render(name=self.name, ports=self.ports.values())
 
     def add_ports(self, ports: Iterable[IOPort | Decl]) -> "Module":
         """Add IO ports to this module.

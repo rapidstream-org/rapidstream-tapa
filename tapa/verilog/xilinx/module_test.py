@@ -113,7 +113,6 @@ def test_lower_level_task_module() -> None:
     assert (
         module.get_template_code()
         == """
-
 module LowerLevelTask
 (
   ap_clk,
@@ -133,7 +132,6 @@ module LowerLevelTask
   ostreams_peek,
   scalar
 );
-
   input ap_clk;
   input ap_rst_n;
   input ap_start;
@@ -150,9 +148,7 @@ module LowerLevelTask
   output ostreams_s_write;
   input [64:0] ostreams_peek;
   input [31:0] scalar;
-
 endmodule
-
 """
     )
 
@@ -206,7 +202,6 @@ def test_upper_level_task_module() -> None:
     assert (
         module.get_template_code()
         == """
-
 module UpperLevelTask
 (
   ap_clk,
@@ -227,7 +222,6 @@ module UpperLevelTask
   ostreams_peek,
   scalar
 );
-
   input ap_clk;
   input ap_rst_n;
   input ap_start;
@@ -245,9 +239,7 @@ module UpperLevelTask
   output ostreams_s_write;
   input [64:0] ostreams_peek;
   input [31:0] scalar;
-
 endmodule
-
 """
     )
 
