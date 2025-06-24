@@ -459,19 +459,11 @@ void Visitor::ProcessUpperLevelTaskFunc(const ExprWithCleanups* task_obj,
         }
 
         // element in an array
-        auto op_call = dyn_cast<CXXOperatorCallExpr>(arg);
-        if (op_call == nullptr) {
-          const auto materialize_temporary =
-              dyn_cast<MaterializeTemporaryExpr>(arg);
-          if (materialize_temporary) {
-            const auto bind_temporary = dyn_cast<CXXBindTemporaryExpr>(
-                materialize_temporary->getSubExpr());
-            if (bind_temporary) {
-              op_call =
-                  dyn_cast<CXXOperatorCallExpr>(bind_temporary->getSubExpr());
-            }
-          }
-        }
+        auto materialize_temporary = dyn_cast<MaterializeTemporaryExpr>(arg);
+        auto op_call = materialize_temporary
+                           ? dyn_cast<CXXOperatorCallExpr>(
+                                 materialize_temporary->getSubExpr())
+                           : nullptr;
 
         const auto arg_is_seq = IsTapaType(arg, "seq");
         if (decl_ref || op_call || arg_is_int || arg_is_seq) {

@@ -14,8 +14,8 @@ using std::clog;
 using std::endl;
 using std::vector;
 
-void VecAdd(tapa::mmaps<float, M> a, tapa::mmaps<float, M> b,
-            tapa::mmaps<float, M> c, uint64_t n);
+void VecAdd(tapa::mmaps<float, 4> a, tapa::mmaps<float, 4> b,
+            tapa::mmaps<float, 4> c, uint64_t n);
 
 DEFINE_string(bitstream, "", "path to bitstream file, run csim if empty");
 
@@ -23,10 +23,10 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
 
   const uint64_t n = argc > 1 ? atoll(argv[1]) : 1024 * 1024;
-  vector<float> a[M];
-  vector<float> b[M];
-  vector<float> c[M];
-  for (uint16_t i = 0; i < M; ++i) {
+  vector<float> a[4];
+  vector<float> b[4];
+  vector<float> c[4];
+  for (uint16_t i = 0; i < 4; ++i) {
     a[i] = vector<float>(n, 0);
     b[i] = vector<float>(n, 0);
     c[i] = vector<float>(n, 0);
@@ -37,14 +37,14 @@ int main(int argc, char* argv[]) {
     }
   }
   int64_t kernel_time_ns =
-      tapa::invoke(VecAdd, FLAGS_bitstream, tapa::read_only_mmaps<float, M>(a),
-                   tapa::read_only_mmaps<float, M>(b),
-                   tapa::write_only_mmaps<float, M>(c), n);
+      tapa::invoke(VecAdd, FLAGS_bitstream, tapa::read_only_mmaps<float, 4>(a),
+                   tapa::read_only_mmaps<float, 4>(b),
+                   tapa::write_only_mmaps<float, 4>(c), n);
   clog << "kernel time: " << kernel_time_ns * 1e-9 << " s" << endl;
 
   uint64_t num_errors = 0;
   const uint64_t threshold = 10;  // only report up to these errors
-  for (uint16_t i = 0; i < M; ++i) {
+  for (uint16_t i = 0; i < 4; ++i) {
     for (uint64_t j = 0; j < n; ++j) {
       auto expected = i * j * 3;
       auto actual = static_cast<uint64_t>(c[i][j]);
