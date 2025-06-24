@@ -24,6 +24,7 @@ import yaml
 from pyverilog.vparser.ast import (
     Always,
     Assign,
+    Constant,
     Eq,
     Identifier,
     IfStatement,
@@ -359,7 +360,10 @@ class Program(  # TODO: refactor this class
                         .width
                     )
 
-                    wire = Wire(name=w_name, width=wire_width)
+                    wire = Wire(
+                        name=w_name,
+                        width=None if wire_width is None else wire_width.ast_width,
+                    )
                     task.module.add_signals([wire])
 
             if task.is_fifo_external(fifo_name):
@@ -895,7 +899,9 @@ class Program(  # TODO: refactor this class
             OSTREAM_SUFFIXES[0],
         )
         # TODO: err properly if not integer literals
-        return Plus(Minus(port.width.msb, port.width.lsb), IntConst(1))
+        return Plus(
+            Minus(Constant(port.width.msb), Constant(port.width.lsb)), IntConst(1)
+        )
 
     def replace_custom_rtl(
         self, rtl_paths: tuple[Path, ...], templates_info: dict[str, list[str]]

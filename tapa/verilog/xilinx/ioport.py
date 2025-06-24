@@ -10,7 +10,6 @@ import logging
 from typing import Literal, NamedTuple
 
 import pyslang
-from pyverilog.ast_code_generator import codegen
 from pyverilog.vparser import ast
 
 from tapa.common.unique_attrs import UniqueAttrs
@@ -19,6 +18,7 @@ from tapa.verilog.xilinx import ast_types
 from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import HANDSHAKE_CLK, HANDSHAKE_RST_N
 from tapa.verilog.xilinx.m_axi import M_AXI_PORTS
+from tapa.verilog.xilinx.width import Width
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -26,7 +26,7 @@ _logger = logging.getLogger().getChild(__name__)
 class IOPort(NamedTuple):
     name: str
     direction: Literal["input", "output", "inout"]
-    width: ast.Width | None
+    width: Width | None
 
     @classmethod
     def create(
@@ -46,10 +46,7 @@ class IOPort(NamedTuple):
 
         def visitor(node: object) -> None:
             if isinstance(node, pyslang.RangeSelectSyntax):
-                attrs.width = ast.Width(
-                    msb=ast.Constant(str(node.left)),
-                    lsb=ast.Constant(str(node.right)),
-                )
+                attrs.width = Width(str(node.left), str(node.right))
             elif isinstance(node, pyslang.DeclaratorSyntax):
                 attrs.name = node.name.valueText
             elif isinstance(node, pyslang.VariablePortHeaderSyntax):
@@ -70,16 +67,11 @@ class IOPort(NamedTuple):
         else:
             msg = f"unexpected type {type(port)}"
             raise TypeError(msg)
-        return IOPort(port.name, direction, port.width)
-
-    @property
-    def ast_port(self) -> ast_types.IOPort:
-        ast_type = {
-            "input": ast.Input,
-            "output": ast.Output,
-            "inout": ast.Inout,
-        }[self.direction]
-        return ast_type(self.name, self.width)
+        return IOPort(
+            port.name,
+            direction,
+            None if port.width is None else Width(port.width.msb, port.width.lsb),
+        )
 
     @property
     def rs_pragma(self) -> ast.Pragma | None:
@@ -108,7 +100,9 @@ class IOPort(NamedTuple):
         return None
 
     def __str__(self) -> str:
-        return codegen.ASTCodeGenerator().visit(self.ast_port)
+        if self.width is None:
+            return f"{self.direction} {self.name};"
+        return f"{self.direction} [{self.width.msb}:{self.width.lsb}] {self.name};"
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, IOPort) and str(self) == str(other)

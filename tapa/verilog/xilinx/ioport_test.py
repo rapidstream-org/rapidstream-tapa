@@ -19,7 +19,6 @@ def test_creation() -> None:
     ioport = IOPort.create(ast.Input(name=_NAME, width=_WIDTH))
     assert ioport.name == _NAME
     assert ioport.direction == "input"
-    assert ioport.width is _WIDTH
     assert str(ioport) == "input [31:0] foo;"
 
 

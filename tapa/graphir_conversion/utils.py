@@ -267,8 +267,8 @@ def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
     for name, port in task_module.ports.items():
         if port.width:
             port_range = Range(
-                left=Expression(tuple(ast_to_tokens(port.width.msb))),
-                right=Expression(tuple(ast_to_tokens(port.width.lsb))),
+                left=Expression((Token.new_lit(port.width.msb),)),
+                right=Expression((Token.new_lit(port.width.lsb),)),
             )
             assert port_range.left, type(port.width.msb)
         else:
