@@ -50,3 +50,11 @@ py_test(
         ":util",
     ],
 )
+
+py_library(
+    name = "width",
+    srcs = ["width.py"],
+    deps = [
+        requirement("pyverilog"),
+    ],
+)

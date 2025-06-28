@@ -57,10 +57,10 @@ py_library(
         "//tapa/common:unique_attrs",
         "//tapa/verilog:ast_types",
         "//tapa/verilog:ast_utils",
+        "//tapa/verilog:width",
         "//tapa/verilog/xilinx:axis",
         "//tapa/verilog/xilinx:const",
         "//tapa/verilog/xilinx:m_axi",
-        "//tapa/verilog/xilinx:width",
         requirement("pyslang"),
         requirement("pyverilog"),
     ],
@@ -116,14 +116,6 @@ py_test(
         "//tapa/verilog:ast_types",
         "//tapa/verilog/xilinx:const",
         "//tapa/verilog/xilinx:module",
-        requirement("pyverilog"),
-    ],
-)
-
-py_library(
-    name = "width",
-    srcs = ["width.py"],
-    deps = [
         requirement("pyverilog"),
     ],
 )
