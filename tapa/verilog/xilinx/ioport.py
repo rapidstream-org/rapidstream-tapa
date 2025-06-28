@@ -13,8 +13,8 @@ import pyslang
 from pyverilog.vparser import ast
 
 from tapa.common.unique_attrs import UniqueAttrs
+from tapa.verilog import ast_types
 from tapa.verilog.ast_utils import make_pragma
-from tapa.verilog.xilinx import ast_types
 from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import HANDSHAKE_CLK, HANDSHAKE_RST_N
 from tapa.verilog.xilinx.m_axi import M_AXI_PORTS

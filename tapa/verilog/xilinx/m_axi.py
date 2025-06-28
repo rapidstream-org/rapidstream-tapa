@@ -12,7 +12,7 @@ from collections.abc import Iterable
 from pyverilog.vparser.ast import Constant, Identifier, Minus, Parameter, Width
 
 from tapa.backend.xilinx import M_AXI_PREFIX
-from tapa.verilog.xilinx.ast_types import IOPort
+from tapa.verilog.ast_types import IOPort
 
 __all__ = [
     "M_AXI_ADDR_PORTS",

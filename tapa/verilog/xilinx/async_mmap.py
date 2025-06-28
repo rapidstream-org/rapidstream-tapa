@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING
 
 from pyverilog.vparser.ast import Constant, Input, Output, PortArg, Width, Wire
 
+from tapa.verilog.ast_types import IOPort
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.util import wire_name
-from tapa.verilog.xilinx.ast_types import IOPort
 from tapa.verilog.xilinx.const import (
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,

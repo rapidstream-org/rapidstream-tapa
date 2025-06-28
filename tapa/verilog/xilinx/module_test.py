@@ -12,8 +12,7 @@ import pytest
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser import ast
 
-from tapa.verilog import ast_utils
-from tapa.verilog.xilinx import ast_types
+from tapa.verilog import ast_types, ast_utils
 from tapa.verilog.xilinx.const import (
     CLK_SENS_LIST,
     HANDSHAKE_CLK,

@@ -36,6 +36,7 @@ from pyverilog.vparser.ast import (
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
+from tapa.verilog.ast_types import IOPort, Logic, Signal
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.util import (
     Pipeline,
@@ -46,7 +47,6 @@ from tapa.verilog.util import (
     wire_name,
 )
 from tapa.verilog.xilinx import ioport
-from tapa.verilog.xilinx.ast_types import IOPort, Logic, Signal
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
 from tapa.verilog.xilinx.const import (
     CLK,

@@ -11,6 +11,14 @@ load("//bazel:pytest_rules.bzl", "py_test")
 package(default_visibility = ["//tapa:__subpackages__"])
 
 py_library(
+    name = "ast_types",
+    srcs = ["ast_types.py"],
+    deps = [
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
     name = "ast_utils",
     srcs = ["ast_utils.py"],
     deps = [
