@@ -18,7 +18,8 @@ py_library(
     deps = [
         "//tapa:util",
         "//tapa/backend",
-        "//tapa/verilog",
+        "//tapa/verilog:ast_utils",
+        "//tapa/verilog:util",
         "//tapa/verilog/xilinx:const",
         requirement("pyverilog"),
     ],
@@ -36,7 +37,8 @@ py_library(
     name = "async_mmap",
     srcs = ["async_mmap.py"],
     deps = [
-        "//tapa/verilog",
+        "//tapa/verilog:ast_utils",
+        "//tapa/verilog:util",
         "//tapa/verilog/xilinx:ast_types",
         "//tapa/verilog/xilinx:const",
         requirement("pyverilog"),
@@ -61,7 +63,7 @@ py_library(
     srcs = ["ioport.py"],
     deps = [
         "//tapa/common:unique_attrs",
-        "//tapa/verilog",
+        "//tapa/verilog:ast_utils",
         "//tapa/verilog/xilinx:ast_types",
         "//tapa/verilog/xilinx:axis",
         "//tapa/verilog/xilinx:const",
@@ -99,7 +101,8 @@ py_library(
         "//tapa/backend",
         "//tapa/common:pyslang_rewriter",
         "//tapa/common:unique_attrs",
-        "//tapa/verilog",
+        "//tapa/verilog:ast_utils",
+        "//tapa/verilog:util",
         "//tapa/verilog/xilinx:ast_types",
         "//tapa/verilog/xilinx:async_mmap",
         "//tapa/verilog/xilinx:const",

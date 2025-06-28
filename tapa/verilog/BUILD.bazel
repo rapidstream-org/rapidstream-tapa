@@ -8,14 +8,29 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("@tapa_deps//:requirements.bzl", "requirement")
 load("//bazel:pytest_rules.bzl", "py_test")
 
+package(default_visibility = ["//tapa:__subpackages__"])
+
 py_library(
-    name = "verilog",
-    srcs = glob(["*.py"]),
-    visibility = ["//tapa:__subpackages__"],
+    name = "ast_utils",
+    srcs = ["ast_utils.py"],
     deps = [
-        "//tapa:util",
-        "//tapa/backend",
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "axi_xbar",
+    srcs = ["axi_xbar.py"],
+    deps = [
         requirement("jinja2"),
+    ],
+)
+
+py_library(
+    name = "util",
+    srcs = ["util.py"],
+    deps = [
+        "//tapa/verilog:ast_utils",
         requirement("pyverilog"),
     ],
 )
@@ -24,6 +39,6 @@ py_test(
     name = "util_test",
     srcs = ["util_test.py"],
     deps = [
-        ":verilog",
+        ":util",
     ],
 )

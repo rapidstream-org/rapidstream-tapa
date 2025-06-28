@@ -29,7 +29,7 @@ py_library(
         ],
     ),
     deps = [
-        "//tapa/verilog",
+        "//tapa/verilog:util",
     ],
 )
 

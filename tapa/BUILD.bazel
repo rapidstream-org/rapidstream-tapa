@@ -89,7 +89,6 @@ py_library(
         "//tapa/assets",
         "//tapa/common",
         "//tapa/steps",
-        "//tapa/verilog",
         requirement("click"),
     ],
 )
@@ -116,7 +115,8 @@ py_library(
         "//tapa/program:hls",
         "//tapa/program:pack",
         "//tapa/program:synthesis",
-        "//tapa/verilog",
+        "//tapa/verilog:ast_utils",
+        "//tapa/verilog:util",
         "//tapa/verilog/xilinx:module",
         requirement("pyverilog"),
         requirement("pyyaml"),
@@ -129,7 +129,8 @@ py_library(
     srcs = ["instance.py"],
     deps = [
         ":util",
-        "//tapa/verilog",
+        "//tapa/verilog:ast_utils",
+        "//tapa/verilog:util",
         requirement("pyverilog"),
     ],
 )
@@ -150,7 +151,9 @@ py_library(
         ":instance",
         ":util",
         "//tapa/backend",
-        "//tapa/verilog",
+        "//tapa/verilog:ast_utils",
+        "//tapa/verilog:axi_xbar",
+        "//tapa/verilog:util",
         "//tapa/verilog/xilinx:axis",
         "//tapa/verilog/xilinx:const",
         "//tapa/verilog/xilinx:m_axi",
