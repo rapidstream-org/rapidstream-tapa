@@ -84,9 +84,7 @@ py_library(
     srcs = ["m_axi.py"],
     deps = [
         "//tapa/backend",
-        "//tapa/verilog:ast_types",
         "//tapa/verilog:width",
-        requirement("pyverilog"),
     ],
 )
 

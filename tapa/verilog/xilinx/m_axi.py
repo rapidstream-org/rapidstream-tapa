@@ -6,13 +6,9 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import copy
 from collections.abc import Iterable
 
-from pyverilog.vparser.ast import Identifier, Minus, Parameter
-
 from tapa.backend.xilinx import M_AXI_PREFIX
-from tapa.verilog.ast_types import IOPort
 from tapa.verilog.width import Width
 
 __all__ = [
@@ -25,12 +21,6 @@ __all__ = [
     "M_AXI_PREFIX",
     "M_AXI_SUFFIXES",
     "get_m_axi_port_width",
-    "is_m_axi_param",
-    "is_m_axi_port",
-    "is_m_axi_unique_param",
-    "rename_m_axi_name",
-    "rename_m_axi_param",
-    "rename_m_axi_port",
 ]
 
 # width=0 means configurable
@@ -210,77 +200,6 @@ M_AXI_PARAM_SUFFIXES = (
 
 M_AXI_PARAMS = ("C_M_AXI_DATA_WIDTH", "C_M_AXI_WSTRB_WIDTH")
 M_AXI_PARAM_MIN_SPLIT = 5
-
-
-def is_m_axi_port(port: str | IOPort) -> bool:
-    """Check if a port is a memory-mapped AXI port."""
-    if not isinstance(port, str):
-        port = port.name
-    return port.startswith(M_AXI_PREFIX) and "_" + port.split("_")[-1] in M_AXI_SUFFIXES
-
-
-def is_m_axi_param(param: str | Parameter) -> bool:
-    """Check if a parameter is a memory-mapped AXI parameter."""
-    if not isinstance(param, str):
-        param = param.name
-    assert isinstance(param, str)
-    param_split = param.split("_")
-    return (
-        len(param_split) > M_AXI_PARAM_MIN_SPLIT
-        and param.startswith(M_AXI_PARAM_PREFIX)
-        and "".join(map("_{}".format, param_split[-2:])) in M_AXI_PARAM_SUFFIXES
-    )
-
-
-def is_m_axi_unique_param(param: str | Parameter) -> bool:
-    """Check if a parameter is a unique memory-mapped AXI parameter."""
-    if not isinstance(param, str):
-        param = param.name
-    return param in M_AXI_PARAMS
-
-
-def rename_m_axi_name(mapping: dict[str, str], name: str, idx1: int, idx2: int) -> str:
-    """Rename a memory-mapped AXI port or parameter."""
-    name_snippets = name.split("_")
-    try:
-        return "_".join(
-            [
-                *name_snippets[:idx1],
-                mapping["_".join(name_snippets[idx1:idx2])],
-                *name_snippets[idx2:],
-            ],
-        )
-    except KeyError:
-        pass
-    raise ValueError(
-        "'{}' is a result of renaming done by Vivado HLS; ".format(
-            "_".join(name_snippets[idx1:idx2]),
-        )
-        + "please use a different variable name",
-    )
-
-
-def rename_m_axi_port(
-    mapping: dict[str, str],
-    port: IOPort,
-) -> IOPort:
-    """Rename a memory-mapped AXI port."""
-    new_port = copy.copy(port)
-    new_port.name = rename_m_axi_name(mapping, port.name, 2, -1)
-    if port.width is not None and isinstance(port.width.msb, Minus):
-        new_port.width = copy.copy(new_port.width)
-        new_port.width.msb = copy.copy(new_port.width.msb)
-        new_port.width.msb.left = Identifier(
-            rename_m_axi_name(mapping, port.width.msb.left.name, 3, -2),
-        )
-    return new_port
-
-
-def rename_m_axi_param(mapping: dict[str, str], param: Parameter) -> Parameter:
-    """Rename a memory-mapped AXI parameter."""
-    new_param = copy.copy(param)
-    new_param.name = rename_m_axi_name(mapping, param.name, 3, -2)
-    return new_param
 
 
 def get_m_axi_port_width(
