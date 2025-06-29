@@ -38,7 +38,7 @@ py_library(
     name = "util",
     srcs = ["util.py"],
     deps = [
-        "//tapa/verilog:ast_utils",
+        "//tapa/verilog:width",
         requirement("pyverilog"),
     ],
 )
@@ -55,6 +55,7 @@ py_library(
     name = "width",
     srcs = ["width.py"],
     deps = [
+        requirement("pyslang"),
         requirement("pyverilog"),
     ],
 )

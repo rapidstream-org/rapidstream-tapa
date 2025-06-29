@@ -96,6 +96,7 @@ py_library(
         "//tapa/verilog:ast_types",
         "//tapa/verilog:ast_utils",
         "//tapa/verilog:util",
+        "//tapa/verilog:width",
         "//tapa/verilog/xilinx:async_mmap",
         "//tapa/verilog/xilinx:const",
         "//tapa/verilog/xilinx:ioport",

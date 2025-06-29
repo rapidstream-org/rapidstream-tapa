@@ -29,7 +29,6 @@ from pyverilog.vparser.ast import (
     PortArg,
     Reg,
     Unot,
-    Width,
     Wire,
 )
 
@@ -46,6 +45,7 @@ from tapa.verilog.util import (
     sanitize_array_name,
     wire_name,
 )
+from tapa.verilog.width import Width
 from tapa.verilog.xilinx import ioport
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
 from tapa.verilog.xilinx.const import (
@@ -225,7 +225,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             param = Parameter(
                 _get_name(node.parameter),
                 Constant(str(node.parameter.declarators[0].initializer.expr).strip()),
-                _get_width(node.parameter.type),
+                Width.ast_width(node.parameter.type),
             )
             self._params[param.name] = param
             self._param_name_to_decl[param.name] = node
@@ -245,7 +245,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             signal = {
                 pyslang.DataDeclarationSyntax: Reg,
                 pyslang.NetDeclarationSyntax: Wire,
-            }[type(node)](_get_name(node), _get_width(node.type))
+            }[type(node)](_get_name(node), Width.ast_width(node.type))
             self._signals[signal.name] = signal
             self._signal_name_to_decl[signal.name] = node
             self._update_source_range_for_signal(node)
@@ -905,15 +905,3 @@ def _(
     ),
 ) -> str:
     return node.declarators[0].name.valueText
-
-
-def _get_width(node: pyslang.DataTypeSyntax) -> Width | None:
-    assert isinstance(node, pyslang.IntegerTypeSyntax | pyslang.ImplicitTypeSyntax)
-    if node.dimensions:
-        range_select = node.dimensions[0][1][0]
-        assert isinstance(range_select, pyslang.RangeSelectSyntax)
-        return Width(
-            msb=Constant(str(range_select.left)),
-            lsb=Constant(str(range_select.right)),
-        )
-    return None

@@ -9,9 +9,9 @@ RapidStream Contributor License Agreement.
 import re
 from collections.abc import Iterator
 
-from pyverilog.vparser.ast import Identifier, Reg, Width, Wire
+from pyverilog.vparser.ast import Identifier, Reg, Wire
 
-from tapa.verilog.ast_utils import make_width
+from tapa.verilog.width import Width
 
 __all__ = [
     "Pipeline",
@@ -30,7 +30,7 @@ class Pipeline:
         # If `name` is a constant literal (like `32'd0`), identifiers are just
         # the constant literal.
         self._ids = (Identifier(name if "'d" in name else (f"{name}__q0")),)
-        self._width: Width | None = (width and make_width(width)) or None
+        self._width = Width.ast_width(width)
 
     def __getitem__(self, idx: int) -> Identifier:
         return self._ids[idx]

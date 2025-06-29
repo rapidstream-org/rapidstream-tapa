@@ -63,6 +63,7 @@ from tapa.verilog.ast_utils import (
     make_width,
 )
 from tapa.verilog.util import Pipeline, array_name, match_array_name, wire_name
+from tapa.verilog.width import get_ast_width
 from tapa.verilog.xilinx import generate_handshake_ports
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,
@@ -362,7 +363,7 @@ class Program(  # TODO: refactor this class
 
                     wire = Wire(
                         name=w_name,
-                        width=None if wire_width is None else wire_width.ast_width,
+                        width=get_ast_width(wire_width),
                     )
                     task.module.add_signals([wire])
 
