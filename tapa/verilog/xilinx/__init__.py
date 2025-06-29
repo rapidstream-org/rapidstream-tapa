@@ -17,7 +17,7 @@ import shutil
 import sys
 import tempfile
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, BinaryIO, TextIO
+from typing import IO, TYPE_CHECKING, BinaryIO
 
 from pyverilog.vparser.ast import Node, PortArg
 
@@ -115,7 +115,7 @@ def pack(
         os.remove(xo_file)
 
 
-def print_kernel_xml(name: str, ports: "Iterable[Port]", kernel_xml: TextIO) -> None:
+def print_kernel_xml(name: str, ports: "Iterable[Port]", kernel_xml: IO[str]) -> None:
     """Generate kernel.xml file.
 
     Args:

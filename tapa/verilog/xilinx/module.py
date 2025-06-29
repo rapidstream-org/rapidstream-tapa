@@ -602,7 +602,7 @@ endmodule
         self,
         name: str,
         rst: Node,
-        width: Constant,
+        width: Node,
         depth: int,
     ) -> "Module":
         name = sanitize_array_name(name)
