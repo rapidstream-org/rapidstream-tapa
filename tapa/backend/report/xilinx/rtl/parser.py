@@ -75,6 +75,7 @@ def parse_hierarchical_utilization_report(rpt_file: TextIO) -> HierarchicalUtili
     parse_state = ParseState.PROLOG
     stack: list[HierarchicalUtilization] = []
     device = ""
+    schema: dict[str, int] = {}
 
     for unstripped_line in rpt_file:
         line = unstripped_line.strip()

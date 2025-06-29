@@ -18,7 +18,7 @@ import xml.sax.saxutils
 import zipfile
 from collections.abc import Callable, Iterable
 from types import TracebackType
-from typing import BinaryIO, NamedTuple, NoReturn, TextIO
+from typing import IO, BinaryIO, NamedTuple, NoReturn
 from xml.etree import ElementTree as ET
 
 _logger = logging.getLogger().getChild(__name__)
@@ -473,7 +473,7 @@ class RunAie(subprocess.Popen):
                     tar.add(os.path.join(solution_dir, "syn/verilog"), arcname="hdl")
                     tar.add(
                         os.path.join(
-                            solution_dir, self.project_path, f"{self.hls}.log"
+                            solution_dir, self.project_path, "AIECompiler.log"
                         ),
                         arcname="log/" + self.solution_name + ".log",
                     )
@@ -661,7 +661,7 @@ ARG_TEMPLATE = """
 """
 
 
-def print_kernel_xml(name: str, args: Iterable[Arg], kernel_xml: TextIO) -> None:
+def print_kernel_xml(name: str, args: Iterable[Arg], kernel_xml: IO[str]) -> None:
     """Generate kernel.xml file.
 
     Args:
