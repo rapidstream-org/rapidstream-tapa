@@ -36,10 +36,10 @@ if TYPE_CHECKING:
 # Please keep `make_*` functions sorted by their name.
 
 
-def make_block(statements: Iterable[Node] | Node, **kwargs: object) -> Block:
+def make_block(statements: Iterable[Node] | Node) -> Block:
     if isinstance(statements, Node):
         statements = (statements,)
-    return Block(statements=tuple(statements), **kwargs)
+    return Block(statements=tuple(statements))
 
 
 def make_case_with_block(
