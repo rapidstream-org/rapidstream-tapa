@@ -27,16 +27,15 @@ from pyverilog.vparser.ast import (
     ParamArg,
     Parameter,
     PortArg,
-    Reg,
     Unot,
-    Wire,
 )
 
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
-from tapa.verilog.ast_types import IOPort, Logic, Signal
+from tapa.verilog.ast_types import IOPort, Logic
 from tapa.verilog.ast_utils import make_port_arg
+from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import (
     Pipeline,
     array_name,
@@ -45,7 +44,7 @@ from tapa.verilog.util import (
     sanitize_array_name,
     wire_name,
 )
-from tapa.verilog.width import Width
+from tapa.verilog.width import Width, get_ast_width
 from tapa.verilog.xilinx import ioport
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
 from tapa.verilog.xilinx.const import (
@@ -102,8 +101,8 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         _port_source_range: Syntax node to which the next port should be
             appended.
 
-        _signals: A dict mapping signal names to `Signal` AST nodes. Changes to
-            the signals are always reflected.
+        _signals: A dict mapping signal names to `Wire`/`Reg` AST nodes. Changes
+            to the signals are always reflected.
         _signal_name_to_decl: A dict mapping signal names to syntax nodes.
             Changes to the signals are not reflected until they are committed.
         _signal_source_range: Syntax node to which the next signal should be
@@ -130,7 +129,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     _port_name_to_decl: dict[str, pyslang.PortDeclarationSyntax]
     _port_source_range: pyslang.SourceRange
 
-    _signals: dict[str, Signal]
+    _signals: dict[str, Wire | Reg]
     _signal_name_to_decl: dict[str, _SIGNAL_SYNTAX]
     _signal_source_range: pyslang.SourceRange
 
@@ -245,7 +244,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
             signal = {
                 pyslang.DataDeclarationSyntax: Reg,
                 pyslang.NetDeclarationSyntax: Wire,
-            }[type(node)](_get_name(node), Width.ast_width(node.type))
+            }[type(node)](_get_name(node), Width.create(node.type))
             self._signals[signal.name] = signal
             self._signal_name_to_decl[signal.name] = node
             self._update_source_range_for_signal(node)
@@ -511,11 +510,11 @@ endmodule
         self._rewriter.add_before(self._module_decl.header.sourceRange.end, pieces)
         return self
 
-    def add_signals(self, signals: Iterable[Signal]) -> "Module":
+    def add_signals(self, signals: Iterable[Wire | Reg]) -> "Module":
         for signal in signals:
             self._signals[signal.name] = signal
             self._rewriter.add_before(
-                self._signal_source_range.end, ["\n  ", _CODEGEN.visit(signal)]
+                self._signal_source_range.end, ["\n  ", str(signal)]
             )
         return self
 
@@ -758,7 +757,9 @@ endmodule
             for port, direction in ports:
                 io_port = (Input if direction == "input" else Output)(
                     name=f"{M_AXI_PREFIX}{name}_{channel}{port}",
-                    width=get_m_axi_port_width(port, data_width, addr_width, id_width),
+                    width=get_ast_width(
+                        get_m_axi_port_width(port, data_width, addr_width, id_width)
+                    ),
                 )
                 io_ports.append(with_rs_pragma(io_port))
         return self.add_ports(io_ports)

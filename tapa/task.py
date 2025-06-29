@@ -23,7 +23,6 @@ from pyverilog.vparser.ast import (
     ParamArg,
     Partselect,
     Plus,
-    Wire,
 )
 
 from tapa import __version__
@@ -32,6 +31,7 @@ from tapa.instance import Instance, Port
 from tapa.util import get_addr_width, get_indexed_name, range_or_none
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.axi_xbar import generate as axi_xbar_generate
+from tapa.verilog.signal import Wire
 from tapa.verilog.util import wire_name
 from tapa.verilog.width import Width
 from tapa.verilog.xilinx.axis import (
@@ -534,7 +534,7 @@ class Task:  # noqa: PLR0904
                                 [
                                     Wire(
                                         name=axi_arg_name_raw,
-                                        width=Width.ast_width(64),
+                                        width=Width.create(64),
                                     ),
                                 ],
                             )

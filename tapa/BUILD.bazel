@@ -116,6 +116,7 @@ py_library(
         "//tapa/program:pack",
         "//tapa/program:synthesis",
         "//tapa/verilog:ast_utils",
+        "//tapa/verilog:signal",
         "//tapa/verilog:util",
         "//tapa/verilog:width",
         "//tapa/verilog/xilinx:module",
@@ -130,8 +131,9 @@ py_library(
     srcs = ["instance.py"],
     deps = [
         ":util",
-        "//tapa/verilog:ast_utils",
+        "//tapa/verilog:signal",
         "//tapa/verilog:util",
+        "//tapa/verilog:width",
         requirement("pyverilog"),
     ],
 )
@@ -154,6 +156,7 @@ py_library(
         "//tapa/backend",
         "//tapa/verilog:ast_utils",
         "//tapa/verilog:axi_xbar",
+        "//tapa/verilog:signal",
         "//tapa/verilog:util",
         "//tapa/verilog:width",
         "//tapa/verilog/xilinx:axis",

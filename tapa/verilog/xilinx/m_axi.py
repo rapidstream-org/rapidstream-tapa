@@ -9,10 +9,11 @@ RapidStream Contributor License Agreement.
 import copy
 from collections.abc import Iterable
 
-from pyverilog.vparser.ast import Constant, Identifier, Minus, Parameter, Width
+from pyverilog.vparser.ast import Identifier, Minus, Parameter
 
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.verilog.ast_types import IOPort
+from tapa.verilog.width import Width
 
 __all__ = [
     "M_AXI_ADDR_PORTS",
@@ -302,4 +303,4 @@ def get_m_axi_port_width(
         return None
     if port == "ID" and id_width is not None:
         width = id_width
-    return Width(msb=Constant(width - 1), lsb=Constant(0))
+    return Width.create(width)

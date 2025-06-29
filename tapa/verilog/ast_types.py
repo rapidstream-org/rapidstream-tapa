@@ -11,18 +11,14 @@ from pyverilog.vparser.ast import (
     Inout,
     Input,
     Output,
-    Reg,
-    Wire,
 )
 
 __all__ = [
     "Directive",
     "IOPort",
     "Logic",
-    "Signal",
 ]
 
 Directive = tuple[int, str]
 IOPort = Input | Output | Inout
-Signal = Reg | Wire
 Logic = Assign | Always | Initial

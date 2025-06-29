@@ -8,14 +8,14 @@ RapidStream Contributor License Agreement.
 
 
 from pyverilog.vparser.ast import (
-    Constant,
     Identifier,
     IntConst,
     Sens,
     SensList,
     Unot,
-    Width,
 )
+
+from tapa.verilog.width import Width
 
 __all__ = [
     "ALL_SENS_LIST",
@@ -169,4 +169,4 @@ def get_stream_width(port: str, data_width: int) -> Width | None:
         width = data_width + 1  # for eot
     if width == 1:
         return None
-    return Width(msb=Constant(width - 1), lsb=Constant(0))
+    return Width.create(width)

@@ -17,13 +17,12 @@ from pyverilog.vparser.ast import (
     Node,
     NonblockingSubstitution,
     Output,
-    Reg,
-    Wire,
 )
 
 from tapa.util import get_indexed_name, get_instance_name
-from tapa.verilog.ast_utils import make_width
+from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import sanitize_array_name, wire_name
+from tapa.verilog.width import Width
 from tapa.verilog.xilinx.const import (
     HANDSHAKE_DONE,
     HANDSHAKE_IDLE,
@@ -388,7 +387,7 @@ class Instance:
         """
         yield from self.public_handshake_signals
         if not self.is_autorun:
-            yield Reg(name=self.state.name, width=make_width(2))
+            yield Reg(self.state.name, Width.create(2))
 
     def get_instance_arg(self, arg: str) -> str:
         if "'d" in arg:  # Constant literals are passed as-is.

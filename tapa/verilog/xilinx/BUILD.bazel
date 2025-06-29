@@ -31,7 +31,9 @@ py_library(
     deps = [
         "//tapa/verilog:ast_types",
         "//tapa/verilog:ast_utils",
+        "//tapa/verilog:signal",
         "//tapa/verilog:util",
+        "//tapa/verilog:width",
         "//tapa/verilog/xilinx:const",
         requirement("pyverilog"),
     ],
@@ -46,6 +48,7 @@ py_library(
     name = "const",
     srcs = ["const.py"],
     deps = [
+        "//tapa/verilog:width",
         requirement("pyverilog"),
     ],
 )
@@ -82,6 +85,7 @@ py_library(
     deps = [
         "//tapa/backend",
         "//tapa/verilog:ast_types",
+        "//tapa/verilog:width",
         requirement("pyverilog"),
     ],
 )
@@ -95,6 +99,7 @@ py_library(
         "//tapa/common:unique_attrs",
         "//tapa/verilog:ast_types",
         "//tapa/verilog:ast_utils",
+        "//tapa/verilog:signal",
         "//tapa/verilog:util",
         "//tapa/verilog:width",
         "//tapa/verilog/xilinx:async_mmap",
@@ -115,6 +120,8 @@ py_test(
     ],
     deps = [
         "//tapa/verilog:ast_types",
+        "//tapa/verilog:signal",
+        "//tapa/verilog:width",
         "//tapa/verilog/xilinx:const",
         "//tapa/verilog/xilinx:module",
         requirement("pyverilog"),

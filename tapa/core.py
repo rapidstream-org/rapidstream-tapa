@@ -36,11 +36,9 @@ from pyverilog.vparser.ast import (
     Output,
     Plus,
     PortArg,
-    Reg,
     SingleStatement,
     StringConst,
     SystemCall,
-    Wire,
 )
 
 from tapa.common.paths import get_tapacc_cflags
@@ -59,8 +57,9 @@ from tapa.verilog.ast_utils import (
     make_port_arg,
     make_width,
 )
+from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import Pipeline, array_name, match_array_name, wire_name
-from tapa.verilog.width import get_ast_width
+from tapa.verilog.width import Width
 from tapa.verilog.xilinx import generate_handshake_ports
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,
@@ -355,16 +354,11 @@ class Program(  # TODO: refactor this class
 
                 for suffix in task.get_fifo_suffixes(direction):
                     # declare wires for FIFOs
-                    w_name = wire_name(fifo_name, suffix)
-                    wire_width = (
+                    wire = Wire(
+                        wire_name(fifo_name, suffix),
                         self.get_task(task_name)
                         .module.get_port_of(fifo_port, suffix)
-                        .width
-                    )
-
-                    wire = Wire(
-                        name=w_name,
-                        width=get_ast_width(wire_width),
+                        .width,
                     )
                     task.module.add_signals([wire])
 
@@ -519,7 +513,7 @@ class Program(  # TODO: refactor this class
                     if "'d" not in q.name:
                         task.module.add_signals(
                             [
-                                Wire(name=q[-1].name, width=make_width(width)),
+                                Wire(q[-1].name, Width.create(width)),
                             ]
                         )
                         task.fsm_module.add_pipeline(q, init=Identifier(id_name))
@@ -771,7 +765,7 @@ class Program(  # TODO: refactor this class
 
         module.add_signals(
             [
-                Reg(STATE.name, width=make_width(2)),
+                Reg(STATE.name, width=Width.create(2)),
             ],
         )
 

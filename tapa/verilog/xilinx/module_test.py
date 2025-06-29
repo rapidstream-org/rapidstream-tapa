@@ -13,6 +13,8 @@ from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser import ast
 
 from tapa.verilog import ast_types, ast_utils
+from tapa.verilog.signal import Reg, Wire
+from tapa.verilog.width import Width
 from tapa.verilog.xilinx.const import (
     CLK_SENS_LIST,
     HANDSHAKE_CLK,
@@ -308,22 +310,22 @@ def test_add_signals_succeeds() -> None:
     module = Module(name="foo")
     assert module.signals == {}
 
-    module.add_signals([ast_types.Wire("bar", width=ast_utils.make_width(233))])
+    module.add_signals([Wire(name="bar", width=Width.create(233))])
     signals = module.signals
     assert list(signals) == ["bar"]
-    assert _CODEGEN.visit(signals["bar"]) == "wire [232:0] bar;"
+    assert str(signals["bar"]) == "wire [232:0] bar;"
 
-    module.add_signals([ast_types.Wire("baz"), ast_types.Reg("qux")])
+    module.add_signals([Wire("baz"), Reg("qux")])
     signals = module.signals
     assert list(signals) == ["bar", "baz", "qux"]
-    assert _CODEGEN.visit(signals["baz"]) == "wire baz;"
-    assert _CODEGEN.visit(signals["qux"]) == "reg qux;"
+    assert str(signals["baz"]) == "wire baz;"
+    assert str(signals["qux"]) == "reg qux;"
 
 
 @pytest.mark.usefixtures("options")
 def test_del_signals_succeeds() -> None:
     module = Module(name="foo")
-    module.add_signals([ast_types.Wire("bar")])
+    module.add_signals([Wire("bar")])
     module.code  # TODO: support deleting added signals
 
     module.del_signals(prefix="bar")
@@ -334,7 +336,7 @@ def test_del_signals_succeeds() -> None:
 @pytest.mark.usefixtures("options")
 def test_del_nonexistent_signal_succeeds() -> None:
     module = Module(name="foo")
-    module.add_signals([ast_types.Wire("bar")])
+    module.add_signals([Wire("bar")])
 
     module.del_signals(prefix="baz")
 

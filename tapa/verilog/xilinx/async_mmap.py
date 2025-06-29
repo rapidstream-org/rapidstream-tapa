@@ -10,11 +10,13 @@ import logging
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
-from pyverilog.vparser.ast import Constant, Input, Output, PortArg, Width, Wire
+from pyverilog.vparser.ast import Input, Output, PortArg
 
 from tapa.verilog.ast_types import IOPort
 from tapa.verilog.ast_utils import make_port_arg
+from tapa.verilog.signal import Wire
 from tapa.verilog.util import wire_name
+from tapa.verilog.width import Width
 from tapa.verilog.xilinx.const import (
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
@@ -61,7 +63,7 @@ def async_mmap_width(
             data_width = ADDR_CHANNEL_DATA_WIDTH
         elif tag == "write_resp":
             data_width = RESP_CHANNEL_DATA_WIDTH
-        return Width(msb=Constant(data_width - 1), lsb=Constant(0))
+        return Width.create(data_width)
     return None
 
 
