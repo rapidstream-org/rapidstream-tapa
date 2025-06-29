@@ -91,6 +91,19 @@ def get_module_name(module: str) -> str:
     return f"{module}"
 
 
+def as_type[T](type_: type[T], value: object) -> T:
+    if isinstance(value, type_):
+        return value
+    msg = f"Want {type_}, got {type(value)}"
+    raise TypeError(msg)
+
+
+def as_type_or_none[T](type_: type[T], value: object) -> T | None:
+    if value is None:
+        return None
+    return as_type(type_, value)
+
+
 def setup_logging(
     verbose: int | None,
     quiet: int | None,

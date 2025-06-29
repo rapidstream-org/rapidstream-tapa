@@ -17,7 +17,12 @@ from pyverilog.vparser.ast import (
     NonblockingSubstitution,
 )
 
-from tapa.util import get_indexed_name, get_instance_name
+from tapa.util import (
+    as_type,
+    as_type_or_none,
+    get_indexed_name,
+    get_instance_name,
+)
 from tapa.verilog.ioport import IOPort
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import sanitize_array_name, wire_name
@@ -165,13 +170,11 @@ class Instance:
         self,
         task: "Task",
         instance_id: int,
-        step: int,
-        args: dict[str, dict[str, str]],
-        **_kwargs: object,  # to ignore any extra arguments
+        **kwargs: object,
     ) -> None:
         self.task = task
         self.instance_id = instance_id
-        self.step = step
+        self.step = as_type(int, kwargs["step"])
         self.args: tuple[Instance.Arg, ...] = tuple(
             sorted(
                 Instance.Arg(
@@ -181,7 +184,7 @@ class Instance:
                     port=port,
                     is_upper=task.is_upper,
                 )
-                for port, arg in args.items()
+                for port, arg in as_type(dict, kwargs["args"]).items()
             ),
         )
 
@@ -395,7 +398,7 @@ class Instance:
 
 
 class Port:
-    def __init__(self, obj: dict[str, str]) -> None:
+    def __init__(self, obj: dict[str, str | int]) -> None:
         self.cat = {
             "istream": Instance.Arg.Cat.ISTREAM,
             "ostream": Instance.Arg.Cat.OSTREAM,
@@ -407,12 +410,12 @@ class Port:
             "ommap": Instance.Arg.Cat.OMMAP,
             "async_mmap": Instance.Arg.Cat.ASYNC_MMAP,
             "hmap": Instance.Arg.Cat.MMAP,
-        }[obj["cat"]]
-        self.name = sanitize_array_name(obj["name"])
-        self.ctype = obj["type"]
-        self.width = obj["width"]
-        self.chan_count = obj.get("chan_count")
-        self.chan_size = obj.get("chan_size")
+        }[as_type(str, obj["cat"])]
+        self.name = sanitize_array_name(as_type(str, obj["name"]))
+        self.ctype = as_type(str, obj["type"])
+        self.width = as_type(int, obj["width"])
+        self.chan_count = as_type_or_none(int, obj.get("chan_count"))
+        self.chan_size = as_type_or_none(int, obj.get("chan_size"))
 
     def __str__(self) -> str:
         return ", ".join(f"{k}: {v}" for k, v in self.__dict__.items())
