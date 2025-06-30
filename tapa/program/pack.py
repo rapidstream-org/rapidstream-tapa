@@ -5,7 +5,6 @@ RapidStream Contributor License Agreement.
 """
 
 import contextlib
-import glob
 import logging
 import os
 import os.path
@@ -78,9 +77,8 @@ class ProgramPackMixin(
                 _logger.debug("  packing %s", arcname)
                 packed_obj.write(filename, arcname)
 
-            report_glob = os.path.join(glob.escape(self.report_dir), "*_csynth.xml")
-            for filename in glob.iglob(report_glob):
-                arcname = os.path.join("report", os.path.basename(filename))
+            for filename in Path(self.report_dir).glob("**/*_csynth.xml"):
+                arcname = f"report/{filename.relative_to(self.report_dir)}"
                 _logger.debug("  packing %s", arcname)
                 packed_obj.write(filename, arcname)
 

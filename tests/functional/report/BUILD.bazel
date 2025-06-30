@@ -10,9 +10,7 @@ load("//bazel:tapa_rules.bzl", "tapa_xo")
 
 tapa_xo(
     name = "enable-synth-util-xo",
-    src = "//tests/apps/vadd:vadd.cpp",
-    hdrs = ["//tests/apps/vadd:vadd.h"],
-    include = ["."],
+    src = "vadd.cpp",
     enable_synth_util = True,
     output_file = "enable-synth-util.xo",
     top_name = "VecAdd",
@@ -25,5 +23,14 @@ py_test(
     deps = [
         "@rules_python//python/runfiles",
         requirement("pyyaml"),
+    ],
+)
+
+py_test(
+    name = "report-file-existence-test",
+    srcs = ["report-file-existence-test.py"],
+    data = [":enable-synth-util-xo"],
+    deps = [
+        "@rules_python//python/runfiles",
     ],
 )

@@ -366,6 +366,15 @@ class RunHls(VivadoHls):
                     self.project_path, self.project_name, self.solution_name
                 )
                 try:
+                    # Put reports in their own subdirectory since HLS only adds
+                    # module prefix to RTL, not report files. If two functions
+                    # have the same name but are used in different tasks, they
+                    # may conflict.
+                    tar.add(
+                        os.path.join(solution_dir, "syn/report"),
+                        arcname=f"report/{self.solution_name}",
+                    )
+                    # Legacy report path is kept for compatibility.
                     tar.add(os.path.join(solution_dir, "syn/report"), arcname="report")
                     tar.add(os.path.join(solution_dir, "syn/verilog"), arcname="hdl")
                     tar.add(
@@ -382,6 +391,14 @@ class RunHls(VivadoHls):
                         for f in glob.glob(
                             os.path.join(solution_dir, ".autopilot", "db", pattern)
                         ):
+                            tar.add(
+                                f,
+                                arcname=os.path.join(
+                                    "report",
+                                    self.solution_name,
+                                    os.path.basename(f),
+                                ),
+                            )
                             tar.add(f, arcname="report/" + os.path.basename(f))
                 except FileNotFoundError as e:
                     self.returncode = 1
