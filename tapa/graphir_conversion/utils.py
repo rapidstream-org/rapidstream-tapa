@@ -484,8 +484,8 @@ def get_ctrl_s_axi_def(top: Task, content: str) -> VerilogModuleDefinition:
             )
         )
     return VerilogModuleDefinition(
-        name="VecAdd_control_s_axi",
-        hierarchical_name=HierarchicalName.get_name("VecAdd_control_s_axi"),
+        name=f"{top.name}_control_s_axi",
+        hierarchical_name=HierarchicalName.get_name(f"{top.name}_control_s_axi"),
         parameters=tuple(_CTRL_S_AXI_PARAMETERS),
         ports=tuple(ports),
         verilog=content,
