@@ -6,6 +6,7 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+from typing import Literal
 
 from pyverilog.vparser.ast import (
     Identifier,
@@ -83,7 +84,7 @@ STREAM_DATA_SUFFIXES = (
 )
 
 # => {port_suffix: direction}
-STREAM_PORT_DIRECTION = {
+STREAM_PORT_DIRECTION: dict[str, Literal["input", "output"]] = {
     "_dout": "input",
     "_empty_n": "input",
     "_read": "output",

@@ -21,9 +21,9 @@ from xml.etree import ElementTree as ET
 
 import toposort
 import yaml
+from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
     Always,
-    Assign,
     Constant,
     Eq,
     Identifier,
@@ -57,6 +57,7 @@ from tapa.verilog.ast_utils import (
     make_port_arg,
     make_width,
 )
+from tapa.verilog.logic import Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import Pipeline, array_name, match_array_name, wire_name
 from tapa.verilog.width import Width
@@ -71,12 +72,13 @@ from tapa.verilog.xilinx.const import (
     CLK_SENS_LIST,
     DONE,
     FALSE,
+    HANDSHAKE_DONE,
+    HANDSHAKE_IDLE,
     HANDSHAKE_INPUT_PORTS,
     HANDSHAKE_OUTPUT_PORTS,
-    IDLE,
+    HANDSHAKE_READY,
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
-    READY,
     RST,
     RST_N,
     START,
@@ -86,6 +88,8 @@ from tapa.verilog.xilinx.const import (
 from tapa.verilog.xilinx.module import Module, generate_m_axi_ports, get_streams_fifos
 
 _logger = logging.getLogger().getChild(__name__)
+
+_CODEGEN = ASTCodeGenerator()
 
 STATE00 = IntConst("2'b00")
 STATE01 = IntConst("2'b01")
@@ -650,8 +654,8 @@ class Program(  # TODO: refactor this class
                             ),
                         ),
                         Assign(
-                            left=instance.start,
-                            right=instance.is_state(STATE01),
+                            lhs=instance.start.name,
+                            rhs=_CODEGEN.visit(instance.is_state(STATE01)),
                         ),
                     ],
                 )
@@ -808,9 +812,9 @@ class Program(  # TODO: refactor this class
                         ),
                     ),
                 ),
-                Assign(left=IDLE, right=is_state(STATE00)),
-                Assign(left=DONE, right=self.done_q[-1]),
-                Assign(left=READY, right=self.done_q[0]),
+                Assign(lhs=HANDSHAKE_IDLE, rhs=_CODEGEN.visit(is_state(STATE00))),
+                Assign(lhs=HANDSHAKE_DONE, rhs=self.done_q[-1].name),
+                Assign(lhs=HANDSHAKE_READY, rhs=self.done_q[0].name),
             ],
         )
 

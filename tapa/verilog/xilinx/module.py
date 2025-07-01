@@ -15,10 +15,8 @@ import jinja2
 import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
-    Assign,
     Constant,
     Decl,
-    Identifier,
     Input,
     Instance,
     InstanceList,
@@ -27,7 +25,6 @@ from pyverilog.vparser.ast import (
     ParamArg,
     Parameter,
     PortArg,
-    Unot,
 )
 
 from tapa.backend.xilinx import M_AXI_PREFIX
@@ -35,6 +32,7 @@ from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
 from tapa.verilog.ast_types import IOPort, Logic
 from tapa.verilog.ast_utils import make_port_arg
+from tapa.verilog.logic import Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import (
     Pipeline,
@@ -55,9 +53,9 @@ from tapa.verilog.xilinx.const import (
     HANDSHAKE_IDLE,
     HANDSHAKE_READY,
     HANDSHAKE_RST,
+    HANDSHAKE_RST_N,
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
-    RST_N,
     STREAM_PORT_DIRECTION,
     TRUE,
 )
@@ -526,7 +524,7 @@ endmodule
             init (Node): Value used to drive the first stage of the pipeline.
         """
         self.add_signals(q.signals)
-        self.add_logics([Assign(left=q[0], right=init)])
+        self.add_logics([Assign(lhs=q[0].name, rhs=_CODEGEN.visit(init))])
 
     def del_signals(self, prefix: str = "", suffix: str = "") -> None:
         new_signals = {}
@@ -580,10 +578,15 @@ endmodule
         )
         return self
 
-    def add_logics(self, logics: Iterable[Logic]) -> "Module":
-        for logic in logics:
+    def add_logics(self, logics: Iterable[Logic | Assign]) -> "Module":
+        def to_str(logic: Logic | Assign) -> str:
+            if isinstance(logic, Assign):
+                return str(logic)
+            return _CODEGEN.visit(logic)
+
+        for logic in map(to_str, logics):
             self._rewriter.add_before(
-                self._logic_source_range.end, ["\n  ", _CODEGEN.visit(logic)]
+                self._logic_source_range.end, ["\n  ", str(logic)]
             )
         return self
 
@@ -793,7 +796,7 @@ endmodule
         self.add_logics(
             [
                 # `s_axi_control` still uses `ap_rst_n_inv`.
-                Assign(left=Identifier(HANDSHAKE_RST), right=Unot(RST_N)),
+                Assign(lhs=HANDSHAKE_RST, rhs=f"~{HANDSHAKE_RST_N}"),
             ],
         )
 

@@ -6,7 +6,6 @@ RapidStream Contributor License Agreement.
 
 from pyverilog.vparser.ast import (
     Always,
-    Assign,
     Initial,
     Inout,
     Input,
@@ -21,4 +20,4 @@ __all__ = [
 
 Directive = tuple[int, str]
 IOPort = Input | Output | Inout
-Logic = Assign | Always | Initial
+Logic = Always | Initial

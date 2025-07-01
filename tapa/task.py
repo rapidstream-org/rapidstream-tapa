@@ -11,17 +11,14 @@ import decimal
 import enum
 import logging
 import operator
-from typing import ClassVar, NamedTuple
+from typing import ClassVar, Literal, NamedTuple
 
 from pyverilog.vparser.ast import (
-    Assign,
     Constant,
-    Identifier,
     Input,
     IntConst,
     Output,
     ParamArg,
-    Partselect,
     Plus,
 )
 
@@ -31,6 +28,7 @@ from tapa.instance import Instance, Port
 from tapa.util import get_addr_width, get_indexed_name, range_or_none
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.axi_xbar import generate as axi_xbar_generate
+from tapa.verilog.logic import Assign
 from tapa.verilog.signal import Wire
 from tapa.verilog.util import wire_name
 from tapa.verilog.width import Width
@@ -68,7 +66,7 @@ class MMapConnection(NamedTuple):
     chan_size: str | None
 
 
-class Task:  # noqa: PLR0904
+class Task:
     """Describes a TAPA task.
 
     Attributes:
@@ -393,11 +391,13 @@ class Task:  # noqa: PLR0904
     def is_fifo_external(self, fifo_name: str) -> bool:
         return "depth" not in self.fifos[fifo_name]
 
-    def assign_directional(self, a: object, b: object, a_direction: str) -> None:
+    def _assign_directional(
+        self, a: str, b: str, a_direction: Literal["input", "output"]
+    ) -> None:
         if a_direction == "input":
-            self.module.add_logics([Assign(left=a, right=b)])
+            self.module.add_logics([Assign(lhs=a, rhs=b)])
         elif a_direction == "output":
-            self.module.add_logics([Assign(left=b, right=a)])
+            self.module.add_logics([Assign(lhs=b, rhs=a)])
 
     def convert_axis_to_fifo(self, axis_name: str) -> str:
         assert len(self.get_fifo_directions(axis_name)) == 1, (
@@ -428,13 +428,14 @@ class Task:  # noqa: PLR0904
         if direction_axis == "consumed_by":
             for axis_suffix, bit in AXIS_CONSTANTS.items():
                 port_name = self.module.find_port(axis_name, axis_suffix)
+                assert port_name is not None
                 width = get_axis_port_width_int(axis_suffix, data_width)
 
                 self.module.add_logics(
                     [
                         Assign(
-                            left=Identifier(port_name),
-                            right=IntConst(f"{width}'b{str(bit) * width}"),
+                            lhs=port_name,
+                            rhs=f"{width}'b{str(bit) * width}",
                         ),
                     ],
                 )
@@ -446,19 +447,16 @@ class Task:  # noqa: PLR0904
             offset = 0
             for axis_suffix in STREAM_TO_AXIS[suffix]:
                 port_name = self.module.find_port(axis_name, axis_suffix)
+                assert port_name is not None
                 width = get_axis_port_width_int(axis_suffix, data_width)
 
                 if len(STREAM_TO_AXIS[suffix]) > 1:
-                    wire = Partselect(
-                        Identifier(w_name),
-                        IntConst(str(offset + width - 1)),
-                        IntConst(str(offset)),
-                    )
+                    wire = f"{w_name}[{offset + width - 1}:{offset}]"
                 else:
-                    wire = Identifier(w_name)
+                    wire = w_name
 
-                self.assign_directional(
-                    Identifier(port_name),
+                self._assign_directional(
+                    port_name,
                     wire,
                     STREAM_PORT_DIRECTION[suffix],
                 )
@@ -482,10 +480,9 @@ class Task:  # noqa: PLR0904
                 rhs = self.module.get_port_of(external_name, suffix).name
             else:
                 rhs = wire_name(external_name, suffix)
-            internal_signal = Identifier(wire_name(internal_name, suffix))
-            self.assign_directional(
-                internal_signal,
-                Identifier(rhs),
+            self._assign_directional(
+                wire_name(internal_name, suffix),
+                rhs,
                 STREAM_PORT_DIRECTION[suffix],
             )
 
@@ -547,11 +544,9 @@ class Task:  # noqa: PLR0904
                             self.module.add_logics(
                                 [
                                     Assign(
-                                        left=Identifier(axi_arg_name),
-                                        right=Identifier(
-                                            f"{{{name}_offset[63:{addr_width}], "
-                                            f"{axi_arg_name_raw}[{addr_width - 1}:0]}}",
-                                        ),
+                                        lhs=axi_arg_name,
+                                        rhs=f"{{{name}_offset[63:{addr_width}], "
+                                        f"{axi_arg_name_raw}[{addr_width - 1}:0]}}",
                                     ),
                                 ],
                             )

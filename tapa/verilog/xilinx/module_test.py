@@ -13,6 +13,7 @@ from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser import ast
 
 from tapa.verilog import ast_types, ast_utils
+from tapa.verilog.logic import Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.width import Width
 from tapa.verilog.xilinx.const import (
@@ -462,7 +463,7 @@ def test_del_nonexistent_instance_succeeds() -> None:
 def test_add_logics_succeeds() -> None:
     module = Module(name="foo")
 
-    module.add_logics([ast.Assign(ast.Identifier("bar"), ast.IntConst(0))])
+    module.add_logics([Assign("bar", "0")])
     module.add_logics(
         [
             ast.Always(CLK_SENS_LIST, ast_utils.make_block(())),
@@ -480,7 +481,7 @@ def test_del_logics_succeeds() -> None:
     module = Module(name="foo")
     module.add_logics(
         [
-            ast.Assign(ast.Identifier("bar"), ast.IntConst(0)),
+            Assign("bar", "0"),
             ast.Always(CLK_SENS_LIST, ast_utils.make_block(())),
             ast.Initial(ast_utils.make_block(())),
         ]
