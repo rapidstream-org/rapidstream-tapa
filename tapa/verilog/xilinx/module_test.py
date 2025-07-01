@@ -13,7 +13,7 @@ from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser import ast
 
 from tapa.verilog import ast_types, ast_utils
-from tapa.verilog.logic import Assign
+from tapa.verilog.logic import Always, Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.width import Width
 from tapa.verilog.xilinx.const import (
@@ -464,11 +464,7 @@ def test_add_logics_succeeds() -> None:
     module = Module(name="foo")
 
     module.add_logics([Assign("bar", "0")])
-    module.add_logics(
-        [
-            ast.Always(CLK_SENS_LIST, ast_utils.make_block(())),
-        ]
-    )
+    module.add_logics([Always(CLK_SENS_LIST, "begin\nend")])
 
     assert "assign bar = 0;" in module.code
     assert "always @(posedge ap_clk) begin" in module.code
@@ -480,7 +476,7 @@ def test_del_logics_succeeds() -> None:
     module.add_logics(
         [
             Assign("bar", "0"),
-            ast.Always(CLK_SENS_LIST, ast_utils.make_block(())),
+            Always(CLK_SENS_LIST, "begin\nend"),
         ]
     )
     module.code  # TODO: support deleting added logics

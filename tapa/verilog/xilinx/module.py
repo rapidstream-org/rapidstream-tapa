@@ -30,9 +30,9 @@ from pyverilog.vparser.ast import (
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
-from tapa.verilog.ast_types import IOPort, Logic
+from tapa.verilog.ast_types import IOPort
 from tapa.verilog.ast_utils import make_port_arg
-from tapa.verilog.logic import Assign
+from tapa.verilog.logic import Always, Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import (
     Pipeline,
@@ -578,13 +578,8 @@ endmodule
         )
         return self
 
-    def add_logics(self, logics: Iterable[Logic | Assign]) -> "Module":
-        def to_str(logic: Logic | Assign) -> str:
-            if isinstance(logic, Assign):
-                return str(logic)
-            return _CODEGEN.visit(logic)
-
-        for logic in map(to_str, logics):
+    def add_logics(self, logics: Iterable[Assign | Always]) -> "Module":
+        for logic in logics:
             self._rewriter.add_before(
                 self._logic_source_range.end, ["\n  ", str(logic)]
             )

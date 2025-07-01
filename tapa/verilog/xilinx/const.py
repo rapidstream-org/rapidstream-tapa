@@ -11,15 +11,12 @@ from typing import Literal
 from pyverilog.vparser.ast import (
     Identifier,
     IntConst,
-    Sens,
-    SensList,
     Unot,
 )
 
 from tapa.verilog.width import Width
 
 __all__ = [
-    "ALL_SENS_LIST",
     "CLK",
     "CLK_SENS_LIST",
     "DONE",
@@ -159,8 +156,7 @@ SENS_TYPE = "posedge"
 CLK = Identifier(HANDSHAKE_CLK)
 RST_N = Identifier(HANDSHAKE_RST_N)
 RST = Unot(RST_N)
-CLK_SENS_LIST = SensList((Sens(CLK, type=SENS_TYPE),))
-ALL_SENS_LIST = SensList((Sens(None, type="all"),))
+CLK_SENS_LIST = f"{SENS_TYPE} {HANDSHAKE_CLK}"
 STATE = Identifier("tapa_state")
 
 

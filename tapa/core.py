@@ -23,7 +23,6 @@ import toposort
 import yaml
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
-    Always,
     Constant,
     Eq,
     Identifier,
@@ -57,7 +56,7 @@ from tapa.verilog.ast_utils import (
     make_port_arg,
     make_width,
 )
-from tapa.verilog.logic import Assign
+from tapa.verilog.logic import Always, Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import Pipeline, array_name, match_array_name, wire_name
 from tapa.verilog.width import Width
@@ -440,17 +439,19 @@ class Program(  # TODO: refactor this class
                 debugging_blocks.append(
                     Always(
                         sens_list=CLK_SENS_LIST,
-                        statement=make_block(
-                            IfStatement(
-                                cond=Eq(
-                                    left=Identifier(
-                                        name=wire_name(fifo_name, suffixes[-1]),
+                        statement=_CODEGEN.visit(
+                            make_block(
+                                IfStatement(
+                                    cond=Eq(
+                                        left=Identifier(
+                                            name=wire_name(fifo_name, suffixes[-1]),
+                                        ),
+                                        right=TRUE,
                                     ),
-                                    right=TRUE,
+                                    true_statement=make_block(display),
+                                    false_statement=None,
                                 ),
-                                true_statement=make_block(display),
-                                false_statement=None,
-                            ),
+                            )
                         ),
                     ),
                 )
@@ -580,21 +581,23 @@ class Program(  # TODO: refactor this class
                     [
                         Always(
                             sens_list=CLK_SENS_LIST,
-                            statement=make_block(
-                                make_if_with_block(
-                                    cond=RST,
-                                    true=NonblockingSubstitution(
-                                        left=instance.start,
-                                        right=FALSE,
-                                    ),
-                                    false=make_if_with_block(
-                                        cond=start_q[-1],
+                            statement=_CODEGEN.visit(
+                                make_block(
+                                    make_if_with_block(
+                                        cond=RST,
                                         true=NonblockingSubstitution(
                                             left=instance.start,
-                                            right=TRUE,
+                                            right=FALSE,
+                                        ),
+                                        false=make_if_with_block(
+                                            cond=start_q[-1],
+                                            true=NonblockingSubstitution(
+                                                left=instance.start,
+                                                right=TRUE,
+                                            ),
                                         ),
                                     ),
-                                ),
+                                )
                             ),
                         ),
                     ],
@@ -645,12 +648,14 @@ class Program(  # TODO: refactor this class
                     [
                         Always(
                             sens_list=CLK_SENS_LIST,
-                            statement=make_block(
-                                make_if_with_block(
-                                    cond=RST,
-                                    true=if_branch,
-                                    false=else_branch,
-                                ),
+                            statement=_CODEGEN.visit(
+                                make_block(
+                                    make_if_with_block(
+                                        cond=RST,
+                                        true=if_branch,
+                                        false=else_branch,
+                                    ),
+                                )
                             ),
                         ),
                         Assign(
@@ -804,12 +809,14 @@ class Program(  # TODO: refactor this class
             [
                 Always(
                     sens_list=CLK_SENS_LIST,
-                    statement=make_block(
-                        make_if_with_block(
-                            cond=RST,
-                            true=set_state(STATE00),
-                            false=global_fsm,
-                        ),
+                    statement=_CODEGEN.visit(
+                        make_block(
+                            make_if_with_block(
+                                cond=RST,
+                                true=set_state(STATE00),
+                                false=global_fsm,
+                            ),
+                        )
                     ),
                 ),
                 Assign(lhs=HANDSHAKE_IDLE, rhs=_CODEGEN.visit(is_state(STATE00))),
