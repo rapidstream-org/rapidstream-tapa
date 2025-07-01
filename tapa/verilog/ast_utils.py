@@ -72,10 +72,6 @@ def make_if_with_block(
     )
 
 
-def make_int(value: int, width: int = 0) -> IntConst:
-    return IntConst(f"{width or value.bit_length() or 1}'d{value}")
-
-
 def make_pragma(name: str, value: str | None = None) -> Pragma:
     if value is None:
         return Pragma(PragmaEntry(name))
