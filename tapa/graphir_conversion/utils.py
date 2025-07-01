@@ -57,8 +57,6 @@ from tapa.verilog.xilinx.const import ISTREAM_SUFFIXES, OSTREAM_SUFFIXES
 from tapa.verilog.xilinx.m_axi import M_AXI_PREFIX, M_AXI_SUFFIXES
 from tapa.verilog.xilinx.module import Module
 
-FIFO_PORT_PATTERN = r"([a-zA-Z_]\w*)\[(\d+)\]"
-
 PORT_TYPE_MAPPING = {
     "input": ModulePort.Type.INPUT,
     "output": ModulePort.Type.OUTPUT,

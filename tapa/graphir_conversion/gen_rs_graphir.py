@@ -7,7 +7,6 @@ RapidStream Contributor License Agreement.
 """
 
 import logging
-import re
 from collections.abc import Generator
 from pathlib import Path
 
@@ -30,7 +29,6 @@ from tapa.graphir.types import (
 )
 from tapa.graphir_conversion.add_iface import get_graphir_iface
 from tapa.graphir_conversion.utils import (
-    FIFO_PORT_PATTERN,
     get_child_port_connection_mapping,
     get_ctrl_s_axi_def,
     get_fifo_def,
@@ -46,7 +44,7 @@ from tapa.graphir_conversion.utils import (
 )
 from tapa.instance import Instance
 from tapa.task import Task
-from tapa.verilog.util import Pipeline
+from tapa.verilog.util import Pipeline, match_array_name, sanitize_array_name
 from tapa.verilog.xilinx.const import (
     HANDSHAKE_INPUT_PORTS,
     HANDSHAKE_OUTPUT_PORTS,
@@ -143,11 +141,11 @@ def get_slot_module_definition_ports(  # noqa: C901
         for inst in slot.instances:
             for arg in inst.args:
                 if arg.name == port:
-                    match = re.match(FIFO_PORT_PATTERN, arg.port)
+                    match = match_array_name(arg.port)
                     if match:
                         child_module_name = inst.task.name
-                        child_inst_port = match.group(1)
-                        child_inst_port_idx = int(match.group(2))
+                        child_inst_port = match[0]
+                        child_inst_port_idx = match[1]
                     else:
                         child_module_name = inst.task.name
                         child_inst_port = arg.port
@@ -361,8 +359,7 @@ def get_fifo_inst(  # noqa: PLR0917, PLR0913
         )
     )
 
-    match = re.match(FIFO_PORT_PATTERN, fifo_name)
-    fifo_name_no_bracket = f"{match.group(1)}_{match.group(2)}" if match else fifo_name
+    fifo_name_no_bracket = sanitize_array_name(fifo_name)
     return ModuleInstantiation(
         name=fifo_name_no_bracket,
         hierarchical_name=HierarchicalName.get_name(fifo_name_no_bracket),
@@ -578,7 +575,7 @@ def infer_fifo_data_range(
     return range0
 
 
-def get_upper_task_ir_wires(  # noqa: C901
+def get_upper_task_ir_wires(
     upper_task: Task,
     submodule_ir_defs: dict[str, AnyModuleDefinition],
     upper_task_ir_ports: list[ModulePort],
@@ -592,11 +589,7 @@ def get_upper_task_ir_wires(  # noqa: C901
         if upper_task.is_fifo_external(fifo_name):
             continue
         for suffix in ISTREAM_SUFFIXES + OSTREAM_SUFFIXES:
-            match = re.match(FIFO_PORT_PATTERN, fifo_name)
-            if match:
-                fifo_name_no_bracket = f"{match.group(1)}_{match.group(2)}"
-            else:
-                fifo_name_no_bracket = fifo_name
+            fifo_name_no_bracket = sanitize_array_name(fifo_name)
             wire_name = get_stream_port_name(fifo_name_no_bracket, suffix)
             if suffix in STREAM_DATA_SUFFIXES:
                 # infer fifo width from leaf module
