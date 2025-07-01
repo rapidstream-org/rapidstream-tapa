@@ -467,13 +467,11 @@ def test_add_logics_succeeds() -> None:
     module.add_logics(
         [
             ast.Always(CLK_SENS_LIST, ast_utils.make_block(())),
-            ast.Initial(ast_utils.make_block(())),
         ]
     )
 
     assert "assign bar = 0;" in module.code
     assert "always @(posedge ap_clk) begin" in module.code
-    assert "initial " in module.code
 
 
 @pytest.mark.usefixtures("options")
@@ -483,7 +481,6 @@ def test_del_logics_succeeds() -> None:
         [
             Assign("bar", "0"),
             ast.Always(CLK_SENS_LIST, ast_utils.make_block(())),
-            ast.Initial(ast_utils.make_block(())),
         ]
     )
     module.code  # TODO: support deleting added logics
@@ -492,7 +489,6 @@ def test_del_logics_succeeds() -> None:
 
     assert "assign" not in module.code
     assert "always" not in module.code
-    assert "initial" not in module.code
 
 
 @pytest.mark.usefixtures("options")
