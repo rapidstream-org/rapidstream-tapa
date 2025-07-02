@@ -48,7 +48,7 @@
         {
             "expr": [
                 {
-                    "repr": "(32 / 8)",
+                    "repr": "4",
                     "type": "lit"
                 }
             ],
@@ -61,7 +61,7 @@
         {
             "expr": [
                 {
-                    "repr": "(32 / 8)",
+                    "repr": "4",
                     "type": "lit"
                 }
             ],
@@ -1890,7 +1890,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_S_AXI_CONTROL_ADDR_WIDTH - 1",
+                        "repr": "C_S_AXI_CONTROL_ADDR_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1927,7 +1935,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_S_AXI_CONTROL_ADDR_WIDTH - 1",
+                        "repr": "C_S_AXI_CONTROL_ADDR_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2001,7 +2017,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_S_AXI_CONTROL_DATA_WIDTH - 1",
+                        "repr": "C_S_AXI_CONTROL_DATA_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2059,7 +2083,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_S_AXI_CONTROL_DATA_WIDTH - 1",
+                        "repr": "C_S_AXI_CONTROL_DATA_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2088,7 +2120,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_S_AXI_CONTROL_WSTRB_WIDTH - 1",
+                        "repr": "C_S_AXI_CONTROL_WSTRB_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2691,7 +2731,7 @@
                     "name": "n"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X0Y2_SLOT_X0Y2",
             "hierarchical_name": [
                 "SLOT_X0Y2_SLOT_X0Y2_0"
             ],
@@ -3280,7 +3320,7 @@
                     "name": "n"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X2Y3_SLOT_X2Y3",
             "hierarchical_name": [
                 "SLOT_X2Y3_SLOT_X2Y3_0"
             ],
@@ -3905,7 +3945,7 @@
                     "name": "n"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X3Y3_SLOT_X3Y3",
             "hierarchical_name": [
                 "SLOT_X3Y3_SLOT_X3Y3_0"
             ],
@@ -4254,7 +4294,7 @@
                     "name": "n"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X0Y2_SLOT_X0Y2",
             "hierarchical_name": [
                 "VecAdd_fsm_0"
             ],
@@ -4377,11 +4417,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "~",
-                            "type": "lit"
-                        },
-                        {
-                            "repr": "ap_rst_n",
+                            "repr": "rst",
                             "type": "id"
                         }
                     ],
@@ -4391,7 +4427,7 @@
                     "name": "reset"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X3Y3_SLOT_X3Y3",
             "hierarchical_name": [
                 "a_q_VecAdd"
             ],
@@ -4551,11 +4587,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "~",
-                            "type": "lit"
-                        },
-                        {
-                            "repr": "ap_rst_n",
+                            "repr": "rst",
                             "type": "id"
                         }
                     ],
@@ -4565,7 +4597,7 @@
                     "name": "reset"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X2Y3_SLOT_X2Y3",
             "hierarchical_name": [
                 "c_q_VecAdd"
             ],
@@ -4653,11 +4685,7 @@
                 {
                     "expr": [
                         {
-                            "repr": "~",
-                            "type": "lit"
-                        },
-                        {
-                            "repr": "ap_rst_n",
+                            "repr": "rst",
                             "type": "id"
                         }
                     ],
@@ -4967,7 +4995,7 @@
                     "name": "n"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X0Y2_SLOT_X0Y2",
             "hierarchical_name": [
                 "control_s_axi_U"
             ],
@@ -4977,8 +5005,8 @@
                 {
                     "expr": [
                         {
-                            "repr": "C_S_AXI_CONTROL_ADDR_WIDTH",
-                            "type": "id"
+                            "repr": "6",
+                            "type": "lit"
                         }
                     ],
                     "hierarchical_name": [
@@ -4989,8 +5017,8 @@
                 {
                     "expr": [
                         {
-                            "repr": "C_S_AXI_CONTROL_DATA_WIDTH",
-                            "type": "id"
+                            "repr": "32",
+                            "type": "lit"
                         }
                     ],
                     "hierarchical_name": [
@@ -4999,6 +5027,55 @@
                     "name": "C_S_AXI_DATA_WIDTH"
                 }
             ],
+            "pragmas": []
+        },
+        {
+            "area": null,
+            "connections": [
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_clk",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "clk"
+                    ],
+                    "name": "clk"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "rst",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "rst"
+                    ],
+                    "name": "rst"
+                },
+                {
+                    "expr": [
+                        {
+                            "repr": "ap_rst_n",
+                            "type": "id"
+                        }
+                    ],
+                    "hierarchical_name": [
+                        "rst_n"
+                    ],
+                    "name": "rst_n"
+                }
+            ],
+            "floorplan_region": "SLOT_X0Y2_SLOT_X0Y2",
+            "hierarchical_name": [
+                "reset_inverter_0"
+            ],
+            "module": "reset_inverter",
+            "name": "reset_inverter_0",
+            "parameters": [],
             "pragmas": []
         }
     ],
@@ -5457,6 +5534,13 @@
                     }
                 ]
             }
+        },
+        {
+            "hierarchical_name": [
+                "rst"
+            ],
+            "name": "rst",
+            "range": null
         }
     ]
 }
