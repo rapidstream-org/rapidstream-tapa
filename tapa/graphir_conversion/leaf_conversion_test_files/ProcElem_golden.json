@@ -672,7 +672,7 @@
         {
             "expr": [
                 {
-                    "repr": "(64 / 8)",
+                    "repr": "8",
                     "type": "lit"
                 }
             ],
@@ -685,7 +685,7 @@
         {
             "expr": [
                 {
-                    "repr": "(32 / 8)",
+                    "repr": "4",
                     "type": "lit"
                 }
             ],
@@ -698,7 +698,7 @@
         {
             "expr": [
                 {
-                    "repr": "(32 / 8)",
+                    "repr": "4",
                     "type": "lit"
                 }
             ],
@@ -787,7 +787,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_ADDR_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_ADDR_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -850,7 +858,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1005,7 +1021,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_ARUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_ARUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1034,7 +1058,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_ADDR_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_ADDR_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1097,7 +1129,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1252,7 +1292,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_AWUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_AWUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1281,7 +1329,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1331,7 +1387,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_BUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_BUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1360,7 +1424,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_DATA_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_DATA_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1381,7 +1453,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1439,7 +1519,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_RUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_RUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1468,7 +1556,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_DATA_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_DATA_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1489,7 +1585,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1526,7 +1630,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_WSTRB_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_WSTRB_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1547,7 +1659,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_EDGES_WUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_EDGES_WUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1576,7 +1696,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_ADDR_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_ADDR_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1639,7 +1767,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1794,7 +1930,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_ARUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_ARUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1823,7 +1967,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_ADDR_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_ADDR_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1886,7 +2038,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2041,7 +2201,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_AWUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_AWUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2070,7 +2238,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2120,7 +2296,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_BUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_BUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2149,7 +2333,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_DATA_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_DATA_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2170,7 +2362,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2228,7 +2428,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_RUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_RUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2257,7 +2465,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_DATA_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_DATA_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2278,7 +2494,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2315,7 +2539,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_WSTRB_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_WSTRB_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -2336,7 +2568,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_VERTICES_WUSER_WIDTH - 1",
+                        "repr": "C_M_AXI_VERTICES_WUSER_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],

@@ -295,7 +295,7 @@
         {
             "expr": [
                 {
-                    "repr": "(32 / 8)",
+                    "repr": "4",
                     "type": "lit"
                 }
             ],
@@ -308,7 +308,7 @@
         {
             "expr": [
                 {
-                    "repr": "(32 / 8)",
+                    "repr": "4",
                     "type": "lit"
                 }
             ],
@@ -450,7 +450,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_ADDR_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_ADDR_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -513,7 +521,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -655,7 +671,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_ADDR_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_ADDR_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -718,7 +742,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -860,7 +892,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -918,7 +958,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_DATA_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_DATA_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -939,7 +987,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_ID_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_ID_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1005,7 +1061,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_DATA_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_DATA_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1042,7 +1106,15 @@
             "range": {
                 "left": [
                     {
-                        "repr": "C_M_AXI_MMAP_WSTRB_WIDTH - 1",
+                        "repr": "C_M_AXI_MMAP_WSTRB_WIDTH",
+                        "type": "id"
+                    },
+                    {
+                        "repr": "-",
+                        "type": "lit"
+                    },
+                    {
+                        "repr": "1",
                         "type": "lit"
                     }
                 ],
@@ -1303,7 +1375,7 @@
                     "name": "n"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X3Y3_SLOT_X3Y3",
             "hierarchical_name": [
                 "Add_0"
             ],
@@ -1892,7 +1964,7 @@
                     "name": "stream_s_write"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X3Y3_SLOT_X3Y3",
             "hierarchical_name": [
                 "Mmap2Stream_0"
             ],
@@ -2133,7 +2205,7 @@
                     "name": "n"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X3Y3_SLOT_X3Y3",
             "hierarchical_name": [
                 "SLOT_X3Y3_SLOT_X3Y3_fsm_0"
             ],
@@ -2270,7 +2342,7 @@
                     "name": "reset"
                 }
             ],
-            "floorplan_region": null,
+            "floorplan_region": "SLOT_X3Y3_SLOT_X3Y3",
             "hierarchical_name": [
                 "b_q_VecAdd"
             ],
