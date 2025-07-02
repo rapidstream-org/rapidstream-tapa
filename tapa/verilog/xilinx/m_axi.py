@@ -137,6 +137,65 @@ M_AXI_SUFFIXES = (
     "_AWQOS",
 )
 
+M_AXI_SUFFIXES_BY_CHANNEL = {
+    "AR": {
+        "ports": (
+            "_ARADDR",
+            "_ARBURST",
+            "_ARID",
+            "_ARLEN",
+            "_ARREADY",
+            "_ARSIZE",
+            "_ARVALID",
+            "_ARLOCK",
+            "_ARPROT",
+            "_ARQOS",
+            "_ARCACHE",
+        ),
+        "valid": "_ARVALID",
+        "ready": "_ARREADY",
+    },
+    "AW": {
+        "ports": (
+            "_AWADDR",
+            "_AWBURST",
+            "_AWID",
+            "_AWLEN",
+            "_AWREADY",
+            "_AWSIZE",
+            "_AWVALID",
+            "_AWLOCK",
+            "_AWPROT",
+            "_AWQOS",
+            "_AWCACHE",
+        ),
+        "valid": "_AWVALID",
+        "ready": "_AWREADY",
+    },
+    "B": {
+        "ports": ("_BID", "_BREADY", "_BRESP", "_BVALID"),
+        "valid": "_BVALID",
+        "ready": "_BREADY",
+    },
+    "R": {
+        "ports": (
+            "_RDATA",
+            "_RID",
+            "_RLAST",
+            "_RREADY",
+            "_RRESP",
+            "_RVALID",
+        ),
+        "valid": "_RVALID",
+        "ready": "_RREADY",
+    },
+    "W": {
+        "ports": ("_WDATA", "_WLAST", "_WREADY", "_WSTRB", "_WVALID"),
+        "valid": "_WVALID",
+        "ready": "_WREADY",
+    },
+}
+
 M_AXI_PARAM_PREFIX = "C_M_AXI_"
 
 M_AXI_PARAM_SUFFIXES = (

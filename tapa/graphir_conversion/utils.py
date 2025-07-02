@@ -5,6 +5,8 @@ Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
+import re
+from pathlib import Path
 
 from pyverilog.vparser.ast import (
     And,
@@ -39,12 +41,15 @@ from pyverilog.vparser.ast import (
 from tapa.graphir.types import (
     Expression,
     HierarchicalName,
+    ModuleConnection,
+    ModuleInstantiation,
     ModuleParameter,
     ModulePort,
     Range,
     Token,
     VerilogModuleDefinition,
 )
+from tapa.graphir_conversion.templates import FIFO_TEMPLATE, RESET_INVERTER_TEMPLATE
 from tapa.instance import Port
 from tapa.task import Task
 from tapa.verilog.util import Pipeline
@@ -154,10 +159,10 @@ _CTRL_S_AXI_PORT_DIR_RANGE = {
     "RVALID": (ModulePort.Type.OUTPUT, None),
     "RREADY": (ModulePort.Type.INPUT, None),
     "interrupt": (ModulePort.Type.OUTPUT, None),
-    "ap_start": (ModulePort.Type.INPUT, None),
-    "ap_done": (ModulePort.Type.OUTPUT, None),
-    "ap_ready": (ModulePort.Type.OUTPUT, None),
-    "ap_idle": (ModulePort.Type.OUTPUT, None),
+    "ap_start": (ModulePort.Type.OUTPUT, None),
+    "ap_done": (ModulePort.Type.INPUT, None),
+    "ap_ready": (ModulePort.Type.INPUT, None),
+    "ap_idle": (ModulePort.Type.INPUT, None),
 }
 
 _CTRL_S_AXI_PARAMETERS = [
@@ -176,6 +181,56 @@ _CTRL_S_AXI_PARAMETERS = [
 ]
 
 
+def str_to_tokens(s: str) -> list[Token]:
+    """Convert a string to a list of graphir tokens."""
+    tokens = []
+    for elem in re.sub(r"([\[\]\(\)\{\}])", r" \1 ", s).split():
+        if (
+            elem.isdigit()
+            or elem
+            in {
+                "(",
+                ")",
+                "[",
+                "]",
+                "{",
+                "}",
+                "~",
+                "-",
+                "+",
+                "*",
+                "/",
+                "%",
+                "**",
+                "==",
+                "!=",
+                ">",
+                "<",
+                ">=",
+                "<=",
+                "&&",
+                "||",
+                "&",
+                "|",
+                "^",
+                "~^",
+                "<<",
+                ">>",
+                ">>>",
+            }
+            or any(
+                item in elem
+                for item in ("'d", "'b", "'h", "'o", "'D", "'B", "'H", "'O")
+            )
+        ):
+            # numeric literal or operator
+            tokens.append(Token.new_lit(elem))
+        else:
+            # identifier
+            tokens.append(Token.new_id(elem))
+    return tokens
+
+
 def ast_to_tokens(node: Node) -> list[Token]:
     """Convert a pyverilog AST node to a list of graphir tokens."""
     tokens = []
@@ -184,7 +239,8 @@ def ast_to_tokens(node: Node) -> list[Token]:
         tokens.append(Token.new_id(node.name))
 
     elif isinstance(node, Constant):
-        tokens.append(Token.new_lit(node.value))
+        # TODO: refactor with pyslang
+        tokens += str_to_tokens(node.value)
 
     elif isinstance(node, UnaryOperator):
         # e.g., 'ulnot', 'unot', etc.
@@ -267,8 +323,8 @@ def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
     for name, port in task_module.ports.items():
         if port.width:
             port_range = Range(
-                left=Expression((Token.new_lit(port.width.msb),)),
-                right=Expression((Token.new_lit(port.width.lsb),)),
+                left=Expression(tuple(str_to_tokens(port.width.msb))),
+                right=Expression(tuple(str_to_tokens(port.width.lsb))),
             )
             assert port_range.left, type(port.width.msb)
         else:
@@ -286,7 +342,8 @@ def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
 
 def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
     """Get the graphir parameters from a task."""
-    assert task_module.params
+    if not task_module.params:
+        return []
     graphir_params = []
     for name, param in task_module.params.items():
         expr = Expression(tuple(ast_to_tokens(param.value)))
@@ -431,10 +488,195 @@ def get_ctrl_s_axi_def(top: Task, content: str) -> VerilogModuleDefinition:
             )
         )
     return VerilogModuleDefinition(
-        name="VecAdd_control_s_axi",
-        hierarchical_name=HierarchicalName.get_name("VecAdd_control_s_axi"),
+        name=f"{top.name}_control_s_axi",
+        hierarchical_name=HierarchicalName.get_name(f"{top.name}_control_s_axi"),
         parameters=tuple(_CTRL_S_AXI_PARAMETERS),
         ports=tuple(ports),
         verilog=content,
         submodules_module_names=(),
+    )
+
+
+def get_fifo_def() -> VerilogModuleDefinition:
+    """Get fifo module definition."""
+    return VerilogModuleDefinition(
+        name="fifo",
+        hierarchical_name=HierarchicalName.get_name("fifo"),
+        parameters=(
+            ModuleParameter(
+                name="DATA_WIDTH",
+                hierarchical_name=HierarchicalName.get_name("DATA_WIDTH"),
+                expr=Expression((Token.new_lit("32"),)),
+                range=None,
+            ),
+            ModuleParameter(
+                name="ADDR_WIDTH",
+                hierarchical_name=HierarchicalName.get_name("ADDR_WIDTH"),
+                expr=Expression((Token.new_lit("5"),)),
+                range=None,
+            ),
+            ModuleParameter(
+                name="DEPTH",
+                hierarchical_name=HierarchicalName.get_name("DEPTH"),
+                expr=Expression((Token.new_lit("32"),)),
+                range=None,
+            ),
+        ),
+        ports=(
+            ModulePort(
+                name="clk",
+                hierarchical_name=HierarchicalName.get_name("clk"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="reset",
+                hierarchical_name=HierarchicalName.get_name("rst"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_full_n",
+                hierarchical_name=HierarchicalName.get_name("if_full_n"),
+                type=ModulePort.Type.OUTPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_write_ce",
+                hierarchical_name=HierarchicalName.get_name("if_write_ce"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_write",
+                hierarchical_name=HierarchicalName.get_name("if_write"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_din",
+                hierarchical_name=HierarchicalName.get_name("if_din"),
+                type=ModulePort.Type.INPUT,
+                range=Range(
+                    left=Expression(
+                        (
+                            Token.new_id("DATA_WIDTH"),
+                            Token.new_lit("-"),
+                            Token.new_lit("1"),
+                        )
+                    ),
+                    right=Expression((Token.new_lit("0"),)),
+                ),
+            ),
+            ModulePort(
+                name="if_empty_n",
+                hierarchical_name=HierarchicalName.get_name("if_empty_n"),
+                type=ModulePort.Type.OUTPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_read_ce",
+                hierarchical_name=HierarchicalName.get_name("if_read_ce"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_read",
+                hierarchical_name=HierarchicalName.get_name("if_read"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="if_dout",
+                hierarchical_name=HierarchicalName.get_name("if_dout"),
+                type=ModulePort.Type.OUTPUT,
+                range=Range(
+                    left=Expression(
+                        (
+                            Token.new_id("DATA_WIDTH"),
+                            Token.new_lit("-"),
+                            Token.new_lit("1"),
+                        )
+                    ),
+                    right=Expression((Token.new_lit("0"),)),
+                ),
+            ),
+        ),
+        verilog=FIFO_TEMPLATE,
+        submodules_module_names=(),
+    )
+
+
+def get_fsm_def(
+    fsm_name: str,
+    fsm_file: Path,
+) -> VerilogModuleDefinition:
+    """Get FSM module definition."""
+    with open(fsm_file, encoding="utf-8") as f:
+        content = f.read()
+    module = Module(
+        (fsm_file,),
+        True,
+        name=fsm_name,
+    )
+    return get_verilog_definition_from_tapa_module(module, content)
+
+
+def get_reset_inverter_def() -> VerilogModuleDefinition:
+    """Get reset inverter module definition."""
+    return VerilogModuleDefinition(
+        name="reset_inverter",
+        hierarchical_name=HierarchicalName.get_name("reset_inverter"),
+        parameters=(),
+        ports=(
+            ModulePort(
+                name="clk",
+                hierarchical_name=HierarchicalName.get_name("clk"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="rst",
+                hierarchical_name=HierarchicalName.get_name("rst"),
+                type=ModulePort.Type.OUTPUT,
+                range=None,
+            ),
+            ModulePort(
+                name="rst_n",
+                hierarchical_name=HierarchicalName.get_name("rst_n"),
+                type=ModulePort.Type.INPUT,
+                range=None,
+            ),
+        ),
+        verilog=RESET_INVERTER_TEMPLATE,
+        submodules_module_names=(),
+    )
+
+
+def get_reset_inverter_inst(floorplan_region: str) -> ModuleInstantiation:
+    """Get reset inverter module instantiation."""
+    return ModuleInstantiation(
+        name="reset_inverter_0",
+        hierarchical_name=HierarchicalName.get_name("reset_inverter_0"),
+        module="reset_inverter",
+        parameters=(),
+        connections=(
+            ModuleConnection(
+                name="clk",
+                hierarchical_name=HierarchicalName.get_name("clk"),
+                expr=Expression((Token.new_id("ap_clk"),)),
+            ),
+            ModuleConnection(
+                name="rst",
+                hierarchical_name=HierarchicalName.get_name("rst"),
+                expr=Expression((Token.new_id("rst"),)),
+            ),
+            ModuleConnection(
+                name="rst_n",
+                hierarchical_name=HierarchicalName.get_name("rst_n"),
+                expr=Expression((Token.new_id("ap_rst_n"),)),
+            ),
+        ),
+        floorplan_region=floorplan_region,
+        area=None,
     )
