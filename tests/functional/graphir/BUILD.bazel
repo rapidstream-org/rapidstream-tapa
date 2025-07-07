@@ -109,3 +109,35 @@ sh_test(
         "cpu:2",
     ],
 )
+
+# jacobi
+tapa_xo(
+    name = "jacobi-graphir-xo",
+    src = "//tests/apps/jacobi:jacobi.cpp",
+    hdrs = ["//tests/apps/jacobi:jacobi.h"],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/jacobi.json",
+    top_name = "Jacobi",
+    use_graphir = True,
+)
+
+sh_test(
+    name = "jacobi-xosim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location //tests/apps/jacobi:jacobi-host)",
+        "--bitstream=$(location jacobi-graphir-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+    ],
+    data = [
+        ":jacobi-graphir-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+        "//tests/apps/jacobi:jacobi-host",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)
