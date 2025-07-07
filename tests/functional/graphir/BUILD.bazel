@@ -72,3 +72,40 @@ sh_test(
         "cpu:2",
     ],
 )
+
+# graph
+tapa_xo(
+    name = "graph-graphir-xo",
+    src = "//tests/apps/graph:graph.cpp",
+    hdrs = [
+        "//tests/apps/graph:graph.h",
+        "//tests/apps/graph:nxgraph.hpp",
+    ],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/graph.json",
+    top_name = "Graph",
+    use_graphir = True,
+)
+
+sh_test(
+    name = "graph-xosim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location //tests/apps/graph:graph-host)",
+        "--bitstream=$(location graph-graphir-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+        "$(location //tests/apps/graph:graph.txt)",
+    ],
+    data = [
+        ":graph-graphir-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+        "//tests/apps/graph:graph.txt",
+        "//tests/apps/graph:graph-host",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)
