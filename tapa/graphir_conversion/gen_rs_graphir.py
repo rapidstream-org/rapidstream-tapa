@@ -992,7 +992,7 @@ def get_project_from_floorplanned_program(program: Program) -> Project:  # noqa:
     )
 
     top_fsm_name = top_task.fsm_module.name
-    top_fsm_file = Path(program.rtl_dir) / f"{top_fsm_name}.v"
+    top_fsm_file = Path(program.get_rtl_path(top_task.fsm_module.name))
     top_fsm_def = get_fsm_def(
         top_fsm_name,
         top_fsm_file,
