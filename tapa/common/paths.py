@@ -206,6 +206,9 @@ def get_tapa_cflags() -> tuple[str, ...]:
         "-Wno-unknown-pragmas",
         # Suppress warnings that does not recognize HLS labels
         "-Wno-unused-label",
+        # Replace compiler specific builtins with generic ones
+        "-D__builtin_FILE()=__FILE__",
+        "-D__builtin_LINE()=__LINE__",
     )
 
 
