@@ -51,6 +51,7 @@ from tapa.verilog.xilinx.const import (
     ISTREAM_SUFFIXES,
     OSTREAM_SUFFIXES,
     STREAM_DATA_SUFFIXES,
+    STREAM_PORT_DIRECTION,
 )
 from tapa.verilog.xilinx.m_axi import M_AXI_SUFFIXES
 from tapa.verilog.xilinx.module import Module
@@ -235,15 +236,32 @@ def get_submodule_inst(
         elif arg.cat == Instance.Arg.Cat.ISTREAM:
             for suffix in ISTREAM_SUFFIXES:
                 leaf_port = subtasks[task_name].module.get_port_of(port_name, suffix)
+                expr = Expression(
+                    (Token.new_id(get_stream_port_name(arg.name, suffix)),)
+                )
                 connections.append(
                     ModuleConnection(
                         name=leaf_port.name,
                         hierarchical_name=HierarchicalName.get_name(leaf_port.name),
-                        expr=Expression(
-                            (Token.new_id(get_stream_port_name(arg.name, suffix)),)
-                        ),
+                        expr=expr,
                     )
                 )
+
+                # peek ports
+                if STREAM_PORT_DIRECTION[suffix] == "input":
+                    leaf_peek_port = subtasks[task_name].module.get_port_of(
+                        port_name, "_peek" + suffix
+                    )
+                    connections.append(
+                        ModuleConnection(
+                            name=leaf_peek_port.name,
+                            hierarchical_name=HierarchicalName.get_name(
+                                leaf_peek_port.name
+                            ),
+                            expr=expr,
+                        )
+                    )
+
         elif arg.cat == Instance.Arg.Cat.OSTREAM:
             for suffix in OSTREAM_SUFFIXES:
                 leaf_port = subtasks[task_name].module.get_port_of(port_name, suffix)
