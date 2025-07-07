@@ -52,24 +52,21 @@ jobs:
       matrix:
         include:
           # Test all Vitis versions on the latest supported Ubuntu LTS.
-          # - os: ubuntu-24
-          #   xilinx_version: "2024.1"
-          # Ubuntu 24.04 is not supported by Xilinx yet for the same reason
-          # as Fedora 39+. Glibc has different identifier names than the
-          # ones Xilinx expects.
-          - os: ubuntu-22
+          - os: ubuntu-24
             xilinx_version: "2024.2"
-          - os: ubuntu-22
+          - os: ubuntu-24
             xilinx_version: "2024.1"
-          - os: ubuntu-22
+          - os: ubuntu-24
             xilinx_version: "2023.2"
-          - os: ubuntu-22
+          - os: ubuntu-24
             xilinx_version: "2023.1"
-          - os: ubuntu-22
+          - os: ubuntu-24
             xilinx_version: "2022.2"
-          - os: ubuntu-22
+          - os: ubuntu-24
             xilinx_version: "2022.1"
           # Test all OS versions with the latest Vitis version.
+          - os: ubuntu-22
+            xilinx_version: "2024.2"
           - os: ubuntu-20
             xilinx_version: "2024.2"
           - os: ubuntu-18
@@ -81,6 +78,12 @@ jobs:
           - os: almalinux-9
             xilinx_version: "2024.2"
           - os: rockylinux-9
+            xilinx_version: "2024.2"
+          - os: fedora-41
+            xilinx_version: "2024.2"
+          - os: fedora-40
+            xilinx_version: "2024.2"
+          - os: fedora-39
             xilinx_version: "2024.2"
           - os: fedora-38
             xilinx_version: "2024.2"
