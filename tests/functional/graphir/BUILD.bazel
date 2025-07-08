@@ -141,3 +141,35 @@ sh_test(
         "cpu:2",
     ],
 )
+
+# network
+tapa_xo(
+    name = "network-graphir-xo",
+    src = "//tests/apps/network:network.cpp",
+    hdrs = ["//tests/apps/network:network.h"],
+    include = ["."],
+    flatten_hierarchy = True,
+    floorplan_path = ":floorplan/network.json",
+    top_name = "Network",
+    use_graphir = True,
+)
+
+sh_test(
+    name = "network-xosim",
+    size = "enormous",
+    timeout = "moderate",
+    srcs = ["//bazel:v++_env.sh"],
+    args = [
+        "$(location //tests/apps/network:network-host)",
+        "--bitstream=$(location network-graphir-xo)",
+        "--xosim_executable=$(location //tapa/cosim:tapa-fast-cosim)",
+    ],
+    data = [
+        ":network-graphir-xo",
+        "//tapa/cosim:tapa-fast-cosim",
+        "//tests/apps/network:network-host",
+    ],
+    tags = [
+        "cpu:2",
+    ],
+)
