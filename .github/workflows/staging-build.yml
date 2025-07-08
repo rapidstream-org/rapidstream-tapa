@@ -71,11 +71,17 @@ jobs:
             xilinx_version: "2024.2"
           - os: ubuntu-18
             xilinx_version: "2024.2"
-          - os: debian-10
+          - os: debian-12
             xilinx_version: "2024.2"
           - os: debian-11
             xilinx_version: "2024.2"
+          - os: debian-10
+            xilinx_version: "2024.2"
+          - os: almalinux-10
+            xilinx_version: "2024.2"
           - os: almalinux-9
+            xilinx_version: "2024.2"
+          - os: rockylinux-10
             xilinx_version: "2024.2"
           - os: rockylinux-9
             xilinx_version: "2024.2"

@@ -6,4 +6,4 @@
 
 FROM almalinux:9.6-20250611
 
-INCLUDE+ Dockerfile.rhel9-common
+INCLUDE+ Dockerfile.rhel-common

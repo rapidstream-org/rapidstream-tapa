@@ -34,6 +34,7 @@ RUN yum update -y && \
         hostname \
         libX11 \
         libxcrypt-compat \
+        make \
         perl \
         shadow-utils \
         tar \
