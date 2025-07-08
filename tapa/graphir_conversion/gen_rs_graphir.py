@@ -211,7 +211,7 @@ def get_slot_module_definition_ports(  # noqa: C901
     return ports
 
 
-def get_submodule_inst(
+def get_submodule_inst(  # noqa: PLR0912,C901
     subtasks: dict[str, Task],
     inst: Instance,
     arg_table: dict[str, dict[str, Pipeline]],
@@ -223,15 +223,27 @@ def get_submodule_inst(
     for arg in inst.args:
         port_name = arg.port
         if arg.cat == Instance.Arg.Cat.SCALAR:
-            connections.append(
-                ModuleConnection(
-                    name=port_name,
-                    hierarchical_name=HierarchicalName.get_name(port_name),
-                    expr=Expression(
-                        (Token.new_id(arg_table[inst.name][arg.name][-1].name),)
-                    ),
+            # connect port directly to literal
+            arg_name_expr = Expression.from_str_to_tokens(arg.name)
+            if arg_name_expr.is_all_literals():
+                connections.append(
+                    ModuleConnection(
+                        name=port_name,
+                        hierarchical_name=HierarchicalName.get_name(port_name),
+                        expr=arg_name_expr,
+                    )
                 )
-            )
+            else:
+                # connect port to wire
+                # get wire name from arg_table
+                conn_str = arg_table[inst.name][arg.name][-1].name
+                connections.append(
+                    ModuleConnection(
+                        name=port_name,
+                        hierarchical_name=HierarchicalName.get_name(port_name),
+                        expr=Expression.from_str_to_tokens(conn_str),
+                    )
+                )
 
         elif arg.cat == Instance.Arg.Cat.ISTREAM:
             for suffix in ISTREAM_SUFFIXES:
@@ -249,15 +261,19 @@ def get_submodule_inst(
 
                 # peek ports
                 if STREAM_PORT_DIRECTION[suffix] == "input":
-                    leaf_peek_port = subtasks[task_name].module.get_port_of(
-                        port_name, "_peek" + suffix
-                    )
+                    match = match_array_name(port_name)
+                    if match:
+                        leaf_peek_port = match[0] + "_peek_" + str(match[1]) + suffix
+                    else:
+                        leaf_peek_port = (
+                            subtasks[task_name]
+                            .module.get_port_of(port_name, "_peek" + suffix)
+                            .name
+                        )
                     connections.append(
                         ModuleConnection(
-                            name=leaf_peek_port.name,
-                            hierarchical_name=HierarchicalName.get_name(
-                                leaf_peek_port.name
-                            ),
+                            name=leaf_peek_port,
+                            hierarchical_name=HierarchicalName.get_name(leaf_peek_port),
                             expr=expr,
                         )
                     )
@@ -760,6 +776,10 @@ def get_top_level_slot_inst(
     for arg in slot_inst.args:
         port_name = arg.port
         if arg.cat == Instance.Arg.Cat.SCALAR:
+            # if leaf module port directly connects to a literal,
+            # slot needs no connection
+            if Expression.from_str_to_tokens(arg.name).is_all_literals():
+                continue
             connections.append(
                 ModuleConnection(
                     name=port_name,

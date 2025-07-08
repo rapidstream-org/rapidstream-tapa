@@ -347,3 +347,69 @@ class Expression(  # type: ignore [misc]
                 new_expr.append(part)
 
         return Expression(tuple(new_expr))
+
+    @classmethod
+    def from_str_to_tokens(cls, s: str) -> "Expression":
+        """Convert a string to a list of graphir tokens."""
+        tokens = []
+        for elem in re.sub(r"([\[\]\(\)\{\}])", r" \1 ", s).split():
+            if (
+                elem.isdigit()
+                or elem
+                in {
+                    "(",
+                    ")",
+                    "[",
+                    "]",
+                    "{",
+                    "}",
+                    "~",
+                    "-",
+                    "+",
+                    "*",
+                    "/",
+                    "%",
+                    "**",
+                    "==",
+                    "!=",
+                    ">",
+                    "<",
+                    ">=",
+                    "<=",
+                    "&&",
+                    "||",
+                    "&",
+                    "|",
+                    "^",
+                    "~^",
+                    "<<",
+                    ">>",
+                    ">>>",
+                }
+                or any(
+                    item in elem
+                    for item in ("'d", "'b", "'h", "'o", "'D", "'B", "'H", "'O")
+                )
+            ):
+                # numeric literal or operator
+                tokens.append(Token.new_lit(elem))
+            else:
+                # identifier
+                tokens.append(Token.new_id(elem))
+        return Expression(tuple(tokens))
+
+    def is_all_literals(self) -> bool:
+        """Check if all tokens in the expression are literals.
+
+        Returns:
+            bool: True if all tokens are literals, False otherwise.
+
+        Examples:
+            >>> e = Expression((Token.new_lit("1"), Token.new_lit("2")))
+            >>> e.is_all_literals()
+            True
+            >>> e = Expression((Token.new_id("a"), Token.new_lit("1")))
+            >>> e.is_all_literals()
+            False
+        """
+        return all(token.is_literal() for token in self)

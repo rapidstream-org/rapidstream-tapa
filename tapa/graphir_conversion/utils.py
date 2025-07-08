@@ -5,7 +5,6 @@ Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
 All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
-import re
 from pathlib import Path
 
 from pyverilog.vparser.ast import (
@@ -181,56 +180,6 @@ _CTRL_S_AXI_PARAMETERS = [
 ]
 
 
-def str_to_tokens(s: str) -> list[Token]:
-    """Convert a string to a list of graphir tokens."""
-    tokens = []
-    for elem in re.sub(r"([\[\]\(\)\{\}])", r" \1 ", s).split():
-        if (
-            elem.isdigit()
-            or elem
-            in {
-                "(",
-                ")",
-                "[",
-                "]",
-                "{",
-                "}",
-                "~",
-                "-",
-                "+",
-                "*",
-                "/",
-                "%",
-                "**",
-                "==",
-                "!=",
-                ">",
-                "<",
-                ">=",
-                "<=",
-                "&&",
-                "||",
-                "&",
-                "|",
-                "^",
-                "~^",
-                "<<",
-                ">>",
-                ">>>",
-            }
-            or any(
-                item in elem
-                for item in ("'d", "'b", "'h", "'o", "'D", "'B", "'H", "'O")
-            )
-        ):
-            # numeric literal or operator
-            tokens.append(Token.new_lit(elem))
-        else:
-            # identifier
-            tokens.append(Token.new_id(elem))
-    return tokens
-
-
 def ast_to_tokens(node: Node) -> list[Token]:
     """Convert a pyverilog AST node to a list of graphir tokens."""
     tokens = []
@@ -240,7 +189,7 @@ def ast_to_tokens(node: Node) -> list[Token]:
 
     elif isinstance(node, Constant):
         # TODO: refactor with pyslang
-        tokens += str_to_tokens(node.value)
+        tokens += Expression.from_str_to_tokens(node.value).root
 
     elif isinstance(node, UnaryOperator):
         # e.g., 'ulnot', 'unot', etc.
@@ -323,8 +272,8 @@ def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
     for name, port in task_module.ports.items():
         if port.width:
             port_range = Range(
-                left=Expression(tuple(str_to_tokens(port.width.msb))),
-                right=Expression(tuple(str_to_tokens(port.width.lsb))),
+                left=Expression.from_str_to_tokens(port.width.msb),
+                right=Expression.from_str_to_tokens(port.width.lsb),
             )
             assert port_range.left, type(port.width.msb)
         else:
@@ -431,6 +380,10 @@ def get_task_arg_table(
     for instance in task.instances:
         inst_table: dict[str, Pipeline] = {}
         for arg in instance.args:
+            # Skip port connected to lit
+            if Expression.from_str_to_tokens(arg.name).is_all_literals():
+                continue
+
             if not arg.cat.is_stream:
                 # For mmap ports, the scalar port is the offset.
                 upper_name = (
