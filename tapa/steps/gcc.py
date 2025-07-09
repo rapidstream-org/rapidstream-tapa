@@ -47,6 +47,8 @@ def gcc(executable: str, argv: Iterable[str]) -> None:
         executable,
         # Host libraries requires C++17 features, unlike the FPGA code.
         "-std=c++17",
+        # Disable the Xilinx FPO library dependency in `<hls_half.h>`.
+        "-DHLS_NO_XIL_FPO_LIB",
         *get_tapa_cflags(),
         *(f"-isystem{p}" for p in vendor_include_paths),
         *argv,
