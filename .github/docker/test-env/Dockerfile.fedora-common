@@ -44,6 +44,10 @@ RUN yum update -y && \
 # Link libtinfo.so.6 to libtinfo.so.5 if it doesn't exist
 RUN if [ ! -f /lib64/libtinfo.so.5 ]; then ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5; fi
 
+# Remove the user and group with the same ID created by the base image if exists
+RUN userdel -f $(getent passwd ${DOCKER_USER_ID} | cut -d: -f1) || true
+RUN groupdel -f $(getent group ${DOCKER_GROUP_ID} | cut -d: -f1) || true
+
 # Create a user for the test environment
 RUN groupadd -g ${DOCKER_GROUP_ID} io && \
     useradd -u ${DOCKER_USER_ID} -g io -d /tmp io
