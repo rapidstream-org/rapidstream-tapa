@@ -22,6 +22,7 @@ __all__ = (
 )
 
 REPORT_UTIL_COMMANDS = r"""
+set_part {part_num}
 read_verilog [ glob {hdl_dir}/*.v ]
 set ips [ glob -nocomplain {hdl_dir}/*/*.xci ]
 if {{ $ips ne "" }} {{
@@ -103,6 +104,7 @@ class ReportDirUtil(backend.Vivado):
         synth_args = " ".join(f"-{k} {v}" for k, v in synth_kwargs.items())
         report_util_args = " ".join(f"-{k} {v}" for k, v in report_util_kwargs.items())
         kwargs = {
+            "part_num": part_num,
             "hdl_dir": os.path.abspath(hdl_dir),
             "synth_args": synth_args,
             "report_util_args": report_util_args,
