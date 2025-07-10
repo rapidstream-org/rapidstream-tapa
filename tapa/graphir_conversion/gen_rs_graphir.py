@@ -224,26 +224,21 @@ def get_submodule_inst(  # noqa: PLR0912,C901
         port_name = arg.port
         if arg.cat == Instance.Arg.Cat.SCALAR:
             # connect port directly to literal
-            arg_name_expr = Expression.from_str_to_tokens(arg.name)
-            if arg_name_expr.is_all_literals():
-                connections.append(
-                    ModuleConnection(
-                        name=port_name,
-                        hierarchical_name=HierarchicalName.get_name(port_name),
-                        expr=arg_name_expr,
-                    )
-                )
-            else:
+            expr = Expression.from_str_to_tokens(arg.name)
+            if not expr.is_all_literals():
                 # connect port to wire
                 # get wire name from arg_table
-                conn_str = arg_table[inst.name][arg.name][-1].name
-                connections.append(
-                    ModuleConnection(
-                        name=port_name,
-                        hierarchical_name=HierarchicalName.get_name(port_name),
-                        expr=Expression.from_str_to_tokens(conn_str),
-                    )
+                expr = Expression.from_str_to_tokens(
+                    arg_table[inst.name][arg.name][-1].name
                 )
+
+            connections.append(
+                ModuleConnection(
+                    name=port_name,
+                    hierarchical_name=HierarchicalName.get_name(port_name),
+                    expr=expr,
+                )
+            )
 
         elif arg.cat == Instance.Arg.Cat.ISTREAM:
             for suffix in ISTREAM_SUFFIXES:
@@ -1052,8 +1047,8 @@ def get_project_from_floorplanned_program(program: Program) -> Project:  # noqa:
         # wrap inversion logic in module to avoid logic at top level
         get_reset_inverter_def(),
         *slot_fsms,
-        *list(slot_irs.values()),
-        *list(leaf_irs.values()),
+        *slot_irs.values(),
+        *leaf_irs.values(),
     ]
 
     modules_obj = Modules(

@@ -291,8 +291,6 @@ def get_task_graphir_ports(task_module: Module) -> list[ModulePort]:
 
 def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
     """Get the graphir parameters from a task."""
-    if not task_module.params:
-        return []
     graphir_params = []
     for name, param in task_module.params.items():
         expr = Expression(tuple(ast_to_tokens(param.value)))
@@ -569,7 +567,7 @@ def get_fsm_def(
         content = f.read()
     module = Module(
         (fsm_file,),
-        True,
+        is_trimming_enabled=True,
         name=fsm_name,
     )
     return get_verilog_definition_from_tapa_module(module, content)
