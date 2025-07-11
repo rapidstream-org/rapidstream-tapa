@@ -559,7 +559,6 @@ def get_fifo_def() -> VerilogModuleDefinition:
 
 
 def get_fsm_def(
-    fsm_name: str,
     fsm_file: Path,
 ) -> VerilogModuleDefinition:
     """Get FSM module definition."""
@@ -568,7 +567,6 @@ def get_fsm_def(
     module = Module(
         (fsm_file,),
         is_trimming_enabled=True,
-        name=fsm_name,
     )
     return get_verilog_definition_from_tapa_module(module, content)
 

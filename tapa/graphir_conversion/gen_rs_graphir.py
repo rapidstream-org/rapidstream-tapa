@@ -983,7 +983,7 @@ def get_top_module_definition(
     )
 
 
-def get_project_from_floorplanned_program(program: Program) -> Project:  # noqa: PLR0914
+def get_project_from_floorplanned_program(program: Program) -> Project:
     """Get a graphir project from a floorplanned TAPA program."""
     top_task = program.top_task
 
@@ -1024,16 +1024,13 @@ def get_project_from_floorplanned_program(program: Program) -> Project:  # noqa:
         top_task, slot_irs, ctrl_s_axi, program.slot_task_name_to_fp_region
     )
 
-    top_fsm_name = top_task.fsm_module.name
     top_fsm_file = Path(program.get_rtl_path(top_task.fsm_module.name))
     top_fsm_def = get_fsm_def(
-        top_fsm_name,
         top_fsm_file,
     )
 
     slot_fsms = [
         get_fsm_def(
-            slot_task.fsm_module.name,
             Path(program.get_rtl_path(slot_task.fsm_module.name)),
         )
         for slot_task in slot_tasks.values()
