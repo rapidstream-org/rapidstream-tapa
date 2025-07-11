@@ -11,8 +11,10 @@ load("//bazel:tapa_rules.bzl", "tapa_xo")
 tapa_xo(
     name = "enable-synth-util-xo",
     src = "vadd.cpp",
+    clock_period = "3.333",  # for #258
     enable_synth_util = True,
     output_file = "enable-synth-util.xo",
+    part_num = "xcv80-lsva4737-2MHP-e-S",  # for #258
     top_name = "VecAdd",
 )
 

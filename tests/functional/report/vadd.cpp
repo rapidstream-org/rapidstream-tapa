@@ -35,7 +35,18 @@ void Stream2Mmap(tapa::istream<float>& stream, tapa::mmap<float> mmap,
 void Add(tapa::istream<float>& a, tapa::istream<float>& b,
          tapa::ostream<float>& c, uint64_t n) {
   for (uint64_t i = 0; i < n; ++i) {
-    c << (a.read() + b.read());
+    // TEST: `fmadd` should work with `xcv80-lsva4737-2MHP-e-S` (#258)
+    constexpr int kN = 16;
+    tapa::vec_t<float, kN> a_vec, b_vec;
+    float acc[kN] = {};
+#pragma HLS array_partition variable = acc complete
+    a_vec.set(a.read());
+    b_vec.set(b.read());
+    for (int i = 0; i < kN; ++i) {
+#pragma HLS unroll
+      acc[i] += a_vec[i] * b_vec[i];
+    }
+    c << acc[0];
   }
 }
 
