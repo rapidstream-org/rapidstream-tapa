@@ -1,0 +1,72 @@
+"""Add pipeline to TAPA program."""
+
+__copyright__ = """
+Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
+All rights reserved. The contributor(s) of this file has/have agreed to the
+RapidStream Contributor License Agreement.
+"""
+
+import logging
+import shutil
+import subprocess
+from pathlib import Path
+
+import click
+
+from tapa.steps.common import load_tapa_program
+
+_ADD_PIPELINE_WORK_DIR = "add_pipeline"
+_EXPORTER_DIR = "exporter"
+
+_logger = logging.getLogger().getChild(__name__)
+
+
+@click.command()
+@click.option(
+    "--device-config",
+    type=Path,
+    required=True,
+    help="Path to the device configuration file.",
+)
+def add_pipeline(device_config: Path) -> None:
+    """Run external add pipeline tool."""
+    program = load_tapa_program()
+    input_graphir_path = Path(program.work_dir) / "graphir.json"
+    if not input_graphir_path.exists():
+        msg = f"GraphIR file not found: {input_graphir_path}"
+        raise FileNotFoundError(msg)
+    output_graphir_path = Path(program.work_dir) / "graphir_add_pipeline.json"
+    sol_dir = Path(program.work_dir) / _ADD_PIPELINE_WORK_DIR
+    sol_dir.mkdir(parents=True, exist_ok=True)
+
+    add_pipeline_cmd = [
+        "rapidstream-optimizer",
+        "-i",
+        input_graphir_path,
+        "-o",
+        str(output_graphir_path),
+        "add-pipeline",
+        "--sol-dir",
+        str(sol_dir),
+        "--device-config",
+        str(device_config),
+    ]
+
+    subprocess.run(add_pipeline_cmd, check=True)
+
+    export_dir = Path(program.work_dir) / _EXPORTER_DIR
+    export_dir.mkdir(parents=True, exist_ok=True)
+    exporter_cmd = [
+        "rapidstream-exporter",
+        "-i",
+        str(output_graphir_path),
+        "-f",
+        str(export_dir),
+    ]
+
+    subprocess.run(exporter_cmd, check=True)
+
+    # Copy exported files to the program RTL directory
+    for file in export_dir.iterdir():
+        if file.is_file():
+            shutil.copy2(file, Path(program.rtl_dir) / file.name)
