@@ -7,6 +7,8 @@ RapidStream Contributor License Agreement.
 """
 
 import json
+import logging
+import subprocess
 from collections import defaultdict
 from pathlib import Path
 
@@ -21,6 +23,49 @@ from tapa.steps.common import (
     store_persistent_context,
     store_tapa_program,
 )
+
+AUTOBRIDGE_WORK_DIR = "autobridge"
+
+_logger = logging.getLogger().getChild(__name__)
+
+
+@click.command()
+@click.option(
+    "--device-config",
+    type=Path,
+    required=True,
+    help="Path to the device configuration file.",
+)
+@click.option(
+    "--floorplan-config",
+    type=Path,
+    required=True,
+    help="Path to the floorplan configuration file.",
+)
+def run_autobridge(device_config: Path, floorplan_config: Path) -> None:
+    """Run the autobridge tool to generate a floorplan."""
+    program = load_tapa_program()
+    ab_graph_path = Path(program.work_dir) / "ab_graph.json"
+    autobridge_work_dir = Path(program.work_dir) / AUTOBRIDGE_WORK_DIR
+    autobridge_work_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        "rapidstream-tapafp",
+        "--ab-graph-path",
+        str(ab_graph_path),
+        "--work-dir",
+        str(autobridge_work_dir),
+        "--device-config",
+        str(device_config),
+        "--floorplan-config",
+        str(floorplan_config),
+        "--run-floorplan",
+    ]
+
+    subprocess.run(cmd, check=True)
+    floorplan_files = autobridge_work_dir.glob("solution_*/floorplan.json")
+    for floorplan_file in floorplan_files:
+        _logger.info("Generated floorplan file: %s", floorplan_file)
 
 
 @click.command()
