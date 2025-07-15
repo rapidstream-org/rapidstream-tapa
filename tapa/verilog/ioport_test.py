@@ -1,4 +1,4 @@
-"""Unit tests for tapa.verilog.xilinx.ioport."""
+"""Unit tests for tapa.verilog.ioport."""
 
 __copyright__ = """
 Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
@@ -9,7 +9,7 @@ RapidStream Contributor License Agreement.
 import pyslang
 from pyverilog.vparser import ast
 
-from tapa.verilog.xilinx.ioport import IOPort
+from tapa.verilog.ioport import IOPort
 
 _NAME = "foo"
 _WIDTH = ast.Width(msb=ast.Constant(31), lsb=ast.Constant(0))

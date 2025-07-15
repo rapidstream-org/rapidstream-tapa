@@ -18,6 +18,7 @@ from pyverilog.vparser.ast import (
 )
 
 from tapa.util import get_indexed_name, get_instance_name
+from tapa.verilog.ioport import IOPort
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import sanitize_array_name, wire_name
 from tapa.verilog.width import Width
@@ -27,7 +28,6 @@ from tapa.verilog.xilinx.const import (
     HANDSHAKE_READY,
     HANDSHAKE_START,
 )
-from tapa.verilog.xilinx.ioport import IOPort
 
 if TYPE_CHECKING:
     from tapa.task import Task

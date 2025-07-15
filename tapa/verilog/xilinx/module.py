@@ -28,6 +28,7 @@ from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
 from tapa.verilog.ast_utils import make_port_arg
+from tapa.verilog.ioport import IOPort
 from tapa.verilog.logic import Always, Assign
 from tapa.verilog.pragma import Pragma
 from tapa.verilog.signal import Reg, Wire
@@ -40,7 +41,6 @@ from tapa.verilog.util import (
     wire_name,
 )
 from tapa.verilog.width import Width
-from tapa.verilog.xilinx import ioport
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
 from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import (
@@ -122,7 +122,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
     _param_name_to_decl: dict[str, pyslang.ParameterDeclarationStatementSyntax]
     _param_source_range: pyslang.SourceRange
 
-    _ports: dict[str, ioport.IOPort]
+    _ports: dict[str, IOPort]
     _port_name_to_decl: dict[str, pyslang.PortDeclarationSyntax]
     _port_source_range: pyslang.SourceRange
 
@@ -230,7 +230,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         @visitor.register
         def _(node: pyslang.PortDeclarationSyntax) -> pyslang.VisitAction:
-            port = ioport.IOPort.create(node)
+            port = IOPort.create(node)
             self._ports[port.name] = port
             self._port_name_to_decl[port.name] = node
             self._update_source_range_for_port(node)
@@ -287,13 +287,13 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
         return self._module_decl.header.name.valueText
 
     @property
-    def ports(self) -> dict[str, ioport.IOPort]:
+    def ports(self) -> dict[str, IOPort]:
         return self._ports
 
     class NoMatchingPortError(ValueError):
         """No matching port being found exception."""
 
-    def get_port_of(self, fifo: str, suffix: str) -> ioport.IOPort:
+    def get_port_of(self, fifo: str, suffix: str) -> IOPort:
         """Return the IOPort of the given fifo with the given suffix.
 
         Args:
@@ -397,7 +397,7 @@ endmodule
 
 """).render(name=self.name, ports=self.ports.values())
 
-    def add_ports(self, ports: Iterable[ioport.IOPort]) -> "Module":
+    def add_ports(self, ports: Iterable[IOPort]) -> "Module":
         """Add IO ports to this module."""
         header_pieces = []
         body_pieces = []
@@ -738,7 +738,7 @@ endmodule
         for channel, ports in M_AXI_PORTS.items():
             for port, direction in ports:
                 port_name = f"{M_AXI_PREFIX}{name}_{channel}{port}"
-                io_port = ioport.IOPort(
+                io_port = IOPort(
                     direction,
                     port_name,
                     get_m_axi_port_width(port, data_width, addr_width, id_width),

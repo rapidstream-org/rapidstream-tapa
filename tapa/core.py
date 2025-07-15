@@ -53,6 +53,7 @@ from tapa.verilog.ast_utils import (
     make_if_with_block,
     make_port_arg,
 )
+from tapa.verilog.ioport import IOPort
 from tapa.verilog.logic import Always, Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import Pipeline, array_name, match_array_name, wire_name
@@ -81,7 +82,6 @@ from tapa.verilog.xilinx.const import (
     STATE,
     TRUE,
 )
-from tapa.verilog.xilinx.ioport import IOPort
 from tapa.verilog.xilinx.module import Module, generate_m_axi_ports, get_streams_fifos
 
 _logger = logging.getLogger().getChild(__name__)

@@ -13,6 +13,7 @@ from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser import ast
 
 from tapa.verilog import ast_utils
+from tapa.verilog.ioport import IOPort
 from tapa.verilog.logic import Always, Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.width import Width
@@ -21,7 +22,6 @@ from tapa.verilog.xilinx.const import (
     HANDSHAKE_CLK,
     HANDSHAKE_RST_N,
 )
-from tapa.verilog.xilinx.ioport import IOPort
 from tapa.verilog.xilinx.module import Module, _get_rs_pragma
 
 _CODEGEN = ASTCodeGenerator()

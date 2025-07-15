@@ -31,11 +31,11 @@ py_library(
     deps = [
         "//tapa/verilog:ast_types",
         "//tapa/verilog:ast_utils",
+        "//tapa/verilog:ioport",
         "//tapa/verilog:signal",
         "//tapa/verilog:util",
         "//tapa/verilog:width",
         "//tapa/verilog/xilinx:const",
-        "//tapa/verilog/xilinx:ioport",
         requirement("pyverilog"),
     ],
 )
@@ -50,29 +50,6 @@ py_library(
     srcs = ["const.py"],
     deps = [
         "//tapa/verilog:width",
-        requirement("pyverilog"),
-    ],
-)
-
-py_library(
-    name = "ioport",
-    srcs = ["ioport.py"],
-    deps = [
-        "//tapa/common:unique_attrs",
-        "//tapa/verilog:ast_types",
-        "//tapa/verilog:pragma",
-        "//tapa/verilog:width",
-        requirement("pyslang"),
-        requirement("pyverilog"),
-    ],
-)
-
-py_test(
-    name = "ioport_test",
-    srcs = ["ioport_test.py"],
-    deps = [
-        ":ioport",
-        requirement("pyslang"),
         requirement("pyverilog"),
     ],
 )
@@ -95,6 +72,7 @@ py_library(
         "//tapa/common:unique_attrs",
         "//tapa/verilog:ast_types",
         "//tapa/verilog:ast_utils",
+        "//tapa/verilog:ioport",
         "//tapa/verilog:logic",
         "//tapa/verilog:pragma",
         "//tapa/verilog:signal",
@@ -103,7 +81,6 @@ py_library(
         "//tapa/verilog/xilinx:async_mmap",
         "//tapa/verilog/xilinx:axis",
         "//tapa/verilog/xilinx:const",
-        "//tapa/verilog/xilinx:ioport",
         "//tapa/verilog/xilinx:m_axi",
         requirement("jinja2"),
         requirement("pyslang"),
@@ -120,11 +97,11 @@ py_test(
     ],
     deps = [
         "//tapa/verilog:ast_types",
+        "//tapa/verilog:ioport",
         "//tapa/verilog:logic",
         "//tapa/verilog:signal",
         "//tapa/verilog:width",
         "//tapa/verilog/xilinx:const",
-        "//tapa/verilog/xilinx:ioport",
         "//tapa/verilog/xilinx:module",
         requirement("pyverilog"),
     ],

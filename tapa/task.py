@@ -26,6 +26,7 @@ from tapa.instance import Instance, Port
 from tapa.util import get_addr_width, get_indexed_name, range_or_none
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.axi_xbar import generate as axi_xbar_generate
+from tapa.verilog.ioport import IOPort
 from tapa.verilog.logic import Assign
 from tapa.verilog.signal import Wire
 from tapa.verilog.util import wire_name
@@ -50,7 +51,6 @@ from tapa.verilog.xilinx.const import (
     STREAM_PORT_DIRECTION,
     get_stream_width,
 )
-from tapa.verilog.xilinx.ioport import IOPort
 from tapa.verilog.xilinx.m_axi import M_AXI_PORTS, get_m_axi_port_width
 from tapa.verilog.xilinx.module import Module
 
