@@ -7,6 +7,7 @@ RapidStream Contributor License Agreement.
 """
 
 from collections.abc import Iterable
+from typing import Literal
 
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.verilog.width import Width
@@ -43,7 +44,7 @@ M_AXI_PORT_WIDTHS = {
 }
 
 # => [(name, direction), ...]
-M_AXI_ADDR_PORTS = (
+M_AXI_ADDR_PORTS: tuple[tuple[str, Literal["input", "output"]], ...] = (
     ("ADDR", "output"),
     ("BURST", "output"),
     ("CACHE", "output"),
@@ -58,7 +59,7 @@ M_AXI_ADDR_PORTS = (
 )
 
 # => {channel: [(name, direction), ...]}
-M_AXI_PORTS: dict[str, tuple[tuple[str, str], ...]] = {
+M_AXI_PORTS: dict[str, tuple[tuple[str, Literal["input", "output"]], ...]] = {
     "AR": M_AXI_ADDR_PORTS,
     "AW": M_AXI_ADDR_PORTS,
     "B": (

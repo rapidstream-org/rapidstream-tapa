@@ -15,6 +15,7 @@ from pyverilog.vparser import ast
 from tapa.common.unique_attrs import UniqueAttrs
 from tapa.verilog import ast_types
 from tapa.verilog.ast_utils import make_pragma
+from tapa.verilog.pragma import Pragma
 from tapa.verilog.width import Width
 from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import HANDSHAKE_CLK, HANDSHAKE_RST_N
@@ -24,9 +25,10 @@ _logger = logging.getLogger().getChild(__name__)
 
 
 class IOPort(NamedTuple):
-    name: str
     direction: Literal["input", "output", "inout"]
-    width: Width | None
+    name: str
+    width: Width | None = None
+    pragma: Pragma | None = None
 
     @classmethod
     def create(
@@ -68,8 +70,8 @@ class IOPort(NamedTuple):
             msg = f"unexpected type {type(port)}"
             raise TypeError(msg)
         return IOPort(
-            port.name,
             direction,
+            port.name,
             None if port.width is None else Width(port.width.msb, port.width.lsb),
         )
 
@@ -100,9 +102,14 @@ class IOPort(NamedTuple):
         return None
 
     def __str__(self) -> str:
-        if self.width is None:
-            return f"{self.direction} {self.name};"
-        return f"{self.direction} [{self.width.msb}:{self.width.lsb}] {self.name};"
+        fields = []
+        if self.pragma is not None:
+            fields.append(str(self.pragma))
+        fields.append(self.direction)
+        if self.width is not None:
+            fields.append(f"[{self.width.msb}:{self.width.lsb}]")
+        fields.append(f"{self.name};")
+        return " ".join(fields)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, IOPort) and str(self) == str(other)

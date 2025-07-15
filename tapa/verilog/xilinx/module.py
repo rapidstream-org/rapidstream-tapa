@@ -8,7 +8,7 @@ import functools
 import logging
 import re
 import tempfile
-from collections.abc import Collection, Generator, Iterable, Iterator
+from collections.abc import Collection, Iterable, Iterator
 from pathlib import Path
 
 import jinja2
@@ -16,12 +16,9 @@ import pyslang
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser.ast import (
     Constant,
-    Decl,
-    Input,
     Instance,
     InstanceList,
     Node,
-    Output,
     ParamArg,
     Parameter,
     PortArg,
@@ -30,9 +27,9 @@ from pyverilog.vparser.ast import (
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
-from tapa.verilog.ast_types import IOPort
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.logic import Always, Assign
+from tapa.verilog.pragma import Pragma
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import (
     Pipeline,
@@ -42,7 +39,7 @@ from tapa.verilog.util import (
     sanitize_array_name,
     wire_name,
 )
-from tapa.verilog.width import Width, get_ast_width
+from tapa.verilog.width import Width
 from tapa.verilog.xilinx import ioport
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
 from tapa.verilog.xilinx.const import (
@@ -398,27 +395,12 @@ endmodule
 
 """).render(name=self.name, ports=self.ports.values())
 
-    def add_ports(self, ports: Iterable[IOPort | Decl]) -> "Module":
-        """Add IO ports to this module.
-
-        Each port could be an `IOPort`, or an `Decl` that has a single `IOPort`
-        prefixed with 0 or more `Pragma`s.
-        """
-
-        def flatten(ports: Iterable[IOPort | Decl]) -> Generator[ioport.IOPort]:
-            for port in ports:
-                if isinstance(port, Decl):
-                    yield from flatten(x for x in port.list if isinstance(x, IOPort))
-                elif isinstance(port, IOPort):
-                    yield ioport.IOPort.create(port)
-                else:
-                    msg = f"unexpected port `{port}`"
-                    raise ValueError(msg)
-
+    def add_ports(self, ports: Iterable[ioport.IOPort]) -> "Module":
+        """Add IO ports to this module."""
         header_pieces = []
         body_pieces = []
         is_ports_empty = len(self._ports) == 0
-        for port in flatten(ports):
+        for port in ports:
             self._ports[port.name] = port
             header_pieces.extend([",\n  ", port.name])
             body_pieces.extend(["\n  ", str(port)])
@@ -606,11 +588,11 @@ endmodule
         """
         self._syntax_tree = self._rewriter.commit()
         self._parse_syntax_tree()
-        for port in self._ports.values():
-            if port.rs_pragma is not None:
+        for port in map(with_rs_pragma, self._ports.values()):
+            if port.pragma is not None:
                 self._rewriter.add_before(
                     self._port_name_to_decl[port.name].sourceRange.start,
-                    _CODEGEN.visit(port.rs_pragma),
+                    str(port.pragma),
                 )
         return self
 
@@ -753,11 +735,10 @@ endmodule
         io_ports = []
         for channel, ports in M_AXI_PORTS.items():
             for port, direction in ports:
-                io_port = (Input if direction == "input" else Output)(
-                    name=f"{M_AXI_PREFIX}{name}_{channel}{port}",
-                    width=get_ast_width(
-                        get_m_axi_port_width(port, data_width, addr_width, id_width)
-                    ),
+                io_port = ioport.IOPort(
+                    direction,
+                    f"{M_AXI_PREFIX}{name}_{channel}{port}",
+                    get_m_axi_port_width(port, data_width, addr_width, id_width),
                 )
                 io_ports.append(with_rs_pragma(io_port))
         return self.add_ports(io_ports)
@@ -860,29 +841,14 @@ def generate_m_axi_ports(
         raise ValueError(msg)
 
 
-def get_rs_port(port: str) -> str:
-    """Return the RapidStream port for the given m_axi `port`."""
-    if port in {"READY", "VALID"}:
-        return port.lower()
-    return "data"
-
-
-def with_rs_pragma(node: Input | Output | Decl) -> Decl:
-    """Return an `Decl` with RapidStream pragma for the given `node`."""
-    items = []
-    if isinstance(node, Input | Output):
-        items.extend([ioport.IOPort.create(node).rs_pragma, node])
-    elif isinstance(node, Decl):
-        for item in node.list:
-            if isinstance(item, Input | Output):
-                items.append(ioport.IOPort.create(item).rs_pragma)
-            # Decl with other node types is OK.
-            items.append(item)
+def with_rs_pragma(port: ioport.IOPort) -> ioport.IOPort:
+    """Return `IOPort` with RapidStream pragma added."""
+    if port.rs_pragma is None:
+        pragma = None
     else:
-        msg = f"unexpected node: {node}"
-        raise ValueError(msg)
-
-    return Decl(tuple(x for x in items if x is not None))
+        entry = port.rs_pragma.entry
+        pragma = Pragma(entry.name, entry.value)
+    return ioport.IOPort(port.direction, port.name, port.width, pragma)
 
 
 @functools.singledispatch

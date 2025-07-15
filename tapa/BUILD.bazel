@@ -120,6 +120,7 @@ py_library(
         "//tapa/verilog:signal",
         "//tapa/verilog:util",
         "//tapa/verilog:width",
+        "//tapa/verilog/xilinx:ioport",
         "//tapa/verilog/xilinx:module",
         requirement("pyverilog"),
         requirement("pyyaml"),
@@ -135,6 +136,7 @@ py_library(
         "//tapa/verilog:signal",
         "//tapa/verilog:util",
         "//tapa/verilog:width",
+        "//tapa/verilog/xilinx:ioport",
         requirement("pyverilog"),
     ],
 )
@@ -163,6 +165,7 @@ py_library(
         "//tapa/verilog:width",
         "//tapa/verilog/xilinx:axis",
         "//tapa/verilog/xilinx:const",
+        "//tapa/verilog/xilinx:ioport",
         "//tapa/verilog/xilinx:m_axi",
         "//tapa/verilog/xilinx:module",
         requirement("pyverilog"),

@@ -40,6 +40,11 @@ py_library(
 )
 
 py_library(
+    name = "pragma",
+    srcs = ["pragma.py"],
+)
+
+py_library(
     name = "signal",
     srcs = ["signal.py"],
     deps = [

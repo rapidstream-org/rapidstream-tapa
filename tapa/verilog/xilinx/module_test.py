@@ -12,7 +12,7 @@ import pytest
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser import ast
 
-from tapa.verilog import ast_types, ast_utils
+from tapa.verilog import ast_utils
 from tapa.verilog.logic import Always, Assign
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.width import Width
@@ -21,6 +21,7 @@ from tapa.verilog.xilinx.const import (
     HANDSHAKE_CLK,
     HANDSHAKE_RST_N,
 )
+from tapa.verilog.xilinx.ioport import IOPort
 from tapa.verilog.xilinx.module import Module
 
 _CODEGEN = ASTCodeGenerator()
@@ -251,12 +252,12 @@ def test_add_ports_succeeds() -> None:
     module = Module(name="foo")
     assert module.ports == {}
 
-    module.add_ports([ast_types.Input("bar", width=ast_utils.make_width(233))])
+    module.add_ports([IOPort("input", "bar", width=Width.create(233))])
     ports = module.ports
     assert list(ports) == ["bar"]
     assert str(ports["bar"]) == "input [232:0] bar;"
 
-    module.add_ports([ast_types.Input("baz"), ast_types.Output("qux")])
+    module.add_ports([IOPort("input", "baz"), IOPort("output", "qux")])
     ports = module.ports
     assert list(ports) == ["bar", "baz", "qux"]
     assert str(ports["baz"]) == "input baz;"
@@ -266,7 +267,7 @@ def test_add_ports_succeeds() -> None:
 @pytest.mark.usefixtures("options")
 def test_del_port_succeeds() -> None:
     module = Module(name="foo")
-    module.add_ports([ast.Input("bar"), ast.Input("baz")])
+    module.add_ports([IOPort("input", "bar"), IOPort("input", "baz")])
     module.code  # TODO: support deleting added port
 
     module.del_port("baz")
@@ -279,7 +280,7 @@ def test_del_port_succeeds() -> None:
 @pytest.mark.usefixtures("options")
 def test_del_nonexistent_port_fails() -> None:
     module = Module(name="foo")
-    module.add_ports([ast_types.Input("bar")])
+    module.add_ports([IOPort("input", "bar")])
 
     with pytest.raises(ValueError, match="no port baz found in module foo"):
         module.del_port("baz")
@@ -288,7 +289,7 @@ def test_del_nonexistent_port_fails() -> None:
 @pytest.mark.usefixtures("options")
 def test_add_comment_lines_succeeds() -> None:
     module = Module(name="foo")
-    module.add_ports([ast_types.Input("bar")])
+    module.add_ports([IOPort("input", "bar")])
 
     module.add_comment_lines(["// pragma 123"])
 
@@ -499,8 +500,8 @@ def test_add_rs_pragmas_succeeds() -> None:
     module = Module(name="foo")
     module.add_ports(
         [
-            ast_types.Input(HANDSHAKE_CLK),
-            ast_types.Input(HANDSHAKE_RST_N),
+            IOPort("input", HANDSHAKE_CLK),
+            IOPort("input", HANDSHAKE_RST_N),
         ]
     )
 

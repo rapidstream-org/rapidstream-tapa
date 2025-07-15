@@ -10,9 +10,8 @@ import logging
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
-from pyverilog.vparser.ast import Input, Output, PortArg
+from pyverilog.vparser.ast import PortArg
 
-from tapa.verilog.ast_types import IOPort
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.signal import Wire
 from tapa.verilog.util import wire_name
@@ -22,6 +21,7 @@ from tapa.verilog.xilinx.const import (
     OSTREAM_SUFFIXES,
     STREAM_PORT_DIRECTION,
 )
+from tapa.verilog.xilinx.ioport import IOPort
 
 if TYPE_CHECKING:
     from tapa.instance import Instance
@@ -147,10 +147,11 @@ def generate_async_mmap_ioports(
 ) -> Iterator[IOPort]:
     for suffix in ASYNC_MMAP_SUFFIXES[tag]:
         if suffix in {ISTREAM_SUFFIXES[-1], *OSTREAM_SUFFIXES[::2]}:
-            ioport_type = Output
+            direction = "output"
         else:
-            ioport_type = Input
-        yield ioport_type(
+            direction = "input"
+        yield IOPort(
+            direction,
             name=async_mmap_arg_name(arg=arg, tag=tag, suffix=suffix),
             width=async_mmap_width(
                 tag=tag,

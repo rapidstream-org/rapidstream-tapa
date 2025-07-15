@@ -8,15 +8,13 @@ RapidStream Contributor License Agreement.
 
 import enum
 from collections.abc import Iterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from pyverilog.vparser.ast import (
     Eq,
     Identifier,
-    Input,
     Node,
     NonblockingSubstitution,
-    Output,
 )
 
 from tapa.util import get_indexed_name, get_instance_name
@@ -29,6 +27,7 @@ from tapa.verilog.xilinx.const import (
     HANDSHAKE_READY,
     HANDSHAKE_START,
 )
+from tapa.verilog.xilinx.ioport import IOPort
 
 if TYPE_CHECKING:
     from tapa.task import Task
@@ -322,37 +321,37 @@ class Instance:
     ) -> Iterator[
         tuple[
             type[Reg] | type[Wire],  # signal_type
-            type[Input] | type[Output],  # port_type
+            Literal["input", "output"],  # direction
             str,  # name
         ]
     ]:
         """Public handshake information tuples used for this instance."""
         if self.is_autorun:
-            yield (Reg, Output, self.start.name)
+            yield (Reg, "output", self.start.name)
         else:
             yield (
                 Wire,
-                Output,
+                "output",
                 self.start.name,
             )
             yield (
                 Wire,
-                Input,
+                "input",
                 wire_name(self.name, HANDSHAKE_READY),
             )
             yield (
                 Wire,
-                Input,
+                "input",
                 wire_name(self.name, HANDSHAKE_DONE),
             )
             yield (
                 Wire,
-                Input,
+                "input",
                 wire_name(self.name, HANDSHAKE_IDLE),
             )
 
     @property
-    def public_handshake_ports(self) -> Iterator[Input | Output]:
+    def public_handshake_ports(self) -> Iterator[IOPort]:
         """Public handshake IO ports used for this instance.
 
         These include all public IO ports like `ap_start` and `ap_done`.
@@ -360,8 +359,8 @@ class Instance:
         Yields:
           ast.Decl of IO ports.
         """
-        for _, port_type, name in self._public_handshake_tuples:
-            yield port_type(name)
+        for _, direction, name in self._public_handshake_tuples:
+            yield IOPort(direction, name, width=None)
 
     @property
     def public_handshake_signals(self) -> Iterator[Wire | Reg]:

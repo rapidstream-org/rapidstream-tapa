@@ -27,12 +27,10 @@ from pyverilog.vparser.ast import (
     Eq,
     Identifier,
     IfStatement,
-    Input,
     IntConst,
     Minus,
     Node,
     NonblockingSubstitution,
-    Output,
     Plus,
     PortArg,
     SingleStatement,
@@ -54,7 +52,6 @@ from tapa.verilog.ast_utils import (
     make_case_with_block,
     make_if_with_block,
     make_port_arg,
-    make_width,
 )
 from tapa.verilog.logic import Always, Assign
 from tapa.verilog.signal import Reg, Wire
@@ -84,6 +81,7 @@ from tapa.verilog.xilinx.const import (
     STATE,
     TRUE,
 )
+from tapa.verilog.xilinx.ioport import IOPort
 from tapa.verilog.xilinx.module import Module, generate_m_axi_ports, get_streams_fifos
 
 _logger = logging.getLogger().getChild(__name__)
@@ -525,10 +523,10 @@ class Program(  # TODO: refactor this class
                         _logger.debug("    pipelined signal: %s => %s", id_name, q.name)
                         fsm_upstream_module_ports.setdefault(
                             upper_name,
-                            Input(upper_name, make_width(width)),
+                            IOPort("input", upper_name, Width.create(width)),
                         )
                         fsm_downstream_module_ports.append(
-                            Output(q[-1].name, make_width(width)),
+                            IOPort("output", q[-1].name, Width.create(width))
                         )
                         fsm_downstream_portargs.append(
                             make_port_arg(q[-1].name, q[-1].name),

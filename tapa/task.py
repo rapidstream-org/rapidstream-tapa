@@ -15,9 +15,7 @@ from typing import ClassVar, Literal, NamedTuple
 
 from pyverilog.vparser.ast import (
     Constant,
-    Input,
     IntConst,
-    Output,
     ParamArg,
     Plus,
 )
@@ -52,6 +50,7 @@ from tapa.verilog.xilinx.const import (
     STREAM_PORT_DIRECTION,
     get_stream_width,
 )
+from tapa.verilog.xilinx.ioport import IOPort
 from tapa.verilog.xilinx.m_axi import M_AXI_PORTS, get_m_axi_port_width
 from tapa.verilog.xilinx.module import Module
 
@@ -138,11 +137,12 @@ class Task:
             self.fsm_module = Module(name=f"{self.name}_fsm")
             self.fsm_module.add_ports(
                 [
-                    Input(HANDSHAKE_CLK),
-                    Input(HANDSHAKE_RST_N),
-                    Input(HANDSHAKE_START),
-                    Output(HANDSHAKE_READY),
-                    *(Output(x) for x in (HANDSHAKE_DONE, HANDSHAKE_IDLE)),
+                    IOPort("input", HANDSHAKE_CLK),
+                    IOPort("input", HANDSHAKE_RST_N),
+                    IOPort("input", HANDSHAKE_START),
+                    IOPort("output", HANDSHAKE_READY),
+                    IOPort("output", HANDSHAKE_DONE),
+                    IOPort("output", HANDSHAKE_IDLE),
                 ]
             )
         elif ports:
