@@ -42,10 +42,12 @@ from tapa.verilog.util import (
 from tapa.verilog.width import Width
 from tapa.verilog.xilinx import ioport
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
+from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import (
     CLK,
     FIFO_READ_PORTS,
     FIFO_WRITE_PORTS,
+    HANDSHAKE_CLK,
     HANDSHAKE_DONE,
     HANDSHAKE_IDLE,
     HANDSHAKE_READY,
@@ -588,11 +590,11 @@ endmodule
         """
         self._syntax_tree = self._rewriter.commit()
         self._parse_syntax_tree()
-        for port in map(with_rs_pragma, self._ports.values()):
-            if port.pragma is not None:
+        for port in self._ports.values():
+            if (pragma := _get_rs_pragma(port.name)) is not None:
                 self._rewriter.add_before(
                     self._port_name_to_decl[port.name].sourceRange.start,
-                    str(port.pragma),
+                    str(pragma),
                 )
         return self
 
@@ -735,12 +737,14 @@ endmodule
         io_ports = []
         for channel, ports in M_AXI_PORTS.items():
             for port, direction in ports:
+                port_name = f"{M_AXI_PREFIX}{name}_{channel}{port}"
                 io_port = ioport.IOPort(
                     direction,
-                    f"{M_AXI_PREFIX}{name}_{channel}{port}",
+                    port_name,
                     get_m_axi_port_width(port, data_width, addr_width, id_width),
+                    _get_rs_pragma(port_name),
                 )
-                io_ports.append(with_rs_pragma(io_port))
+                io_ports.append(io_port)
         return self.add_ports(io_ports)
 
     def cleanup(self) -> None:
@@ -841,16 +845,6 @@ def generate_m_axi_ports(
         raise ValueError(msg)
 
 
-def with_rs_pragma(port: ioport.IOPort) -> ioport.IOPort:
-    """Return `IOPort` with RapidStream pragma added."""
-    if port.rs_pragma is None:
-        pragma = None
-    else:
-        entry = port.rs_pragma.entry
-        pragma = Pragma(entry.name, entry.value)
-    return ioport.IOPort(port.direction, port.name, port.width, pragma)
-
-
 @functools.singledispatch
 def _get_name(node: object) -> str:
     raise TypeError(type(node))
@@ -870,3 +864,36 @@ def _(
     ),
 ) -> str:
     return node.declarators[0].name.valueText
+
+
+def _get_rs_pragma(port_name: str) -> Pragma | None:
+    if port_name == HANDSHAKE_CLK:
+        return Pragma("RS_CLK")
+
+    if port_name == HANDSHAKE_RST_N:
+        return Pragma("RS_RST", "ff")
+
+    if port_name == "interrupt":
+        return Pragma("RS_FF", port_name)
+
+    for channel, ports in M_AXI_PORTS.items():
+        for port, _ in ports:
+            if port_name.endswith(f"_{channel}{port}"):
+                return Pragma(
+                    "RS_HS",
+                    f"{port_name[: -len(port)]}.{_get_rs_port(port)}",
+                )
+
+    for suffix, role in AXIS_PORTS.items():
+        if port_name.endswith(suffix):
+            return Pragma("RS_HS", f"{port_name[: -len(suffix)]}.{role}")
+
+    _logger.error("not adding pragma for unknown port '%s'", port_name)
+    return None
+
+
+def _get_rs_port(port: str) -> str:
+    """Return the RapidStream port for the given m_axi `port`."""
+    if port in {"READY", "VALID"}:
+        return port.lower()
+    return "data"

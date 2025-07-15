@@ -22,7 +22,7 @@ from tapa.verilog.xilinx.const import (
     HANDSHAKE_RST_N,
 )
 from tapa.verilog.xilinx.ioport import IOPort
-from tapa.verilog.xilinx.module import Module
+from tapa.verilog.xilinx.module import Module, _get_rs_pragma
 
 _CODEGEN = ASTCodeGenerator()
 _TESTDATA_PATH = (Path(__file__).parent / "testdata").resolve()
@@ -541,3 +541,45 @@ def test_add_m_axi() -> None:
             "m_axi_bar_BVALID",
         }
     )
+
+
+def test_ap_clk_gets_rs_clk_pragma() -> None:
+    pragma = _get_rs_pragma("ap_clk")
+
+    assert str(pragma) == "(* RS_CLK *)"
+
+
+def test_ap_rst_n_gets_rs_rst_pragma() -> None:
+    pragma = _get_rs_pragma("ap_rst_n")
+
+    assert str(pragma) == '(* RS_RST = "ff" *)'
+
+
+def test_interrupt_gets_rs_ff_pragma() -> None:
+    pragma = _get_rs_pragma("interrupt")
+
+    assert str(pragma) == '(* RS_FF = "interrupt" *)'
+
+
+def test_m_axi_awvalid_gets_rs_hs_pragma() -> None:
+    pragma = _get_rs_pragma("m_axi_foo_AWVALID")
+
+    assert str(pragma) == '(* RS_HS = "m_axi_foo_AW.valid" *)'
+
+
+def test_m_axi_awaddr_gets_rs_hs_pragma() -> None:
+    pragma = _get_rs_pragma("m_axi_foo_AWADDR")
+
+    assert str(pragma) == '(* RS_HS = "m_axi_foo_AW.data" *)'
+
+
+def test_axis_gets_rs_hs_pragma() -> None:
+    pragma = _get_rs_pragma("foo_TDATA")
+
+    assert str(pragma) == '(* RS_HS = "foo.data" *)'
+
+
+def test_unknown_port_gets_none_rs_pragma() -> None:
+    pragma = _get_rs_pragma("foo")
+
+    assert pragma is None

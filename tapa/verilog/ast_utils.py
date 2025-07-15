@@ -24,9 +24,6 @@ from pyverilog.vparser.ast import (
     IntConst,
     Node,
     PortArg,
-    Pragma,
-    PragmaEntry,
-    StringConst,
     Width,
 )
 
@@ -70,12 +67,6 @@ def make_if_with_block(
         true_statement=make_block(true),
         false_statement=false,
     )
-
-
-def make_pragma(name: str, value: str | None = None) -> Pragma:
-    if value is None:
-        return Pragma(PragmaEntry(name))
-    return Pragma(PragmaEntry(name, StringConst(value)))
 
 
 def make_port_arg(port: str, arg: str | Node) -> PortArg:
