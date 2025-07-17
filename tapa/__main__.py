@@ -17,7 +17,11 @@ from tapa.steps.analyze import analyze
 from tapa.steps.common import switch_work_dir
 from tapa.steps.floorplan import floorplan
 from tapa.steps.gcc import gcc
-from tapa.steps.meta import compile_entry, generate_floorplan_entry
+from tapa.steps.meta import (
+    compile_entry,
+    compile_with_floorplan_dse,
+    generate_floorplan_entry,
+)
 from tapa.steps.pack import pack
 from tapa.steps.synth import synth
 from tapa.steps.version import version
@@ -92,6 +96,7 @@ entry_point.add_command(synth)
 entry_point.add_command(pack)
 entry_point.add_command(compile_entry)
 entry_point.add_command(generate_floorplan_entry)
+entry_point.add_command(compile_with_floorplan_dse)
 entry_point.add_command(version)
 entry_point.add_command(gcc)
 entry_point.add_command(cosim)
