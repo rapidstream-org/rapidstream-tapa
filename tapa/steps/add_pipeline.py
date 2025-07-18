@@ -25,11 +25,15 @@ _logger = logging.getLogger().getChild(__name__)
 @click.option(
     "--device-config",
     type=Path,
-    required=True,
     help="Path to the device configuration file.",
 )
-def add_pipeline(device_config: Path) -> None:
+def add_pipeline(device_config: Path | None) -> None:
     """Run external add pipeline tool."""
+    if not device_config:
+        _logger.error("Device configuration file is required for add pipeline.")
+        msg = "Missing --device-config option."
+        raise click.UsageError(msg)
+
     program = load_tapa_program()
     input_graphir_path = Path(program.work_dir) / "graphir.json"
     if not input_graphir_path.exists():
