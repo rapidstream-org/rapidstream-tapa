@@ -99,6 +99,7 @@ def compile_with_floorplan_dse(ctx: click.Context, **kwargs: bool | Path) -> Non
     kwargs["gen_graphir"] = True
     kwargs["enable_synth_util"] = False
     kwargs["run_add_pipeline"] = True
+    succeeded = []
     for floorplan_file in floorplan_files:
         _logger.info("Using floorplan file: %s", floorplan_file)
         clean_obj = {
@@ -108,7 +109,19 @@ def compile_with_floorplan_dse(ctx: click.Context, **kwargs: bool | Path) -> Non
         with click.Context(
             compile_entry, info_name=compile_entry.name, obj=clean_obj
         ) as new_ctx:
-            forward_applicable(new_ctx, compile_entry, kwargs)
+            try:
+                forward_applicable(new_ctx, compile_entry, kwargs)
+                succeeded.append(floorplan_file)
+            except Exception:
+                _logger.exception(
+                    "Error during compilation with floorplan %s",
+                    floorplan_file,
+                )
+                continue
+
+    _logger.info("Found %d successful compilations with floorplan.", len(succeeded))
+    for floorplan_file in succeeded:
+        _logger.info("Successful compilation with floorplan: %s", floorplan_file)
 
 
 compile_with_floorplan_dse.params.extend(analyze.params)
