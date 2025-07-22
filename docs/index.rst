@@ -58,6 +58,7 @@ those contributing to or extending the TAPA framework itself.
   tutorial/mini_example
   tutorial/realworld_example
   tutorial/custom_rtl
+  tutorial/floorplan_dse_compile
 
 .. toctree::
   :caption: Reference
