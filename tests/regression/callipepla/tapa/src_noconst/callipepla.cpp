@@ -24,7 +24,7 @@ const int WINDOW_SIZE_div_8 = WINDOW_SIZE / 8;
 #define th_termination (1e-12)
 
 struct MultXVec {
-  tapa::vec_t<ap_uint<18>, 8> row;
+  std::array<ap_uint<18>, 8> row;
   double_v8 axv;
 };
 

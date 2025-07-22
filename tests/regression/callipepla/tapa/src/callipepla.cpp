@@ -18,7 +18,7 @@ const int NUM_CH_SPARSE_mult_8 = NUM_CH_SPARSE * 8;
 const int WINDOW_SIZE_div_8 = WINDOW_SIZE / 8;
 
 struct MultXVec {
-  tapa::vec_t<ap_uint<18>, 8> row;
+  std::array<ap_uint<18>, 8> row;
   double_v8 axv;
 };
 
