@@ -27,7 +27,13 @@ _logger = logging.getLogger().getChild(__name__)
     type=Path,
     help="Path to the device configuration file.",
 )
-def add_pipeline(device_config: Path | None) -> None:
+@click.option(
+    "--pipeline-config",
+    type=click.Path(exists=True, dir_okay=False, readable=True, resolve_path=True),
+    help="File recording the pipeline configuration",
+    required=False,
+)
+def add_pipeline(device_config: Path | None, pipeline_config: Path | None) -> None:
     """Run external add pipeline tool."""
     if not device_config:
         _logger.error("Device configuration file is required for add pipeline.")
@@ -55,6 +61,9 @@ def add_pipeline(device_config: Path | None) -> None:
         "--device-config",
         str(device_config),
     ]
+
+    if pipeline_config:
+        add_pipeline_cmd.extend(["--pipeline-config", str(pipeline_config)])
 
     subprocess.run(add_pipeline_cmd, check=True)
 
