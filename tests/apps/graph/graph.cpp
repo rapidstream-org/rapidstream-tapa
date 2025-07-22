@@ -84,6 +84,7 @@ init_update_handler:
         TaskResp resp = resp_q.read(succeeded);
         if (succeeded) {
           assert(resp.phase == TaskReq::kScatter);
+          (void)resp;  // suppress -Wunused-but-set-variable when -DNDEBUG
           ++pid;
         }
       } else {

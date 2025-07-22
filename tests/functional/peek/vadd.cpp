@@ -22,6 +22,8 @@ void Add(tapa::istream<float>& a, tapa::istream<float>& b,
     b.try_read(tmp_b);
     assert(tmp_a == tmp_peek_a);
     assert(tmp_b == tmp_peek_b);
+    (void)tmp_peek_a;  // suppress -Wunused-but-set-variable when -DNDEBUG
+    (void)tmp_peek_b;  // suppress -Wunused-but-set-variable when -DNDEBUG
 
     c.try_write(tmp_a + tmp_b);
     ++i;
