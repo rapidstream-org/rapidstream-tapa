@@ -26,16 +26,12 @@ from pyverilog.vparser.ast import (
     Constant,
     Eq,
     Identifier,
-    IfStatement,
     IntConst,
     Minus,
     Node,
     NonblockingSubstitution,
     Plus,
     PortArg,
-    SingleStatement,
-    StringConst,
-    SystemCall,
 )
 
 from tapa.common.paths import get_tapacc_cflags
@@ -46,7 +42,7 @@ from tapa.program.hls import ProgramHlsMixin
 from tapa.program.pack import ProgramPackMixin
 from tapa.program.synthesis import ProgramSynthesisMixin
 from tapa.task import Task
-from tapa.util import get_instance_name, get_module_name
+from tapa.util import get_module_name
 from tapa.verilog.ast_utils import (
     make_block,
     make_case_with_block,
@@ -249,7 +245,7 @@ class Program(  # TODO: refactor this class
         assert period.text is not None
         return decimal.Decimal(period.text)
 
-    def generate_task_rtl(self, print_fifo_ops: bool) -> None:
+    def generate_task_rtl(self) -> None:
         """Extract HDL files from tarballs generated from HLS."""
         _logger.info("extracting RTL files")
         for task in self._tasks.values():
@@ -304,20 +300,18 @@ class Program(  # TODO: refactor this class
         _logger.info("instrumenting upper-level RTL")
         for task in self._tasks.values():
             if task.is_upper and task.name != self.top:
-                self._instrument_upper_and_template_task(task, print_fifo_ops)
+                self._instrument_upper_and_template_task(task)
             elif not task.is_upper and task.name in self.gen_templates:
                 assert task.ports
-                self._instrument_upper_and_template_task(task, print_fifo_ops)
+                self._instrument_upper_and_template_task(task)
 
     def generate_top_rtl(
         self,
-        print_fifo_ops: bool,
         override_report_schema_version: str,
     ) -> None:
         """Instrument HDL files generated from HLS.
 
         Args:
-            print_fifo_ops: Whether to print debugging info for FIFO operations.
             override_report_schema_version: Override the schema version with the
                 given string, if non-empty.
         """
@@ -327,10 +321,7 @@ class Program(  # TODO: refactor this class
 
         # instrument the top-level RTL if it is a upper-level task
         if self.top_task.is_upper:
-            self._instrument_upper_and_template_task(
-                self.top_task,
-                print_fifo_ops,
-            )
+            self._instrument_upper_and_template_task(self.top_task)
 
         _logger.info("generating report")
         task_report = self.top_task.report
@@ -369,22 +360,13 @@ class Program(  # TODO: refactor this class
                     task.name == self.top and self.target == Target.XILINX_VITIS,
                 )
 
-    def _instantiate_fifos(self, task: Task, print_fifo_ops: bool) -> None:
+    def _instantiate_fifos(self, task: Task) -> None:
         _logger.debug("  instantiating FIFOs in %s", task.name)
 
         # skip instantiating if the fifo is not declared in this task
         fifos = {name: fifo for name, fifo in task.fifos.items() if "depth" in fifo}
         if not fifos:
             return
-
-        col_width = max(
-            max(
-                len(name),
-                len(get_instance_name(fifo["consumed_by"])),
-                len(get_instance_name(fifo["produced_by"])),
-            )
-            for name, fifo in fifos.items()
-        )
 
         for fifo_name, fifo in fifos.items():
             _logger.debug("    instantiating %s.%s", task.name, fifo_name)
@@ -396,64 +378,6 @@ class Program(  # TODO: refactor this class
                 width=self.get_fifo_width(task, fifo_name),
                 depth=fifo["depth"],
             )
-
-            if not print_fifo_ops:
-                continue
-
-            # print debugging info
-            debugging_blocks = []
-            fmtargs = {
-                "fifo_prefix": "\\033[97m",
-                "fifo_suffix": "\\033[0m",
-                "task_prefix": "\\033[90m",
-                "task_suffix": "\\033[0m",
-            }
-            for suffixes, fmt, fifo_tag in zip(
-                (ISTREAM_SUFFIXES, OSTREAM_SUFFIXES),
-                (
-                    "DEBUG: R: {fifo_prefix}{fifo:>{width}}{fifo_suffix} -> "
-                    "{task_prefix}{task:<{width}}{task_suffix} %h",
-                    "DEBUG: W: {task_prefix}{task:>{width}}{task_suffix} -> "
-                    "{fifo_prefix}{fifo:<{width}}{fifo_suffix} %h",
-                ),
-                ("consumed_by", "produced_by"),
-            ):
-                display = SingleStatement(
-                    statement=SystemCall(
-                        syscall="display",
-                        args=(
-                            StringConst(
-                                value=fmt.format(
-                                    width=col_width,
-                                    fifo=fifo_name,
-                                    task=(get_instance_name(fifo[fifo_tag])),
-                                    **fmtargs,
-                                ),
-                            ),
-                            Identifier(name=wire_name(fifo_name, suffixes[0])),
-                        ),
-                    ),
-                )
-                debugging_blocks.append(
-                    Always(
-                        sens_list=CLK_SENS_LIST,
-                        statement=_CODEGEN.visit(
-                            make_block(
-                                IfStatement(
-                                    cond=Eq(
-                                        left=Identifier(
-                                            name=wire_name(fifo_name, suffixes[-1]),
-                                        ),
-                                        right=TRUE,
-                                    ),
-                                    true_statement=make_block(display),
-                                    false_statement=None,
-                                ),
-                            )
-                        ),
-                    ),
-                )
-            task.module.add_logics(debugging_blocks)
 
     def _instantiate_children_tasks(  # noqa: C901,PLR0912,PLR0915,PLR0914  # TODO: refactor this method
         self,
@@ -829,7 +753,6 @@ class Program(  # TODO: refactor this class
     def _instrument_upper_and_template_task(  # noqa: C901, PLR0912 # TODO: refactor this method
         self,
         task: Task,
-        print_fifo_ops: bool,
     ) -> None:
         """Codegen for the top task."""
         # assert task.is_upper
@@ -880,7 +803,7 @@ class Program(  # TODO: refactor this class
                 ) as rtl_code:
                     rtl_code.write(task.module.get_template_code())
         else:
-            self._instantiate_fifos(task, print_fifo_ops)
+            self._instantiate_fifos(task)
             self._connect_fifos(task)
             width_table = {port.name: port.width for port in task.ports.values()}
             is_done_signals = self._instantiate_children_tasks(task, width_table)

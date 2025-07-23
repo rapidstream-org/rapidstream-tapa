@@ -74,12 +74,6 @@ from tapa.steps.common import (
     help="Enable post-synthesis resource utilization report.",
 )
 @click.option(
-    "--print-fifo-ops / --no-print-fifo-ops",
-    type=bool,
-    default=False,
-    help="Print all FIFO operations in cosim.",
-)
-@click.option(
     "--override-report-schema-version",
     type=str,
     default="",
@@ -114,7 +108,6 @@ def synth(  # noqa: PLR0913,PLR0917
     skip_hls_based_on_mtime: bool,
     other_hls_configs: str,
     enable_synth_util: bool,
-    print_fifo_ops: bool,
     override_report_schema_version: str,
     nonpipeline_fifos: Path | None,
     gen_ab_graph: bool,
@@ -153,10 +146,10 @@ def synth(  # noqa: PLR0913,PLR0917
             jobs,
             keep_hls_work_dir,
         )
-        program.generate_task_rtl(print_fifo_ops)
+        program.generate_task_rtl()
         if enable_synth_util:
             program.generate_post_synth_util(part_num, jobs)
-        program.generate_top_rtl(print_fifo_ops, override_report_schema_version)
+        program.generate_top_rtl(override_report_schema_version)
 
         if nonpipeline_fifos:
             with open(nonpipeline_fifos, encoding="utf-8") as fifo_file:
