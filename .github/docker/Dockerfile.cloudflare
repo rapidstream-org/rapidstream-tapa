@@ -4,7 +4,7 @@
 
 # This file is used to deploy distributions to Cloudflare Pages and R2.
 
-FROM node:24.3.0-bookworm
+FROM node:24.4.1-bookworm
 
 # Setup environment
 ENV HOME=/tmp
@@ -17,7 +17,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Cloudflare Wrangler
-RUN npm install -g wrangler@4.20.5
+RUN npm install -g wrangler@4.25.1
 
 # Clear the cache to avoid permission issues for GitHub Actions users
 RUN rm -rf /tmp/.npm

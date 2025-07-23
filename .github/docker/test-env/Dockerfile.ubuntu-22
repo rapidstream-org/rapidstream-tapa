@@ -4,6 +4,6 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM ubuntu:jammy-20250619
+FROM ubuntu:jammy-20250714
 
 INCLUDE+ Dockerfile.debian-common

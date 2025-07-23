@@ -10,11 +10,11 @@ programming model and generates high-frequency FPGA accelerators.
 module(name = "rapidstream-tapa")
 
 # Bazel dependencies
-bazel_dep(name = "aspect_rules_js", version = "2.3.8", dev_dependency = True)
+bazel_dep(name = "aspect_rules_js", version = "2.4.0", dev_dependency = True)
 bazel_dep(name = "aspect_rules_webpack", version = "0.17.0", dev_dependency = True)
 bazel_dep(name = "bazel_skylib", version = "1.8.1", dev_dependency = True)
 bazel_dep(name = "platforms", version = "1.0.0", dev_dependency = True)
-bazel_dep(name = "rules_cc", version = "0.1.2", dev_dependency = True)
+bazel_dep(name = "rules_cc", version = "0.1.4", dev_dependency = True)
 bazel_dep(name = "rules_nodejs", version = "6.4.0", dev_dependency = True)
 bazel_dep(name = "rules_pkg", version = "1.1.0", dev_dependency = True)
 bazel_dep(name = "rules_python", version = "1.5.1", dev_dependency = True)
@@ -54,7 +54,7 @@ llvm.toolchain(
         "rhel-9.5-x86_64": "14.0.0",
         # for other platforms, use the latest version
         # you are really on your own here
-        "": "20.1.7",
+        "": "20.1.8",
     },
     stdlib = {"": "stdc++"},
 )
@@ -311,11 +311,11 @@ LLVM_VERSION_MAJOR = 20
 
 LLVM_VERSION_MINOR = 1
 
-LLVM_VERSION_PATCH = 7
+LLVM_VERSION_PATCH = 8
 
 LLVM_VERSION = "{}.{}.{}".format(LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH)
 
-LLVM_SHA256 = "cd8fd55d97ad3e360b1d5aaf98388d1f70dfffb7df36beee478be3b839ff9008"
+LLVM_SHA256 = "6898f963c8e938981e6c4a302e83ec5beb4630147c7311183cf61069af16333d"
 
 # Based on patches from https://github.com/bazelbuild/bazel-central-registry/tree/707c0f939d1a801370aeb3a795e1a253a880f4f7/modules/llvm-project/17.0.3/patches
 http_archive(

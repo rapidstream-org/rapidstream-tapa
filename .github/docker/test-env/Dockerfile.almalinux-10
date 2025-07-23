@@ -4,6 +4,6 @@
 # All rights reserved. The contributor(s) of this file has/have agreed to the
 # RapidStream Contributor License Agreement.
 
-FROM almalinux:10.0-20250611
+FROM almalinux:10.0-20250711
 
 INCLUDE+ Dockerfile.rhel-common
