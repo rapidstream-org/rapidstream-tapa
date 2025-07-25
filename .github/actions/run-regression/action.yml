@@ -38,6 +38,6 @@ runs:
           source /opt/tools/xilinx/Vitis/${{ inputs.vivado }}/settings64.sh
           cd tests/regression/${{ inputs.test }}/rapidstream
           bash run_rs.sh
-        image: rapidstream/tapa-testenv:${{ inputs.os }}
+        imageTag: rapidstream/tapa-testenv:${{ inputs.os }}
         dockerfile: ./.github/docker/regression-env/Dockerfile.${{ inputs.os }}
         context: ./.github/docker/regression-env
