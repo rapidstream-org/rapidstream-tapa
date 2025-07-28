@@ -98,6 +98,7 @@ def compile_with_floorplan_dse(ctx: click.Context, **kwargs: bool | Path) -> Non
 
     kwargs["gen_graphir"] = True
     kwargs["enable_synth_util"] = False
+    kwargs["gen_ab_graph"] = False
     kwargs["run_add_pipeline"] = True
     succeeded = []
     for floorplan_file in floorplan_files:
