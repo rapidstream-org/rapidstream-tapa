@@ -23,7 +23,11 @@ from pyverilog.vparser.ast import (
 from tapa import __version__
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.instance import Instance, Port
-from tapa.util import get_addr_width, get_indexed_name, range_or_none
+from tapa.util import (
+    get_addr_width,
+    get_indexed_name,
+    range_or_none,
+)
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.axi_xbar import generate as axi_xbar_generate
 from tapa.verilog.ioport import IOPort
@@ -61,8 +65,8 @@ class MMapConnection(NamedTuple):
     id_width: int
     thread_count: int
     args: tuple[Instance.Arg, ...]
-    chan_count: str | None
-    chan_size: str | None
+    chan_count: int | None
+    chan_size: int | None
 
 
 class Task:
@@ -99,9 +103,9 @@ class Task:
         name: str,
         code: str,
         level: "Task.Level | str",
-        tasks: dict[str, object] | None = None,
-        fifos: dict[str, dict[str, dict[str, object]]] | None = None,
-        ports: list[dict[str, str]] | None = None,
+        tasks: dict[str, list[dict[str, dict[str, dict[str, object]]]]] | None = None,
+        fifos: dict[str, dict[str, tuple[str, int]]] | None = None,
+        ports: list[dict[str, str | int]] | None = None,
         target_type: str | None = None,
         is_slot: bool = False,
     ) -> None:
@@ -307,8 +311,8 @@ class Task:
         self._clock_period = clock_period
 
     @property
-    def report(self) -> dict[str, dict]:
-        performance = {
+    def report(self) -> dict[str, str | dict]:
+        performance: dict[str, str | dict] = {
             "source": "hls",
             "clock_period": str(self.clock_period),
         }
