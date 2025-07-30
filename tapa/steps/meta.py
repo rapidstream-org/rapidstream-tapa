@@ -103,10 +103,10 @@ def compile_with_floorplan_dse(ctx: click.Context, **kwargs: bool | Path) -> Non
     succeeded = []
     for floorplan_file in floorplan_files:
         _logger.info("Using floorplan file: %s", floorplan_file)
-        clean_obj = {
-            "work-dir": str(Path(ctx.obj["work-dir"]) / floorplan_file.parent.name)
-        }
+        solution_work_dir = Path(ctx.obj["work-dir"]) / floorplan_file.parent.name
+        clean_obj = {"work-dir": str(solution_work_dir)}
         kwargs["floorplan_path"] = floorplan_file
+        kwargs["output"] = str(solution_work_dir / f"{solution_work_dir.name}.xo")
         with click.Context(
             compile_entry, info_name=compile_entry.name, obj=clean_obj
         ) as new_ctx:
