@@ -34,6 +34,8 @@ runs:
           curl -fsSL rapidstream.sh > /tmp/rapidstream.sh
           sh /tmp/rapidstream.sh --version ${{ inputs.rapidstreamVersion }} -q
           export PATH=~/.rapidstream-tapa/usr/bin:~/.rapidstream:$PATH
+          tapa --version | tee -a "\${GITHUB_STEP_SUMMARY}"
+          rapidstream-tapafp --version | tee -a "\${GITHUB_STEP_SUMMARY}"
           export TAPA_CONCURRENCY=1
           source /opt/tools/xilinx/Vitis/${{ inputs.vivado }}/settings64.sh
           cd tests/regression/${{ inputs.test }}/rapidstream

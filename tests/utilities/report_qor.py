@@ -31,7 +31,7 @@ def report_freq(run_dir: str) -> None:
     """Report the Fmax of an implemented design."""
     _logger.warning("Regression metrics are stored in %s", GITHUB_JOB_SUMMARY)
 
-    with open(GITHUB_JOB_SUMMARY, "w", encoding="utf-8") as log_f:
+    with open(GITHUB_JOB_SUMMARY, "a", encoding="utf-8") as log_f:
         for sol_dir in glob(f"{run_dir}/dse/solution_*"):
             log_f.write(f"\n\n## Solution: {sol_dir}\n\n")
             _logger.warning("## Solution: %s", sol_dir)
