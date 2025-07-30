@@ -86,7 +86,7 @@ l_rp:
   }
 }
 
-void read_X(const ap_uint<512>* X, tapa::ostream<ap_uint<512>>& fifo_X,
+void read_X(tapa::mmap<ap_uint<512>> X, tapa::ostream<ap_uint<512>>& fifo_X,
             const ap_uint<32> K, const ap_uint<16> rp_time) {
 #pragma HLS inline off
   const ap_uint<32> num_ite_X = ((K + 15) >> 4);
@@ -1243,7 +1243,7 @@ l_rp:
   }
 }
 
-void read_Y(const ap_uint<512>* Y_in, tapa::ostream<ap_uint<512>>& fifo_Y,
+void read_Y(tapa::mmap<ap_uint<512>> Y_in, tapa::ostream<ap_uint<512>>& fifo_Y,
             const ap_uint<32> M, const ap_uint<16> rp_time) {
 #pragma HLS inline off
   const ap_uint<32> num_ite_Y = (M + 15) >> 4;
@@ -1322,7 +1322,8 @@ l_rp:
   }
 }
 
-void write_Y(tapa::istream<ap_uint<512>>& fifo_Y, ap_uint<512>* Y_out) {
+void write_Y(tapa::istream<ap_uint<512>>& fifo_Y,
+             tapa::mmap<ap_uint<512>> Y_out) {
 #pragma HLS inline off
   bool M_ready = false;
   ap_uint<512> M512;
