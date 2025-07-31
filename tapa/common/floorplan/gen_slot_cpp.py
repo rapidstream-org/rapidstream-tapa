@@ -113,6 +113,9 @@ def gen_slot_cpp(slot_name: str, top_name: str, ports: list, top_cpp: str) -> st
         if "*" in port_type:
             port_type = "uint64_t"
 
+        # remove const from type for reinterpret_cast
+        port_type = port_type.removeprefix("const ")
+
         cpp_ports.append(
             _PORT_TEMPLATE[port_cat].format(
                 name=name,
@@ -174,116 +177,76 @@ def remove_comments_and_strings(code: str) -> str:
     return re.sub(pattern, replacer, code, flags=re.DOTALL | re.MULTILINE)
 
 
-# ruff: noqa: PLR0912, C901
-def find_function_definition(
-    code: str, func_name: str
-) -> tuple[int | None, int | None]:
-    """Finds the start and end index of the function definition in the code.
+def find_extern_c_function_block(
+    code: str, func_name: str, is_definition: bool
+) -> tuple[int, int] | None:
+    """Finds the start & end index of the extern "C" block of the given function.
 
     Args:
         code: The full source code.
         func_name: Name of the function to locate.
+        is_definition: Whether to look for a definition (with body) or
+            declaration (ending in semicolon).
 
     Returns:
-        A tuple (start_index, end_index) of the function body, or (None, None)
-        if not found.
+        A tuple (start_index, end_index) of the full extern "C" block,
+        or None if not found.
     """
-    code_no_comments = remove_comments_and_strings(code)
+    if is_definition:
+        signature = rf"void\s+{re.escape(func_name)}\s*\([^)]*\)\s*\{{"
+    else:
+        signature = rf"void\s+{re.escape(func_name)}\s*\([^)]*\)\s*;"
 
-    pattern = rf"\bvoid\s+{re.escape(func_name)}\s*\(([^)]*)\)\s*\{{"
-    match = re.search(pattern, code_no_comments)
-    if not match:
-        return None, None
+    # Full extern "C" block pattern
+    pattern = (
+        rf'extern\s+"C"\s*\{{\s*'
+        rf"{signature}.*?"
+        rf'\}}\s*//\s*extern\s+"C"'
+    )
 
-    start = match.start()
-    open_braces = 0
-    in_comment = False
-    i = match.end() - 1
-
-    while i < len(code):
-        c = code[i]
-        if code[i : i + 2] == "/*":
-            in_comment = True
-            i += 2
-            continue
-        if code[i : i + 2] == "*/" and in_comment:
-            in_comment = False
-            i += 2
-            continue
-        if code[i : i + 2] == "//" and not in_comment:
-            i = code.find("\n", i)
-            if i == -1:
-                break
-            continue
-        if c in {'"', "'"} and not in_comment:
-            quote = c
-            i += 1
-            while i < len(code) and code[i] != quote:
-                if code[i] == "\\":
-                    i += 1  # Skip escaped characters
-                i += 1
-            i += 1
-            continue
-
-        if not in_comment:
-            if c == "{":
-                open_braces += 1
-            elif c == "}":
-                open_braces -= 1
-                if open_braces == 0:
-                    return start, i + 1
-        i += 1
-
-    return None, None
+    match = re.search(pattern, code, flags=re.DOTALL)
+    if match:
+        return match.start(), match.end()
+    return None
 
 
-def replace_function_declaration(code: str, func_name: str, new_decl: str) -> str:
-    """Replaces the function declaration of the given function name with a new one.
+def remove_extern_c_function_block(
+    code: str, func_name: str, is_definition: bool
+) -> str:
+    """Removes the extern "C" block containing the specified function.
 
     Args:
-        code: The full source code.
-        func_name: The function whose declaration is to be replaced.
-        new_decl: The new declaration string (e.g., `void foo(int a);`)
+        code: The source code.
+        func_name: The name of the function.
+        is_definition: Whether it's a definition or declaration.
 
     Returns:
-        The updated source code with the declaration replaced.
+        The source code with the block removed.
     """
-    pattern = rf"\bvoid\s+{re.escape(func_name)}\s*\([^)]*\)\s*;"
-    return re.sub(pattern, new_decl, code)
-
-
-def replace_function_definition(code: str, func_name: str, new_def: str) -> str:
-    """Replaces the full function definition of the given function.
-
-    Args:
-        code: The full source code.
-        func_name: The function whose definition is to be replaced.
-        new_def: The new function definition code block.
-
-    Returns:
-        The updated source code with the definition replaced.
-
-    Raises:
-        ValueError: If the function definition is not found.
-    """
-    start, end = find_function_definition(code, func_name)
-    if start is None or end is None:
-        msg = f"Function definition for '{func_name}' not found."
-        raise ValueError(msg)
-    return code[:start] + new_def + code[end:]
+    bounds = find_extern_c_function_block(code, func_name, is_definition)
+    if bounds:
+        start, end = bounds
+        return code[:start] + code[end:]
+    return code
 
 
 def replace_function(code: str, func_name: str, new_decl: str, new_def: str) -> str:
-    """Replaces both declaration and definition of a function in a C++ source file.
+    """Replaces both the extern "C" declaration and definition of a function.
 
     Args:
-        code: Original source code.
+        code: The original source code.
         func_name: The function to replace.
-        new_decl: The new declaration string.
-        new_def: The new definition string.
+        new_decl: The new declaration (e.g., `void foo(int x);`)
+        new_def: The new full definition (e.g., `void foo(int x) { ... }`)
 
     Returns:
-        The updated code with both declaration and definition replaced.
+        The updated source code with the function declaration and definition replaced.
     """
-    code = replace_function_declaration(code, func_name, new_decl)
-    return replace_function_definition(code, func_name, new_def)
+    # Remove old extern "C" declaration and definition blocks
+    code = remove_extern_c_function_block(code, func_name, is_definition=False)
+    code = remove_extern_c_function_block(code, func_name, is_definition=True)
+
+    # Append new extern "C" declaration and definition blocks to the end
+    decl_block = f'extern "C" {{\n{new_decl.strip()}\n}}  // extern "C"\n'
+    def_block = f'extern "C" {{\n{new_def.strip()}\n}}  // extern "C"\n'
+    return code.rstrip() + "\n\n" + decl_block + "\n\n" + def_block + "\n"
