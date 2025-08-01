@@ -17,7 +17,7 @@ class AuxInterface(FalsePathInterface):
     No need to pipeline the connection regardless of distance since reset is falsepath.
     """
 
-    type: Literal["aux"] = "aux"
+    type: Literal["aux"] = "aux"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """Initialize the reset interface."""

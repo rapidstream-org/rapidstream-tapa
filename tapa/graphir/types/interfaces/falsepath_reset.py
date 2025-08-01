@@ -17,7 +17,7 @@ class FalsePathResetInterface(FalsePathInterface):
     No need to pipeline the connection regardless of distance since reset is falsepath.
     """
 
-    type: Literal["fp_reset"] = "fp_reset"
+    type: Literal["fp_reset"] = "fp_reset"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """Initialize the reset interface."""

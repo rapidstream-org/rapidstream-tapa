@@ -45,12 +45,12 @@ class ModelMixin:
             _X: The updated immutable object.
         """
         for key in update:
-            if key not in self.model_fields:
+            if key not in self.model_fields:  # type: ignore[reportAttributeAccessIssue]
                 msg = f"Unknown field {key} to update."
                 raise ValueError(msg)
 
         update = self.sanitze_fields(**update)
-        return self.model_copy(update=update, deep=deep)
+        return self.model_copy(update=update, deep=deep)  # type: ignore[reportAttributeAccessIssue]
 
     @staticmethod
     def get_name_of_object(inst: object | dict[str, object]) -> str:
@@ -58,7 +58,7 @@ class ModelMixin:
         if isinstance(inst, dict):
             return str(inst["name"])
         if hasattr(inst, "name"):
-            return str(inst.name)
+            return str(inst.name)  # type: ignore[reportAttributeAccessIssue]
         if isinstance(inst, str):
             return inst
         msg = f"Cannot get name of {inst}."

@@ -83,7 +83,7 @@ class VerilogModuleDefinition(BaseModuleDefinition):
             verilog='', submodules_module_names=())
     """
 
-    module_type: Literal["verilog_module"] = "verilog_module"
+    module_type: Literal["verilog_module"] = "verilog_module"  # type: ignore[reportIncompatibleVariableOverride]
 
     verilog: str
     submodules_module_names: tuple[str, ...]

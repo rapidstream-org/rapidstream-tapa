@@ -17,7 +17,7 @@ class FeedForwardResetInterface(FeedForwardInterface):
     Feedforward reset interface for hls kernel
     """
 
-    type: Literal["ff_reset"] = "ff_reset"
+    type: Literal["ff_reset"] = "ff_reset"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """Initialize the reset interface."""

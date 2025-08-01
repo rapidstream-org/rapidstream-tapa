@@ -28,7 +28,7 @@ class ApCtrlInterface(BaseInterface):
     ap_idle_port: str | None
     ap_continue_port: str | None
 
-    type: Literal["ap_ctrl"] = "ap_ctrl"
+    type: Literal["ap_ctrl"] = "ap_ctrl"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """Preprocessing the input ports."""

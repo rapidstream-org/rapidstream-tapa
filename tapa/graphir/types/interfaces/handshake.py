@@ -22,7 +22,7 @@ class HandShakeInterface(BaseInterface):
     ready_port: str
     valid_port: str
 
-    type: Literal["handshake"] = "handshake"
+    type: Literal["handshake"] = "handshake"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """Preprocessing the input ports."""

@@ -108,7 +108,7 @@ class Expression(  # type: ignore [misc]
         'a + 1'
     """
 
-    root: tuple[Token, ...]
+    root: tuple[Token, ...]  # type: ignore[reportIncompatibleVariableOverride]
 
     # Explicitly allow supplying one argument to make mypy happy.
     def __init__(
@@ -154,7 +154,7 @@ class Expression(  # type: ignore [misc]
 
     def __hash__(self) -> int:  # pylint: disable=useless-super-delegation
         """Hash the expression and make static analysis happy."""
-        return super().__hash__()
+        return super().__hash__()  # type: ignore[reportOptionalCall]
 
     def get_identifier(self) -> str:
         """Return the identifier the expression directly connects to.

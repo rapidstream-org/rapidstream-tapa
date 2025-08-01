@@ -14,10 +14,10 @@ from tapa.graphir.types.interfaces.base import BaseInterface
 class NonPipelineInterface(BaseInterface):
     """Interface with ports that must not be pipelined."""
 
-    clk_port: None = None
-    rst_port: None = None
+    clk_port: None = None  # type: ignore[reportIncompatibleVariableOverride]
+    rst_port: None = None  # type: ignore[reportIncompatibleVariableOverride]
     role: BaseInterface.InterfaceRole
-    type: Literal["non_pipeline"] = "non_pipeline"
+    type: Literal["non_pipeline"] = "non_pipeline"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: object) -> None:
         """Preprocessing the input ports."""
@@ -61,7 +61,7 @@ class UnknownInterface(NonPipelineInterface):
     inferred ones on uncovered ports.
     """
 
-    type: Literal["unknown"] = "unknown"
+    type: Literal["unknown"] = "unknown"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: object) -> None:
         """Prevent pylint false positive warning of missing args."""
@@ -74,7 +74,7 @@ class UnknownInterface(NonPipelineInterface):
 class TAPAPeekInterface(NonPipelineInterface):
     """TAPA peek interface."""
 
-    type: Literal["tapa_peek"] = "tapa_peek"
+    type: Literal["tapa_peek"] = "tapa_peek"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: object) -> None:
         """Prevent pylint false positive warning of missing args."""

@@ -38,7 +38,7 @@ class AuxModuleDefinition(VerilogModuleDefinition):
          "ports": [], "metadata": null, "verilog": "", "submodules_module_names": []}
     """
 
-    module_type: Literal["aux_module"] = "aux_module"
+    module_type: Literal["aux_module"] = "aux_module"  # type: ignore[reportIncompatibleVariableOverride]
 
     def is_internal_module(self) -> bool:  # noqa: PLR6301
         """It is not an internal module."""
@@ -52,4 +52,4 @@ class AuxSplitModuleDefinition(VerilogModuleDefinition):
     contains a set of ports that are connected inside the original module.
     """
 
-    module_type: Literal["aux_split_module"] = "aux_split_module"
+    module_type: Literal["aux_split_module"] = "aux_split_module"  # type: ignore[reportIncompatibleVariableOverride]

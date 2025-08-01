@@ -104,7 +104,7 @@ class GroupedModuleDefinition(BaseModuleDefinition):
                 range=None),))
     """
 
-    module_type: Literal["grouped_module"] = "grouped_module"
+    module_type: Literal["grouped_module"] = "grouped_module"  # type: ignore[reportIncompatibleVariableOverride]
 
     submodules: tuple[ModuleInstantiation, ...]
     wires: tuple[ModuleNet, ...]

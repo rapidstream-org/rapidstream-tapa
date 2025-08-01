@@ -18,7 +18,7 @@ class FeedForwardInterface(BaseInterface):
     must be pipelined by the same level.
     """
 
-    type: Literal["feed_forward"] = "feed_forward"
+    type: Literal["feed_forward"] = "feed_forward"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """Preprocessing the input ports."""

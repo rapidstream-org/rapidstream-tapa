@@ -18,4 +18,4 @@ class PassThroughModuleDefinition(VerilogModuleDefinition):
     this module will have zero area.
     """
 
-    module_type: Literal["pass_through_module"] = "pass_through_module"
+    module_type: Literal["pass_through_module"] = "pass_through_module"  # type: ignore[reportIncompatibleVariableOverride]

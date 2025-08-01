@@ -48,7 +48,7 @@ class Interfaces(  # type: ignore [misc]
         Returns:
             list[AnyInterface]: The interfaces of the module.
         """
-        return self.get(module_name, [])
+        return self.get(module_name, [])  # type: ignore[reportCallIssue]
 
     def remove(self, module_names: set[str]) -> None:
         """Remove the interfaces of the given modules."""

@@ -17,7 +17,7 @@ class FalsePathInterface(BaseInterface):
     No need to pipeline the connection regardless of distance.
     """
 
-    type: Literal["false_path"] = "false_path"
+    type: Literal["false_path"] = "false_path"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """Preprocessing the input ports."""

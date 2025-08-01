@@ -17,7 +17,7 @@ class ClockInterface(FalsePathInterface):
     No need to pipeline the connection regardless of distance since clock is falsepath.
     """
 
-    type: Literal["clock"] = "clock"
+    type: Literal["clock"] = "clock"  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
         """Preprocessing the input ports."""

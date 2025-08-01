@@ -33,7 +33,7 @@ class StubModuleDefinition(BaseModuleDefinition):
          "module_type": "stub_module", "parameters": [], "ports": [], "metadata": null}
     """
 
-    module_type: Literal["stub_module"] = "stub_module"
+    module_type: Literal["stub_module"] = "stub_module"  # type: ignore[reportIncompatibleVariableOverride]
 
     def get_all_named(self) -> Generator[NamedModel]:
         """Yields all the named objects in the namespace."""

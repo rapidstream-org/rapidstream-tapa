@@ -38,7 +38,7 @@ class CommonRootMixin:
 class DictLikeRootMixin(CommonRootMixin, Generic[Key, Value]):
     """A mixin class to mock a dict from the root attribute."""
 
-    root: dict[Key, Value]
+    root: dict[Key, Value]  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(
         self,
@@ -83,7 +83,7 @@ class DictLikeRootMixin(CommonRootMixin, Generic[Key, Value]):
 class TupleLikeRootMixin(CommonRootMixin, Generic[Value]):
     """A mixin class to mock a tuple from the root attribute."""
 
-    root: list[Value] | tuple[Value, ...]
+    root: list[Value] | tuple[Value, ...]  # type: ignore[reportIncompatibleVariableOverride]
 
     def __init__(
         self,
@@ -112,7 +112,7 @@ class TupleLikeRootMixin(CommonRootMixin, Generic[Value]):
 class ListLikeRootMixin(TupleLikeRootMixin[Value]):
     """A mixin class to mock a list from the root attribute."""
 
-    root: list[Value]
+    root: list[Value]  # type: ignore[reportIncompatibleVariableOverride]
 
     def __setitem__(self, key: int, value: Value) -> None:
         """Mock an indexable object from the root element."""
