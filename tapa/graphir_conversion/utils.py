@@ -231,7 +231,7 @@ def ast_to_tokens(node: Node) -> list[Token]:
 
     # Generic fallback for other nodes
     elif node.children() is not None:
-        for c in node.children():
+        for c in node.children():  # type: ignore[reportGeneralTypeIssues]
             tokens += ast_to_tokens(c)
 
     return tokens

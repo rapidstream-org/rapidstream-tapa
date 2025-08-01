@@ -7,7 +7,7 @@ RapidStream Contributor License Agreement.
 """
 
 import logging
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from pathlib import Path
 
 from tapa.core import Program
@@ -357,7 +357,7 @@ def get_fifo_inst(  # noqa: PLR0917, PLR0913
     upper_task: Task,
     fifo_name: str,
     fifo: dict,
-    submodule_ir_defs: dict[str, AnyModuleDefinition],
+    submodule_ir_defs: Mapping[str, AnyModuleDefinition],
     is_top: bool = False,
     floorplan_region: str | None = None,
 ) -> ModuleInstantiation:
@@ -478,7 +478,7 @@ def get_fifo_inst(  # noqa: PLR0917, PLR0913
 
 def get_upper_module_ir_subinsts(
     upper_task: Task,
-    submodule_ir_defs: dict[str, AnyModuleDefinition],
+    submodule_ir_defs: Mapping[str, AnyModuleDefinition],
     floorplan_region: str | None = None,
 ) -> list[ModuleInstantiation]:
     """Get leaf module instantiations of slot module."""
@@ -536,7 +536,7 @@ def get_upper_module_ir_subinsts(
 def infer_fifo_data_range(
     fifo_name: str,
     fifo: dict,
-    leaf_ir_defs: dict[str, AnyModuleDefinition],
+    leaf_ir_defs: Mapping[str, AnyModuleDefinition],
     slot: Task,
     infer_port_name_from_tapa_module: bool = True,
 ) -> Range | None:
@@ -606,7 +606,7 @@ def infer_fifo_data_range(
 
 def get_upper_task_ir_wires(
     upper_task: Task,
-    submodule_ir_defs: dict[str, AnyModuleDefinition],
+    submodule_ir_defs: Mapping[str, AnyModuleDefinition],
     upper_task_ir_ports: list[ModulePort],
     ctrl_s_axi_ir_ports: list[ModulePort] = [],
     is_top: bool = False,
@@ -877,7 +877,7 @@ def get_top_level_slot_inst(
 
 def get_top_ir_subinsts(
     top_task: Task,
-    slot_defs: dict[str, AnyModuleDefinition],
+    slot_defs: Mapping[str, AnyModuleDefinition],
     floorplan_task_name_region_mapping: dict[str, str],
     fsm_floorplan_region: str,
 ) -> list[ModuleInstantiation]:
@@ -935,7 +935,7 @@ def get_top_ir_subinsts(
 
 def get_top_module_definition(
     top: Task,
-    slot_defs: dict[str, AnyModuleDefinition],
+    slot_defs: Mapping[str, AnyModuleDefinition],
     ctrl_s_axi_ir: VerilogModuleDefinition,
     floorplan_task_name_region_mapping: dict[str, str],
 ) -> GroupedModuleDefinition:
@@ -1006,6 +1006,7 @@ def get_project_from_floorplanned_program(program: Program) -> Project:
         leaf_irs[task.name] = get_verilog_module_from_leaf_task(
             task, full_task_module.code
         )
+    assert program.slot_task_name_to_fp_region is not None
     slot_irs = {
         task.name: get_slot_module_definition(
             task, leaf_irs, program.slot_task_name_to_fp_region[task.name]
