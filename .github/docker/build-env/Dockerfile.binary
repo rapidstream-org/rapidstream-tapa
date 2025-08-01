@@ -16,12 +16,14 @@ INCLUDE+ Dockerfile.binary-dependencies
 RUN rm -rf /tmp/* /var/tmp/*
 
 # Use /tmp/home as the cache directory
-RUN mkdir -m 1777 \
+RUN mkdir -m 755 \
   -p /tmp/home/.cache /tmp/home/.cargo \
      /tmp/home/.local/ /tmp/home/.nuitka_cache
 
 RUN addgroup --uid ${DOCKER_GROUP_ID} io && \
     adduser --uid ${DOCKER_USER_ID} --ingroup io --home /tmp/home io
+
+RUN chown -R ${DOCKER_USER_ID}:${DOCKER_GROUP_ID} /tmp/home
 
 ENV HOME="/tmp/home"
 ENV NUITKA_CACHE_DIR="/tmp/home/.nuitka_cache"

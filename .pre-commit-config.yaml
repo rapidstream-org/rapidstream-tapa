@@ -87,6 +87,32 @@ repos:
         types_or: [asciidoc, python, markdown, rst]
         additional_dependencies: [tomli]
 
+  ###################
+  #  Type Checking  #
+  ###################
+
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.403
+    hooks:
+      - id: pyright
+        exclude: /gen_config\.py$ # ignore modules that imports rapidstream
+        # reading deps from file is not supported to ensure caching correctness
+        additional_dependencies:
+          - click
+          - coloredlogs
+          - intervaltree
+          - jinja2
+          - networkx
+          - nodejs-wheel-binaries # default node does not work due to old glibc
+          - nuitka
+          - psutil
+          - pydantic
+          - pyslang==8.1.0  # specific version needed for pyslang stub
+          - pytest
+          - pyverilog
+          - pyyaml
+          - toposort
+
   ###############
   #  Copyright  #
   ###############
