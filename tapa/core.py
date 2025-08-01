@@ -28,7 +28,6 @@ from pyverilog.vparser.ast import (
     Identifier,
     IntConst,
     Minus,
-    Node,
     NonblockingSubstitution,
     Plus,
     PortArg,
@@ -42,7 +41,7 @@ from tapa.program.hls import ProgramHlsMixin
 from tapa.program.pack import ProgramPackMixin
 from tapa.program.synthesis import ProgramSynthesisMixin
 from tapa.task import Task
-from tapa.util import get_module_name
+from tapa.util import as_type, get_module_name
 from tapa.verilog.ast_utils import (
     make_block,
     make_case_with_block,
@@ -113,7 +112,7 @@ class Program(  # TODO: refactor this class
     def __init__(
         self,
         obj: dict,
-        target: str,
+        target: str | Target,
         work_dir: str | None = None,
         gen_templates: tuple[str, ...] = (),
         floorplan_slots: list[str] = [],
@@ -376,7 +375,7 @@ class Program(  # TODO: refactor this class
                 name=fifo_name,
                 rst=RST,
                 width=self.get_fifo_width(task, fifo_name),
-                depth=fifo["depth"],
+                depth=as_type(int, fifo["depth"]),
             )
 
     def _instantiate_children_tasks(  # noqa: C901,PLR0912,PLR0915,PLR0914  # TODO: refactor this method
@@ -470,7 +469,7 @@ class Program(  # TODO: refactor this class
                                 tag=tag,
                                 port=arg.port,
                                 arg=upper_name,
-                                offset_name=arg_table[arg.name][-1],
+                                offset_name=arg_table[arg.name][-1].name,
                                 instance=instance,
                             )
                         } & child_port_set:
@@ -641,7 +640,7 @@ class Program(  # TODO: refactor this class
                                 tag=tag,
                                 port=arg.port,
                                 arg=arg.mmap_name,
-                                offset_name=arg_table[arg.name][-1],
+                                offset_name=arg_table[arg.name][-1].name,
                                 instance=instance,
                             ),
                         )
@@ -822,13 +821,14 @@ class Program(  # TODO: refactor this class
         with open(self.get_rtl_path(task.name), "w", encoding="utf-8") as rtl_code:
             rtl_code.write(task.module.code)
 
-    def get_fifo_width(self, task: Task, fifo: str) -> Node:
+    def get_fifo_width(self, task: Task, fifo: str) -> Plus:
         producer_task, _, fifo_port = task.get_connection_to(fifo, "produced_by")
         port = self.get_task(producer_task).module.get_port_of(
             fifo_port,
             OSTREAM_SUFFIXES[0],
         )
         # TODO: err properly if not integer literals
+        assert port.width is not None
         return Plus(
             Minus(Constant(port.width.msb), Constant(port.width.lsb)), IntConst(1)
         )
