@@ -11,7 +11,7 @@ from zipfile import ZipFile
 
 import pytest
 import yaml
-from python.runfiles import Runfiles
+from python.runfiles import Runfiles  # type: ignore[reportMissingImports]
 
 _TESTDATA_PATH = "_main/tests/functional/report/enable-synth-util.xo"
 _RUNFILES = Runfiles.Create()
