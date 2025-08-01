@@ -32,7 +32,7 @@ _logger = logging.getLogger().getChild(__name__)
     ),
 )
 @click.pass_context
-def compile_entry(ctx: click.Context, run_add_pipeline: bool, **kwargs: dict) -> None:
+def compile_entry(ctx: click.Context, run_add_pipeline: bool, **kwargs: bool) -> None:
     """Compile a TAPA program to a hardware design."""
     if not run_add_pipeline:
         forward_applicable(ctx, analyze, kwargs)
@@ -60,7 +60,7 @@ compile_entry.params.extend(pack.params)
 
 @click.command("generate-floorplan")
 @click.pass_context
-def generate_floorplan_entry(ctx: click.Context, **kwargs: dict) -> None:
+def generate_floorplan_entry(ctx: click.Context, **kwargs: bool) -> None:
     """Generate floorplan solution for TAPA program."""
     kwargs["flatten_hierarchy"] = True
     kwargs["enable_synth_util"] = True
@@ -77,7 +77,7 @@ generate_floorplan_entry.params.extend(run_autobridge.params)
 
 @click.command("compile-with-floorplan-dse")
 @click.pass_context
-def compile_with_floorplan_dse(ctx: click.Context, **kwargs: dict) -> None:
+def compile_with_floorplan_dse(ctx: click.Context, **kwargs: bool | Path) -> None:
     """Compile a TAPA program with floorplan design space exploration."""
     assert kwargs["output"] is None, (
         "When using compile-with-floorplan-dse, output should not be specified. "

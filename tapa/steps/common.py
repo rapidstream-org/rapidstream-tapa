@@ -9,6 +9,7 @@ RapidStream Contributor License Agreement.
 import json
 import logging
 import os
+from typing import Any
 
 import click
 
@@ -20,7 +21,7 @@ _logger = logging.getLogger().getChild(__name__)
 def forward_applicable(
     ctx: click.Context,
     command: click.Command,
-    kwargs: dict,
+    kwargs: dict[str, Any],
 ) -> None:
     """Forward only applicable arguments to a subcommand."""
     names = [param.name for param in command.params]
