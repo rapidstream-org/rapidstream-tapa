@@ -414,9 +414,9 @@ def get_hls_dut(
 
 
 def get_vitis_test_signals(
-    arg_to_reg_addrs: dict[str, str],
+    arg_to_reg_addrs: dict[str, list[str]],
     scalar_arg_to_val: dict[str, str],
-    args: list[Arg],
+    args: Sequence[Arg],
 ) -> str:
     axis_dpi_calls = []
     axis_assignments = []
@@ -561,7 +561,7 @@ def get_vitis_test_signals(
     return test
 
 
-def get_hls_test_signals(args: list[Arg]) -> str:
+def get_hls_test_signals(args: Sequence[Arg]) -> str:
     fifo_dpi_calls = []
     fifo_assignments = []
 

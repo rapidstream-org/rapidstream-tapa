@@ -36,7 +36,7 @@ def _update_relative_path(config: dict, config_path: str) -> None:
             config["axi_to_data_file"][axi_name] = f"{config_dir}/{curr_path}"
 
 
-def extract_part_from_xml_file(file_path: str) -> str:
+def extract_part_from_xml_file(file_path: str) -> str | None:
     """Extracts the <Part> element from the given XML file.
 
     Args:
