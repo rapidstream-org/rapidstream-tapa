@@ -64,8 +64,8 @@ class ModelMixin:
         msg = f"Cannot get name of {inst}."
         raise ValueError(msg)
 
-    @staticmethod
-    def sanitze_fields(**kwargs: object) -> dict[str, object]:
+    @classmethod
+    def sanitze_fields(cls, **kwargs: object) -> dict[str, object]:
         """To be overridden by subclasses to sanitize the fields.
 
         Args:
