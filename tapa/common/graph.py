@@ -15,7 +15,7 @@ from tapa.common.floorplan.gen_slot_cpp import gen_slot_cpp
 from tapa.common.interconnect_instance import InterconnectInstance
 from tapa.common.task_definition import TaskDefinition
 from tapa.common.task_instance import TaskInstance
-from tapa.util import get_instance_name
+from tapa.util import as_type, get_instance_name
 
 
 class Graph(Base):
@@ -36,7 +36,7 @@ class Graph(Base):
     def get_top_task_inst(self) -> TaskInstance:
         """Returns the top-level task instance."""
         name = self.get_top_task_name()
-        return TaskInstance(0, name, None, self, self.get_top_task_def())
+        return TaskInstance(0, name, {}, self, self.get_top_task_def())
 
     @lru_cache(None)
     def get_top_task_name(self) -> str:
@@ -218,7 +218,7 @@ class Graph(Base):
 
             # add mmap args
             args |= _get_slot_inst_mmap_port_args(
-                slot_name, top_obj["tasks"], task_inst_to_slot
+                slot_name, as_type(dict, top_obj["tasks"]), task_inst_to_slot
             )
             new_top_insts[slot_name].append({"args": args, "step": 0})
         new_top_obj["tasks"] = new_top_insts

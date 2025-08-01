@@ -10,7 +10,7 @@ import logging
 import os
 
 import pytest
-from python.runfiles import Runfiles
+from python.runfiles import Runfiles  # type: ignore[reportMissingImports]
 
 from tapa.common.graph import Graph
 
