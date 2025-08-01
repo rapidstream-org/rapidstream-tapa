@@ -10,6 +10,7 @@ import re
 
 from tapa.abgraph.ab_graph import ABEdge, ABGraph, ABVertex, Area, convert_area
 from tapa.core import Program
+from tapa.util import as_type
 from tapa.verilog.xilinx.module import get_streams_fifos
 
 TAPA_PORT_PREFIX = "__tapa_port_"
@@ -129,7 +130,7 @@ def get_basic_ab_graph(
 
 
 def add_port_iface_connections(
-    program: Program, graph: ABGraph, port_width: dict[str, int]
+    program: Program, graph: ABGraph, port_width: dict[str, int | tuple[int, int]]
 ) -> ABGraph:
     """Add port interface connections to the ab graph.
 
@@ -159,28 +160,28 @@ def add_port_iface_connections(
         # are not negligible, so we need to add two edges
         if port.cat.is_mmap or port.cat.is_istream:
             if port.cat.is_mmap:
-                width = port_width[port.name][1]
+                width = as_type(tuple, port_width[port.name])[1]
             else:
                 width = port_width[port.name]
             edges.append(
                 ABEdge(
                     source_vertex=dummy_vertex,
                     target_vertex=vertices[connected_task],
-                    width=width,
+                    width=as_type(int, width),
                     index=len(edges),
                 )
             )
 
         if port.cat.is_mmap or port.cat.is_ostream:
             if port.cat.is_mmap:
-                width = port_width[port.name][0]
+                width = as_type(tuple, port_width[port.name])[0]
             else:
                 width = port_width[port.name]
             edges.append(
                 ABEdge(
                     source_vertex=vertices[connected_task],
                     target_vertex=dummy_vertex,
-                    width=width,
+                    width=as_type(int, width),
                     index=len(edges),
                 )
             )
@@ -189,7 +190,7 @@ def add_port_iface_connections(
 
 
 def add_scalar_connections(
-    program: Program, graph: ABGraph, port_width: dict[str, int]
+    program: Program, graph: ABGraph, port_width: dict[str, int | tuple[int, int]]
 ) -> ABGraph:
     vertices = {v.name: v for v in graph.vs}
     edges = graph.es.copy()
@@ -220,7 +221,7 @@ def add_scalar_connections(
             ABEdge(
                 source_vertex=fsm_vertex,
                 target_vertex=vertices[connected_task],
-                width=port_width[port.name],
+                width=as_type(int, port_width[port.name]),
                 index=len(edges),
             )
         )
