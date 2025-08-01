@@ -6,7 +6,6 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
-import argparse
 import enum
 import glob
 import logging
@@ -17,9 +16,9 @@ import tarfile
 import tempfile
 import xml.sax.saxutils
 import zipfile
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from types import TracebackType
-from typing import BinaryIO, NamedTuple, TextIO
+from typing import BinaryIO, NamedTuple, NoReturn, TextIO
 from xml.etree import ElementTree as ET
 
 _logger = logging.getLogger().getChild(__name__)
@@ -547,21 +546,16 @@ def get_device_info(platform_path: str) -> dict[str, str]:
 
 
 def parse_device_info(  # noqa: C901
-    parser: argparse.ArgumentParser,
-    args: argparse.Namespace,
-    platform_name: str,
-    part_num_name: str,
-    clock_period_name: str,
+    platform_and_argname: tuple[str | None, str],
+    part_num_and_argname: tuple[str | None, str],
+    clock_period_and_argname: tuple[float | str | None, str],
+    on_error: Callable[[str], NoReturn],
 ) -> dict[str, str]:
-    platform = getattr(args, platform_name)
-    part_num = getattr(args, part_num_name)
-    clock_period = getattr(args, clock_period_name)
-    option_string_table = {
-        x.dest: x.option_strings[0]
-        for x in getattr(parser, "_actions")
-        if x.dest in {platform_name, part_num_name, clock_period_name}
-    }
+    platform, platform_argname = platform_and_argname
+    part_num, part_num_argname = part_num_and_argname
+    clock_period, clock_period_argname = clock_period_and_argname
     raw_platform_input = platform
+    device_info: dict[str, str]
 
     if platform is not None:
         platform = os.path.join(
@@ -577,34 +571,34 @@ def parse_device_info(  # noqa: C901
             if not os.path.isdir(platform) and platform_dir is not None:
                 platform = os.path.join(platform_dir, "platforms", platform)
         if not os.path.isdir(platform):
-            parser.error(
+            on_error(
                 f"cannot find the specified platform '{raw_platform_input}'; "
                 "are you sure it has been installed, "
                 "e.g., in '/opt/xilinx/platforms'?"
             )
     if platform is None or not os.path.isdir(platform):
         if clock_period is None:
-            parser.error(
+            on_error(
                 "cannot determine the target clock period; "
-                f"please either specify '{option_string_table[platform_name]}' "
+                f"please either specify '{platform_argname}' "
                 "so the target clock period can be extracted from it, or "
-                f"specify '{option_string_table[clock_period_name]}' directly"
+                f"specify '{clock_period_argname}' directly"
             )
         if part_num is None:
-            parser.error(
+            on_error(
                 "cannot determine the target part number; "
-                f"please either specify '{option_string_table[platform_name]}' "
+                f"please either specify '{platform_argname}' "
                 "so the target part number can be extracted from it, or "
-                f"specify '{option_string_table[part_num_name]}' directly"
+                f"specify '{part_num_argname}' directly"
             )
         device_info = {
-            "clock_period": clock_period,
+            "clock_period": str(clock_period),
             "part_num": part_num,
         }
     else:
         device_info = get_device_info(platform)
         if clock_period is not None:
-            device_info["clock_period"] = clock_period
+            device_info["clock_period"] = str(clock_period)
         if part_num is not None:
             device_info["part_num"] = part_num
     return device_info

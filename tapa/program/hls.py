@@ -161,7 +161,7 @@ class ProgramHlsMixin(
 
     def run_hls(  # noqa: PLR0913, PLR0917
         self,
-        clock_period: float | str,
+        clock_period: str,
         part_num: str,
         skip_based_on_mtime: bool,
         other_configs: str,
@@ -190,7 +190,7 @@ class ProgramHlsMixin(
                     kernel_files=[(self.get_cpp_path(task.name), hls_cflags)],
                     work_dir=work_dir,
                     top_name=task.name,
-                    clock_period=str(clock_period),
+                    clock_period=clock_period,
                     part_num=part_num,
                     auto_prefix=True,
                     hls="vitis_hls",
@@ -235,7 +235,7 @@ class ProgramHlsMixin(
 
     def run_aie(
         self,
-        clock_period: float | str,
+        clock_period: str,
         skip_based_on_mtime: bool,
         keep_hls_work_dir: bool,
         platform: str,
@@ -258,7 +258,7 @@ class ProgramHlsMixin(
                 kernel_files=[self.get_cpp_path(task.name)],
                 work_dir=work_dir,
                 top_name=task.name,
-                clock_period=str(clock_period),
+                clock_period=clock_period,
                 xpfm=get_xpfm_path(platform),
             ) as proc,
         ):

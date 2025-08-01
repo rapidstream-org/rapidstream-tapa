@@ -102,7 +102,7 @@ from tapa.steps.common import (
 def synth(  # noqa: PLR0913,PLR0917
     part_num: str | None,
     platform: str | None,
-    clock_period: float | None,
+    clock_period: float | str | None,
     jobs: int | None,
     keep_hls_work_dir: bool,
     skip_hls_based_on_mtime: bool,
@@ -119,9 +119,17 @@ def synth(  # noqa: PLR0913,PLR0917
     target = Target(settings.get("target"))
 
     # Automatically infer the information of the given device
-    device = get_device_info(part_num, platform, clock_period)
+    def on_error(msg: str) -> NoReturn:
+        raise click.BadArgumentUsage(msg)
+
+    device = parse_device_info(
+        (platform, "--platform"),
+        (part_num, "--part-num"),
+        (clock_period, "--clock-period"),
+        on_error,
+    )
     part_num = device["part_num"]
-    clock_period = float(device["clock_period"])
+    clock_period = device["clock_period"]
 
     # Save the context for downstream flows
     settings["part_num"] = part_num
@@ -186,50 +194,3 @@ def synth(  # noqa: PLR0913,PLR0917
         store_persistent_context("templates_info", program.get_rtl_templates_info())
 
         is_pipelined("synth", True)
-
-
-def get_device_info(
-    part_num: str | None,
-    platform: str | None,
-    clock_period: float | None,
-) -> dict[str, str]:
-    class ShimArgs:
-        part_num: str | None
-        platform: str | None
-        clock_period: float | None
-        dest: str
-        option_strings: list[str]
-
-    args = ShimArgs()
-    args.part_num = part_num
-    args.platform = platform
-    args.clock_period = clock_period
-
-    class ShimParser:
-        _actions: list[ShimArgs]
-
-        @staticmethod
-        def error(message: str) -> NoReturn:
-            raise click.BadArgumentUsage(message)
-
-        @staticmethod
-        def make_option_pair(dest: str, option: str) -> ShimArgs:
-            arg = ShimArgs()
-            arg.dest = dest
-            arg.option_strings = [option]
-            return arg
-
-    parser = ShimParser()
-    parser._actions = [  # noqa: SLF001
-        ShimParser.make_option_pair("part_num", "--part-num"),
-        ShimParser.make_option_pair("platform", "--platform"),
-        ShimParser.make_option_pair("clock_period", "--clock-period"),
-    ]
-
-    return parse_device_info(
-        parser,
-        args,
-        platform_name="platform",
-        part_num_name="part_num",
-        clock_period_name="clock_period",
-    )
