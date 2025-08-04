@@ -13,6 +13,7 @@ from pathlib import Path
 
 import click
 
+from tapa.steps.add_top_passthrough import ADD_PASSTHROUGH_PATH
 from tapa.steps.common import load_tapa_program
 
 _ADD_PIPELINE_WORK_DIR = "add_pipeline"
@@ -41,7 +42,7 @@ def add_pipeline(device_config: Path | None, pipeline_config: Path | None) -> No
         raise click.UsageError(msg)
 
     program = load_tapa_program()
-    input_graphir_path = Path(program.work_dir) / "graphir.json"
+    input_graphir_path = Path(program.work_dir) / ADD_PASSTHROUGH_PATH
     if not input_graphir_path.exists():
         msg = f"GraphIR file not found: {input_graphir_path}"
         raise FileNotFoundError(msg)
@@ -60,6 +61,7 @@ def add_pipeline(device_config: Path | None, pipeline_config: Path | None) -> No
         str(sol_dir),
         "--device-config",
         str(device_config),
+        "--no-flatten-pipeline",
     ]
 
     if pipeline_config:

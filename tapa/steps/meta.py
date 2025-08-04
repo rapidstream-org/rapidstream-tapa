@@ -13,6 +13,7 @@ from pathlib import Path
 import click
 
 from tapa.steps.add_pipeline import add_pipeline
+from tapa.steps.add_top_passthrough import add_top_passthrough
 from tapa.steps.analyze import analyze
 from tapa.steps.common import forward_applicable, load_tapa_program
 from tapa.steps.floorplan import AUTOBRIDGE_WORK_DIR, floorplan, run_autobridge
@@ -47,6 +48,7 @@ def compile_entry(ctx: click.Context, run_add_pipeline: bool, **kwargs: bool) ->
         forward_applicable(ctx, analyze, kwargs)
         forward_applicable(ctx, floorplan, kwargs)
         forward_applicable(ctx, synth, kwargs)
+        forward_applicable(ctx, add_top_passthrough, kwargs)
         forward_applicable(ctx, add_pipeline, kwargs)
         forward_applicable(ctx, pack, kwargs)
 
@@ -129,5 +131,6 @@ compile_with_floorplan_dse.params.extend(analyze.params)
 compile_with_floorplan_dse.params.extend(floorplan.params)
 compile_with_floorplan_dse.params.extend(synth.params)
 compile_with_floorplan_dse.params.extend(run_autobridge.params)
+compile_with_floorplan_dse.params.extend(add_top_passthrough.params)
 compile_with_floorplan_dse.params.extend(add_pipeline.params)
 compile_with_floorplan_dse.params.extend(pack.params)
