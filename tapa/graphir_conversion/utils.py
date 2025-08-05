@@ -9,12 +9,10 @@ from pathlib import Path
 
 from pyverilog.vparser.ast import (
     And,
-    Constant,
     Divide,
     Eq,
     GreaterEq,
     GreaterThan,
-    Identifier,
     Land,
     LessEq,
     LessThan,
@@ -30,9 +28,6 @@ from pyverilog.vparser.ast import (
     Sra,
     Srl,
     Times,
-    Uminus,
-    UnaryOperator,
-    Uplus,
     Xnor,
     Xor,
 )
@@ -180,63 +175,6 @@ _CTRL_S_AXI_PARAMETERS = [
 ]
 
 
-def ast_to_tokens(node: Node) -> list[Token]:
-    """Convert a pyverilog AST node to a list of graphir tokens."""
-    tokens = []
-
-    if isinstance(node, Identifier):
-        tokens.append(Token.new_id(node.name))
-
-    elif isinstance(node, Constant):
-        # TODO: refactor with pyslang
-        tokens += Expression.from_str_to_tokens(node.value).root
-
-    elif isinstance(node, UnaryOperator):
-        # e.g., 'ulnot', 'unot', etc.
-        tokens.append(node.__class__.__name__.lower())
-        tokens += ast_to_tokens(node.right)
-
-    elif isinstance(
-        node,
-        (
-            Plus,
-            Minus,
-            Times,
-            Divide,
-            Mod,
-            Power,
-            Eq,
-            NotEq,
-            GreaterThan,
-            LessThan,
-            GreaterEq,
-            LessEq,
-            Land,
-            Lor,
-            And,
-            Or,
-            Xor,
-            Xnor,
-            Uplus,
-            Uminus,
-            Sll,
-            Srl,
-            Sra,
-        ),
-    ):
-        # Binary operators
-        tokens += ast_to_tokens(node.left)
-        tokens.append(get_operator_token(node))
-        tokens += ast_to_tokens(node.right)
-
-    # Generic fallback for other nodes
-    elif node.children() is not None:
-        for c in node.children():  # type: ignore[reportGeneralTypeIssues]
-            tokens += ast_to_tokens(c)
-
-    return tokens
-
-
 def get_operator_token(node: Node) -> Token:
     """Map AST classes to operator symbols."""
     mapping = {
@@ -293,7 +231,7 @@ def get_task_graphir_parameters(task_module: Module) -> list[ModuleParameter]:
     """Get the graphir parameters from a task."""
     graphir_params = []
     for name, param in task_module.params.items():
-        expr = Expression(tuple(ast_to_tokens(param.value)))
+        expr = Expression.from_str_to_tokens(param.value)
         graphir_params.append(
             ModuleParameter(
                 name=name,

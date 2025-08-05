@@ -57,6 +57,15 @@ py_library(
 )
 
 py_library(
+    name = "parameter",
+    srcs = ["parameter.py"],
+    deps = [
+        "//tapa/verilog:width",
+        requirement("pyslang"),
+    ],
+)
+
+py_library(
     name = "pragma",
     srcs = ["pragma.py"],
 )

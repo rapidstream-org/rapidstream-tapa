@@ -9,12 +9,11 @@ RapidStream Contributor License Agreement.
 from pathlib import Path
 
 import pytest
-from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
 from pyverilog.vparser import ast
 
-from tapa.verilog import ast_utils
 from tapa.verilog.ioport import IOPort
 from tapa.verilog.logic import Always, Assign
+from tapa.verilog.parameter import Parameter
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.width import Width
 from tapa.verilog.xilinx.const import (
@@ -24,7 +23,6 @@ from tapa.verilog.xilinx.const import (
 )
 from tapa.verilog.xilinx.module import Module, _get_rs_pragma
 
-_CODEGEN = ASTCodeGenerator()
 _TESTDATA_PATH = (Path(__file__).parent / "testdata").resolve()
 
 
@@ -352,33 +350,33 @@ def test_add_params_succeeds() -> None:
 
     module.add_params(
         [
-            ast.Parameter(
-                "bar",
-                ast.Constant(42),
-                width=ast_utils.make_width(233),
+            Parameter(
+                name="bar",
+                value="42",
+                width=Width.create(233),
             )
         ]
     )
     params = module.params
     assert list(params) == ["bar"]
-    assert _CODEGEN.visit(params["bar"]) == "parameter [232:0] bar = 42;"
+    assert str(params["bar"]) == "parameter [232:0] bar = 42;"
 
     module.add_params(
         [
-            ast.Parameter("baz", ast.Constant(0)),
-            ast.Parameter("qux", ast.Constant(1)),
+            Parameter("baz", "0"),
+            Parameter("qux", "1"),
         ]
     )
     params = module.params
     assert list(params) == ["bar", "baz", "qux"]
-    assert _CODEGEN.visit(params["baz"]) == "parameter baz = 0;"
-    assert _CODEGEN.visit(params["qux"]) == "parameter qux = 1;"
+    assert str(params["baz"]) == "parameter baz = 0;"
+    assert str(params["qux"]) == "parameter qux = 1;"
 
 
 @pytest.mark.usefixtures("options")
 def test_del_params_succeeds() -> None:
     module = Module(name="foo")
-    module.add_params([ast.Parameter("bar", ast.Constant(0))])
+    module.add_params([Parameter("bar", "0")])
     module.code  # TODO: support deleting added params
 
     module.del_params(prefix="bar")
@@ -390,7 +388,7 @@ def test_del_params_succeeds() -> None:
 @pytest.mark.usefixtures("options")
 def test_del_nonexistent_param_succeeds() -> None:
     module = Module(name="foo")
-    module.add_params([ast.Parameter("bar", ast.Constant(0))])
+    module.add_params([Parameter("bar", "0")])
 
     module.del_params(prefix="baz")
 

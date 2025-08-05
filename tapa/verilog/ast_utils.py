@@ -21,10 +21,8 @@ from pyverilog.vparser.ast import (
     CaseStatement,
     Identifier,
     IfStatement,
-    IntConst,
     Node,
     PortArg,
-    Width,
 )
 
 if TYPE_CHECKING:
@@ -83,9 +81,3 @@ def make_port_arg(port: str, arg: str | Node) -> PortArg:
         portname=port,
         argname=arg if isinstance(arg, Node) else Identifier(arg),
     )
-
-
-def make_width(width: int) -> Width | None:
-    if width > 0:
-        return Width(msb=IntConst(width - 1), lsb=IntConst(0))
-    return None

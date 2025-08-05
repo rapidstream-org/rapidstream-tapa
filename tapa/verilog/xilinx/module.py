@@ -20,7 +20,6 @@ from pyverilog.vparser.ast import (
     InstanceList,
     Node,
     ParamArg,
-    Parameter,
     PortArg,
 )
 
@@ -30,6 +29,7 @@ from tapa.common.unique_attrs import UniqueAttrs
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.ioport import IOPort
 from tapa.verilog.logic import Always, Assign
+from tapa.verilog.parameter import Parameter
 from tapa.verilog.pragma import Pragma
 from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import (
@@ -217,12 +217,7 @@ class Module:  # noqa: PLR0904  # TODO: refactor this class
 
         @visitor.register
         def _(node: pyslang.ParameterDeclarationStatementSyntax) -> pyslang.VisitAction:
-            assert isinstance(node.parameter, pyslang.ParameterDeclarationSyntax)
-            param = Parameter(
-                _get_name(node.parameter),
-                Constant(str(node.parameter.declarators[0].initializer.expr).strip()),
-                Width.ast_width(node.parameter.type),
-            )
+            param = Parameter.create(node)
             self._params[param.name] = param
             self._param_name_to_decl[param.name] = node
             self._update_source_range_for_param(node)
@@ -524,7 +519,7 @@ endmodule
         for param in params:
             self._params[param.name] = param
             self._rewriter.add_before(
-                self._param_source_range.end, ["\n  ", _CODEGEN.visit(param)]
+                self._param_source_range.end, ["\n  ", str(param)]
             )
         return self
 
@@ -845,23 +840,8 @@ def generate_m_axi_ports(
         raise ValueError(msg)
 
 
-@functools.singledispatch
-def _get_name(node: object) -> str:
-    raise TypeError(type(node))
-
-
-@_get_name.register
-def _(node: pyslang.ParameterDeclarationStatementSyntax) -> str:
-    return _get_name(node.parameter)
-
-
-@_get_name.register
-def _(
-    node: (
-        pyslang.DataDeclarationSyntax
-        | pyslang.NetDeclarationSyntax
-        | pyslang.ParameterDeclarationSyntax
-    ),
+def _get_name(
+    node: pyslang.DataDeclarationSyntax | pyslang.NetDeclarationSyntax,
 ) -> str:
     return node.declarators[0].name.valueText
 
