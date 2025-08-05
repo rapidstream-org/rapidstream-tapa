@@ -29,7 +29,6 @@ py_library(
     name = "async_mmap",
     srcs = ["async_mmap.py"],
     deps = [
-        "//tapa/verilog:ast_types",
         "//tapa/verilog:ast_utils",
         "//tapa/verilog:util",
         "//tapa/verilog/ast:ioport",
@@ -70,7 +69,6 @@ py_library(
         "//tapa/backend",
         "//tapa/common:pyslang_rewriter",
         "//tapa/common:unique_attrs",
-        "//tapa/verilog:ast_types",
         "//tapa/verilog:ast_utils",
         "//tapa/verilog:util",
         "//tapa/verilog/ast:ioport",
@@ -97,7 +95,6 @@ py_test(
         "//tapa/verilog/xilinx/testdata:UpperLevelTask.v",
     ],
     deps = [
-        "//tapa/verilog:ast_types",
         "//tapa/verilog/ast:ioport",
         "//tapa/verilog/ast:logic",
         "//tapa/verilog/ast:parameter",
