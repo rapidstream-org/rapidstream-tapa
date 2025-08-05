@@ -11,8 +11,8 @@ from typing import Literal, NamedTuple
 import pyslang
 
 from tapa.common.unique_attrs import UniqueAttrs
-from tapa.verilog.pragma import Pragma
-from tapa.verilog.width import Width
+from tapa.verilog.ast.pragma import Pragma
+from tapa.verilog.ast.width import Width
 
 
 class IOPort(NamedTuple):

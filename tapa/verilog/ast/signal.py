@@ -8,7 +8,7 @@ RapidStream Contributor License Agreement.
 
 from typing import Literal, NamedTuple
 
-from tapa.verilog.width import Width
+from tapa.verilog.ast.width import Width
 
 
 class Reg(NamedTuple):

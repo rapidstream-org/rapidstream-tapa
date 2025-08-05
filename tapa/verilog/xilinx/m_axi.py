@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from typing import Literal
 
 from tapa.backend.xilinx import M_AXI_PREFIX
-from tapa.verilog.width import Width
+from tapa.verilog.ast.width import Width
 
 __all__ = [
     "M_AXI_ADDR_PORTS",

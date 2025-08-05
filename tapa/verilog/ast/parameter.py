@@ -10,7 +10,7 @@ from typing import NamedTuple
 
 import pyslang
 
-from tapa.verilog.width import Width
+from tapa.verilog.ast.width import Width
 
 
 class Parameter(NamedTuple):

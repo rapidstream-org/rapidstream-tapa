@@ -11,8 +11,8 @@ from collections.abc import Iterator
 
 from pyverilog.vparser.ast import Identifier
 
-from tapa.verilog.signal import Reg, Wire
-from tapa.verilog.width import Width
+from tapa.verilog.ast.signal import Reg, Wire
+from tapa.verilog.ast.width import Width
 
 __all__ = [
     "Pipeline",

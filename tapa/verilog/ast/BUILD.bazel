@@ -1,0 +1,69 @@
+"""TAPA parser/vendor-agnostic RTL AST."""
+
+# Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
+# All rights reserved. The contributor(s) of this file has/have agreed to the
+# RapidStream Contributor License Agreement.
+
+load("@rules_python//python:defs.bzl", "py_library")
+load("@tapa_deps//:requirements.bzl", "requirement")
+load("//bazel:pytest_rules.bzl", "py_test")
+
+package(default_visibility = ["//tapa:__subpackages__"])
+
+py_library(
+    name = "ioport",
+    srcs = ["ioport.py"],
+    deps = [
+        "//tapa/common:unique_attrs",
+        "//tapa/verilog/ast:pragma",
+        "//tapa/verilog/ast:width",
+        requirement("pyslang"),
+    ],
+)
+
+py_test(
+    name = "ioport_test",
+    srcs = ["ioport_test.py"],
+    deps = [
+        ":ioport",
+        requirement("pyslang"),
+    ],
+)
+
+py_library(
+    name = "logic",
+    srcs = ["logic.py"],
+)
+
+py_library(
+    name = "parameter",
+    srcs = ["parameter.py"],
+    deps = [
+        "//tapa/verilog/ast:width",
+        requirement("pyslang"),
+    ],
+)
+
+py_library(
+    name = "pragma",
+    srcs = ["pragma.py"],
+)
+
+py_library(
+    name = "signal",
+    srcs = ["signal.py"],
+    deps = [
+        "//tapa/verilog/ast:width",
+        requirement("pyslang"),
+        requirement("pyverilog"),
+    ],
+)
+
+py_library(
+    name = "width",
+    srcs = ["width.py"],
+    deps = [
+        requirement("pyslang"),
+        requirement("pyverilog"),
+    ],
+)

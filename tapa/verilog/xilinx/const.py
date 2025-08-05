@@ -14,7 +14,7 @@ from pyverilog.vparser.ast import (
     Unot,
 )
 
-from tapa.verilog.width import Width
+from tapa.verilog.ast.width import Width
 
 __all__ = [
     "CLK",

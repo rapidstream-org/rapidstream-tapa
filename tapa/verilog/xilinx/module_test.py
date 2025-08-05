@@ -11,11 +11,11 @@ from pathlib import Path
 import pytest
 from pyverilog.vparser import ast
 
-from tapa.verilog.ioport import IOPort
-from tapa.verilog.logic import Always, Assign
-from tapa.verilog.parameter import Parameter
-from tapa.verilog.signal import Reg, Wire
-from tapa.verilog.width import Width
+from tapa.verilog.ast.ioport import IOPort
+from tapa.verilog.ast.logic import Always, Assign
+from tapa.verilog.ast.parameter import Parameter
+from tapa.verilog.ast.signal import Reg, Wire
+from tapa.verilog.ast.width import Width
 from tapa.verilog.xilinx.const import (
     CLK_SENS_LIST,
     HANDSHAKE_CLK,

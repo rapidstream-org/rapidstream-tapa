@@ -1,4 +1,4 @@
-"""Unit tests for tapa.verilog.ioport."""
+"""Unit tests for tapa.verilog.ast.ioport."""
 
 __copyright__ = """
 Copyright (c) 2025 RapidStream Design Automation, Inc. and contributors.
@@ -8,8 +8,8 @@ RapidStream Contributor License Agreement.
 
 import pyslang
 
-from tapa.verilog.ioport import IOPort
-from tapa.verilog.width import Width
+from tapa.verilog.ast.ioport import IOPort
+from tapa.verilog.ast.width import Width
 
 
 def test_creation() -> None:

@@ -42,17 +42,17 @@ from tapa.program.pack import ProgramPackMixin
 from tapa.program.synthesis import ProgramSynthesisMixin
 from tapa.task import Task
 from tapa.util import as_type, get_module_name
+from tapa.verilog.ast.ioport import IOPort
+from tapa.verilog.ast.logic import Always, Assign
+from tapa.verilog.ast.signal import Reg, Wire
+from tapa.verilog.ast.width import Width
 from tapa.verilog.ast_utils import (
     make_block,
     make_case_with_block,
     make_if_with_block,
     make_port_arg,
 )
-from tapa.verilog.ioport import IOPort
-from tapa.verilog.logic import Always, Assign
-from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import Pipeline, array_name, match_array_name, wire_name
-from tapa.verilog.width import Width
 from tapa.verilog.xilinx import generate_handshake_ports
 from tapa.verilog.xilinx.async_mmap import (
     ASYNC_MMAP_SUFFIXES,

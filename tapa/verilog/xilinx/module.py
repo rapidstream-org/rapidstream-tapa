@@ -26,12 +26,13 @@ from pyverilog.vparser.ast import (
 from tapa.backend.xilinx import M_AXI_PREFIX
 from tapa.common.pyslang_rewriter import PyslangRewriter
 from tapa.common.unique_attrs import UniqueAttrs
+from tapa.verilog.ast.ioport import IOPort
+from tapa.verilog.ast.logic import Always, Assign
+from tapa.verilog.ast.parameter import Parameter
+from tapa.verilog.ast.pragma import Pragma
+from tapa.verilog.ast.signal import Reg, Wire
+from tapa.verilog.ast.width import Width
 from tapa.verilog.ast_utils import make_port_arg
-from tapa.verilog.ioport import IOPort
-from tapa.verilog.logic import Always, Assign
-from tapa.verilog.parameter import Parameter
-from tapa.verilog.pragma import Pragma
-from tapa.verilog.signal import Reg, Wire
 from tapa.verilog.util import (
     Pipeline,
     array_name,
@@ -40,7 +41,6 @@ from tapa.verilog.util import (
     sanitize_array_name,
     wire_name,
 )
-from tapa.verilog.width import Width
 from tapa.verilog.xilinx.async_mmap import ASYNC_MMAP_SUFFIXES, async_mmap_arg_name
 from tapa.verilog.xilinx.axis import AXIS_PORTS
 from tapa.verilog.xilinx.const import (

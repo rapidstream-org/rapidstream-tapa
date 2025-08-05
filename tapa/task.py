@@ -28,13 +28,13 @@ from tapa.util import (
     get_indexed_name,
     range_or_none,
 )
+from tapa.verilog.ast.ioport import IOPort
+from tapa.verilog.ast.logic import Assign
+from tapa.verilog.ast.signal import Wire
+from tapa.verilog.ast.width import Width
 from tapa.verilog.ast_utils import make_port_arg
 from tapa.verilog.axi_xbar import generate as axi_xbar_generate
-from tapa.verilog.ioport import IOPort
-from tapa.verilog.logic import Assign
-from tapa.verilog.signal import Wire
 from tapa.verilog.util import wire_name
-from tapa.verilog.width import Width
 from tapa.verilog.xilinx.axis import (
     AXIS_CONSTANTS,
     STREAM_TO_AXIS,
