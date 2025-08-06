@@ -99,6 +99,12 @@ from tapa.steps.common import (
     is_flag=True,
     help="Generate GraphIR for the TAPA program.",
 )
+@click.option(
+    "--floorplan-config",
+    type=Path,
+    default=None,
+    help="Path to the floorplan configuration file.",
+)
 def synth(  # noqa: PLR0913,PLR0917
     part_num: str | None,
     platform: str | None,
@@ -112,6 +118,7 @@ def synth(  # noqa: PLR0913,PLR0917
     nonpipeline_fifos: Path | None,
     gen_ab_graph: bool,
     gen_graphir: bool,
+    floorplan_config: Path | None,
 ) -> None:
     """Synthesize the TAPA program into RTL code."""
     program = load_tapa_program()
@@ -171,7 +178,10 @@ def synth(  # noqa: PLR0913,PLR0917
                 json.dump(result, json_file)
 
         if gen_ab_graph:
-            graph = get_top_level_ab_graph(program)
+            assert floorplan_config, (
+                "Floorplan configuration is required for generating AB graph."
+            )
+            graph = get_top_level_ab_graph(program, floorplan_config)
             with open(
                 os.path.join(program.work_dir, "ab_graph.json"),
                 "w",

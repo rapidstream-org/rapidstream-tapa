@@ -6,11 +6,14 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import json
 import re
+from pathlib import Path
 
 from tapa.abgraph.ab_graph import ABEdge, ABGraph, ABVertex, Area, convert_area
 from tapa.core import Program
 from tapa.util import as_type
+from tapa.steps.floorplan import convert_region_format
 from tapa.verilog.xilinx.module import get_streams_fifos
 
 TAPA_PORT_PREFIX = "__tapa_port_"
@@ -18,13 +21,18 @@ TAPA_PORT_PREFIX = "__tapa_port_"
 MMAP_WIDTH = (405, 43)
 
 
-def get_top_level_ab_graph(program: Program) -> ABGraph:
+def get_top_level_ab_graph(program: Program, floorplan_config: Path) -> ABGraph:
     """Generates the top level ab graph."""
+    with open(floorplan_config, encoding="utf-8") as f:
+        floorplan_config_dict: dict = json.load(f)
+
     task_area = collect_task_area(program)
     fifo_width = collect_fifo_width(program)
     port_width = collect_port_width(program)
     graph = get_basic_ab_graph(program, task_area, fifo_width)
-    graph = add_port_iface_connections(program, graph, port_width)
+    graph = add_port_iface_connections(
+        program, graph, port_width, floorplan_config_dict["cpp_arg_pre_assignments"]
+    )
     return add_scalar_connections(program, graph, port_width)
 
 
@@ -129,8 +137,11 @@ def get_basic_ab_graph(
     return ABGraph(vs=list(vertices.values()), es=edges)
 
 
-def add_port_iface_connections(
-    program: Program, graph: ABGraph, port_width: dict[str, int | tuple[int, int]]
+def add_port_iface_connections(  # noqa: C901
+    program: Program,
+    graph: ABGraph,
+    port_width: dict[str, int | tuple[int, int]],
+    cpp_arg_pre_assignments: dict[str, str],
 ) -> ABGraph:
     """Add port interface connections to the ab graph.
 
@@ -144,11 +155,29 @@ def add_port_iface_connections(
     for port in top.ports.values():
         if not (port.cat.is_stream or port.cat.is_mmap or port.is_streams):
             continue
+
+        # find matching preassignment pattern
+        region = None
+        for pattern, current_region in cpp_arg_pre_assignments.items():
+            if re.fullmatch(pattern, port.name):
+                if region and region != current_region:
+                    msg = (
+                        f"Port {port.name} matches multiple preassignment patterns: "
+                        f"{region} and {current_region}. "
+                        "Please check your configuration."
+                    )
+                    raise ValueError(msg)
+                region = current_region
+
+        if not region:
+            msg = f"Port {port.name} does not match any preassignment pattern."
+            raise ValueError(msg)
+
         dummy_vertex = ABVertex(
             name=port.name,
             area=Area(lut=0, ff=0, bram_18k=0, dsp=0, uram=0),
             sub_cells=(port.name,),
-            target_slot=None,
+            target_slot=convert_region_format(region),
             reserved_slot=None,
             current_slot=None,
         )
