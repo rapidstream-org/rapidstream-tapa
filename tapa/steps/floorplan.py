@@ -126,8 +126,15 @@ def get_slot_to_inst(
             continue
         slot_name = "_".join(region.split(":"))
         slot_to_insts[slot_name].append(vertex)
-        slot_task_name_to_fp_region[slot_name] = region.replace(":", "_TO_")
+        slot_task_name_to_fp_region[slot_name] = convert_region_format(region)
 
     program.slot_task_name_to_fp_region = slot_task_name_to_fp_region
 
     return slot_to_insts
+
+
+def convert_region_format(region: str) -> str:
+    """Convert region format from 'x:y' to 'x_TO_y'."""
+    if region is None:
+        return None
+    return region.replace(":", "_TO_")
