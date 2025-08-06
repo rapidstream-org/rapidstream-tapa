@@ -25,6 +25,7 @@ from tapa.steps.common import (
 )
 
 AUTOBRIDGE_WORK_DIR = "autobridge"
+_FLOORPLAN_CONFIG_NO_PRE_ASSIGNMENTS = "floorplan_config_no_pre_assignments.json"
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -49,6 +50,19 @@ def run_autobridge(device_config: Path, floorplan_config: Path) -> None:
     autobridge_work_dir = Path(program.work_dir) / AUTOBRIDGE_WORK_DIR
     autobridge_work_dir.mkdir(parents=True, exist_ok=True)
 
+    # remove pre_assignments from the floorplan config
+    with open(floorplan_config, encoding="utf-8") as f:
+        floorplan_config_dict: dict = json.load(f)
+    floorplan_config_dict.pop("sys_port_pre_assignments", None)
+    floorplan_config_dict.pop("cpp_arg_pre_assignments", None)
+    floorplan_config_dict["port_pre_assignments"] = {}
+
+    floorplan_config_no_preassignment = (
+        autobridge_work_dir / _FLOORPLAN_CONFIG_NO_PRE_ASSIGNMENTS
+    )
+    with open(floorplan_config_no_preassignment, "w", encoding="utf-8") as f:
+        json.dump(floorplan_config_dict, f)
+
     cmd = [
         "rapidstream-tapafp",
         "--ab-graph-path",
@@ -58,7 +72,7 @@ def run_autobridge(device_config: Path, floorplan_config: Path) -> None:
         "--device-config",
         str(device_config),
         "--floorplan-config",
-        str(floorplan_config),
+        str(floorplan_config_no_preassignment),
         "--run-floorplan",
     ]
 
