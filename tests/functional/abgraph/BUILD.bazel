@@ -15,6 +15,7 @@ tapa_xo(
     include = ["."],
     enable_synth_util = True,
     flatten_hierarchy = True,
+    floorplan_config = ":test_fp_config.json",
     gen_ab_graph = True,
     top_name = "VecAdd",
 )
@@ -45,6 +46,7 @@ tapa_xo(
     include = ["."],
     enable_synth_util = True,
     flatten_hierarchy = True,
+    floorplan_config = ":test_fp_config.json",
     gen_ab_graph = True,
     top_name = "Bandwidth",
 )
@@ -74,6 +76,7 @@ tapa_xo(
     include = ["."],
     enable_synth_util = True,
     flatten_hierarchy = True,
+    floorplan_config = ":test_fp_config.json",
     gen_ab_graph = True,
     top_name = "Cannon",
 )
@@ -103,6 +106,7 @@ tapa_xo(
     include = ["."],
     enable_synth_util = True,
     flatten_hierarchy = True,
+    floorplan_config = ":test_fp_config.json",
     gen_ab_graph = True,
     top_name = "Network",
 )

@@ -1,0 +1,20 @@
+{
+    "cell_pre_assignments": {},
+    "cpp_arg_pre_assignments": {},
+    "dse_range_max": 0.8,
+    "dse_range_min": 0.65,
+    "grouping_constraints": [],
+    "ignore_narrow_edge_threshold": 1,
+    "max_seconds": 600,
+    "partition_schedule": [],
+    "partition_strategy": "flat",
+    "reserved_slot_to_cells": {},
+    "slot_to_rtype_to_max_limit": {},
+    "slot_to_rtype_to_min_limit": {},
+    "sys_port_pre_assignments": {
+        "ap_clk": "SLOT_X2Y0:SLOT_X2Y0",
+        "ap_rst_n": "SLOT_X2Y0:SLOT_X2Y0",
+        "interrupt": "SLOT_X2Y0:SLOT_X2Y0",
+        "s_axi_control_.*": "SLOT_X2Y1:SLOT_X2Y1"
+    }
+}

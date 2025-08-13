@@ -64,6 +64,10 @@ def _tapa_xo_impl(ctx):
     if ctx.file.floorplan_path:
         tapa_cmd.extend(["--floorplan-path", ctx.file.floorplan_path.path])
 
+    # Add floorplan config, if specified.
+    if ctx.file.floorplan_config:
+        tapa_cmd.extend(["--floorplan-config", ctx.file.floorplan_config.path])
+
     # Add device config path, if specified.
     if ctx.file.device_config:
         tapa_cmd.extend(["--device-config", ctx.file.device_config.path])
@@ -114,6 +118,8 @@ def _tapa_xo_impl(ctx):
     inputs = [src] + ctx.files.hdrs + ctx.files.custom_rtl_files
     if ctx.file.floorplan_path:
         inputs.append(ctx.file.floorplan_path)
+    if ctx.file.floorplan_config:
+        inputs.append(ctx.file.floorplan_config)
     if ctx.file.device_config:
         inputs.append(ctx.file.device_config)
     ctx.actions.run(
@@ -169,6 +175,7 @@ tapa_xo = rule(
         "gen_ab_graph": attr.bool(),
         "flatten_hierarchy": attr.bool(),
         "floorplan_path": attr.label(allow_single_file = True),
+        "floorplan_config": attr.label(allow_single_file = True),
         "device_config": attr.label(allow_single_file = True),
         "vitis_hls_env": attr.label(
             cfg = "exec",

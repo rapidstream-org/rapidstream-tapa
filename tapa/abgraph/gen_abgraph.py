@@ -7,6 +7,7 @@ RapidStream Contributor License Agreement.
 """
 
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -19,6 +20,8 @@ from tapa.verilog.xilinx.module import get_streams_fifos
 TAPA_PORT_PREFIX = "__tapa_port_"
 
 MMAP_WIDTH = (405, 43)
+
+_logger = logging.getLogger().getChild(__name__)
 
 
 def get_top_level_ab_graph(program: Program, floorplan_config: Path) -> ABGraph:
@@ -169,7 +172,7 @@ def add_port_iface_connections(  # noqa: C901
 
         if not region:
             msg = f"Port {port.name} does not match any preassignment pattern."
-            raise ValueError(msg)
+            _logger.warning(msg)
 
         dummy_vertex = ABVertex(
             name=port.name,

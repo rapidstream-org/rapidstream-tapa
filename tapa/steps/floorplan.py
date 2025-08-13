@@ -147,7 +147,7 @@ def get_slot_to_inst(
     return slot_to_insts
 
 
-def convert_region_format(region: str) -> str:
+def convert_region_format(region: str | None) -> str | None:
     """Convert region format from 'x:y' to 'x_TO_y'."""
     if region is None:
         return None
