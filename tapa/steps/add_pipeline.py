@@ -6,6 +6,7 @@ All rights reserved. The contributor(s) of this file has/have agreed to the
 RapidStream Contributor License Agreement.
 """
 
+import json
 import logging
 import shutil
 import subprocess
@@ -18,6 +19,7 @@ from tapa.steps.common import load_tapa_program
 
 _ADD_PIPELINE_WORK_DIR = "add_pipeline"
 _EXPORTER_DIR = "exporter"
+_FLOORPLAN_XDC = "floorplan.xdc"
 
 _logger = logging.getLogger().getChild(__name__)
 
@@ -61,7 +63,6 @@ def add_pipeline(device_config: Path | None, pipeline_config: Path | None) -> No
         str(sol_dir),
         "--device-config",
         str(device_config),
-        "--no-flatten-pipeline",
     ]
 
     if pipeline_config:
@@ -85,3 +86,23 @@ def add_pipeline(device_config: Path | None, pipeline_config: Path | None) -> No
     for file in export_dir.iterdir():
         if file.is_file():
             shutil.copy2(file, Path(program.rtl_dir) / file.name)
+
+    # generate xdc constraints file
+    with open(device_config, encoding="utf-8") as f:
+        device = json.load(f)
+    xdc_file = export_dir / _FLOORPLAN_XDC
+    pblock_gen_cmd = [
+        "rapidstream-optimizer",
+        "-i",
+        str(output_graphir_path),
+        "-o",
+        "/dev/null",  # No output file needed
+        "pblock-gen",
+        "--output-tcl",
+        str(xdc_file),
+        "--user-pblock-name",
+        device["user_pblock_name"],
+    ]
+    subprocess.run(pblock_gen_cmd, check=True)
+
+    _logger.info("Generated XDC constraints file: %s", xdc_file)

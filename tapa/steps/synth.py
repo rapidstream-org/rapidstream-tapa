@@ -105,6 +105,18 @@ from tapa.steps.common import (
     default=None,
     help="Path to the floorplan configuration file.",
 )
+@click.option(
+    "--device-config",
+    type=Path,
+    default=None,
+    help="Path to the device configuration file.",
+)
+@click.option(
+    "--floorplan-path",
+    type=Path,
+    default=None,
+    help="Path to the floorplan file. If specified, the floorplan will be applied.",
+)
 def synth(  # noqa: PLR0913,PLR0917
     part_num: str | None,
     platform: str | None,
@@ -119,6 +131,8 @@ def synth(  # noqa: PLR0913,PLR0917
     gen_ab_graph: bool,
     gen_graphir: bool,
     floorplan_config: Path | None,
+    device_config: Path | None,
+    floorplan_path: Path | None,
 ) -> None:
     """Synthesize the TAPA program into RTL code."""
     program = load_tapa_program()
@@ -190,7 +204,13 @@ def synth(  # noqa: PLR0913,PLR0917
                 json_file.write(graph.model_dump_json())
 
         if gen_graphir:
-            project = get_project_from_floorplanned_program(program)
+            assert device_config, (
+                "Device configuration is required for generating GraphIR."
+            )
+            assert floorplan_path, "Floorplan path is required for generating GraphIR."
+            project = get_project_from_floorplanned_program(
+                program, device_config, floorplan_path
+            )
             with open(
                 os.path.join(program.work_dir, "graphir.json"),
                 "w",
