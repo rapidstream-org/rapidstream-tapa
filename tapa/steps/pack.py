@@ -76,7 +76,7 @@ NEWLINE = [""]
     "If provided, the GraphIR will be exported and included in the .xo file. ",
 )
 def pack(
-    output: str | None,
+    output: str | click.Path | None,
     bitstream_script: str | None,
     custom_rtl: tuple[Path, ...],
     graphir_path: Path | None = None,
@@ -85,6 +85,7 @@ def pack(
     program = load_tapa_program()
     settings = load_persistent_context("settings")
     target = Target(settings.get("target"))
+    output = str(output) if output else None
 
     if target == Target.XILINX_AIE:
         return
