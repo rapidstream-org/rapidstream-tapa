@@ -6,8 +6,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -23,7 +23,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -43,14 +43,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_6",
+                "name": "Switch2x2_1",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_6"
+                    "Switch2x2_1"
                 ],
                 "target_slot": null
             },
@@ -59,7 +59,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -79,14 +79,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_7",
+                "name": "Switch2x2_1",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_7"
+                    "Switch2x2_1"
                 ],
                 "target_slot": null
             },
@@ -95,7 +95,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -115,14 +115,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_4",
+                "name": "Switch2x2_2",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_4"
+                    "Switch2x2_2"
                 ],
                 "target_slot": null
             },
@@ -131,7 +131,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -151,14 +151,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_5",
+                "name": "Switch2x2_2",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_5"
+                    "Switch2x2_2"
                 ],
                 "target_slot": null
             },
@@ -167,7 +167,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -187,14 +187,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_6",
+                "name": "Switch2x2_3",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_6"
+                    "Switch2x2_3"
                 ],
                 "target_slot": null
             },
@@ -203,7 +203,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -223,14 +223,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_7",
+                "name": "Switch2x2_3",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_7"
+                    "Switch2x2_3"
                 ],
                 "target_slot": null
             },
@@ -239,7 +239,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -259,14 +259,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_8",
+                "name": "Switch2x2_4",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_8"
+                    "Switch2x2_4"
                 ],
                 "target_slot": null
             },
@@ -275,7 +275,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -295,14 +295,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_9",
+                "name": "Switch2x2_4",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_9"
+                    "Switch2x2_4"
                 ],
                 "target_slot": null
             },
@@ -311,7 +311,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -331,14 +331,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_10",
+                "name": "Switch2x2_5",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_10"
+                    "Switch2x2_5"
                 ],
                 "target_slot": null
             },
@@ -347,7 +347,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -367,14 +367,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_11",
+                "name": "Switch2x2_5",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_11"
+                    "Switch2x2_5"
                 ],
                 "target_slot": null
             },
@@ -383,7 +383,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -402,8 +402,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -419,7 +419,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -439,14 +439,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_8",
+                "name": "Switch2x2_6",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_8"
+                    "Switch2x2_6"
                 ],
                 "target_slot": null
             },
@@ -455,7 +455,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -475,14 +475,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_9",
+                "name": "Switch2x2_6",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_9"
+                    "Switch2x2_6"
                 ],
                 "target_slot": null
             },
@@ -491,7 +491,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -511,14 +511,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_10",
+                "name": "Switch2x2_7",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_10"
+                    "Switch2x2_7"
                 ],
                 "target_slot": null
             },
@@ -527,7 +527,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -547,14 +547,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_11",
+                "name": "Switch2x2_7",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_11"
+                    "Switch2x2_7"
                 ],
                 "target_slot": null
             },
@@ -563,7 +563,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -583,7 +583,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -598,8 +598,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -619,7 +619,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -634,8 +634,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -655,7 +655,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -670,8 +670,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -691,7 +691,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -706,8 +706,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -727,7 +727,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -742,8 +742,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -763,7 +763,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -778,8 +778,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -798,8 +798,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -815,7 +815,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -835,7 +835,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -850,8 +850,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -871,7 +871,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -886,8 +886,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -906,8 +906,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -923,7 +923,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -942,8 +942,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -959,7 +959,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -978,8 +978,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -995,7 +995,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1014,8 +1014,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1031,7 +1031,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1050,8 +1050,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1067,7 +1067,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1087,14 +1087,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_4",
+                "name": "Switch2x2_0",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_4"
+                    "Switch2x2_0"
                 ],
                 "target_slot": null
             },
@@ -1103,7 +1103,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1123,14 +1123,14 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
-                "name": "Switch2x2_5",
+                "name": "Switch2x2_0",
                 "reserved_slot": null,
                 "sub_cells": [
-                    "Switch2x2_5"
+                    "Switch2x2_0"
                 ],
                 "target_slot": null
             },
@@ -1139,7 +1139,7 @@
                     "bram_18k": 0,
                     "dsp": 0,
                     "ff": 71,
-                    "lut": 255,
+                    "lut": 253,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1174,8 +1174,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1194,8 +1194,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1246,8 +1246,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1266,8 +1266,8 @@
                 "area": {
                     "bram_18k": 16,
                     "dsp": 0,
-                    "ff": 3351,
-                    "lut": 3910,
+                    "ff": 3481,
+                    "lut": 3954,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1318,8 +1318,8 @@
                 "area": {
                     "bram_18k": 15,
                     "dsp": 0,
-                    "ff": 3388,
-                    "lut": 2737,
+                    "ff": 3511,
+                    "lut": 2746,
                     "uram": 0
                 },
                 "current_slot": null,
@@ -1338,8 +1338,8 @@
             "area": {
                 "bram_18k": 16,
                 "dsp": 0,
-                "ff": 3351,
-                "lut": 3910,
+                "ff": 3481,
+                "lut": 3954,
                 "uram": 0
             },
             "current_slot": null,
@@ -1354,8 +1354,8 @@
             "area": {
                 "bram_18k": 15,
                 "dsp": 0,
-                "ff": 3388,
-                "lut": 2737,
+                "ff": 3511,
+                "lut": 2746,
                 "uram": 0
             },
             "current_slot": null,
@@ -1371,7 +1371,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1387,7 +1387,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1403,7 +1403,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1419,7 +1419,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1435,7 +1435,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1451,7 +1451,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1467,7 +1467,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1483,7 +1483,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1499,7 +1499,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1515,7 +1515,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1531,7 +1531,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,
@@ -1547,7 +1547,7 @@
                 "bram_18k": 0,
                 "dsp": 0,
                 "ff": 71,
-                "lut": 255,
+                "lut": 253,
                 "uram": 0
             },
             "current_slot": null,

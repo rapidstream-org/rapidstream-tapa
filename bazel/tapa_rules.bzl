@@ -60,6 +60,14 @@ def _tapa_xo_impl(ctx):
     # Build the command for tapa-cli synth.
     tapa_cmd.extend(["synth"])
 
+    # Add floorplan path, if specified.
+    if ctx.file.floorplan_path:
+        tapa_cmd.extend(["--floorplan-path", ctx.file.floorplan_path.path])
+
+    # Add device config path, if specified.
+    if ctx.file.device_config:
+        tapa_cmd.extend(["--device-config", ctx.file.device_config.path])
+
     # Redact report schema version for better cache hit.
     tapa_cmd.extend(["--override-report-schema-version", "redacted"])
 
@@ -106,6 +114,8 @@ def _tapa_xo_impl(ctx):
     inputs = [src] + ctx.files.hdrs + ctx.files.custom_rtl_files
     if ctx.file.floorplan_path:
         inputs.append(ctx.file.floorplan_path)
+    if ctx.file.device_config:
+        inputs.append(ctx.file.device_config)
     ctx.actions.run(
         outputs = outputs,
         inputs = inputs,
@@ -159,6 +169,7 @@ tapa_xo = rule(
         "gen_ab_graph": attr.bool(),
         "flatten_hierarchy": attr.bool(),
         "floorplan_path": attr.label(allow_single_file = True),
+        "device_config": attr.label(allow_single_file = True),
         "vitis_hls_env": attr.label(
             cfg = "exec",
             default = Label("//bazel:vitis_hls_env"),
