@@ -23,5 +23,8 @@ py_library(
 py_doc_test(
     name = "abgraph_doc_test",
     package = "tapa.abgraph",
-    deps = ["//tapa/abgraph"],
+    deps = [
+        "//tapa/abgraph",
+        "//tapa/steps",
+    ],
 )

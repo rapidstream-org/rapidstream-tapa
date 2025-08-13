@@ -12,8 +12,8 @@ from pathlib import Path
 
 from tapa.abgraph.ab_graph import ABEdge, ABGraph, ABVertex, Area, convert_area
 from tapa.core import Program
-from tapa.util import as_type
 from tapa.steps.floorplan import convert_region_format
+from tapa.util import as_type
 from tapa.verilog.xilinx.module import get_streams_fifos
 
 TAPA_PORT_PREFIX = "__tapa_port_"
@@ -115,15 +115,13 @@ def get_basic_ab_graph(
         # each fifo has a producer and a consumer, but the fifo_inst only tells
         # the task name, not the instance name. So we need to check all instances
         # port connection to find the instance name.
-        consumer_task = fifo_inst["consumed_by"][0]
-        consumer_task_inst = program.get_inst_by_port_arg_name(
-            consumer_task, top, replace_bracketed_number(fifo_name)
-        ).name
+        consumer_task_inst = (
+            f"{fifo_inst['consumed_by'][0]}_{fifo_inst['consumed_by'][1]}"
+        )
 
-        producer_task = fifo_inst["produced_by"][0]
-        producer_task_inst = program.get_inst_by_port_arg_name(
-            producer_task, top, replace_bracketed_number(fifo_name)
-        ).name
+        producer_task_inst = (
+            f"{fifo_inst['produced_by'][0]}_{fifo_inst['produced_by'][1]}"
+        )
 
         edges.append(
             ABEdge(
